@@ -1,2 +1,4 @@
+library;
+
 export 'src/system.dart';
-export 'src/reactive.dart' show globalReactiveSystem;
+export 'src/reactive.dart';

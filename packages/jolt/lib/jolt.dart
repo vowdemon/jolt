@@ -121,7 +121,6 @@ export 'src/effect.dart';
 export 'src/computed.dart';
 export 'src/signal.dart';
 export 'src/async.dart';
-export 'src/system.dart';
 export 'src/utils.dart';
 export 'src/untracked.dart';
 export 'src/batch.dart';

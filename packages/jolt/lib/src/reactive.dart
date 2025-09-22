@@ -6,7 +6,6 @@ import 'effect.dart';
 import 'signal.dart';
 import 'system.dart';
 
-@internal
 class GlobalReactiveSystem extends ReactiveSystem {
   final queuedEffects = <JEffectNode?>[];
 

@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:free_disposer/free_disposer.dart';
 import 'package:meta/meta.dart';
 
-import 'reactive.dart';
-import 'system.dart';
+import '../core/reactive.dart';
+import '../core/system.dart';
 import 'untracked.dart';
 
 /// Interface for reactive nodes that can execute effect functions.

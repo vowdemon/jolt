@@ -1,4 +1,4 @@
-import 'reactive.dart';
+import '../core/reactive.dart';
 
 /// Batches multiple reactive updates into a single notification cycle.
 ///

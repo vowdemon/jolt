@@ -5,31 +5,7 @@ import 'package:free_disposer/free_disposer.dart';
 import '../base.dart';
 import 'watcher.dart';
 
-class _Stream<T> {
-  _Stream() {
-    count = 0;
-    sc = StreamController<T>.broadcast(
-        onListen: () => count++,
-        onCancel: () {
-          count--;
-          if (count == 0) {
-            dispose();
-          }
-        });
-  }
-  late StreamController<T>? sc;
-  late Disposer? disposer;
-  int count = 0;
-
-  void dispose() {
-    sc?.close();
-    sc = null;
-    disposer?.call();
-    disposer = null;
-  }
-}
-
-final _streams = Expando<_Stream<Object?>>();
+final _streams = Expando<StreamController<Object?>>();
 
 /// Extension methods for converting reactive values to streams.
 extension JoltStreamValueExtension<T> on JReadonlyValue<T> {
@@ -53,29 +29,31 @@ extension JoltStreamValueExtension<T> on JReadonlyValue<T> {
   /// ```
   Stream<T> get stream {
     assert(!isDisposed);
-    _Stream<T>? s = _streams[this] as _Stream<T>?;
+    var s = _streams[this] as StreamController<T>?;
     if (s == null) {
-      _streams[this] = s = _Stream<T>();
+      Disposer? watcherDisposer;
 
-      final watcherHandler = subscribe(
-        (value, _) {
-          if (s!.count == 0) return;
-          s.sc!.add(value);
-        },
-        when: this is IMutableCollection ? (newValue, oldValue) => true : null,
-      );
-
-      s.disposer = () {
-        watcherHandler();
-      };
+      _streams[this] = s = StreamController<T>.broadcast(onListen: () {
+        if (watcherDisposer != null) return;
+        watcherDisposer = subscribe(
+          (value, _) {
+            if (!(s?.isClosed ?? false)) s!.add(value);
+          },
+          when:
+              this is IMutableCollection ? (newValue, oldValue) => true : null,
+        );
+      }, onCancel: () {
+        watcherDisposer?.call();
+        watcherDisposer = null;
+      });
 
       disposeWith(() {
-        s?.dispose();
+        s?.close();
         _streams[this] = null;
       });
     }
 
-    return s.sc?.stream ?? Stream.empty();
+    return s.stream;
   }
 
   /// Creates a stream subscription that listens to changes in this reactive value.

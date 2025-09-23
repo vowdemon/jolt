@@ -1,4 +1,4 @@
-import 'utils.dart';
+import '../jolt/utils.dart';
 
 /// Base class for all reactive nodes in the dependency graph
 class ReactiveNode {

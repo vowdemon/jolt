@@ -1,7 +1,7 @@
-import 'utils.dart';
-import 'computed.dart';
-import 'effect.dart';
-import 'signal.dart';
+import '../jolt/utils.dart';
+import '../jolt/computed.dart';
+import '../jolt/effect.dart';
+import '../jolt/signal.dart';
 import 'system.dart';
 
 class GlobalReactiveSystem extends ReactiveSystem {

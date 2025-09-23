@@ -1,9 +1,9 @@
-import 'package:jolt/src/async.dart';
-import 'package:jolt/src/collection/iterable_signal.dart';
-import 'package:jolt/src/collection/list_signal.dart';
-import 'package:jolt/src/collection/map_signal.dart';
-import 'package:jolt/src/collection/set_signal.dart';
-import 'package:jolt/src/signal.dart';
+import 'package:jolt/src/jolt/async.dart';
+import 'package:jolt/src/jolt/collection/iterable_signal.dart';
+import 'package:jolt/src/jolt/collection/list_signal.dart';
+import 'package:jolt/src/jolt/collection/map_signal.dart';
+import 'package:jolt/src/jolt/collection/set_signal.dart';
+import 'package:jolt/src/jolt/signal.dart';
 
 /// Extension methods for converting any object to a reactive signal.
 extension JoltObjectExtension<T extends Object?> on T {

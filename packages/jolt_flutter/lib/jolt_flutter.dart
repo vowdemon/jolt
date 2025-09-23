@@ -23,13 +23,13 @@
 /// ```
 library;
 
-export 'src/jolt_builder.dart';
-export 'src/signal.dart';
-export 'src/computed.dart';
-export 'src/collection.dart';
-export 'src/async.dart';
-export 'src/extension.dart';
-export 'src/value_notifier.dart';
+export 'src/widgets/jolt_builder.dart';
+export 'src/adapters/signal.dart';
+export 'src/adapters/computed.dart';
+export 'src/adapters/collection.dart';
+export 'src/adapters/async.dart';
+export 'src/adapters/extension.dart';
+export 'src/mixins/value_notifier.dart';
 export 'package:jolt/jolt.dart'
     hide
         Computed,

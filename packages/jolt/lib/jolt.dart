@@ -116,19 +116,19 @@
 /// ```
 library;
 
-export 'src/base.dart';
-export 'src/effect.dart';
-export 'src/computed.dart';
-export 'src/signal.dart';
-export 'src/async.dart';
-export 'src/utils.dart';
-export 'src/untracked.dart';
-export 'src/batch.dart';
+export 'src/jolt/base.dart';
+export 'src/jolt/effect.dart';
+export 'src/jolt/computed.dart';
+export 'src/jolt/signal.dart';
+export 'src/jolt/async.dart';
+export 'src/jolt/utils.dart';
+export 'src/jolt/untracked.dart';
+export 'src/jolt/batch.dart';
 
-export 'src/collection/iterable_signal.dart';
-export 'src/collection/list_signal.dart';
-export 'src/collection/map_signal.dart';
-export 'src/collection/set_signal.dart';
-export 'src/extension/signal.dart';
-export 'src/extension/stream.dart';
-export 'src/extension/watcher.dart';
+export 'src/jolt/collection/iterable_signal.dart';
+export 'src/jolt/collection/list_signal.dart';
+export 'src/jolt/collection/map_signal.dart';
+export 'src/jolt/collection/set_signal.dart';
+export 'src/jolt/extension/signal.dart';
+export 'src/jolt/extension/stream.dart';
+export 'src/jolt/extension/watcher.dart';

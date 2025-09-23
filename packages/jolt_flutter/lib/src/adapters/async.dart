@@ -1,6 +1,6 @@
 import 'package:jolt/jolt.dart' as jolt;
 
-import 'value_notifier.dart';
+import '../mixins/value_notifier.dart';
 import 'signal.dart';
 
 /// A signal that handles asynchronous operations with state tracking.

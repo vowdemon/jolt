@@ -1,6 +1,6 @@
 import 'package:jolt/jolt.dart' as jolt;
 
-import 'value_notifier.dart';
+import '../mixins/value_notifier.dart';
 
 /// A read-only signal that integrates with Flutter's ValueNotifier system.
 ///

@@ -1,7 +1,7 @@
 import 'package:free_disposer/free_disposer.dart';
 import 'package:meta/meta.dart';
 
-import 'system.dart';
+import '../core/system.dart';
 
 /// Marker interface for mutable collection types.
 ///

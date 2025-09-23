@@ -1,6 +1,6 @@
 import 'package:free_disposer/free_disposer.dart';
 import 'package:jolt/jolt.dart';
-import 'package:jolt/src/reactive.dart';
+import 'package:jolt/src/core/reactive.dart';
 
 /// Create a reactive signal with initial value
 T Function([T? value, bool write]) signal<T>(T initialValue) {

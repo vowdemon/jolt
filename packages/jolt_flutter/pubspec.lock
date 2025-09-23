@@ -78,10 +78,9 @@ packages:
   jolt:
     dependency: "direct main"
     description:
-      name: jolt
-      sha256: "57d825d436fc637308f7b8559fd5a0935e3e969a4f97e5cbe41be076b75f286d"
-      url: "https://pub.dev"
-    source: hosted
+      path: "../jolt"
+      relative: true
+    source: path
     version: "0.0.2"
   leak_tracker:
     dependency: transitive

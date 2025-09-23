@@ -5,8 +5,8 @@ import 'package:meta/meta.dart';
 
 import 'base.dart';
 import 'effect.dart';
-import 'reactive.dart';
-import 'system.dart';
+import '../core/reactive.dart';
+import '../core/system.dart';
 import 'utils.dart';
 
 /// A reactive signal that holds a value and notifies subscribers when it changes.

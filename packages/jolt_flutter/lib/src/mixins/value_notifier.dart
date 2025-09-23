@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:free_disposer/free_disposer.dart';
 import 'package:jolt/jolt.dart' as jolt;
 
 /// A mixin that provides Flutter ValueNotifier integration for Jolt signals.
@@ -32,6 +33,7 @@ mixin JoltValueNotifier<T> on jolt.JReadonlyValue<T>
   final List<VoidCallback> _listeners = [];
 
   bool _initializedValueNotifier = false;
+  Disposer? _valueNotifierDisposer;
 
   /// Adds a listener that will be called when the signal's value changes.
   ///
@@ -59,7 +61,7 @@ mixin JoltValueNotifier<T> on jolt.JReadonlyValue<T>
       _initializedValueNotifier = true;
       _listeners.add(listener);
 
-      subscribe((_, __) {
+      _valueNotifierDisposer = subscribe((_, __) {
         notifyListeners();
       },
           when: this is jolt.IMutableCollection
@@ -130,6 +132,11 @@ mixin JoltValueNotifier<T> on jolt.JReadonlyValue<T>
   @override
   void removeListener(VoidCallback listener) {
     _listeners.remove(listener);
+    if (_listeners.isEmpty) {
+      _valueNotifierDisposer?.call();
+      _valueNotifierDisposer = null;
+      _initializedValueNotifier = false;
+    }
   }
 
   /// Disposes of the ValueNotifier integration and cleans up resources.
@@ -145,9 +152,10 @@ mixin JoltValueNotifier<T> on jolt.JReadonlyValue<T>
   /// signal.dispose(); // Cleanup automatically handled
   /// ```
   @override
-  void dispose() {
+  void onDispose() {
     _listeners.clear();
     _listeners.length = 0;
-    super.dispose();
+    _valueNotifierDisposer?.call();
+    super.onDispose();
   }
 }

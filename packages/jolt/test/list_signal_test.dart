@@ -7,7 +7,7 @@ void main() {
       final a = ListSignal<int>([]);
 
       Effect(() {
-        print(a.length);
+        print(a.value);
       });
 
       a.value = [1, 2, 3];
@@ -22,6 +22,12 @@ void main() {
 
       a.add(33);
       a[0] = 12;
+
+      expect(a.value, equals([12, 2, 3, 33]));
+
+      a.remove(12);
+
+      expect(a.value, equals([2, 3, 33]));
     });
   });
 }

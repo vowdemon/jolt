@@ -1,5 +1,5 @@
 import 'effect.dart';
-import 'reactive.dart';
+import '../core/reactive.dart';
 
 @pragma('vm:prefer-inline')
 @pragma('wasm:prefer-inline')

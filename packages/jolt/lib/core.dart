@@ -1,4 +1,4 @@
 library;
 
-export 'src/system.dart';
-export 'src/reactive.dart';
+export 'src/core/system.dart';
+export 'src/core/reactive.dart';

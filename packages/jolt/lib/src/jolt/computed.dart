@@ -1,13 +1,13 @@
 import 'dart:async';
 
 import 'package:free_disposer/free_disposer.dart' show Disposer;
-import 'package:jolt/src/effect.dart';
+import 'package:jolt/src/jolt/effect.dart';
 import 'package:meta/meta.dart';
 
 import 'base.dart';
-import 'reactive.dart';
+import '../core/reactive.dart';
 import 'signal.dart';
-import 'system.dart';
+import '../core/system.dart';
 
 /// A computed value that automatically updates when its dependencies change.
 ///

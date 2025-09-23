@@ -7,11 +7,26 @@ import 'watcher.dart';
 
 class _Stream<T> {
   _Stream() {
+    count = 0;
     sc = StreamController<T>.broadcast(
-        onListen: () => count++, onCancel: () => count--);
+        onListen: () => count++,
+        onCancel: () {
+          count--;
+          if (count == 0) {
+            dispose();
+          }
+        });
   }
-  late final StreamController<T> sc;
+  late StreamController<T>? sc;
+  late Disposer? disposer;
   int count = 0;
+
+  void dispose() {
+    sc?.close();
+    sc = null;
+    disposer?.call();
+    disposer = null;
+  }
 }
 
 final _streams = Expando<_Stream<Object?>>();
@@ -42,21 +57,25 @@ extension JoltStreamValueExtension<T> on JReadonlyValue<T> {
     if (s == null) {
       _streams[this] = s = _Stream<T>();
 
-      subscribe(
+      final watcherHandler = subscribe(
         (value, _) {
           if (s!.count == 0) return;
-          s.sc.add(value);
+          s.sc!.add(value);
         },
         when: this is IMutableCollection ? (newValue, oldValue) => true : null,
       );
 
+      s.disposer = () {
+        watcherHandler();
+      };
+
       disposeWith(() {
-        s!.sc.close();
+        s?.dispose();
         _streams[this] = null;
       });
     }
 
-    return s.sc.stream;
+    return s.sc?.stream ?? Stream.empty();
   }
 
   /// Creates a stream subscription that listens to changes in this reactive value.

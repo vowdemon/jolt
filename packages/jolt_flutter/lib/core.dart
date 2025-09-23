@@ -1,5 +1,3 @@
-library;
-
 /// Re-exports the core Jolt reactive system for Flutter integration.
 ///
 /// This file provides access to the fundamental Jolt reactive primitives
@@ -32,4 +30,6 @@ library;
 ///   counter.value = 3;
 /// }); // Effect only runs once with final value
 /// ```
+library;
+
 export 'package:jolt/core.dart';

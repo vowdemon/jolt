@@ -439,11 +439,14 @@ class Watcher<T> extends EffectBaseNode implements JEffectNode {
     final sources = sourcesFn();
     if (!_first &&
         ((when == null && sources == prevSources) ||
-            (when != null && when!(sources, prevSources)))) {
+            (when != null && !when!(sources, prevSources)))) {
       return false;
     }
-    fn(sources, prevSources);
+    untracked(() {
+      fn(sources, prevSources);
+    });
     prevSources = sources;
+    _first = false;
     return true;
   }
 }

@@ -1,5 +1,3 @@
-import 'package:meta/meta.dart';
-
 import 'utils.dart';
 import 'computed.dart';
 import 'effect.dart';

@@ -31,7 +31,7 @@ import 'signal.dart';
 /// ```
 class ListSignal<E> extends jolt.ListSignal<E>
     with JoltValueNotifier<List<E>>
-    implements ReadonlySignal<List<E>> {
+    implements Signal<List<E>> {
   ListSignal(super.value, {super.autoDispose});
 }
 
@@ -68,7 +68,7 @@ class ListSignal<E> extends jolt.ListSignal<E>
 /// ```
 class MapSignal<K, V> extends jolt.MapSignal<K, V>
     with JoltValueNotifier<Map<K, V>>
-    implements ReadonlySignal<Map<K, V>> {
+    implements Signal<Map<K, V>> {
   MapSignal(super.value, {super.autoDispose});
 }
 
@@ -108,7 +108,7 @@ class MapSignal<K, V> extends jolt.MapSignal<K, V>
 /// ```
 class SetSignal<E> extends jolt.SetSignal<E>
     with JoltValueNotifier<Set<E>>
-    implements ReadonlySignal<Set<E>> {
+    implements Signal<Set<E>> {
   SetSignal(super.value, {super.autoDispose});
 }
 

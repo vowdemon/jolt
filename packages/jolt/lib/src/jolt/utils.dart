@@ -74,8 +74,8 @@ extension BitExtension on int {
 ///
 /// Provides access to system-wide settings and observers for monitoring
 /// reactive value lifecycle events.
-class JConfig {
-  JConfig._();
+class JoltConfig {
+  JoltConfig._();
 
   /// Global observer for monitoring reactive value events.
   ///

@@ -121,7 +121,7 @@ export 'src/jolt/effect.dart';
 export 'src/jolt/computed.dart';
 export 'src/jolt/signal.dart';
 export 'src/jolt/async.dart';
-export 'src/jolt/utils.dart';
+export 'src/jolt/utils.dart' show JoltConfig;
 export 'src/jolt/untracked.dart';
 export 'src/jolt/batch.dart';
 

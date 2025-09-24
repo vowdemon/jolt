@@ -122,7 +122,7 @@ class GlobalReactiveSystem extends ReactiveSystem {
       final oldValue = computed.nodeValue;
       final isChanged = (oldValue != (computed.nodeValue = computed.getter()));
       if (isChanged) {
-        JConfig.observer?.onUpdated(computed, computed.nodeValue, oldValue);
+        JoltConfig.observer?.onUpdated(computed, computed.nodeValue, oldValue);
       }
       return isChanged;
     } finally {
@@ -140,7 +140,7 @@ class GlobalReactiveSystem extends ReactiveSystem {
     final isChanged =
         signal.nodePreviousValue != (signal.nodePreviousValue = value);
     if (isChanged) {
-      JConfig.observer?.onUpdated(signal, value, signal.nodePreviousValue);
+      JoltConfig.observer?.onUpdated(signal, value, signal.nodePreviousValue);
     }
     return isChanged;
   }
@@ -239,7 +239,6 @@ class GlobalReactiveSystem extends ReactiveSystem {
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
   void computedNotify<T>(Computed<T> computed) {
-    JConfig.observer?.onNotify(computed);
     if (updateComputed(computed)) {
       final subs = computed.subs;
       if (subs != null) {
@@ -296,8 +295,6 @@ class GlobalReactiveSystem extends ReactiveSystem {
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
   void signalNotify<T>(ReadonlySignal<T> signal) {
-    JConfig.observer?.onNotify(signal);
-
     signal.flags = ReactiveFlags.mutable | ReactiveFlags.dirty;
 
     final subs = signal.subs;

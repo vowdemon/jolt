@@ -7,7 +7,6 @@ import 'base.dart';
 import 'effect.dart';
 import '../core/reactive.dart';
 import '../core/system.dart';
-import 'utils.dart';
 
 /// A reactive signal that holds a value and notifies subscribers when it changes.
 ///
@@ -130,7 +129,7 @@ class Signal<T> extends JReadonlyValue<T>
   /// but can be called manually for custom notification scenarios.
   @override
   void notify() {
-    assert(!isDisposed);
+    super.notify();
     globalReactiveSystem.signalNotify(this);
   }
 
@@ -147,7 +146,6 @@ class Signal<T> extends JReadonlyValue<T>
   void onDispose() {
     super.onDispose();
     scopeDisposer?.call();
-    JConfig.observer?.onDisposed(this);
     globalReactiveSystem.nodeDispose(this);
     nodePreviousValue = null;
   }

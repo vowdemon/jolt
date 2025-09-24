@@ -4,10 +4,10 @@ import 'package:free_disposer/free_disposer.dart' show Disposer;
 import 'package:jolt/src/jolt/effect.dart';
 import 'package:meta/meta.dart';
 
-import 'base.dart';
 import '../core/reactive.dart';
-import 'signal.dart';
 import '../core/system.dart';
+import 'base.dart';
+import 'signal.dart';
 
 /// A computed value that automatically updates when its dependencies change.
 ///
@@ -107,7 +107,7 @@ class Computed<T> extends JReadonlyValue<T> {
   /// dependencies change, but can be called manually for custom scenarios.
   @override
   void notify() {
-    assert(!isDisposed);
+    super.notify();
     globalReactiveSystem.computedNotify(this);
   }
 

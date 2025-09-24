@@ -2,6 +2,7 @@ import 'package:free_disposer/free_disposer.dart';
 import 'package:meta/meta.dart';
 
 import '../core/system.dart';
+import 'utils.dart' show JoltConfig;
 
 /// Marker interface for mutable collection types.
 ///
@@ -22,7 +23,9 @@ abstract class JReadonlyValue<T> extends ReactiveNode implements Disposable {
   /// - [autoDispose]: Whether to automatically dispose when no longer referenced
   /// - [nodeValue]: Initial internal value storage
   JReadonlyValue(
-      {required super.flags, this.autoDispose = false, this.nodeValue});
+      {required super.flags, this.autoDispose = false, this.nodeValue}) {
+    JoltConfig.observer?.onCreated(this);
+  }
 
   /// Internal storage for the node's value.
   Object? nodeValue;
@@ -47,7 +50,9 @@ abstract class JReadonlyValue<T> extends ReactiveNode implements Disposable {
 
   /// Called when this value is being disposed. Override to perform cleanup.
   @mustCallSuper
-  void onDispose() {}
+  void onDispose() {
+    JoltConfig.observer?.onDisposed(this);
+  }
 
   /// Disposes this reactive value and cleans up resources.
   @override
@@ -61,7 +66,11 @@ abstract class JReadonlyValue<T> extends ReactiveNode implements Disposable {
   }
 
   /// Notifies all subscribers that this value has changed.
-  void notify();
+  @mustCallSuper
+  void notify() {
+    assert(!isDisposed);
+    JoltConfig.observer?.onNotify(this);
+  }
 }
 
 /// Interface for writable reactive values.

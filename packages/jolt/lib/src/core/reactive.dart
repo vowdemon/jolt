@@ -122,7 +122,8 @@ class GlobalReactiveSystem extends ReactiveSystem {
       final oldValue = computed.nodeValue;
       final isChanged = (oldValue != (computed.nodeValue = computed.getter()));
       if (isChanged) {
-        JoltConfig.observer?.onUpdated(computed, computed.nodeValue, oldValue);
+        JoltConfig.observer
+            ?.onComputedUpdated(computed, computed.nodeValue, oldValue);
       }
       return isChanged;
     } finally {
@@ -140,7 +141,8 @@ class GlobalReactiveSystem extends ReactiveSystem {
     final isChanged =
         signal.nodePreviousValue != (signal.nodePreviousValue = value);
     if (isChanged) {
-      JoltConfig.observer?.onUpdated(signal, value, signal.nodePreviousValue);
+      JoltConfig.observer
+          ?.onSignalUpdated(signal, value, signal.nodePreviousValue);
     }
     return isChanged;
   }
@@ -154,8 +156,6 @@ class GlobalReactiveSystem extends ReactiveSystem {
       if (subs != null && subs.sub is JEffectNode) {
         if (subs.sub is JEffectNode) {
           notifyEffect(subs.sub as JEffectNode);
-        } else {
-          print('notifyEffect: ${subs.sub}');
         }
       } else {
         if (queuedEffectsLength < queuedEffects.length) {
@@ -180,6 +180,13 @@ class GlobalReactiveSystem extends ReactiveSystem {
       } finally {
         setCurrentSub(prev);
         endTracking(e);
+        if (JoltConfig.observer != null) {
+          if (e is Effect) {
+            JoltConfig.observer?.onEffectTriggered(e);
+          } else {
+            JoltConfig.observer?.onWatcherTriggered(e as Watcher);
+          }
+        }
       }
 
       return;

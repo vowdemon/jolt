@@ -1,6 +1,7 @@
 import 'package:free_disposer/free_disposer.dart' as fd;
 
 import 'base.dart';
+import 'observer.dart';
 
 /// Interface for disposable resources.
 ///

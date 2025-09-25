@@ -5,6 +5,7 @@ import '../core/reactive.dart';
 import '../core/system.dart';
 import 'base.dart';
 import 'signal.dart';
+import 'utils.dart';
 
 /// A computed value that automatically updates when its dependencies change.
 ///
@@ -45,7 +46,9 @@ class Computed<T> extends JReadonlyValue<T> {
     super.autoDispose,
   }) : super(
             flags: ReactiveFlags.mutable | ReactiveFlags.dirty,
-            nodeValue: initialValue);
+            nodeValue: initialValue) {
+    JoltConfig.observer?.onComputedCreated(this);
+  }
 
   /// The function that computes the value of this computed.
   T Function() getter;
@@ -98,9 +101,11 @@ class Computed<T> extends JReadonlyValue<T> {
   /// This is typically called automatically by the reactive system when
   /// dependencies change, but can be called manually for custom scenarios.
   @override
+  @mustCallSuper
   void notify() {
-    super.notify();
+    assert(!isDisposed);
     globalReactiveSystem.computedNotify(this);
+    JoltConfig.observer?.onComputedNotified(this);
   }
 
   @override
@@ -113,9 +118,10 @@ class Computed<T> extends JReadonlyValue<T> {
 
   @override
   @internal
+  @mustCallSuper
   void onDispose() {
-    super.onDispose();
     globalReactiveSystem.nodeDispose(this);
+    JoltConfig.observer?.onComputedDisposed(this);
   }
 }
 

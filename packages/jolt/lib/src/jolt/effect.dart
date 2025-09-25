@@ -1,11 +1,10 @@
 import 'dart:async';
-
-import 'package:free_disposer/free_disposer.dart';
 import 'package:meta/meta.dart';
 
 import '../core/reactive.dart';
 import '../core/system.dart';
 import 'untracked.dart';
+import 'utils.dart';
 
 /// Interface for reactive nodes that can execute effect functions.
 abstract interface class JEffectNode implements ReactiveNode {
@@ -43,7 +42,8 @@ abstract class EffectBaseNode extends ReactiveNode implements Disposable {
 
   @mustCallSuper
   @internal
-  void onDispose() {}
+  @override
+  void onDispose();
 }
 
 /// A scope for managing the lifecycle of effects and other reactive nodes.
@@ -94,6 +94,7 @@ class EffectScope extends EffectBaseNode implements JEffectNode {
     }
 
     run(fn);
+    JoltConfig.observer?.onEffectScopeCreated(this);
   }
 
   /// Gets the currently active effect scope, if any.
@@ -154,9 +155,8 @@ class EffectScope extends EffectBaseNode implements JEffectNode {
 
   @override
   void onDispose() {
-    super.onDispose();
-
     globalReactiveSystem.nodeDispose(this);
+    JoltConfig.observer?.onEffectScopeDisposed(this);
   }
 }
 
@@ -212,6 +212,7 @@ class Effect extends EffectBaseNode implements JEffectNode {
     if (immediately) {
       run();
     }
+    JoltConfig.observer?.onEffectCreated(this);
   }
 
   /// Creates an untracked effect that doesn't establish reactive dependencies.
@@ -275,8 +276,8 @@ class Effect extends EffectBaseNode implements JEffectNode {
 
   @override
   void onDispose() {
-    super.onDispose();
     globalReactiveSystem.nodeDispose(this);
+    JoltConfig.observer?.onEffectDisposed(this);
   }
 }
 
@@ -356,6 +357,7 @@ class Watcher<T> extends EffectBaseNode implements JEffectNode {
     } finally {
       globalReactiveSystem.setCurrentSub(prev);
     }
+    JoltConfig.observer?.onWatcherCreated(this);
   }
 
   bool _first = true;
@@ -382,8 +384,8 @@ class Watcher<T> extends EffectBaseNode implements JEffectNode {
 
   @override
   void onDispose() {
-    super.onDispose();
     globalReactiveSystem.nodeDispose(this);
+    JoltConfig.observer?.onWatcherDisposed(this);
   }
 
   /// Triggers the watcher to check for changes and potentially execute.

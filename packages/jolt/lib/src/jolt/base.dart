@@ -23,9 +23,7 @@ abstract class JReadonlyValue<T> extends ReactiveNode implements Disposable {
   /// - [autoDispose]: Whether to automatically dispose when no longer referenced
   /// - [nodeValue]: Initial internal value storage
   JReadonlyValue(
-      {required super.flags, this.autoDispose = false, this.nodeValue}) {
-    JoltConfig.observer?.onCreated(this);
-  }
+      {required super.flags, this.autoDispose = false, this.nodeValue});
 
   /// Internal storage for the node's value.
   Object? nodeValue;
@@ -49,10 +47,7 @@ abstract class JReadonlyValue<T> extends ReactiveNode implements Disposable {
   final bool autoDispose;
 
   /// Called when this value is being disposed. Override to perform cleanup.
-  @mustCallSuper
-  void onDispose() {
-    JoltConfig.observer?.onDisposed(this);
-  }
+  void onDispose();
 
   /// Disposes this reactive value and cleans up resources.
   @override
@@ -66,11 +61,7 @@ abstract class JReadonlyValue<T> extends ReactiveNode implements Disposable {
   }
 
   /// Notifies all subscribers that this value has changed.
-  @mustCallSuper
-  void notify() {
-    assert(!isDisposed);
-    JoltConfig.observer?.onNotify(this);
-  }
+  void notify();
 
   @visibleForTesting
   bool testNoSubscribers() {
@@ -88,39 +79,4 @@ abstract interface class JWritableValue<T> implements JReadonlyValue<T> {
 
   /// Sets a new value for this reactive value.
   void set(T value);
-}
-
-/// Observer interface for monitoring reactive value lifecycle events.
-///
-/// IJoltObserver allows you to hook into the creation, update, disposal,
-/// and notification events of reactive values for debugging or analytics.
-///
-/// Example:
-/// ```dart
-/// class LoggingObserver implements IJoltObserver {
-///   @override
-///   void onCreated(JReadonlyValue source) {
-///     print('Created: ${source.runtimeType}');
-///   }
-///
-///   @override
-///   void onUpdated(JReadonlyValue source, Object? newValue, Object? oldValue) {
-///     print('Updated: $oldValue -> $newValue');
-///   }
-/// }
-///
-/// JConfig.observer = LoggingObserver();
-/// ```
-abstract interface class IJoltObserver {
-  /// Called when a reactive value is created.
-  void onCreated(JReadonlyValue source) {}
-
-  /// Called when a reactive value is updated.
-  void onUpdated(JReadonlyValue source, Object? newValue, Object? oldValue) {}
-
-  /// Called when a reactive value is disposed.
-  void onDisposed(JReadonlyValue source) {}
-
-  /// Called when a reactive value notifies its subscribers.
-  void onNotify(JReadonlyValue source) {}
 }

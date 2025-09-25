@@ -2,7 +2,7 @@ import 'package:flutter/widgets.dart';
 
 /// Interface for objects that need lifecycle management in [JoltResource].
 ///
-/// Classes implementing [Jolt] can receive mount and unmount notifications
+/// Classes implementing [JoltState] can receive mount and unmount notifications
 /// when used with [JoltResource], allowing for proper resource management
 /// and cleanup.
 ///
@@ -26,26 +26,20 @@ import 'package:flutter/widgets.dart';
 ///   }
 /// }
 /// ```
-abstract interface class Jolt {
-  Jolt();
+abstract interface class JoltState {
+  JoltState(this.context);
+
+  final BuildContext context;
 
   /// Called when the resource is mounted to the widget tree.
   ///
   /// Use this method to initialize resources, start timers, or set up
   /// subscriptions that should be active while the widget is mounted.
-  ///
-  /// ## Parameters
-  ///
-  /// - [context]: The build context where the resource is mounted
-  void onMount(BuildContext context);
+  void onMount();
 
   /// Called when the resource is unmounted from the widget tree.
   ///
   /// Use this method to clean up resources, cancel timers, or dispose
   /// of subscriptions to prevent memory leaks.
-  ///
-  /// ## Parameters
-  ///
-  /// - [context]: The build context where the resource was mounted
-  void onUnmount(BuildContext context);
+  void onUnmount();
 }

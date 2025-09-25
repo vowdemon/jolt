@@ -30,4 +30,4 @@ export 'src/value_notifier.dart';
 export 'src/widgets/jolt_resource.dart';
 export 'src/widgets/jolt_builder.dart';
 export 'src/widgets/jolt_selector.dart';
-export 'src/widgets/jolt.dart';
+export 'src/widgets/jolt_state.dart';

@@ -2,11 +2,11 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:jolt/jolt.dart' as jolt;
 
-import 'jolt.dart';
+import 'jolt_state.dart';
 
 /// A widget that provides reactive resource management with lifecycle callbacks.
 ///
-/// [JoltResource] allows you to create and manage resources that implement the [Jolt]
+/// [JoltResource] allows you to create and manage resources that implement the [JoltState]
 /// interface, providing automatic lifecycle management with [onMount] and [onUnmount]
 /// callbacks.
 ///
@@ -48,7 +48,7 @@ class JoltResource<T> extends Widget {
             'create and value cannot be provided together');
 
   /// Function that builds the widget tree using the provided resource.
-  final Widget Function(BuildContext context, T jolt) builder;
+  final Widget Function(BuildContext context, T state) builder;
 
   /// Optional function to create the resource when the widget mounts.
   final T Function(BuildContext context)? create;
@@ -129,16 +129,16 @@ class JoltResourceElement<T> extends ComponentElement {
 
     super.mount(parent, newSlot);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_store is Jolt) {
-        (_store as Jolt).onMount(this);
+      if (_store is JoltState) {
+        (_store as JoltState).onMount();
       }
     });
   }
 
   @override
   void unmount() {
-    if (_store is Jolt) {
-      (_store as Jolt).onUnmount(this);
+    if (_store is JoltState) {
+      (_store as JoltState).onUnmount();
     }
 
     _scope?.dispose();

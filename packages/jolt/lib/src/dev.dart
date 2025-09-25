@@ -1,21 +1,101 @@
-import 'jolt/computed.dart';
-import 'jolt/effect.dart';
+import 'dart:convert';
+import 'dart:developer' as developer;
+
+import 'package:jolt/core.dart';
+import 'package:jolt/jolt.dart';
+
 import 'jolt/observer.dart';
-import 'jolt/signal.dart';
 
 class DebugJoltObserver implements IJoltObserver {
-  DebugJoltObserver();
+  DebugJoltObserver() {
+    initDeveloper();
+  }
 
-  final Set<WeakReference<Signal>> _signals = {};
-  final Set<WeakReference<Computed>> _computeds = {};
-  final Set<WeakReference<Effect>> _effects = {};
-  final Set<WeakReference<EffectScope>> _effectScopes = {};
-  final Set<WeakReference<Watcher>> _watchers = {};
+  static final _nodes = <String, Map<String, dynamic>>{};
+  static final _nodesRefs = <String, WeakReference<Object?>>{};
+
+  void initDeveloper() {
+    developer.registerExtension(
+      'ext.jolt.getAllNodes',
+      (method, parameters) async {
+        return developer.ServiceExtensionResponse.result(jsonEncode(_nodes));
+      },
+    );
+  }
+
+  String _getType(Object node) {
+    if (node is EffectBaseNode) {
+      if (node is Effect) {
+        return 'Effect()';
+      }
+      if (node is Watcher) {
+        return 'Watcher()';
+      }
+      if (node is EffectScope) {
+        return 'EffectScope()';
+      }
+      return 'UnknownEffect()';
+    }
+    if (node is WritableComputed) {
+      return 'WritableComputed()';
+    }
+    if (node is Computed) {
+      return 'Computed()';
+    }
+    if (node is Signal) {
+      return 'Signal()';
+    }
+    if (node is ReadonlySignal) {
+      return 'ReadonlySignal()';
+    }
+    return 'Unknown()';
+  }
+
+  void _createNode(ReactiveNode obj) {
+    final ref = WeakReference(obj);
+    _nodesRefs[ref.hashCode.toString()] = ref;
+    _nodes[ref.hashCode.toString()] = {
+      "readonly": obj is! JWritableValue,
+      "type": _getType(obj),
+      "runtimeType": obj.runtimeType.toString(),
+      "value": obj is JReadonlyValue ? obj.value.toString() : 'null',
+      "deps": [],
+      "subs": [],
+    };
+  }
+
+  void _updateNode(ReactiveNode obj) {
+    final node = _nodes[obj.hashCode.toString()];
+    node!['value'] = obj is JReadonlyValue ? obj.value.toString() : 'null';
+    final deps = [];
+    final subs = [];
+    var dep = obj.deps;
+    if (obj.deps != null) {}
+    while (dep != null) {
+      deps.add(dep.hashCode.toString());
+      dep = dep.nextDep;
+    }
+    var sub = obj.subs;
+    if (obj.subs != null) {
+      while (sub != null) {
+        subs.add(sub.hashCode.toString());
+        sub = sub.nextSub;
+      }
+    }
+    node['deps'] = deps;
+    node['subs'] = subs;
+
+    if (developer.extensionStreamHasListener) {
+      developer.postEvent('ext.jolt.updateNode', {
+        'node': node,
+      });
+    }
+  }
 
   @override
   void onComputedCreated(Computed source) {
     print('Computed created: ${source.value}');
-    _computeds.add(WeakReference(source));
+    _createNode(source);
   }
 
   @override
@@ -31,13 +111,12 @@ class DebugJoltObserver implements IJoltObserver {
   @override
   void onComputedDisposed(Computed source) {
     print('Computed disposed: ${source.value}');
-    _computeds.removeWhere((e) => e.target == source);
   }
 
   @override
   void onEffectCreated(Effect source) {
     print('Effect created: ${source.runtimeType}');
-    _effects.add(WeakReference(source));
+    _createNode(source);
   }
 
   @override
@@ -48,12 +127,12 @@ class DebugJoltObserver implements IJoltObserver {
   @override
   void onEffectDisposed(Effect source) {
     print('Effect disposed: ${source.runtimeType}');
-    _effects.removeWhere((e) => e.target == source);
   }
 
   @override
   void onEffectScopeCreated(EffectScope source) {
     print('Effect scope created: ${source.runtimeType}');
+    _createNode(source);
   }
 
   @override
@@ -64,7 +143,7 @@ class DebugJoltObserver implements IJoltObserver {
   @override
   void onSignalCreated(Signal source) {
     print('Signal created: ${source.value}');
-    _signals.add(WeakReference(source));
+    _createNode(source);
   }
 
   @override
@@ -80,13 +159,12 @@ class DebugJoltObserver implements IJoltObserver {
   @override
   void onSignalDisposed(Signal source) {
     print('Signal disposed: ${source.value}');
-    _signals.removeWhere((e) => e.target == source);
   }
 
   @override
   void onWatcherCreated(Watcher source) {
     print('Watcher created: ${source.runtimeType}');
-    _watchers.add(WeakReference(source));
+    _createNode(source);
   }
 
   @override
@@ -97,6 +175,5 @@ class DebugJoltObserver implements IJoltObserver {
   @override
   void onWatcherDisposed(Watcher source) {
     print('Watcher disposed: ${source.runtimeType}');
-    _watchers.removeWhere((e) => e.target == source);
   }
 }

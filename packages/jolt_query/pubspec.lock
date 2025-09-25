@@ -67,22 +67,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  free_disposer:
-    dependency: "direct main"
-    description:
-      name: free_disposer
-      sha256: "91404da8f15209dab78b206309e7528caa99173222e82b7d1dfaeabf390df0e2"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.1.2"
-  jolt:
-    dependency: "direct main"
-    description:
-      name: jolt
-      sha256: ccd2a4ce17d311ae7b09d8e8037eec69891d4107214cd0fc5426bfbf32a5805c
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.0.2+1"
   leak_tracker:
     dependency: transitive
     description:
@@ -217,5 +201,5 @@ packages:
     source: hosted
     version: "15.0.2"
 sdks:
-  dart: ">=3.8.0-0 <4.0.0"
+  dart: ">=3.9.2 <4.0.0"
   flutter: ">=3.18.0-18.0.pre.54"

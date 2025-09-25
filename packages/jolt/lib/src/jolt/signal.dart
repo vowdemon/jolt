@@ -1,10 +1,7 @@
 import 'dart:async';
-
-import 'package:free_disposer/free_disposer.dart' show Disposer;
 import 'package:meta/meta.dart';
 
 import 'base.dart';
-import 'effect.dart';
 import '../core/reactive.dart';
 import '../core/system.dart';
 
@@ -43,12 +40,7 @@ class Signal<T> extends JReadonlyValue<T>
     T? value, {
     super.autoDispose,
   })  : nodePreviousValue = value,
-        super(flags: ReactiveFlags.mutable, nodeValue: value) {
-    scopeDisposer = EffectScope.currentScope?.add(dispose);
-  }
-
-  @internal
-  late Disposer? scopeDisposer;
+        super(flags: ReactiveFlags.mutable, nodeValue: value);
 
   @internal
   Object? nodePreviousValue;
@@ -145,7 +137,6 @@ class Signal<T> extends JReadonlyValue<T>
   @internal
   void onDispose() {
     super.onDispose();
-    scopeDisposer?.call();
     globalReactiveSystem.nodeDispose(this);
     nodePreviousValue = null;
   }

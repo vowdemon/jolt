@@ -1,7 +1,4 @@
 import 'dart:async';
-
-import 'package:free_disposer/free_disposer.dart' show Disposer;
-import 'package:jolt/src/jolt/effect.dart';
 import 'package:meta/meta.dart';
 
 import '../core/reactive.dart';
@@ -48,12 +45,7 @@ class Computed<T> extends JReadonlyValue<T> {
     super.autoDispose,
   }) : super(
             flags: ReactiveFlags.mutable | ReactiveFlags.dirty,
-            nodeValue: initialValue) {
-    scopeDisposer = EffectScope.currentScope?.add(dispose);
-  }
-
-  @internal
-  late Disposer? scopeDisposer;
+            nodeValue: initialValue);
 
   /// The function that computes the value of this computed.
   T Function() getter;
@@ -123,7 +115,6 @@ class Computed<T> extends JReadonlyValue<T> {
   @internal
   void onDispose() {
     super.onDispose();
-    scopeDisposer?.call();
     globalReactiveSystem.nodeDispose(this);
   }
 }

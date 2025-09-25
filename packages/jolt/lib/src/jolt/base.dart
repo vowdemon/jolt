@@ -71,6 +71,11 @@ abstract class JReadonlyValue<T> extends ReactiveNode implements Disposable {
     assert(!isDisposed);
     JoltConfig.observer?.onNotify(this);
   }
+
+  @visibleForTesting
+  bool testNoSubscribers() {
+    return subs == null && subsTail == null;
+  }
 }
 
 /// Interface for writable reactive values.

@@ -388,8 +388,8 @@ void main() {
       scope.dispose();
 
       expect(scope.isDisposed, isTrue);
-      expect(signal.isDisposed, isTrue);
-      expect(computed.isDisposed, isTrue);
+      expect(signal.testNoSubscribers(), isTrue);
+      expect(computed.testNoSubscribers(), isTrue);
       expect(effect.isDisposed, isTrue);
       expect(values, equals([1]));
     });
@@ -850,8 +850,8 @@ void main() {
 
     innerScope.dispose();
     expect(innerScope.isDisposed, isTrue);
-    expect(innerSignal.isDisposed, isTrue);
-    expect(innerComputed.isDisposed, isTrue);
+    expect(innerSignal.testNoSubscribers(), isTrue);
+    expect(innerComputed.testNoSubscribers(), isTrue);
     expect(innerEffect1.isDisposed, isTrue);
     expect(innerEffect2.isDisposed, isTrue);
 
@@ -870,8 +870,8 @@ void main() {
 
     midScope.dispose();
     expect(midScope.isDisposed, isTrue);
-    expect(midSignal.isDisposed, isTrue);
-    expect(midComputed.isDisposed, isTrue);
+    expect(midSignal.testNoSubscribers(), isTrue);
+    expect(midComputed.testNoSubscribers(), isTrue);
     expect(midEffect.isDisposed, isTrue);
 
     expect(globalEffectValues, equals([20, 40]));
@@ -889,8 +889,8 @@ void main() {
 
     outerScope.dispose();
     expect(outerScope.isDisposed, isTrue);
-    expect(outerSignal.isDisposed, isTrue);
-    expect(outerComputed.isDisposed, isTrue);
+    expect(outerSignal.testNoSubscribers(), isTrue);
+    expect(outerComputed.testNoSubscribers(), isTrue);
     expect(outerEffect.isDisposed, isTrue);
 
     expect(globalEffectValues, equals([20, 40]));

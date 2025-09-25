@@ -96,37 +96,6 @@ class EffectScope extends EffectBaseNode implements JEffectNode {
     run(fn);
   }
 
-  final nodeDisposers = <Disposer>{};
-
-  /// Adds a disposer function to be called when the scope is disposed.
-  ///
-  /// Parameters:
-  /// - [e]: The disposer function to add
-  ///
-  /// Returns: A function that removes the disposer when called
-  ///
-  /// Example:
-  /// ```dart
-  /// final scope = EffectScope((scope) {
-  ///   final removeDisposer = scope.add(() => print('Disposed'));
-  ///
-  ///   // Later, remove the disposer
-  ///   removeDisposer();
-  /// });
-  /// ```
-  Disposer add(Disposer e) {
-    nodeDisposers.add(e);
-    return () => remove(e);
-  }
-
-  /// Removes a disposer function from the scope.
-  ///
-  /// Parameters:
-  /// - [e]: The disposer function to remove
-  void remove(Disposer e) {
-    nodeDisposers.remove(e);
-  }
-
   /// Gets the currently active effect scope, if any.
   ///
   /// Returns: The current scope or null if no scope is active
@@ -188,9 +157,6 @@ class EffectScope extends EffectBaseNode implements JEffectNode {
     super.onDispose();
 
     globalReactiveSystem.nodeDispose(this);
-    for (var nodeDisposer in nodeDisposers.toList()) {
-      nodeDisposer();
-    }
   }
 }
 
@@ -238,20 +204,15 @@ class Effect extends EffectBaseNode implements JEffectNode {
       : super(flags: ReactiveFlags.watching) {
     final activeScope = globalReactiveSystem.getCurrentScope();
     if (activeScope != null) {
-      scopeDisposer = activeScope.add(dispose);
       globalReactiveSystem.link(
         this,
         activeScope,
       );
-    } else {
-      scopeDisposer = null;
     }
     if (immediately) {
       run();
     }
   }
-
-  late Disposer? scopeDisposer;
 
   /// Creates an untracked effect that doesn't establish reactive dependencies.
   ///
@@ -315,7 +276,6 @@ class Effect extends EffectBaseNode implements JEffectNode {
   @override
   void onDispose() {
     super.onDispose();
-    scopeDisposer?.call();
     globalReactiveSystem.nodeDispose(this);
   }
 }

@@ -1,16 +1,29 @@
+import 'dart:developer' as developer;
+
 import 'jolt/computed.dart';
 import 'jolt/effect.dart';
 import 'jolt/observer.dart';
 import 'jolt/signal.dart';
 
 class DebugJoltObserver implements IJoltObserver {
-  DebugJoltObserver();
+  DebugJoltObserver() {
+    initDeveloper();
+  }
 
   final Set<WeakReference<Signal>> _signals = {};
   final Set<WeakReference<Computed>> _computeds = {};
   final Set<WeakReference<Effect>> _effects = {};
   final Set<WeakReference<EffectScope>> _effectScopes = {};
   final Set<WeakReference<Watcher>> _watchers = {};
+
+  void initDeveloper() {
+    developer.registerExtension(
+      'ext.jolt.getAllNodes',
+      (method, parameters) async {
+        return developer.ServiceExtensionResponse.result('123');
+      },
+    );
+  }
 
   @override
   void onComputedCreated(Computed source) {

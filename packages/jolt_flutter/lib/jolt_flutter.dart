@@ -23,23 +23,11 @@
 /// ```
 library;
 
+export 'package:jolt/jolt.dart';
+
+export 'src/value_notifier.dart';
+
+export 'src/widgets/jolt_resource.dart';
 export 'src/widgets/jolt_builder.dart';
-export 'src/adapters/signal.dart';
-export 'src/adapters/computed.dart';
-export 'src/adapters/collection.dart';
-export 'src/adapters/async.dart';
-export 'src/adapters/extension.dart';
-export 'src/mixins/value_notifier.dart';
-export 'package:jolt/jolt.dart'
-    hide
-        Computed,
-        WritableComputed,
-        Signal,
-        ReadonlySignal,
-        AsyncSignal,
-        FutureSignal,
-        StreamSignal,
-        IterableSignal,
-        ListSignal,
-        MapSignal,
-        SetSignal;
+export 'src/widgets/jolt_selector.dart';
+export 'src/widgets/jolt.dart';

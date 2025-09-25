@@ -231,7 +231,7 @@ class _AnimatedBuilderSceneState extends State<AnimatedBuilderScene> {
               child: Text('Increment'),
             ),
             AnimatedBuilder(
-              animation: widget.signal,
+              animation: widget.signal.notifier,
               builder: (context, child) {
                 widget.rebuildCallback(++rebuildCount);
                 return Text('Animated Value: ${widget.signal.value}');
@@ -277,7 +277,7 @@ class _ValueListenableBuilderSceneState
               child: Text('Increment'),
             ),
             ValueListenableBuilder<int>(
-              valueListenable: widget.signal,
+              valueListenable: widget.signal.notifier,
               builder: (context, value, child) {
                 widget.rebuildCallback(++rebuildCount);
                 return Text('Listenable Value: $value');
@@ -534,12 +534,12 @@ class _ConditionalListeningSceneState extends State<ConditionalListeningScene> {
               child: Text('Toggle Listening'),
             ),
             ValueListenableBuilder(
-                valueListenable: widget.isListening,
+                valueListenable: widget.isListening.notifier,
                 builder: (context, value, child) {
                   widget.rebuildCallback(++rebuildCount);
                   return value
                       ? ValueListenableBuilder(
-                          valueListenable: widget.signal,
+                          valueListenable: widget.signal.notifier,
                           builder: (context, value2, child) {
                             widget.rebuildCallback(++rebuildCount);
                             return Text('Value: $value2, Listening: $value');

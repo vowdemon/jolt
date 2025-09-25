@@ -1,3 +1,3 @@
 library;
 
-export 'src/adapters/tricks.dart';
+export 'package:jolt/tricks.dart';

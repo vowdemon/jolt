@@ -84,31 +84,8 @@ class EffectScope extends EffectBaseNode implements JEffectNode {
   /// });
   /// ```
   EffectScope(this.fn) : super(flags: ReactiveFlags.none) {
-    final activeScope = globalReactiveSystem.getCurrentScope();
-
-    if (activeScope != null) {
-      globalReactiveSystem.link(
-        this,
-        activeScope,
-      );
-    }
-
     run(fn);
   }
-
-  /// Gets the currently active effect scope, if any.
-  ///
-  /// Returns: The current scope or null if no scope is active
-  ///
-  /// Example:
-  /// ```dart
-  /// EffectScope((scope) {
-  ///   print(EffectScope.currentScope == scope); // true
-  /// });
-  ///
-  /// print(EffectScope.currentScope); // null
-  /// ```
-  static EffectScope? get currentScope => globalReactiveSystem.activeScope;
 
   /// Runs a function within this scope's context.
   ///
@@ -127,20 +104,17 @@ class EffectScope extends EffectBaseNode implements JEffectNode {
   ///   return signal.value;
   /// });
   /// ```
-  T run<T>(T Function(EffectScope scope) fn, [bool clearEffect = true]) {
-    late ReactiveNode? prevSub;
-    if (clearEffect) {
-      prevSub = globalReactiveSystem.setCurrentSub(null);
+  T run<T>(
+    T Function(EffectScope scope) fn,
+  ) {
+    final prevSub = globalReactiveSystem.setActiveSub(this);
+    if (prevSub != null) {
+      globalReactiveSystem.link(this, prevSub, 0);
     }
-
-    final prevScope = globalReactiveSystem.setCurrentScope(this);
     try {
       return fn(this);
     } finally {
-      globalReactiveSystem.setCurrentScope(prevScope);
-      if (clearEffect) {
-        globalReactiveSystem.setCurrentSub(prevSub);
-      }
+      globalReactiveSystem.setActiveSub(prevSub);
     }
   }
 
@@ -202,41 +176,14 @@ class Effect extends EffectBaseNode implements JEffectNode {
   /// ```
   Effect(this.fn, {bool immediately = true})
       : super(flags: ReactiveFlags.watching) {
-    final activeScope = globalReactiveSystem.getCurrentScope();
-    if (activeScope != null) {
-      globalReactiveSystem.link(
-        this,
-        activeScope,
-      );
+    final prevSub = globalReactiveSystem.getActiveSub();
+    if (prevSub != null) {
+      globalReactiveSystem.link(this, prevSub, 0);
     }
     if (immediately) {
       run();
     }
   }
-
-  /// Creates an untracked effect that doesn't establish reactive dependencies.
-  ///
-  /// Parameters:
-  /// - [fn]: The function to execute
-  /// - [immediately]: Whether to run the effect immediately
-  ///
-  /// Returns: An Effect instance that won't track dependencies
-  ///
-  /// This is useful when you want to run a function as an effect but don't
-  /// want it to re-run when reactive values change.
-  ///
-  /// Example:
-  /// ```dart
-  /// final signal = Signal(0);
-  ///
-  /// final effect = Effect.untracked(() {
-  ///   print('This runs once: ${signal.value}');
-  /// });
-  ///
-  /// signal.value = 1; // Effect doesn't re-run
-  /// ```
-  factory Effect.untracked(void Function() fn, {bool immediately = true}) =>
-      untrackedEffect(() => Effect(fn, immediately: immediately));
 
   @override
   void effectFn() {
@@ -259,17 +206,11 @@ class Effect extends EffectBaseNode implements JEffectNode {
   /// effect.run(); // Prints: "Hello"
   /// ```
   void run() {
-    final activeSub = globalReactiveSystem.getCurrentSub();
-
-    if (activeSub != null) {
-      globalReactiveSystem.link(this, activeSub);
-    }
-
-    final prev = globalReactiveSystem.setCurrentSub(this);
+    final prevSub = globalReactiveSystem.setActiveSub(this);
     try {
       fn();
     } finally {
-      globalReactiveSystem.setCurrentSub(prev);
+      globalReactiveSystem.setActiveSub(prevSub);
     }
   }
 
@@ -332,21 +273,10 @@ class Watcher<T> extends EffectBaseNode implements JEffectNode {
   /// ```
   Watcher(this.sourcesFn, this.fn, {bool immediately = false, this.when})
       : super(flags: ReactiveFlags.watching) {
-    final activeScope = globalReactiveSystem.getCurrentScope();
-    if (activeScope != null) {
-      globalReactiveSystem.link(
-        this,
-        activeScope,
-      );
+    final prevSub = globalReactiveSystem.setActiveSub(this);
+    if (prevSub != null) {
+      globalReactiveSystem.link(this, prevSub, 0);
     }
-
-    final activeSub = globalReactiveSystem.getCurrentSub();
-
-    if (activeSub != null) {
-      globalReactiveSystem.link(this, activeSub);
-    }
-
-    final prev = globalReactiveSystem.setCurrentSub(this);
     try {
       prevSources = sourcesFn();
       if (immediately) {
@@ -354,7 +284,7 @@ class Watcher<T> extends EffectBaseNode implements JEffectNode {
         _first = false;
       }
     } finally {
-      globalReactiveSystem.setCurrentSub(prev);
+      globalReactiveSystem.setActiveSub(prevSub);
     }
   }
 

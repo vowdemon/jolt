@@ -21,14 +21,14 @@ abstract class JReadonlyValue<T> extends ReactiveNode implements Disposable {
   /// Parameters:
   /// - [flags]: Reactive flags for this node
   /// - [autoDispose]: Whether to automatically dispose when no longer referenced
-  /// - [nodeValue]: Initial internal value storage
+  /// - [pendingValue]: Initial internal value storage
   JReadonlyValue(
-      {required super.flags, this.autoDispose = false, this.nodeValue}) {
+      {required super.flags, this.autoDispose = false, this.pendingValue}) {
     JoltConfig.observer?.onCreated(this);
   }
 
   /// Internal storage for the node's value.
-  Object? nodeValue;
+  Object? pendingValue;
 
   /// Returns the current value without establishing a reactive dependency.
   T get peek;
@@ -62,7 +62,7 @@ abstract class JReadonlyValue<T> extends ReactiveNode implements Disposable {
     isDisposed = true;
     onDispose();
     disposeAttached();
-    nodeValue = null;
+    pendingValue = null;
   }
 
   /// Notifies all subscribers that this value has changed.

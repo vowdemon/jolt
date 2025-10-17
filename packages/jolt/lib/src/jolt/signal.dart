@@ -39,11 +39,11 @@ class Signal<T> extends JReadonlyValue<T>
   Signal(
     T? value, {
     super.autoDispose,
-  })  : nodePreviousValue = value,
-        super(flags: ReactiveFlags.mutable, nodeValue: value);
+  })  : currentValue = value,
+        super(flags: ReactiveFlags.mutable, pendingValue: value);
 
   @internal
-  Object? nodePreviousValue;
+  Object? currentValue;
 
   /// Returns the current value without establishing a reactive dependency.
   ///
@@ -58,7 +58,7 @@ class Signal<T> extends JReadonlyValue<T>
   @override
   T get peek {
     assert(!isDisposed);
-    return nodeValue as T;
+    return pendingValue as T;
   }
 
   /// Returns the current value and establishes a reactive dependency.
@@ -138,7 +138,7 @@ class Signal<T> extends JReadonlyValue<T>
   void onDispose() {
     super.onDispose();
     globalReactiveSystem.nodeDispose(this);
-    nodePreviousValue = null;
+    currentValue = null;
   }
 }
 

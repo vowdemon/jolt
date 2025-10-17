@@ -41,7 +41,5 @@ Disposer effectScope(void Function() fn) {
 
 final startBatch = globalReactiveSystem.startBatch;
 final endBatch = globalReactiveSystem.endBatch;
-final setCurrentSub = globalReactiveSystem.setCurrentSub;
-final getCurrentSub = globalReactiveSystem.getCurrentSub;
-final setCurrentScope = globalReactiveSystem.setCurrentScope;
-final getCurrentScope = globalReactiveSystem.getCurrentScope;
+final setCurrentSub = globalReactiveSystem.setActiveSub;
+final getCurrentSub = globalReactiveSystem.getActiveSub;

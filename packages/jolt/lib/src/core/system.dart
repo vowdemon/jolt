@@ -79,40 +79,36 @@ class ReactiveFlags {
 
 /// Abstract reactive system for managing dependency tracking
 abstract class ReactiveSystem {
-  int currentVersion = 0;
-
   /// Update a reactive node and return true if changed
   bool update(ReactiveNode sub);
 
   /// Notify a subscriber that it needs to update
   void notify(ReactiveNode sub);
 
-  /// Handle when a node is no longer being watched
+  /// Handle when a node is no longer being watched33
   void unwatched(ReactiveNode sub);
 
   /// Link a dependency to a subscriber in the reactive graph
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
-  void link(ReactiveNode dep, ReactiveNode sub) {
+  void link(ReactiveNode dep, ReactiveNode sub, int version) {
     final prevDep = sub.depsTail;
     if (prevDep != null && prevDep.dep == dep) {
       return;
     }
     final nextDep = prevDep != null ? prevDep.nextDep : sub.deps;
     if (nextDep != null && nextDep.dep == dep) {
-      nextDep.version = currentVersion;
+      nextDep.version = version;
       sub.depsTail = nextDep;
       return;
     }
     final prevSub = dep.subsTail;
-    if (prevSub != null &&
-        prevSub.version == currentVersion &&
-        prevSub.sub == sub) {
+    if (prevSub != null && prevSub.version == version && prevSub.sub == sub) {
       return;
     }
     final newLink = sub.depsTail = dep.subsTail = Link(
-      version: currentVersion,
+      version: version,
       dep: dep,
       sub: sub,
       prevDep: prevDep,
@@ -234,33 +230,6 @@ abstract class ReactiveSystem {
 
       break;
     } while (true);
-  }
-
-  /// Start tracking dependencies for a subscriber
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
-  void startTracking(ReactiveNode sub) {
-    ++currentVersion;
-    sub.depsTail = null;
-    sub.flags = (sub.flags &
-            ~(ReactiveFlags.recursed |
-                ReactiveFlags.dirty |
-                ReactiveFlags.pending)) |
-        ReactiveFlags.recursedCheck;
-  }
-
-  /// End tracking dependencies and clean up unused links
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
-  void endTracking(ReactiveNode sub) {
-    final depsTail = sub.depsTail;
-    var toRemove = depsTail != null ? depsTail.nextDep : sub.deps;
-    while (toRemove != null) {
-      toRemove = unlink(toRemove, sub);
-    }
-    sub.flags &= ~ReactiveFlags.recursedCheck;
   }
 
   /// Check if a node is dirty and needs updating

@@ -7,6 +7,8 @@ import 'system.dart';
 class GlobalReactiveSystem extends ReactiveSystem {
   final queuedEffects = <JEffectNode?>[];
 
+  int cycle = 0;
+
   int batchDepth = 0;
 
   int notifyIndex = 0;
@@ -14,8 +16,6 @@ class GlobalReactiveSystem extends ReactiveSystem {
   int queuedEffectsLength = 0;
 
   ReactiveNode? activeSub;
-
-  EffectScope? activeScope;
 
   /// Update a signal or computed value
   @pragma('vm:prefer-inline')
@@ -26,7 +26,7 @@ class GlobalReactiveSystem extends ReactiveSystem {
     if (node is Computed) {
       return updateComputed(node);
     } else {
-      return updateSignal(node as Signal, node.nodeValue);
+      return updateSignal(node as Signal);
     }
   }
 
@@ -45,52 +45,42 @@ class GlobalReactiveSystem extends ReactiveSystem {
   @pragma('dart2js:prefer-inline')
   @override
   void unwatched(node) {
-    if (node is Computed) {
-      var toRemove = node.deps;
-      if (toRemove != null) {
-        node.flags = ReactiveFlags.mutable | ReactiveFlags.dirty;
-        do {
-          toRemove = unlink(toRemove!, node);
-        } while (toRemove != null);
-      }
+    if (!node.flags.hasAny(ReactiveFlags.mutable)) {
+      effectScopeDispose(node);
+      tryDispose(node);
+    } else if (node.depsTail != null) {
+      node.depsTail = null;
+      node.flags = ReactiveFlags.mutable | ReactiveFlags.dirty;
+      purgeDeps(node);
+      tryDispose(node);
+    }
+  }
 
+  void tryDispose(ReactiveNode node) {
+    if (node is EffectBaseNode) {
+      node.dispose();
+    } else if (node is Computed) {
+      node.tryDispose();
+    } else if (node is Signal) {
       node.tryDispose();
     } else if (node is ReadonlySignal) {
       node.tryDispose();
-    } else {
-      (node as EffectBaseNode).dispose();
     }
   }
 
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
-  ReactiveNode? getCurrentSub() => activeSub;
+  ReactiveNode? getActiveSub() => activeSub;
 
   /// Set the currently active subscriber
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
-  ReactiveNode? setCurrentSub(ReactiveNode? sub) {
+  ReactiveNode? setActiveSub(ReactiveNode? sub) {
     final prevSub = activeSub;
     activeSub = sub;
     return prevSub;
-  }
-
-  /// Get the currently active effect scope
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
-  EffectScope? getCurrentScope() => activeScope;
-
-  /// Set the currently active effect scope
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
-  EffectScope? setCurrentScope(EffectScope? scope) {
-    final prevScope = activeScope;
-    activeScope = scope;
-    return prevScope;
   }
 
   /// Start a batch update to defer effect execution
@@ -111,23 +101,31 @@ class GlobalReactiveSystem extends ReactiveSystem {
     }
   }
 
+  int getBatchDepth() => batchDepth;
+
   /// Update the computed value and return true if changed
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
   bool updateComputed<T>(Computed<T> computed) {
-    final prevSub = setCurrentSub(computed);
-    startTracking(computed);
+    ++cycle;
+    computed.depsTail = null;
+    computed.flags = ReactiveFlags.mutable | ReactiveFlags.recursedCheck;
+    final prevSub = setActiveSub(computed);
+
     try {
-      final oldValue = computed.nodeValue;
-      final isChanged = (oldValue != (computed.nodeValue = computed.getter()));
+      final oldValue = computed.pendingValue;
+      final isChanged =
+          (oldValue != (computed.pendingValue = computed.getter()));
       if (isChanged) {
-        JoltConfig.observer?.onUpdated(computed, computed.nodeValue, oldValue);
+        JoltConfig.observer
+            ?.onUpdated(computed, computed.pendingValue, oldValue);
       }
       return isChanged;
     } finally {
-      setCurrentSub(prevSub);
-      endTracking(computed);
+      activeSub = prevSub;
+      computed.flags &= ~ReactiveFlags.recursedCheck;
+      purgeDeps(computed);
     }
   }
 
@@ -135,12 +133,13 @@ class GlobalReactiveSystem extends ReactiveSystem {
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
-  bool updateSignal<T>(Signal<T> signal, T value) {
+  bool updateSignal<T>(Signal<T> signal) {
     signal.flags = ReactiveFlags.mutable;
     final isChanged =
-        signal.nodePreviousValue != (signal.nodePreviousValue = value);
+        signal.currentValue != (signal.currentValue = signal.pendingValue);
     if (isChanged) {
-      JoltConfig.observer?.onUpdated(signal, value, signal.nodePreviousValue);
+      JoltConfig.observer
+          ?.onUpdated(signal, signal.pendingValue, signal.currentValue);
     }
     return isChanged;
   }
@@ -168,32 +167,38 @@ class GlobalReactiveSystem extends ReactiveSystem {
     }
   }
 
+  bool _removePending(ReactiveNode e, int flags) {
+    e.flags = flags & ~ReactiveFlags.pending;
+    return false;
+  }
+
   /// Run an effect with the given flags
   void run(JEffectNode e, int flags) {
     if (flags.hasAny(ReactiveFlags.dirty) ||
-        (flags.hasAny(ReactiveFlags.pending) && checkDirty(e.deps!, e))) {
+        (flags.hasAny(ReactiveFlags.pending) &&
+            (checkDirty(e.deps!, e) || _removePending(e, flags)))) {
+      ++cycle;
+      e.depsTail = null;
+      e.flags = ReactiveFlags.watching | ReactiveFlags.recursedCheck;
       // only effect and watcher;
-      final prev = setCurrentSub(e);
-      startTracking(e);
+      final prevSub = setActiveSub(e);
       try {
         e.effectFn();
       } finally {
-        setCurrentSub(prev);
-        endTracking(e);
+        activeSub = prevSub;
+        e.flags &= ~ReactiveFlags.recursedCheck;
+        purgeDeps(e);
       }
-
-      return;
-    } else if (flags.hasAny(ReactiveFlags.pending)) {
-      e.flags = flags & ~(ReactiveFlags.pending);
-    }
-    var link = e.deps;
-    while (link != null) {
-      final dep = link.dep;
-      final depFlags = dep.flags;
-      if ((depFlags & EffectFlags.queued) != 0) {
-        run(dep as JEffectNode, dep.flags = depFlags & ~EffectFlags.queued);
+    } else {
+      var link = e.deps;
+      while (link != null) {
+        final dep = link.dep;
+        final depFlags = dep.flags;
+        if ((depFlags & EffectFlags.queued) != 0) {
+          run(dep as JEffectNode, dep.flags = depFlags & ~EffectFlags.queued);
+        }
+        link = link.nextDep;
       }
-      link = link.nextDep;
     }
   }
 
@@ -216,22 +221,20 @@ class GlobalReactiveSystem extends ReactiveSystem {
     final flags = computed.flags;
     if (flags.hasAny(ReactiveFlags.dirty) ||
         (flags.hasAny(ReactiveFlags.pending) &&
-            checkDirty(computed.deps!, computed))) {
+            (checkDirty(computed.deps!, computed) ||
+                _removePending(computed, flags)))) {
       if (updateComputed(computed)) {
         final subs = computed.subs;
         if (subs != null) {
           shallowPropagate(subs);
         }
       }
-    } else if (flags.hasAny(ReactiveFlags.pending)) {
-      computed.flags = flags & ~ReactiveFlags.pending;
     }
-    if (activeSub != null) {
-      link(computed, activeSub!);
-    } else if (activeScope != null) {
-      link(computed, activeScope!);
+    final sub = activeSub;
+    if (sub != null) {
+      link(computed, sub, cycle);
     }
-    return computed.nodeValue as T;
+    return computed.pendingValue as T;
   }
 
   /// Force update a computed without changing its value
@@ -253,7 +256,7 @@ class GlobalReactiveSystem extends ReactiveSystem {
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
   T signalSetter<T>(Signal<T> signal, T newValue) {
-    if (signal.nodeValue != (signal.nodeValue = newValue)) {
+    if (signal.pendingValue != (signal.pendingValue = newValue)) {
       signal.flags = ReactiveFlags.mutable | ReactiveFlags.dirty;
 
       final subs = signal.subs;
@@ -272,22 +275,23 @@ class GlobalReactiveSystem extends ReactiveSystem {
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
   T signalGetter<T>(Signal<T> signal) {
-    final value = signal.nodeValue as T;
-
     if (signal.flags.hasAny(ReactiveFlags.dirty)) {
-      if (updateSignal<T>(signal, value)) {
+      if (updateSignal<T>(signal)) {
         final subs = signal.subs;
         if (subs != null) {
           shallowPropagate(subs);
         }
       }
     }
-
-    if (activeSub != null) {
-      link(signal, activeSub!);
+    var sub = activeSub;
+    while (sub != null) {
+      if (sub.flags.hasAny(ReactiveFlags.mutable | ReactiveFlags.watching)) {
+        link(signal, sub, cycle);
+        break;
+      }
+      sub = sub.subs?.sub;
     }
-
-    return value;
+    return signal.currentValue as T;
   }
 
   /// Force update a signal without changing its value
@@ -309,15 +313,24 @@ class GlobalReactiveSystem extends ReactiveSystem {
 
   /// Dispose an effect and clean up its dependencies
   void nodeDispose(ReactiveNode e) {
-    var dep = e.deps;
-    while (dep != null) {
-      dep = unlink(dep, e);
-    }
+    e.depsTail = null;
+    e.flags = ReactiveFlags.none;
+    purgeDeps(e);
     final sub = e.subs;
     if (sub != null) {
       unlink(sub);
     }
-    e.flags = ReactiveFlags.none;
+  }
+
+  late final effectDispose = nodeDispose;
+  late final effectScopeDispose = nodeDispose;
+
+  void purgeDeps(ReactiveNode sub) {
+    final depsTail = sub.depsTail;
+    var dep = depsTail != null ? depsTail.nextDep : sub.deps;
+    while (dep != null) {
+      dep = unlink(dep, sub);
+    }
   }
 }
 

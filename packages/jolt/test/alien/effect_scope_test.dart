@@ -49,4 +49,23 @@ void main() {
       });
     });
   });
+
+  test(
+      'should track signal updates in an inner scope when accessed by an outer effect',
+      () {
+    final source = signal(1);
+
+    var triggers = 0;
+
+    effect(() {
+      effectScope(() {
+        source();
+      });
+      triggers++;
+    });
+
+    expect(triggers, 1);
+    source(2, true);
+    expect(triggers, 2);
+  });
 }

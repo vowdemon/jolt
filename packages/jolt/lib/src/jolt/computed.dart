@@ -45,7 +45,7 @@ class Computed<T> extends JReadonlyValue<T> {
     super.autoDispose,
   }) : super(
             flags: ReactiveFlags.mutable | ReactiveFlags.dirty,
-            nodeValue: initialValue);
+            pendingValue: initialValue);
 
   /// The function that computes the value of this computed.
   T Function() getter;
@@ -64,7 +64,7 @@ class Computed<T> extends JReadonlyValue<T> {
   T get peek {
     assert(!isDisposed);
 
-    return nodeValue as T;
+    return pendingValue as T;
   }
 
   /// Returns the current computed value and establishes a reactive dependency.
@@ -162,13 +162,13 @@ class WritableComputed<T> extends Computed<T>
   /// ```
   WritableComputed(super.getter, this.setter,
       {super.initialValue, super.autoDispose})
-      : nodePreviousValue = initialValue;
+      : currentValue = initialValue;
 
   /// The function called when this computed value is set.
   final void Function(T) setter;
 
   @override
-  Object? nodePreviousValue;
+  Object? currentValue;
 
   /// Sets a new value for this writable computed.
   ///
@@ -198,7 +198,7 @@ class WritableComputed<T> extends Computed<T>
   @override
   void set(T newValue) {
     assert(!isDisposed);
-    nodePreviousValue = nodeValue;
+    currentValue = pendingValue;
     setter(newValue);
     notify();
   }

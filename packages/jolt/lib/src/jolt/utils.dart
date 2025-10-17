@@ -1,4 +1,5 @@
 import 'package:free_disposer/free_disposer.dart' as fd;
+import 'package:meta/meta.dart';
 
 import 'base.dart';
 
@@ -7,7 +8,8 @@ import 'base.dart';
 /// Extends the free_disposer Disposable interface to provide
 /// additional lifecycle hooks for cleanup operations.
 abstract interface class Disposable implements fd.Disposable {
-  /// Called when this resource is being disposed. Override to perform cleanup.
+  /// Called when this instance is being disposed. Override to perform cleanup.
+  @mustCallSuper
   void onDispose();
 }
 

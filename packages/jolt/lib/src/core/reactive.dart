@@ -5,16 +5,22 @@ import '../jolt/signal.dart';
 import 'system.dart';
 
 class GlobalReactiveSystem extends ReactiveSystem {
+  /// The queue of effects to be executed
   final queuedEffects = <JEffectNode?>[];
 
+  /// The current cycle number
   int cycle = 0;
 
+  /// The current batch depth
   int batchDepth = 0;
 
+  /// The effect index in queue
   int notifyIndex = 0;
 
+  /// The length of the queue of effects to be executed
   int queuedEffectsLength = 0;
 
+  /// The currently active effect or scope
   ReactiveNode? activeSub;
 
   /// Update a signal or computed value
@@ -56,6 +62,10 @@ class GlobalReactiveSystem extends ReactiveSystem {
     }
   }
 
+  /// Try to dispose a reactive node
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
   void tryDispose(ReactiveNode node) {
     if (node is EffectBaseNode) {
       node.dispose();
@@ -101,6 +111,10 @@ class GlobalReactiveSystem extends ReactiveSystem {
     }
   }
 
+  /// Get the current batch depth
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
   int getBatchDepth() => batchDepth;
 
   /// Update the computed value and return true if changed
@@ -119,7 +133,7 @@ class GlobalReactiveSystem extends ReactiveSystem {
           (oldValue != (computed.pendingValue = computed.getter()));
       if (isChanged) {
         JoltConfig.observer
-            ?.onUpdated(computed, computed.pendingValue, oldValue);
+            ?.onComputedUpdated(computed, computed.pendingValue, oldValue);
       }
       return isChanged;
     } finally {
@@ -139,7 +153,7 @@ class GlobalReactiveSystem extends ReactiveSystem {
         signal.currentValue != (signal.currentValue = signal.pendingValue);
     if (isChanged) {
       JoltConfig.observer
-          ?.onUpdated(signal, signal.pendingValue, signal.currentValue);
+          ?.onSignalUpdated(signal, signal.pendingValue, signal.currentValue);
     }
     return isChanged;
   }
@@ -167,6 +181,10 @@ class GlobalReactiveSystem extends ReactiveSystem {
     }
   }
 
+  /// Remove the pending flag from a reactive node
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
   bool _removePending(ReactiveNode e, int flags) {
     e.flags = flags & ~ReactiveFlags.pending;
     return false;
@@ -228,6 +246,7 @@ class GlobalReactiveSystem extends ReactiveSystem {
         if (subs != null) {
           shallowPropagate(subs);
         }
+        JoltConfig.observer?.onComputedNotified(computed);
       }
     }
     final sub = activeSub;
@@ -322,9 +341,13 @@ class GlobalReactiveSystem extends ReactiveSystem {
     }
   }
 
+  /// Dispose an effect and clean up its dependencies
   late final effectDispose = nodeDispose;
+
+  /// Dispose an effect scope and clean up its dependencies
   late final effectScopeDispose = nodeDispose;
 
+  /// Purge the dependencies of a reactive node
   void purgeDeps(ReactiveNode sub) {
     final depsTail = sub.depsTail;
     var dep = depsTail != null ? depsTail.nextDep : sub.deps;
@@ -334,4 +357,5 @@ class GlobalReactiveSystem extends ReactiveSystem {
   }
 }
 
+/// The global reactive system instance
 final globalReactiveSystem = GlobalReactiveSystem();

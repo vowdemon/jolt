@@ -4,6 +4,7 @@ import 'package:meta/meta.dart';
 import 'base.dart';
 import '../core/reactive.dart';
 import '../core/system.dart';
+import 'utils.dart';
 
 /// A reactive signal that holds a value and notifies subscribers when it changes.
 ///
@@ -40,10 +41,12 @@ class Signal<T> extends JReadonlyValue<T>
     T? value, {
     super.autoDispose,
   })  : currentValue = value,
-        super(flags: ReactiveFlags.mutable, pendingValue: value);
+        super(flags: ReactiveFlags.mutable, pendingValue: value) {
+    JoltConfig.observer?.onSignalCreated(this);
+  }
 
   @internal
-  Object? currentValue;
+  dynamic currentValue;
 
   /// Returns the current value without establishing a reactive dependency.
   ///
@@ -123,6 +126,7 @@ class Signal<T> extends JReadonlyValue<T>
   void notify() {
     super.notify();
     globalReactiveSystem.signalNotify(this);
+    JoltConfig.observer?.onSignalNotified(this);
   }
 
   @override
@@ -136,7 +140,7 @@ class Signal<T> extends JReadonlyValue<T>
   @override
   @internal
   void onDispose() {
-    super.onDispose();
+    JoltConfig.observer?.onSignalDisposed(this);
     globalReactiveSystem.nodeDispose(this);
     currentValue = null;
   }

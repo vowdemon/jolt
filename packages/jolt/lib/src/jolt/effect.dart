@@ -1,11 +1,11 @@
 import 'dart:async';
 
-import 'package:free_disposer/free_disposer.dart';
 import 'package:meta/meta.dart';
 
 import '../core/reactive.dart';
 import '../core/system.dart';
 import 'untracked.dart';
+import 'utils.dart';
 
 /// Interface for reactive nodes that can execute effect functions.
 abstract interface class JEffectNode implements ReactiveNode {
@@ -40,10 +40,6 @@ abstract class EffectBaseNode extends ReactiveNode implements Disposable {
     isDisposed = true;
     onDispose();
   }
-
-  @mustCallSuper
-  @internal
-  void onDispose() {}
 }
 
 /// A scope for managing the lifecycle of effects and other reactive nodes.
@@ -85,6 +81,7 @@ class EffectScope extends EffectBaseNode implements JEffectNode {
   /// ```
   EffectScope(this.fn) : super(flags: ReactiveFlags.none) {
     run(fn);
+    JoltConfig.observer?.onEffectScopeCreated(this);
   }
 
   /// Runs a function within this scope's context.
@@ -128,8 +125,7 @@ class EffectScope extends EffectBaseNode implements JEffectNode {
 
   @override
   void onDispose() {
-    super.onDispose();
-
+    JoltConfig.observer?.onEffectScopeDisposed(this);
     globalReactiveSystem.nodeDispose(this);
   }
 }
@@ -180,6 +176,7 @@ class Effect extends EffectBaseNode implements JEffectNode {
     if (prevSub != null) {
       globalReactiveSystem.link(this, prevSub, 0);
     }
+    JoltConfig.observer?.onEffectCreated(this);
     if (immediately) {
       run();
     }
@@ -212,11 +209,12 @@ class Effect extends EffectBaseNode implements JEffectNode {
     } finally {
       globalReactiveSystem.setActiveSub(prevSub);
     }
+    JoltConfig.observer?.onEffectTriggered(this);
   }
 
   @override
   void onDispose() {
-    super.onDispose();
+    JoltConfig.observer?.onEffectDisposed(this);
     globalReactiveSystem.nodeDispose(this);
   }
 }
@@ -282,10 +280,12 @@ class Watcher<T> extends EffectBaseNode implements JEffectNode {
       if (immediately) {
         fn(prevSources, prevSources);
         _first = false;
+        JoltConfig.observer?.onWatcherTriggered(this);
       }
     } finally {
       globalReactiveSystem.setActiveSub(prevSub);
     }
+    JoltConfig.observer?.onWatcherCreated(this);
   }
 
   bool _first = true;
@@ -312,7 +312,7 @@ class Watcher<T> extends EffectBaseNode implements JEffectNode {
 
   @override
   void onDispose() {
-    super.onDispose();
+    JoltConfig.observer?.onWatcherDisposed(this);
     globalReactiveSystem.nodeDispose(this);
   }
 
@@ -337,6 +337,7 @@ class Watcher<T> extends EffectBaseNode implements JEffectNode {
     });
     prevSources = sources;
     _first = false;
+    JoltConfig.observer?.onWatcherTriggered(this);
     return true;
   }
 }

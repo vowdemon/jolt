@@ -1,3 +1,4 @@
+import '../jolt/base.dart';
 import '../jolt/utils.dart';
 import '../jolt/computed.dart';
 import '../jolt/effect.dart';
@@ -51,7 +52,8 @@ class GlobalReactiveSystem extends ReactiveSystem {
   @pragma('dart2js:prefer-inline')
   @override
   void unwatched(node) {
-    if (!node.flags.hasAny(ReactiveFlags.mutable)) {
+    if (node is JEffectNode) {
+      // if (!node.flags.hasAny(ReactiveFlags.mutable)) {
       effectScopeDispose(node);
       tryDispose(node);
     } else if (node.depsTail != null) {
@@ -69,11 +71,7 @@ class GlobalReactiveSystem extends ReactiveSystem {
   void tryDispose(ReactiveNode node) {
     if (node is EffectBaseNode) {
       node.dispose();
-    } else if (node is Computed) {
-      node.tryDispose();
-    } else if (node is Signal) {
-      node.tryDispose();
-    } else if (node is ReadonlySignal) {
+    } else if (node is JReadonlyValue) {
       node.tryDispose();
     }
   }
@@ -221,6 +219,9 @@ class GlobalReactiveSystem extends ReactiveSystem {
   }
 
   /// Flush all queued effects
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
   void flush() {
     while (notifyIndex < queuedEffectsLength) {
       final effect = queuedEffects[notifyIndex]!;
@@ -348,6 +349,9 @@ class GlobalReactiveSystem extends ReactiveSystem {
   late final effectScopeDispose = nodeDispose;
 
   /// Purge the dependencies of a reactive node
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
   void purgeDeps(ReactiveNode sub) {
     final depsTail = sub.depsTail;
     var dep = depsTail != null ? depsTail.nextDep : sub.deps;

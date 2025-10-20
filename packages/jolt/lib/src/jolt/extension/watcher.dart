@@ -1,4 +1,4 @@
-import 'package:free_disposer/free_disposer.dart' as fd;
+import 'package:free_disposer/free_disposer.dart';
 
 import '../base.dart';
 import '../effect.dart';
@@ -53,7 +53,7 @@ extension JoltWatcherValueExtension<T> on JReadonlyValue<T> {
   /// conditionalDisposer();
   /// immediateDisposer();
   /// ```
-  fd.Disposer subscribe(WatcherFn<T> fn,
+  Disposer subscribe(WatcherFn<T> fn,
       {WhenFn<T>? when, bool immediately = false}) {
     final watcher = Watcher(
       () => value,

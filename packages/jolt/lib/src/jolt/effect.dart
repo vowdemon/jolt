@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:free_disposer/free_disposer.dart';
 import 'package:meta/meta.dart';
 
 import '../core/reactive.dart';
@@ -14,7 +15,8 @@ abstract interface class JEffectNode implements ReactiveNode {
 }
 
 /// Base class for all effect nodes in the reactive system.
-abstract class EffectBaseNode extends ReactiveNode implements Disposable {
+abstract class EffectBaseNode extends ReactiveNode
+    implements ChainedDisposable {
   /// Create an effect base node.
   ///
   /// Parameters:

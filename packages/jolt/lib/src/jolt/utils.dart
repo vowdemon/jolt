@@ -1,21 +1,11 @@
-import 'package:free_disposer/free_disposer.dart' as fd;
 import 'package:meta/meta.dart';
 
 import 'base.dart';
 
-/// Interface for disposable resources.
-///
-/// Extends the free_disposer Disposable interface to provide
-/// additional lifecycle hooks for cleanup operations.
-abstract interface class Disposable implements fd.Disposable {
-  /// Called when this instance is being disposed. Override to perform cleanup.
-  @mustCallSuper
-  void onDispose();
-}
-
 /// Extension for bitwise operations on integers.
 ///
 /// Provides convenient methods for working with bit flags in the reactive system.
+@internal
 extension BitExtension on int {
   /// Checks if any of the specified flags are set.
   ///

@@ -1,7 +1,6 @@
 import 'dart:async';
 
-import 'package:free_disposer/free_disposer.dart' as fd
-    show Disposable, DisposableExtension;
+import 'package:free_disposer/free_disposer.dart';
 
 import 'signal.dart';
 
@@ -198,7 +197,7 @@ class AsyncError<T> extends AsyncState<T> {
 ///
 /// AsyncSource defines how to start and manage an asynchronous operation
 /// that emits values to an AsyncSignal.
-abstract interface class AsyncSource<T> implements fd.Disposable {
+abstract interface class AsyncSource<T> implements Disposable {
   /// Starts the async operation and connects it to the given signal.
   ///
   /// Parameters:

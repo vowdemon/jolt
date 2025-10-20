@@ -1,11 +1,10 @@
-import 'package:free_disposer/free_disposer.dart' hide Disposable;
+import 'package:free_disposer/free_disposer.dart';
 import 'package:meta/meta.dart';
 
 import '../core/system.dart';
 import 'computed.dart';
 import 'effect.dart';
 import 'signal.dart';
-import 'utils.dart';
 
 /// Marker interface for mutable collection types.
 ///
@@ -18,7 +17,8 @@ abstract interface class IMutableCollection<T> {}
 /// JReadonlyValue provides the foundation for reactive values that can
 /// be read and tracked as dependencies. It handles disposal, dependency
 /// tracking, and notification of subscribers.
-abstract class JReadonlyValue<T> extends ReactiveNode implements Disposable {
+abstract class JReadonlyValue<T> extends ReactiveNode
+    implements ChainedDisposable {
   /// Creates a readable reactive value.
   ///
   /// Parameters:

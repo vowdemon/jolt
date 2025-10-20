@@ -82,7 +82,7 @@ class JoltSelectorElement extends ComponentElement {
 
   @override
   Widget build() {
-    return _scope!.run((scope) => widget.build(this), false);
+    return (widget).build(this);
   }
 
   @override

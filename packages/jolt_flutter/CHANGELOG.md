@@ -1,3 +1,7 @@
+## 0.0.3+1
+
+- fix: effect scope context
+
 ## 0.0.3
 
 - chore: update dependencies

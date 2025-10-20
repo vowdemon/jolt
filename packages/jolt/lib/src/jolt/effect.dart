@@ -82,7 +82,17 @@ class EffectScope extends EffectBaseNode implements JEffectNode {
   /// });
   /// ```
   EffectScope(this.fn) : super(flags: ReactiveFlags.none) {
-    run(fn);
+    final prevSub = globalReactiveSystem.setActiveSub(this);
+    if (prevSub != null) {
+      globalReactiveSystem.link(this, prevSub, 0);
+    }
+
+    try {
+      fn(this);
+    } finally {
+      globalReactiveSystem.setActiveSub(prevSub);
+    }
+
     JoltConfig.observer?.onEffectScopeCreated(this);
   }
 
@@ -90,7 +100,6 @@ class EffectScope extends EffectBaseNode implements JEffectNode {
   ///
   /// Parameters:
   /// - [fn]: Function to execute within the scope
-  /// - [clearEffect]: Whether to clear the current effect context
   ///
   /// Returns: The result of the function execution
   ///
@@ -107,9 +116,7 @@ class EffectScope extends EffectBaseNode implements JEffectNode {
     T Function(EffectScope scope) fn,
   ) {
     final prevSub = globalReactiveSystem.setActiveSub(this);
-    if (prevSub != null) {
-      globalReactiveSystem.link(this, prevSub, 0);
-    }
+
     try {
       return fn(this);
     } finally {

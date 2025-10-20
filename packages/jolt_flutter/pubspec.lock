@@ -71,17 +71,18 @@ packages:
     dependency: "direct main"
     description:
       name: free_disposer
-      sha256: "91404da8f15209dab78b206309e7528caa99173222e82b7d1dfaeabf390df0e2"
+      sha256: e5b769255dae5a1b52d6315ee11329b7dd613117d46505e1ae8f0d5cd5b537c8
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.2"
+    version: "1.1.3"
   jolt:
     dependency: "direct main"
     description:
-      path: "../jolt"
-      relative: true
-    source: path
-    version: "0.0.2"
+      name: jolt
+      sha256: "18996b558f43e8caa5668db1ee1e9e7ff3bf34b7037c373e1273060e610c67fc"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.3+1"
   leak_tracker:
     dependency: transitive
     description:
@@ -146,6 +147,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.9.1"
+  shared_interfaces:
+    dependency: transitive
+    description:
+      name: shared_interfaces
+      sha256: e21b77b21ac842d1ec5920c43058359cd8231d96be1e2c5380f6520f323a288f
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.2"
   sky_engine:
     dependency: transitive
     description: flutter

@@ -92,7 +92,7 @@ class JoltBuilderElement extends ComponentElement {
   }
 
   void _effectFn() {
-    _lastBuiltWidget = _scope?.run((_) => widget.build(this), false);
+    _lastBuiltWidget = widget.build(this);
 
     if (switch (SchedulerBinding.instance.schedulerPhase) {
       SchedulerPhase.idle => true,

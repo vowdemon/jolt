@@ -262,12 +262,18 @@ class GlobalReactiveSystem extends ReactiveSystem {
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
   void computedNotify<T>(Computed<T> computed) {
-    if (updateComputed(computed)) {
-      final subs = computed.subs;
-      if (subs != null) {
-        subs.sub.flags |= ReactiveFlags.pending;
-        shallowPropagate(subs);
-      }
+    updateComputed(computed);
+
+    Link? subs = computed.subs;
+
+    while (subs != null) {
+      subs.sub.flags |= ReactiveFlags.pending;
+      shallowPropagate(subs);
+      subs = subs.nextSub;
+    }
+
+    if (computed.subs != null && batchDepth == 0) {
+      flush();
     }
   }
 
@@ -321,13 +327,16 @@ class GlobalReactiveSystem extends ReactiveSystem {
   void signalNotify<T>(ReadonlySignal<T> signal) {
     signal.flags = ReactiveFlags.mutable | ReactiveFlags.dirty;
 
-    final subs = signal.subs;
-    if (subs != null) {
+    Link? subs = signal.subs;
+
+    while (subs != null) {
       subs.sub.flags |= ReactiveFlags.pending;
       shallowPropagate(subs);
-      if (batchDepth == 0) {
-        flush();
-      }
+      subs = subs.nextSub;
+    }
+
+    if (signal.subs != null && batchDepth == 0) {
+      flush();
     }
   }
 

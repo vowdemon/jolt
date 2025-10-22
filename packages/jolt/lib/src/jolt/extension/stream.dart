@@ -80,11 +80,15 @@ extension JoltStreamValueExtension<T> on JReadonlyValue<T> {
   /// subscription.cancel(); // Stop listening
   /// ```
   StreamSubscription<T> listen(
-    void Function(T value) listener, {
+    void Function(T event)? onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
     bool immediately = false,
   }) {
     assert(!isDisposed);
-    if (immediately) listener(value);
-    return stream.listen(listener);
+    if (immediately) onData?.call(value);
+    return stream.listen(onData,
+        onError: onError, onDone: onDone, cancelOnError: cancelOnError);
   }
 }

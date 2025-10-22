@@ -94,17 +94,19 @@ abstract class ReactiveSystem {
   @pragma('dart2js:prefer-inline')
   void link(ReactiveNode dep, ReactiveNode sub, int version) {
     final prevDep = sub.depsTail;
-    if (prevDep != null && prevDep.dep == dep) {
+    if (prevDep != null && identical(prevDep.dep, dep)) {
       return;
     }
     final nextDep = prevDep != null ? prevDep.nextDep : sub.deps;
-    if (nextDep != null && nextDep.dep == dep) {
+    if (nextDep != null && identical(nextDep.dep, dep)) {
       nextDep.version = version;
       sub.depsTail = nextDep;
       return;
     }
     final prevSub = dep.subsTail;
-    if (prevSub != null && prevSub.version == version && prevSub.sub == sub) {
+    if (prevSub != null &&
+        prevSub.version == version &&
+        identical(prevSub.sub, sub)) {
       return;
     }
     final newLink = sub.depsTail = dep.subsTail = Link(

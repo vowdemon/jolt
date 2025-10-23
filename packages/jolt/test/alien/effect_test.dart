@@ -83,63 +83,61 @@ void main() {
       a(2);
     });
 
-    test('should trigger inner effects in sequence', () {
+    test('should notify inner effects in the same order as non-inner effects',
+        () {
       final a = signal(0);
       final b = signal(0);
       final c = computed(() => a() - b());
-      final List<String> order = [];
+      final List<String> order1 = [];
+      final List<String> order2 = [];
+      final List<String> order3 = [];
+
+      effect(() {
+        order1.add('effect1');
+        a();
+      });
+      effect(() {
+        order1.add('effect2');
+        a();
+        b();
+      });
 
       effect(() {
         c();
-
         effect(() {
-          order.add('first inner');
+          order2.add('effect1');
           a();
         });
-
         effect(() {
-          order.add('last inner');
+          order2.add('effect2');
           a();
           b();
         });
       });
-
-      order.length = 0;
-
-      startBatch();
-      b(1, true);
-      a(1, true);
-      endBatch();
-
-      expect(order, ['first inner', 'last inner']);
-    });
-
-    test('should trigger inner effects in sequence in effect scope', () {
-      final a = signal(0);
-      final b = signal(0);
-      final List<String> order = [];
-
       effectScope(() {
         effect(() {
-          order.add('first inner');
+          order3.add('effect1');
           a();
         });
-
         effect(() {
-          order.add('last inner');
+          order3.add('effect2');
           a();
           b();
         });
       });
 
-      order.length = 0;
+      order1.length = 0;
+      order2.length = 0;
+      order3.length = 0;
 
       startBatch();
       b(1, true);
       a(1, true);
       endBatch();
 
-      expect(order, ['first inner', 'last inner']);
+      expect(order1, equals(['effect2', 'effect1']));
+      expect(order2, equals(order1));
+      expect(order3, equals(order1));
     });
 
     test('should custom effect support batch', () {

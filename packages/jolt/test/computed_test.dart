@@ -211,7 +211,8 @@ void main() {
       expect(dualComputed.value, equals(3));
 
       dualComputed.set(15);
-      expect(dualComputed.peek, equals(45));
+      expect(dualComputed.peek, equals(3));
+      expect(dualComputed.value, equals(45));
       expect(signal.value, equals(45));
     });
 
@@ -339,6 +340,35 @@ void main() {
 
       expect(() => dualComputed.value = -10, throwsA(isA<ArgumentError>()));
       expect(signal.value, equals(1)); // 原始值应该保持不变
+    });
+
+    test('computed notify times', () {
+      final firstName = Signal('John');
+      final lastName = Signal('Doe');
+      final fullName = WritableComputed(
+        () => '${firstName.value} ${lastName.value}',
+        (value) {
+          final parts = value.split(' ');
+          if (parts.length >= 2) {
+            batch(() {
+              firstName.value = parts[0];
+              lastName.value = parts.sublist(1).join(' ');
+            });
+          }
+        },
+      );
+      int count = 0;
+      Effect(() {
+        fullName.value;
+        count++;
+      });
+      expect(count, equals(1));
+      firstName.value = 'Jane';
+      expect(count, equals(2));
+      lastName.value = 'Smith';
+      expect(count, equals(3));
+      fullName.value = 'Jane1 Smith2';
+      expect(count, equals(4));
     });
   });
 }

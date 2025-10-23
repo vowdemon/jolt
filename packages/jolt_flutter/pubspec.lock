@@ -79,10 +79,10 @@ packages:
     dependency: "direct main"
     description:
       name: jolt
-      sha256: "18996b558f43e8caa5668db1ee1e9e7ff3bf34b7037c373e1273060e610c67fc"
+      sha256: cfdf1ae60985d299a77f1a5be9f5153a425fb870d2be87608c6c57310f6addda
       url: "https://pub.dev"
     source: hosted
-    version: "0.0.3+1"
+    version: "0.0.4"
   leak_tracker:
     dependency: transitive
     description:

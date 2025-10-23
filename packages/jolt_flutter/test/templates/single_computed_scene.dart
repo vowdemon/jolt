@@ -424,7 +424,7 @@ class _WritableComputedSceneState extends State<WritableComputedScene> {
               },
               child: Text('Set Full Name'),
             ),
-            JoltResource.builder(
+            JoltBuilder(
               builder: (context) {
                 widget.rebuildCallback(++rebuildCount);
                 return Text(

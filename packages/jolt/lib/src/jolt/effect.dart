@@ -62,7 +62,7 @@ abstract class EffectBaseNode extends ReactiveNode
 /// // Later, dispose all effects in the scope
 /// scope.dispose();
 /// ```
-class EffectScope extends EffectBaseNode implements JEffectNode {
+class EffectScope extends EffectBaseNode {
   /// Creates a new effect scope and runs the provided function.
   ///
   /// Parameters:
@@ -124,13 +124,8 @@ class EffectScope extends EffectBaseNode implements JEffectNode {
     }
   }
 
-  @override
-  void effectFn() {
-    throw UnsupportedError('EffectScope is not an watching effect');
-  }
-
   /// The function that defines the scope's behavior.
-  void Function(EffectScope scope) fn;
+  final void Function(EffectScope scope) fn;
 
   @override
   void onDispose() {
@@ -192,12 +187,15 @@ class Effect extends EffectBaseNode implements JEffectNode {
   }
 
   @override
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
   void effectFn() {
     fn();
   }
 
   /// The function that defines the effect's behavior.
-  void Function() fn;
+  final void Function() fn;
 
   bool initialized = false;
 

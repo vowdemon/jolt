@@ -44,9 +44,7 @@ class Computed<T> extends JReadonlyValue<T> {
     this.getter, {
     T? initialValue,
     super.autoDispose,
-  }) : super(
-            flags: ReactiveFlags.mutable | ReactiveFlags.dirty,
-            pendingValue: initialValue) {
+  }) : super(flags: ReactiveFlags.none, pendingValue: initialValue) {
     JoltConfig.observer?.onComputedCreated(this);
   }
 
@@ -204,7 +202,6 @@ class WritableComputed<T> extends Computed<T>
     assert(!isDisposed);
     currentValue = pendingValue;
     setter(newValue);
-    notify();
   }
 }
 

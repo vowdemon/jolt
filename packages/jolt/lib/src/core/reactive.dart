@@ -6,9 +6,6 @@ import '../jolt/signal.dart';
 import 'system.dart';
 
 class GlobalReactiveSystem extends ReactiveSystem {
-  /// The queue of effects to be executed
-  final queuedEffects = <JEffectNode?>[];
-
   /// The current cycle number
   int cycle = 0;
 
@@ -19,7 +16,10 @@ class GlobalReactiveSystem extends ReactiveSystem {
   int notifyIndex = 0;
 
   /// The length of the queue of effects to be executed
-  int queuedEffectsLength = 0;
+  int queuedLength = 0;
+
+  /// The queue of effects to be executed
+  final List<JEffectNode?> queued = List.filled(64, null, growable: true);
 
   /// The currently active effect or scope
   ReactiveNode? activeSub;
@@ -38,12 +38,34 @@ class GlobalReactiveSystem extends ReactiveSystem {
   }
 
   /// Notify a subscriber about changes
+  @override
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
-  @override
-  void notify(covariant JEffectNode sub) {
-    notifyEffect(sub);
+  void notify(covariant EffectBaseNode e) {
+    EffectBaseNode? effect = e;
+    int insertIndex = queuedLength;
+    int firstInsertedIndex = insertIndex;
+
+    do {
+      effect!.flags &= ~ReactiveFlags.watching;
+
+      // queued[insertIndex++] = effect;
+      _queueSet(insertIndex++, effect as JEffectNode?);
+      effect = effect.subs?.sub as EffectBaseNode?;
+      if (effect == null || !effect.flags.hasAny(ReactiveFlags.watching)) {
+        break;
+      }
+    } while (true);
+
+    queuedLength = insertIndex;
+
+    while (firstInsertedIndex < --insertIndex) {
+      final left = queued[firstInsertedIndex];
+      // queued[firstInsertedIndex++] = queued[insertIndex];
+      _queueSet(firstInsertedIndex++, queued[insertIndex]);
+      queued[insertIndex] = left;
+    }
   }
 
   /// Handle cleanup when a node is no longer watched
@@ -52,7 +74,7 @@ class GlobalReactiveSystem extends ReactiveSystem {
   @pragma('dart2js:prefer-inline')
   @override
   void unwatched(node) {
-    if (node is JEffectNode) {
+    if (node is EffectBaseNode) {
       // if (!node.flags.hasAny(ReactiveFlags.mutable)) {
       effectScopeDispose(node);
       tryDispose(node);
@@ -61,6 +83,17 @@ class GlobalReactiveSystem extends ReactiveSystem {
       node.flags = ReactiveFlags.mutable | ReactiveFlags.dirty;
       purgeDeps(node);
       tryDispose(node);
+    }
+  }
+
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
+  void _queueSet(int index, JEffectNode? e) {
+    if (index < queued.length) {
+      queued[index] = e;
+    } else {
+      queued.add(e);
     }
   }
 
@@ -156,29 +189,6 @@ class GlobalReactiveSystem extends ReactiveSystem {
     return isChanged;
   }
 
-  /// Notify an effect that it needs to run
-  void notifyEffect(JEffectNode e) {
-    final flags = e.flags;
-    if (flags.notHasAny(EffectFlags.queued)) {
-      e.flags = flags | EffectFlags.queued;
-      final subs = e.subs;
-      if (subs != null && subs.sub is JEffectNode) {
-        if (subs.sub is JEffectNode) {
-          notifyEffect(subs.sub as JEffectNode);
-        } else {
-          print('notifyEffect: ${subs.sub}');
-        }
-      } else {
-        if (queuedEffectsLength < queuedEffects.length) {
-          queuedEffects[queuedEffectsLength++] = e;
-        } else {
-          queuedEffects.add(e);
-          queuedEffectsLength++;
-        }
-      }
-    }
-  }
-
   /// Remove the pending flag from a reactive node
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
@@ -189,10 +199,10 @@ class GlobalReactiveSystem extends ReactiveSystem {
   }
 
   /// Run an effect with the given flags
-  void run(JEffectNode e, int flags) {
+  void run(JEffectNode e) {
+    final flags = e.flags;
     if (flags.hasAny(ReactiveFlags.dirty) ||
-        (flags.hasAny(ReactiveFlags.pending) &&
-            (checkDirty(e.deps!, e) || _removePending(e, flags)))) {
+        (flags.hasAny(ReactiveFlags.pending) && checkDirty(e.deps!, e))) {
       ++cycle;
       e.depsTail = null;
       e.flags = ReactiveFlags.watching | ReactiveFlags.recursedCheck;
@@ -206,15 +216,7 @@ class GlobalReactiveSystem extends ReactiveSystem {
         purgeDeps(e);
       }
     } else {
-      var link = e.deps;
-      while (link != null) {
-        final dep = link.dep;
-        final depFlags = dep.flags;
-        if ((depFlags & EffectFlags.queued) != 0) {
-          run(dep as JEffectNode, dep.flags = depFlags & ~EffectFlags.queued);
-        }
-        link = link.nextDep;
-      }
+      e.flags = ReactiveFlags.watching;
     }
   }
 
@@ -223,13 +225,13 @@ class GlobalReactiveSystem extends ReactiveSystem {
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
   void flush() {
-    while (notifyIndex < queuedEffectsLength) {
-      final effect = queuedEffects[notifyIndex]!;
-      queuedEffects[notifyIndex++] = null;
-      run(effect, effect.flags &= ~EffectFlags.queued);
+    while (notifyIndex < queuedLength) {
+      final effect = queued[notifyIndex]!;
+      queued[notifyIndex++] = null;
+      run(effect);
     }
     notifyIndex = 0;
-    queuedEffectsLength = 0;
+    queuedLength = 0;
   }
 
   /// Get the current value of a computed, updating if necessary
@@ -248,6 +250,14 @@ class GlobalReactiveSystem extends ReactiveSystem {
           shallowPropagate(subs);
         }
         JoltConfig.observer?.onComputedNotified(computed);
+      }
+    } else if (flags == ReactiveFlags.none) {
+      computed.flags = ReactiveFlags.mutable;
+      final prevSub = setActiveSub(computed);
+      try {
+        computed.pendingValue = computed.getter();
+      } finally {
+        activeSub = prevSub;
       }
     }
     final sub = activeSub;

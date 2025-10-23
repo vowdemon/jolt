@@ -1,5 +1,3 @@
-import '../jolt/utils.dart';
-
 /// Base class for all reactive nodes in the dependency graph
 class ReactiveNode {
   /// Create a reactive node
@@ -55,25 +53,25 @@ class EffectFlags {
 
 /// Flags for tracking reactive node state
 class ReactiveFlags {
-  /// No flags set
+  /// 0. No flags set
   static const none = 0;
 
-  /// Node can have dependencies
+  /// 1. Node can have dependencies
   static const mutable = 1 << 0;
 
-  /// Node is being watched by effects
+  /// 2. Node is being watched by effects
   static const watching = 1 << 1;
 
-  /// Node is being checked for recursion
+  /// 4. Node is being checked for recursion
   static const recursedCheck = 1 << 2;
 
-  /// Node is in recursive update
+  /// 8. Node is in recursive update
   static const recursed = 1 << 3;
 
-  /// Node needs to be updated
+  /// 16. Node needs to be updated
   static const dirty = 1 << 4;
 
-  /// Node is pending update
+  /// 32. Node is pending update
   static const pending = 1 << 5;
 }
 
@@ -179,32 +177,33 @@ abstract class ReactiveSystem {
       final sub = link!.sub;
       int flags = sub.flags;
 
-      if (flags.notHasAny(
-        ReactiveFlags.recursedCheck |
-            ReactiveFlags.recursed |
-            ReactiveFlags.dirty |
-            ReactiveFlags.pending,
-      )) {
-        sub.flags = flags | ReactiveFlags.pending;
-      } else if (flags.notHasAny(
-        ReactiveFlags.recursedCheck | ReactiveFlags.recursed,
-      )) {
-        flags = ReactiveFlags.none;
-      } else if (flags.notHasAny(ReactiveFlags.recursedCheck)) {
-        sub.flags = (flags & ~(ReactiveFlags.recursed)) | ReactiveFlags.pending;
-      } else if (flags.notHasAny(ReactiveFlags.dirty | ReactiveFlags.pending) &&
+      if (flags &
+              60 /** ReactiveFlags.recursedCheck | ReactiveFlags.recursed | ReactiveFlags.dirty | ReactiveFlags.pending */ ==
+          0) {
+        sub.flags = flags | 32 /* ReactiveFlags.pending */;
+      } else if (flags &
+              12 /** ReactiveFlags.recursedCheck | ReactiveFlags.recursed */ ==
+          0) {
+        flags = 0 /* ReactiveFlags.none */;
+      } else if (flags & 4 /** ReactiveFlags.recursedCheck */ == 0) {
+        sub.flags = (flags & ~(8 /* ReactiveFlags.recursed */)) |
+            32 /* ReactiveFlags.pending */;
+      } else if (flags &
+                  48 /** ReactiveFlags.dirty | ReactiveFlags.pending */ ==
+              0 &&
           isValidLink(link, sub)) {
-        sub.flags = flags | ReactiveFlags.recursed | ReactiveFlags.pending;
-        flags &= ReactiveFlags.mutable;
+        sub.flags =
+            flags | 40 /* ReactiveFlags.recursed | ReactiveFlags.pending */;
+        flags &= 1 /* ReactiveFlags.mutable */;
       } else {
-        flags = ReactiveFlags.none;
+        flags = 0 /* ReactiveFlags.none */;
       }
 
-      if (flags.hasAny(ReactiveFlags.watching)) {
+      if (flags & 2 /** ReactiveFlags.watching */ != 0) {
         notify(sub);
       }
 
-      if (flags.hasAny(ReactiveFlags.mutable)) {
+      if (flags & 1 /** ReactiveFlags.mutable */ != 0) {
         final subSubs = sub.subs;
         if (subSubs != null) {
           final nextSub = (link = subSubs).nextSub;
@@ -246,9 +245,11 @@ abstract class ReactiveSystem {
       final dep = link!.dep;
       final flags = dep.flags;
 
-      if (sub.flags.hasAny(ReactiveFlags.dirty)) {
+      if (sub.flags & 16 /** ReactiveFlags.dirty */ == 16) {
         dirty = true;
-      } else if (flags.hasAll(ReactiveFlags.mutable | ReactiveFlags.dirty)) {
+      } else if (flags &
+              17 /** ReactiveFlags.mutable | ReactiveFlags.dirty */ ==
+          17) {
         if (update(dep)) {
           final subs = dep.subs!;
           if (subs.nextSub != null) {
@@ -256,7 +257,9 @@ abstract class ReactiveSystem {
           }
           dirty = true;
         }
-      } else if (flags.hasAll(ReactiveFlags.mutable | ReactiveFlags.pending)) {
+      } else if (flags &
+              33 /** ReactiveFlags.mutable | ReactiveFlags.pending */ ==
+          33) {
         if (link.nextSub != null || link.prevSub != null) {
           stack = Stack(value: link, prev: stack);
         }
@@ -293,7 +296,7 @@ abstract class ReactiveSystem {
           }
           dirty = false;
         } else {
-          sub.flags &= ~(ReactiveFlags.pending);
+          sub.flags &= ~32 /* ReactiveFlags.pending */;
         }
         sub = link!.sub;
         final nextDep = link.nextDep;
@@ -313,10 +316,10 @@ abstract class ReactiveSystem {
     do {
       final sub = link!.sub;
       final flags = sub.flags;
-      if (flags.hasAny(ReactiveFlags.pending) &&
-          flags.notHasAny(ReactiveFlags.dirty)) {
-        sub.flags = flags | ReactiveFlags.dirty;
-        if (flags.hasAny(ReactiveFlags.watching)) {
+      if (flags & 48 /** ReactiveFlags.pending | ReactiveFlags.dirty */ ==
+          32 /** ReactiveFlags.pending */) {
+        sub.flags = flags | 16 /* ReactiveFlags.dirty */;
+        if (flags & 2 /** ReactiveFlags.watching */ != 0) {
           notify(sub);
         }
       }

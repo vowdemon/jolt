@@ -81,7 +81,7 @@ class EffectScope extends EffectBaseNode {
   ///   scope.add(() => print('Scope disposed'));
   /// });
   /// ```
-  EffectScope(this.fn) : super(flags: ReactiveFlags.none) {
+  EffectScope(this.fn) : super(flags: 0 /* ReactiveFlags.none */) {
     final prevSub = globalReactiveSystem.setActiveSub(this);
     if (prevSub != null) {
       globalReactiveSystem.link(this, prevSub, 0);
@@ -175,7 +175,7 @@ class Effect extends EffectBaseNode implements JEffectNode {
   /// effect.run(); // Manually run the effect
   /// ```
   Effect(this.fn, {bool immediately = true})
-      : super(flags: ReactiveFlags.watching) {
+      : super(flags: 2 /* ReactiveFlags.watching */) {
     final prevSub = globalReactiveSystem.getActiveSub();
     if (prevSub != null) {
       globalReactiveSystem.link(this, prevSub, 0);
@@ -277,7 +277,7 @@ class Watcher<T> extends EffectBaseNode implements JEffectNode {
   /// );
   /// ```
   Watcher(this.sourcesFn, this.fn, {bool immediately = false, this.when})
-      : super(flags: ReactiveFlags.watching) {
+      : super(flags: 2 /* ReactiveFlags.watching */) {
     final prevSub = globalReactiveSystem.setActiveSub(this);
     if (prevSub != null) {
       globalReactiveSystem.link(this, prevSub, 0);

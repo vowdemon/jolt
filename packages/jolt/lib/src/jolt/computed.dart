@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:meta/meta.dart';
 
 import '../core/reactive.dart';
-import '../core/system.dart';
 import 'base.dart';
 import 'signal.dart';
 import 'utils.dart';
@@ -44,7 +43,7 @@ class Computed<T> extends JReadonlyValue<T> {
     this.getter, {
     T? initialValue,
     super.autoDispose,
-  }) : super(flags: ReactiveFlags.none, pendingValue: initialValue) {
+  }) : super(flags: 0 /* ReactiveFlags.none */, pendingValue: initialValue) {
     JoltConfig.observer?.onComputedCreated(this);
   }
 

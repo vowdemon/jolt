@@ -48,12 +48,13 @@ class GlobalReactiveSystem extends ReactiveSystem {
     int firstInsertedIndex = insertIndex;
 
     do {
-      effect!.flags &= ~ReactiveFlags.watching;
+      effect!.flags &= ~2 /* ReactiveFlags.watching */;
 
       // queued[insertIndex++] = effect;
       _queueSet(insertIndex++, effect as JEffectNode?);
       effect = effect.subs?.sub as EffectBaseNode?;
-      if (effect == null || !effect.flags.hasAny(ReactiveFlags.watching)) {
+      if (effect == null ||
+          effect.flags & 2 /** ReactiveFlags.watching */ == 0) {
         break;
       }
     } while (true);
@@ -80,7 +81,7 @@ class GlobalReactiveSystem extends ReactiveSystem {
       tryDispose(node);
     } else if (node.depsTail != null) {
       node.depsTail = null;
-      node.flags = ReactiveFlags.mutable | ReactiveFlags.dirty;
+      node.flags = 17 /* ReactiveFlags.mutable | ReactiveFlags.dirty */;
       purgeDeps(node);
       tryDispose(node);
     }
@@ -155,7 +156,8 @@ class GlobalReactiveSystem extends ReactiveSystem {
   bool updateComputed<T>(Computed<T> computed) {
     ++cycle;
     computed.depsTail = null;
-    computed.flags = ReactiveFlags.mutable | ReactiveFlags.recursedCheck;
+    computed.flags =
+        5 /* ReactiveFlags.mutable | ReactiveFlags.recursedCheck */;
     final prevSub = setActiveSub(computed);
 
     try {
@@ -169,7 +171,7 @@ class GlobalReactiveSystem extends ReactiveSystem {
       return isChanged;
     } finally {
       activeSub = prevSub;
-      computed.flags &= ~ReactiveFlags.recursedCheck;
+      computed.flags &= ~4 /* ReactiveFlags.recursedCheck */;
       purgeDeps(computed);
     }
   }
@@ -179,7 +181,7 @@ class GlobalReactiveSystem extends ReactiveSystem {
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
   bool updateSignal<T>(Signal<T> signal) {
-    signal.flags = ReactiveFlags.mutable;
+    signal.flags = 1 /* ReactiveFlags.mutable */;
     final isChanged =
         signal.currentValue != (signal.currentValue = signal.pendingValue);
     if (isChanged) {
@@ -194,29 +196,31 @@ class GlobalReactiveSystem extends ReactiveSystem {
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
   bool _removePending(ReactiveNode e, int flags) {
-    e.flags = flags & ~ReactiveFlags.pending;
+    e.flags = flags & ~32 /* ReactiveFlags.pending */;
     return false;
   }
 
   /// Run an effect with the given flags
   void run(JEffectNode e) {
     final flags = e.flags;
-    if (flags.hasAny(ReactiveFlags.dirty) ||
-        (flags.hasAny(ReactiveFlags.pending) && checkDirty(e.deps!, e))) {
+    if (flags & 16 /** ReactiveFlags.dirty */ != 0 ||
+        (flags & 32 /** ReactiveFlags.pending */ != 0 &&
+            checkDirty(e.deps!, e))) {
       ++cycle;
       e.depsTail = null;
-      e.flags = ReactiveFlags.watching | ReactiveFlags.recursedCheck;
+      e.flags = 6 /* ReactiveFlags.watching | ReactiveFlags.recursedCheck */;
+
       // only effect and watcher;
       final prevSub = setActiveSub(e);
       try {
         e.effectFn();
       } finally {
         activeSub = prevSub;
-        e.flags &= ~ReactiveFlags.recursedCheck;
+        e.flags &= ~4 /* ReactiveFlags.recursedCheck */;
         purgeDeps(e);
       }
     } else {
-      e.flags = ReactiveFlags.watching;
+      e.flags = 2 /* ReactiveFlags.watching */;
     }
   }
 
@@ -240,8 +244,8 @@ class GlobalReactiveSystem extends ReactiveSystem {
   @pragma('dart2js:prefer-inline')
   T computedGetter<T>(Computed<T> computed) {
     final flags = computed.flags;
-    if (flags.hasAny(ReactiveFlags.dirty) ||
-        (flags.hasAny(ReactiveFlags.pending) &&
+    if (flags & 16 /** ReactiveFlags.dirty */ != 0 ||
+        (flags & 32 /** ReactiveFlags.pending */ != 0 &&
             (checkDirty(computed.deps!, computed) ||
                 _removePending(computed, flags)))) {
       if (updateComputed(computed)) {
@@ -251,8 +255,8 @@ class GlobalReactiveSystem extends ReactiveSystem {
         }
         JoltConfig.observer?.onComputedNotified(computed);
       }
-    } else if (flags == ReactiveFlags.none) {
-      computed.flags = ReactiveFlags.mutable;
+    } else if (flags == 0 /* ReactiveFlags.none */) {
+      computed.flags = 1 /* ReactiveFlags.mutable */;
       final prevSub = setActiveSub(computed);
       try {
         computed.pendingValue = computed.getter();
@@ -277,7 +281,7 @@ class GlobalReactiveSystem extends ReactiveSystem {
     Link? subs = computed.subs;
 
     while (subs != null) {
-      subs.sub.flags |= ReactiveFlags.pending;
+      subs.sub.flags |= 32 /* ReactiveFlags.pending */;
       shallowPropagate(subs);
       subs = subs.nextSub;
     }
@@ -293,7 +297,7 @@ class GlobalReactiveSystem extends ReactiveSystem {
   @pragma('dart2js:prefer-inline')
   T signalSetter<T>(Signal<T> signal, T newValue) {
     if (signal.pendingValue != (signal.pendingValue = newValue)) {
-      signal.flags = ReactiveFlags.mutable | ReactiveFlags.dirty;
+      signal.flags = 17 /* ReactiveFlags.mutable | ReactiveFlags.dirty */;
 
       final subs = signal.subs;
       if (subs != null) {
@@ -311,7 +315,7 @@ class GlobalReactiveSystem extends ReactiveSystem {
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
   T signalGetter<T>(Signal<T> signal) {
-    if (signal.flags.hasAny(ReactiveFlags.dirty)) {
+    if (signal.flags & 16 /** ReactiveFlags.dirty */ != 0) {
       if (updateSignal<T>(signal)) {
         final subs = signal.subs;
         if (subs != null) {
@@ -321,7 +325,8 @@ class GlobalReactiveSystem extends ReactiveSystem {
     }
     var sub = activeSub;
     while (sub != null) {
-      if (sub.flags.hasAny(ReactiveFlags.mutable | ReactiveFlags.watching)) {
+      if (sub.flags & 3 /** ReactiveFlags.mutable | ReactiveFlags.watching */ !=
+          0) {
         link(signal, sub, cycle);
         break;
       }
@@ -335,12 +340,12 @@ class GlobalReactiveSystem extends ReactiveSystem {
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
   void signalNotify<T>(ReadonlySignal<T> signal) {
-    signal.flags = ReactiveFlags.mutable | ReactiveFlags.dirty;
+    signal.flags = 17 /* ReactiveFlags.mutable | ReactiveFlags.dirty */;
 
     Link? subs = signal.subs;
 
     while (subs != null) {
-      subs.sub.flags |= ReactiveFlags.pending;
+      subs.sub.flags |= 32 /* ReactiveFlags.pending */;
       shallowPropagate(subs);
       subs = subs.nextSub;
     }
@@ -353,7 +358,7 @@ class GlobalReactiveSystem extends ReactiveSystem {
   /// Dispose an effect and clean up its dependencies
   void nodeDispose(ReactiveNode e) {
     e.depsTail = null;
-    e.flags = ReactiveFlags.none;
+    e.flags = 0 /* ReactiveFlags.none */;
     purgeDeps(e);
     final sub = e.subs;
     if (sub != null) {

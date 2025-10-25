@@ -27,7 +27,7 @@ class Computed<T> extends JReadonlyValue<T> implements ReadonlySignal<T> {
   /// Parameters:
   /// - [getter]: Function that computes the value based on dependencies
   /// - [initialValue]: Optional initial value to avoid first computation
-  /// - [autoDispose]: Whether to automatically dispose when no longer referenced
+  /// - [onDebug]: Optional debug callback for reactive system debugging
   ///
   /// Example:
   /// ```dart

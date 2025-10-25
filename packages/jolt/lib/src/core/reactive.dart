@@ -4,6 +4,7 @@ import '../jolt/signal.dart';
 import 'debug.dart';
 import 'system.dart';
 
+/// The global reactive system
 class GlobalReactiveSystem extends ReactiveSystem {
   /// The current cycle number
   int cycle = 0;

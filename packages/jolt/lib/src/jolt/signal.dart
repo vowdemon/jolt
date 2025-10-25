@@ -27,7 +27,7 @@ class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
   ///
   /// Parameters:
   /// - [value]: The initial value of the signal
-  /// - [autoDispose]: Whether to automatically dispose when no longer referenced
+  /// - [onDebug]: Optional debug callback for reactive system debugging
   ///
   /// Example:
   /// ```dart
@@ -156,6 +156,10 @@ class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
 /// ```
 abstract interface class ReadonlySignal<T> implements JReadonlyValue<T> {}
 
+/// A writable interface for signals that allows modification.
+///
+/// This interface extends ReadonlySignal to provide write access
+/// to the signal's value.
 abstract interface class WritableSignal<T>
     implements JWritableValue<T>, ReadonlySignal<T> {}
 

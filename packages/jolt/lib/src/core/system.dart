@@ -1,8 +1,19 @@
 import 'debug.dart';
 
-/// Base class for all reactive nodes in the dependency graph
+/// Base class for all reactive nodes in the dependency graph.
+///
+/// ReactiveNode represents a node in the reactive dependency graph that can
+/// have dependencies (values it reads from) and subscribers (effects that
+/// depend on it). This is the foundation of Jolt's reactive system.
 class ReactiveNode {
-  /// Create a reactive node
+  /// Creates a reactive node with the given configuration.
+  ///
+  /// Parameters:
+  /// - [deps]: First dependency link
+  /// - [depsTail]: Last dependency link
+  /// - [subs]: First subscriber link
+  /// - [subsTail]: Last subscriber link
+  /// - [flags]: Reactive flags for this node
   ReactiveNode({
     this.deps,
     this.depsTail,
@@ -10,16 +21,39 @@ class ReactiveNode {
     this.subsTail,
     required this.flags,
   });
+
+  /// First dependency link in the chain.
   Link? deps;
+
+  /// Last dependency link in the chain.
   Link? depsTail;
+
+  /// First subscriber link in the chain.
   Link? subs;
+
+  /// Last subscriber link in the chain.
   Link? subsTail;
+
+  /// Reactive flags for this node.
   int flags;
 }
 
-/// Link between reactive nodes in the dependency graph
+/// Link between reactive nodes in the dependency graph.
+///
+/// Link represents a connection between a dependency node and a subscriber node
+/// in the reactive graph. It maintains bidirectional links for efficient
+/// traversal and cleanup.
 class Link {
-  /// Create a link between nodes
+  /// Creates a link between dependency and subscriber nodes.
+  ///
+  /// Parameters:
+  /// - [version]: Version number for this link
+  /// - [dep]: The dependency node
+  /// - [sub]: The subscriber node
+  /// - [prevSub]: Previous subscriber link
+  /// - [nextSub]: Next subscriber link
+  /// - [prevDep]: Previous dependency link
+  /// - [nextDep]: Next dependency link
   Link({
     required this.version,
     required this.dep,
@@ -30,65 +64,112 @@ class Link {
     this.nextDep,
   });
 
+  /// Version number for this link.
   int version;
+
+  /// The dependency node.
   ReactiveNode dep;
+
+  /// The subscriber node.
   ReactiveNode sub;
+
+  /// Previous subscriber link.
   Link? prevSub;
+
+  /// Next subscriber link.
   Link? nextSub;
+
+  /// Previous dependency link.
   Link? prevDep;
+
+  /// Next dependency link.
   Link? nextDep;
 }
 
-/// Stack data structure for managing recursive operations
+/// Stack data structure for managing recursive operations.
+///
+/// Stack is used internally by the reactive system to manage recursive
+/// traversal of the dependency graph during updates.
 class Stack<T> {
-  /// Create a stack node
+  /// Creates a stack node with the given value and previous node.
+  ///
+  /// Parameters:
+  /// - [value]: The value stored in this stack node
+  /// - [prev]: The previous node in the stack
   Stack({required this.value, this.prev});
 
+  /// The value stored in this stack node.
   T value;
+
+  /// The previous node in the stack.
   Stack<T>? prev;
 }
 
-/// Effect execution flags
+/// Effect execution flags for internal reactive system management.
 class EffectFlags {
+  /// Effect is queued for execution.
   static const queued = 1 << 6;
 }
 
-/// Flags for tracking reactive node state
+/// Flags for tracking reactive node state.
+///
+/// These flags are used internally by the reactive system to track the
+/// state and lifecycle of reactive nodes during dependency tracking
+/// and update propagation.
 class ReactiveFlags {
-  /// 0. No flags set
+  /// No flags set - node is inactive.
   static const none = 0;
 
-  /// 1. Node can have dependencies
+  /// Node can have dependencies and be updated.
   static const mutable = 1 << 0;
 
-  /// 2. Node is being watched by effects
+  /// Node is being watched by effects.
   static const watching = 1 << 1;
 
-  /// 4. Node is being checked for recursion
+  /// Node is being checked for recursion.
   static const recursedCheck = 1 << 2;
 
-  /// 8. Node is in recursive update
+  /// Node is in recursive update.
   static const recursed = 1 << 3;
 
-  /// 16. Node needs to be updated
+  /// Node needs to be updated.
   static const dirty = 1 << 4;
 
-  /// 32. Node is pending update
+  /// Node is pending update.
   static const pending = 1 << 5;
 }
 
-/// Abstract reactive system for managing dependency tracking
+/// Abstract reactive system for managing dependency tracking.
+///
+/// ReactiveSystem defines the core interface for managing reactive dependencies,
+/// updates, and notifications in the reactive graph.
 abstract class ReactiveSystem {
-  /// Update a reactive node and return true if changed
+  /// Updates a reactive node and returns true if changed.
+  ///
+  /// Parameters:
+  /// - [sub]: The reactive node to update
+  ///
+  /// Returns: true if the node's value changed, false otherwise
   bool update(ReactiveNode sub);
 
-  /// Notify a subscriber that it needs to update
+  /// Notifies a subscriber that it needs to update.
+  ///
+  /// Parameters:
+  /// - [sub]: The subscriber node to notify
   void notify(ReactiveNode sub);
 
-  /// Handle when a node is no longer being watched33
+  /// Handles when a node is no longer being watched.
+  ///
+  /// Parameters:
+  /// - [sub]: The node that is no longer being watched
   void unwatched(ReactiveNode sub);
 
-  /// Link a dependency to a subscriber in the reactive graph
+  /// Links a dependency to a subscriber in the reactive graph.
+  ///
+  /// Parameters:
+  /// - [dep]: The dependency node
+  /// - [sub]: The subscriber node
+  /// - [version]: Version number for the link
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
@@ -138,7 +219,13 @@ abstract class ReactiveSystem {
     }());
   }
 
-  /// Unlink a dependency from a subscriber
+  /// Unlinks a dependency from a subscriber.
+  ///
+  /// Parameters:
+  /// - [link]: The link to unlink
+  /// - [sub]: Optional subscriber node
+  ///
+  /// Returns: The next dependency link, or null if none
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
@@ -178,7 +265,10 @@ abstract class ReactiveSystem {
     return nextDep;
   }
 
-  /// Propagate changes through the reactive graph
+  /// Propagates changes through the reactive graph.
+  ///
+  /// Parameters:
+  /// - [theLink]: The link to start propagation from
   void propagate(Link theLink) {
     Link? link = theLink;
     Link? next = link.nextSub;
@@ -245,7 +335,13 @@ abstract class ReactiveSystem {
     } while (true);
   }
 
-  /// Check if a node is dirty and needs updating
+  /// Checks if a node is dirty and needs updating.
+  ///
+  /// Parameters:
+  /// - [theLink]: The link to check
+  /// - [sub]: The subscriber node
+  ///
+  /// Returns: true if the node is dirty and needs updating
   bool checkDirty(Link theLink, ReactiveNode sub) {
     Link? link = theLink;
     Stack<Link?>? stack;
@@ -322,7 +418,10 @@ abstract class ReactiveSystem {
     } while (true);
   }
 
-  /// Shallow propagate changes without deep recursion
+  /// Shallow propagates changes without deep recursion.
+  ///
+  /// Parameters:
+  /// - [theLink]: The link to start shallow propagation from
   void shallowPropagate(Link theLink) {
     Link? link = theLink;
     do {
@@ -338,7 +437,13 @@ abstract class ReactiveSystem {
     } while ((link = link.nextSub) != null);
   }
 
-  /// Check if a link is still valid for a subscriber
+  /// Checks if a link is still valid for a subscriber.
+  ///
+  /// Parameters:
+  /// - [checkLink]: The link to check
+  /// - [sub]: The subscriber node
+  ///
+  /// Returns: true if the link is still valid
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')

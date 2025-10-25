@@ -1,7 +1,12 @@
 name: jolt
 description: A lightweight reactive state management library built on alien_signals, focused on simple and efficient state handling.
-version: 0.0.4
+version: 0.0.5
 repository: https://github.com/vowdemon/jolt
+
+topics:
+  - jolt
+  - state-management
+  - signals
 
 environment:
   sdk: ">=3.0.0 <4.0.0"

@@ -3,13 +3,19 @@ description: "A Flutter extension of jolt that provides reactive UI support, ena
 version: 0.0.5
 repository: https://github.com/vowdemon/jolt
 
+topics:
+  - jolt
+  - state-management
+  - signals
+  - flutter
+
 environment:
-  sdk: ^3.0.0
+  sdk: ">=3.0.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  free_disposer: ^1.1.2
+  free_disposer: ^1.1.3
   jolt: ^0.0.5
 
 dev_dependencies:

@@ -86,16 +86,18 @@ packages:
   jolt:
     dependency: "direct main"
     description:
-      path: "../jolt"
-      relative: true
-    source: path
-    version: "0.0.4"
+      name: jolt
+      sha256: "582ebd471ae45eedd873e4fae54a4b82a28101d72e436061efc6dcca8bbcfe8a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.5"
   jolt_flutter:
     dependency: "direct dev"
     description:
-      path: "../jolt_flutter"
-      relative: true
-    source: path
+      name: jolt_flutter
+      sha256: "4384950bc78bd33f2ffa515fb9352053564c229143421b971d5ac1966848dde0"
+      url: "https://pub.dev"
+    source: hosted
     version: "0.0.5"
   leak_tracker:
     dependency: transitive

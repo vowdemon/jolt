@@ -1,3 +1,11 @@
+## 0.0.5
+
+- **BREAKING**: remove autoDispose, MapEntrySignal, joltObserver
+- feat: add onDebug hook for debug(assert method)
+- feat: JReadonlyValue now supports toString() for value display
+- sync: align with alien_signals v3.0.3
+- docs: add comprehensive readme and documentation for tricks
+
 ## 0.0.4
 
 - fix: notify method not working

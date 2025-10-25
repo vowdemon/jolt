@@ -3,13 +3,14 @@ import 'dart:async';
 import 'package:jolt/jolt.dart';
 
 class PersistSignal<T> extends Signal<T> {
-  PersistSignal({
-    T Function()? initialValue,
-    required this.read,
-    required this.write,
-    bool lazy = false,
-    this.writeDelay = Duration.zero,
-  }) : super(initialValue != null ? initialValue() : null) {
+  PersistSignal(
+      {T Function()? initialValue,
+      required this.read,
+      required this.write,
+      bool lazy = false,
+      this.writeDelay = Duration.zero,
+      super.onDebug})
+      : super(initialValue != null ? initialValue() : null) {
     if (!lazy) {
       _load();
     }

@@ -1,0 +1,31 @@
+name: example_jolt_hooks
+description: "Example of using jolt_hooks"
+
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+version: 0.0.5
+
+environment:
+  sdk: ^3.9.2
+
+# Dependencies specify other packages that your package needs in order to work.
+# To automatically upgrade your package dependencies to the latest versions
+# consider running `flutter pub upgrade --major-versions`. Alternatively,
+# dependencies can be manually updated by changing the version numbers below to
+# the latest version available on pub.dev. To see which dependencies have newer
+# versions available, run `flutter pub outdated`.
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_hooks: ^0.21.3+1
+  jolt_hooks: ^0.0.5
+  jolt_flutter: ^0.0.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^5.0.0
+  
+
+flutter:
+  uses-material-design: true

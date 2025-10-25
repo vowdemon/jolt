@@ -1,0 +1,37 @@
+name: jolt_hooks
+description: "Hooks for jolt"
+
+repository: https://github.com/vowdemon/jolt
+
+topics:
+  - jolt
+  - hook
+  - signals
+  - state-management
+
+version: 0.0.5
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  flutter_hooks: ^0.21.3+1
+  jolt: ^0.0.5
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  jolt_flutter: ^0.0.5
+
+  flutter_lints: ^6.0.0
+
+dependency_overrides:
+  jolt:
+    path: ../jolt
+  jolt_flutter:
+    path: ../jolt_flutter

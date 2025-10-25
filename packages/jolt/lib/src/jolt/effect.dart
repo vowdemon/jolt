@@ -81,7 +81,7 @@ class EffectScope extends EffectBaseNode {
   ///   scope.add(() => print('Scope disposed'));
   /// });
   /// ```
-  EffectScope(this.fn, {JoltDebugFn? onDebug})
+  EffectScope(void Function(EffectScope scope)? fn, {JoltDebugFn? onDebug})
       : super(flags: 0 /* ReactiveFlags.none */) {
     assert(() {
       if (onDebug != null) {
@@ -96,7 +96,9 @@ class EffectScope extends EffectBaseNode {
     }
 
     try {
-      fn(this);
+      if (fn != null) {
+        fn(this);
+      }
     } finally {
       globalReactiveSystem.setActiveSub(prevSub);
     }
@@ -144,9 +146,6 @@ class EffectScope extends EffectBaseNode {
       globalReactiveSystem.setActiveSub(prevSub);
     }
   }
-
-  /// The function that defines the scope's behavior.
-  final void Function(EffectScope scope) fn;
 
   @override
   void onDispose() {

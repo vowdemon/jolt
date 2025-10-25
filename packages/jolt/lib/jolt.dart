@@ -129,4 +129,5 @@ export 'src/jolt/collection/list_signal.dart';
 export 'src/jolt/collection/map_signal.dart';
 export 'src/jolt/collection/set_signal.dart';
 export 'src/jolt/extension/signal.dart';
-export 'src/jolt/extension/stream.dart' hide getStreamHolder;
+export 'src/jolt/extension/stream.dart';
+export 'src/core/debug.dart' show JoltDebugFn, DebugNodeOperationType;

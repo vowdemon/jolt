@@ -2,7 +2,7 @@ import 'package:shared_interfaces/shared_interfaces.dart';
 import 'package:meta/meta.dart';
 
 import '../core/system.dart';
-import 'utils.dart';
+import 'shared.dart';
 
 /// Marker interface for mutable collection types.
 ///
@@ -60,6 +60,11 @@ abstract class JReadonlyValue<T> extends ReactiveNode
   @visibleForTesting
   bool testNoSubscribers() {
     return subs == null && subsTail == null;
+  }
+
+  @override
+  String toString() {
+    return value.toString();
   }
 }
 

@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:shared_interfaces/shared_interfaces.dart';
 
 import 'signal.dart';
-import 'utils.dart';
+import 'shared.dart';
 
 /// Represents the state of an asynchronous operation.
 ///
@@ -317,7 +317,8 @@ class AsyncSignal<T> extends Signal<AsyncState<T>> {
   /// Parameters:
   /// - [source]: The async source to manage
   /// - [initialValue]: Optional initial async state
-  AsyncSignal(AsyncSource<T> source, {AsyncState<T>? initialValue})
+  AsyncSignal(AsyncSource<T> source,
+      {AsyncState<T>? initialValue, super.onDebug})
       : _source = source,
         super(initialValue ?? AsyncLoading<T>()) {
     _source.start(this);

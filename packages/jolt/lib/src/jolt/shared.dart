@@ -1,5 +1,10 @@
+import 'dart:async';
+
 import 'package:meta/meta.dart';
 import 'package:shared_interfaces/shared_interfaces.dart';
+
+import 'base.dart';
+import 'effect.dart';
 
 @internal
 final joltFinalizer = Finalizer<Set<Disposer>>((disposers) {
@@ -44,4 +49,43 @@ void manuallyDisposeJoltAttachments(Object target) {
     disposers.clear();
     joltAttachments[target] = null;
   }
+}
+
+final streamHolders = Expando<StreamHolder<Object?>>();
+
+@internal
+class StreamHolder<T> implements Disposable {
+  StreamHolder({
+    void Function()? onListen,
+    void Function()? onCancel,
+  }) : sc = StreamController<T>.broadcast(
+          onListen: onListen,
+          onCancel: onCancel,
+        );
+  final StreamController<T> sc;
+  Watcher? watcher;
+
+  Stream<T> get stream => sc.stream;
+  StreamSink<T> get sink => sc.sink;
+
+  void setWatcher(Watcher watcher) {
+    this.watcher = watcher;
+  }
+
+  void clearWatcher() {
+    watcher?.dispose();
+    watcher = null;
+  }
+
+  @override
+  void dispose() {
+    clearWatcher();
+    sc.close();
+  }
+}
+
+@internal
+@visibleForTesting
+StreamHolder<T>? getStreamHolder<T>(JReadonlyValue<T> value) {
+  return streamHolders[value] as StreamHolder<T>?;
 }

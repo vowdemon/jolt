@@ -1,43 +1,7 @@
 import 'dart:async';
 
-import 'package:jolt/src/jolt/utils.dart';
-import 'package:meta/meta.dart';
-import 'package:shared_interfaces/shared_interfaces.dart';
-
-import '../base.dart';
-import '../effect.dart';
-
-final _streams = Expando<_StreamHolder<Object?>>();
-
-class _StreamHolder<T> implements Disposable {
-  _StreamHolder({
-    void Function()? onListen,
-    void Function()? onCancel,
-  }) : sc = StreamController<T>.broadcast(
-          onListen: onListen,
-          onCancel: onCancel,
-        );
-  final StreamController<T> sc;
-  Watcher? watcher;
-
-  Stream<T> get stream => sc.stream;
-  StreamSink<T> get sink => sc.sink;
-
-  void setWatcher(Watcher watcher) {
-    this.watcher = watcher;
-  }
-
-  void clearWatcher() {
-    watcher?.dispose();
-    watcher = null;
-  }
-
-  @override
-  void dispose() {
-    clearWatcher();
-    sc.close();
-  }
-}
+import 'package:jolt/jolt.dart';
+import 'package:jolt/src/jolt/shared.dart';
 
 /// Extension methods for converting reactive values to streams.
 extension JoltStreamValueExtension<T> on JReadonlyValue<T> {
@@ -61,17 +25,17 @@ extension JoltStreamValueExtension<T> on JReadonlyValue<T> {
   /// ```
   Stream<T> get stream {
     assert(!isDisposed);
-    var s = _streams[this] as _StreamHolder<T>?;
+    var s = streamHolders[this] as StreamHolder<T>?;
     if (s == null) {
-      _streams[this] = s = _StreamHolder<T>(
+      streamHolders[this] = s = StreamHolder<T>(
         onListen: () {
-          s!.setWatcher(Watcher(
-            () => value,
-            (newValue, __) {
-              s!.sink.add(newValue);
-            },
-            when: this is IMutableCollection ? (_, __) => true : null,
-          ));
+          s!.setWatcher(untracked(() => Watcher(
+                () => value,
+                (newValue, __) {
+                  s!.sink.add(newValue);
+                },
+                when: this is IMutableCollection ? (_, __) => true : null,
+              )));
         },
         onCancel: () {
           s?.clearWatcher();
@@ -119,10 +83,4 @@ extension JoltStreamValueExtension<T> on JReadonlyValue<T> {
     return stream.listen(onData,
         onError: onError, onDone: onDone, cancelOnError: cancelOnError);
   }
-}
-
-@internal
-@visibleForTesting
-_StreamHolder<T>? getStreamHolder<T>(JReadonlyValue<T> value) {
-  return _streams[value] as _StreamHolder<T>?;
 }

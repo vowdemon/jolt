@@ -1,5 +1,5 @@
 import 'package:jolt/jolt.dart';
-import 'package:jolt/src/jolt/extension/stream.dart' show getStreamHolder;
+import 'package:jolt/src/jolt/shared.dart';
 import 'package:test/test.dart';
 import 'utils.dart';
 

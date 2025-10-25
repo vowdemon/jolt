@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../core/reactive.dart';
 
 /// Batches multiple reactive updates into a single notification cycle.
@@ -23,10 +25,10 @@ import '../core/reactive.dart';
 ///   lastName.value = 'Smith';  // No immediate notification
 /// }); // Notification happens here: "Jane Smith"
 /// ```
-void batch(void Function() fn) {
+FutureOr<T> batch<T>(T Function() fn) async {
   globalReactiveSystem.startBatch();
   try {
-    fn();
+    return fn();
   } finally {
     globalReactiveSystem.endBatch();
   }

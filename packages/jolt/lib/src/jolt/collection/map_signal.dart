@@ -215,7 +215,6 @@ class MapSignal<K, V> extends Signal<Map<K, V>> with MapSignalMixin<K, V> {
   ///
   /// Parameters:
   /// - [value]: Initial map content, defaults to empty map if null
-  /// - [autoDispose]: Whether to automatically dispose when no longer referenced
   ///
   /// Example:
   /// ```dart
@@ -223,5 +222,5 @@ class MapSignal<K, V> extends Signal<Map<K, V>> with MapSignalMixin<K, V> {
   /// final userMap = MapSignal({'name': 'Alice', 'age': 30});
   /// final autoMap = MapSignal({'key': 'value'}, autoDispose: true);
   /// ```
-  MapSignal(Map<K, V>? value, {super.autoDispose}) : super(value ?? {});
+  MapSignal(Map<K, V>? value, {super.onDebug}) : super(value ?? {});
 }

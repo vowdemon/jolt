@@ -12,13 +12,14 @@ class JoltValueNotifier<T> implements ValueNotifier<T> {
   /// and notify Flutter listeners when the value changes.
   JoltValueNotifier(this.joltValue) {
     _value = joltValue.value;
-    _disposer = joltValue.subscribe((value, __) {
+    _disposer = jolt.Watcher(joltValue.get, (value, __) {
       _value = value;
       notifyListeners();
     },
-        when: joltValue is jolt.IMutableCollection
-            ? (newValue, oldValue) => true
-            : null);
+            when: joltValue is jolt.IMutableCollection
+                ? (newValue, oldValue) => true
+                : null)
+        .dispose;
     _disposerJolt = joltValue.disposeWith(dispose);
   }
 

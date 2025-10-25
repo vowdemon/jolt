@@ -1,6 +1,6 @@
 import 'package:jolt/jolt.dart';
 import 'package:test/test.dart';
-import 'test_helpers.dart';
+import '../utils.dart';
 
 void main() {
   group('untracked', () {
@@ -15,7 +15,6 @@ void main() {
       expect(values, equals([1]));
 
       signal.value = 2;
-      // untracked应该阻止effect重新运行
       expect(values, equals([1]));
     });
 
@@ -31,7 +30,6 @@ void main() {
       expect(values, equals([2]));
 
       signal.value = 2;
-      // untracked应该阻止effect重新运行
       expect(values, equals([2]));
     });
 
@@ -50,12 +48,10 @@ void main() {
       expect(untrackedValues, equals([2]));
 
       signal1.value = 10;
-      // 只有trackedValues应该更新
       expect(trackedValues, equals([1, 10]));
       expect(untrackedValues, equals([2, 2]));
 
       signal2.value = 20;
-      // 两个列表都不应该更新，因为signal1没有变化
       expect(trackedValues, equals([1, 10]));
       expect(untrackedValues, equals([2, 2]));
     });
@@ -69,8 +65,8 @@ void main() {
       Effect(() {
         values.add(
           untracked(() {
-            final val1 = untracked(() => signal1.value);
-            final val2 = untracked(() => signal2.value);
+            final val1 = signal1.value;
+            final val2 = signal2.value;
             return val1 + val2 + signal3.value;
           }),
         );
@@ -81,7 +77,6 @@ void main() {
       signal1.value = 10;
       signal2.value = 20;
       signal3.value = 30;
-      // 所有信号都不应该被跟踪
       expect(values, equals([6]));
     });
 
@@ -99,7 +94,6 @@ void main() {
 
       signal1.value = 5;
       signal2.value = 10;
-      // untracked应该阻止effect重新运行
       expect(values, equals([3]));
     });
 
@@ -116,7 +110,6 @@ void main() {
       expect(values, equals([1]));
 
       signal.value = 2;
-      // untracked应该阻止effect重新运行
       expect(values, equals([1]));
     });
 
@@ -136,15 +129,12 @@ void main() {
       expect(values, equals([42]));
 
       valueSignal.value = 100;
-      // 应该被跟踪，因为conditionSignal.value为true
       expect(values, equals([42, 100]));
 
       conditionSignal.value = false;
-      // 应该被跟踪，因为conditionSignal.value变化了
       expect(values, equals([42, 100, 100]));
 
       valueSignal.value = 200;
-      // 不应该被跟踪，因为现在使用untracked
       expect(values, equals([42, 100, 100]));
     });
 
@@ -164,7 +154,6 @@ void main() {
         signal2.value = 20;
       });
 
-      // untracked应该阻止effect重新运行
       expect(values, equals([3]));
     });
 
@@ -181,7 +170,6 @@ void main() {
       signal.value = 2;
       await Future.delayed(const Duration(milliseconds: 1));
 
-      // untracked应该阻止effect重新运行
       expect(values, equals([1]));
     });
 
@@ -208,11 +196,9 @@ void main() {
       expect(values, equals([1]));
 
       signal.value = 2;
-      // untracked应该阻止effect重新运行
       expect(values, equals([1]));
 
       signal.value = -1;
-      // untracked应该阻止effect重新运行
       expect(values, equals([1]));
     });
 
@@ -232,7 +218,6 @@ void main() {
       signal.value = 2;
       await Future.delayed(const Duration(milliseconds: 2));
 
-      // untracked应该阻止effect重新运行，但async操作可能已经执行
       expect(values.length, lessThanOrEqualTo(1));
     });
 
@@ -254,7 +239,6 @@ void main() {
 
       signal.value = 2;
 
-      // 只有effect1应该重新运行
       expect(effect1Values, equals([1, 2]));
       expect(effect2Values, equals([1]));
     });
@@ -274,7 +258,6 @@ void main() {
 
       signal1.value = 5;
       signal2.value = 10;
-      // untracked应该阻止effect重新运行
       expect(values, equals([8]));
     });
 
@@ -289,7 +272,6 @@ void main() {
       expect(values, equals([null]));
 
       signal.value = 42;
-      // untracked应该阻止effect重新运行
       expect(values, equals([null]));
     });
 
@@ -304,7 +286,6 @@ void main() {
       expect(values, equals([TestPerson('Alice', 30)]));
 
       signal.value = TestPerson('Bob', 25);
-      // untracked应该阻止effect重新运行
       expect(values, equals([TestPerson('Alice', 30)]));
     });
   });

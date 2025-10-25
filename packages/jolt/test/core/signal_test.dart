@@ -1,6 +1,8 @@
 import 'package:jolt/jolt.dart';
 import 'package:test/test.dart';
 
+import '../utils.dart';
+
 class _TestPerson {
   final String name;
   final int age;
@@ -19,32 +21,38 @@ class _TestPerson {
 void main() {
   group('Signal', () {
     test('should create signal with initial value', () {
-      final signal = Signal(42);
+      final counter = DebugCounter();
+      final signal = Signal(42, onDebug: counter.onDebug);
+
       expect(signal.value, equals(42));
       expect(signal.peek, equals(42));
+
+      expect(counter.getCount, equals(1));
+      signal.value;
+      signal.peek;
+      expect(counter.getCount, equals(2));
     });
 
-    test('should update signal value', () {
-      final signal = Signal(1);
+    test('should update signal value by set and value', () {
+      final counter = DebugCounter();
+      final signal = Signal(1, onDebug: counter.onDebug);
       expect(signal.value, equals(1));
 
       signal.value = 2;
       expect(signal.value, equals(2));
       expect(signal.peek, equals(2));
-    });
-
-    test('should use set method to update value', () {
-      final signal = Signal(1);
-      expect(signal.value, equals(1));
+      expect(counter.setCount, equals(1));
 
       signal.set(3);
       expect(signal.value, equals(3));
       expect(signal.peek, equals(3));
+      expect(counter.setCount, equals(2));
     });
 
-    test('should use get method to retrieve value', () {
+    test('should use get value by get and value', () {
       final signal = Signal(42);
       expect(signal.get(), equals(42));
+      expect(signal.value, equals(42));
     });
 
     test('should force update signal', () {
@@ -132,16 +140,6 @@ void main() {
       expect(() => signal.notify(), throwsA(isA<AssertionError>()));
     });
 
-    test('should support auto dispose', () {
-      final signal = Signal(42, autoDispose: true);
-      expect(signal.isDisposed, isFalse);
-
-      // 当没有引用时，信号应该被自动释放
-      // 这里我们手动调用dispose来模拟
-      signal.dispose();
-      expect(signal.isDisposed, isTrue);
-    });
-
     test('should work with different data types', () {
       // String signal
       final stringSignal = Signal('hello');
@@ -166,9 +164,7 @@ void main() {
       expect(nullableSignal.value, isNull);
       nullableSignal.value = 42;
       expect(nullableSignal.value, equals(42));
-    });
 
-    test('should work with custom objects', () {
       final personSignal = Signal(_TestPerson('Alice', 30));
       expect(personSignal.value.name, equals('Alice'));
       expect(personSignal.value.age, equals(30));
@@ -186,13 +182,11 @@ void main() {
         values.add(signal.value);
       });
 
-      // 快速连续更改值
       for (int i = 1; i <= 100; i++) {
         signal.value = i;
       }
 
-      // 应该只记录最后一个值（由于批处理）
-      expect(values.length, equals(101)); // 初始值 + 最终值
+      expect(values.length, equals(101));
       expect(values.last, equals(100));
     });
 
@@ -212,7 +206,6 @@ void main() {
         signal.value = 4;
       });
 
-      // 批处理中只应该触发一次更新
       expect(values, equals([1, 4]));
     });
   });

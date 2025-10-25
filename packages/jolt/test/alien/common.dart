@@ -1,4 +1,4 @@
-import 'package:free_disposer/free_disposer.dart';
+import 'package:shared_interfaces/shared_interfaces.dart';
 import 'package:jolt/jolt.dart';
 import 'package:jolt/src/core/reactive.dart';
 

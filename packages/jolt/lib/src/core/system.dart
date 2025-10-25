@@ -1,3 +1,5 @@
+import 'debug.dart';
+
 /// Base class for all reactive nodes in the dependency graph
 class ReactiveNode {
   /// Create a reactive node
@@ -129,6 +131,11 @@ abstract class ReactiveSystem {
     } else {
       dep.subs = newLink;
     }
+
+    assert(() {
+      getJoltDebugFn(dep)?.call(DebugNodeOperationType.linked, dep);
+      return true;
+    }());
   }
 
   /// Unlink a dependency from a subscriber
@@ -163,6 +170,11 @@ abstract class ReactiveSystem {
     } else if ((dep.subs = nextSub) == null) {
       unwatched(dep);
     }
+
+    assert(() {
+      getJoltDebugFn(dep)?.call(DebugNodeOperationType.unlinked, dep);
+      return true;
+    }());
     return nextDep;
   }
 

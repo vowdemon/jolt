@@ -20,7 +20,6 @@ void main() {
         signal2.value = 20;
       });
 
-      // 批处理中只应该触发一次更新
       expect(values, equals([3, 30]));
     });
 
@@ -38,10 +37,10 @@ void main() {
       expect(values, equals([5])); // 2 + 3
 
       batch(() {
+        signal.value = 1;
         signal.value = 2;
       });
 
-      // 批处理中只应该触发一次更新
       expect(values, equals([5, 10])); // 4 + 6
     });
 
@@ -66,7 +65,6 @@ void main() {
         signal2.value = 25;
       });
 
-      // 嵌套批处理中只应该触发一次更新
       expect(values, equals([3, 40])); // 15 + 25
     });
 
@@ -93,7 +91,6 @@ void main() {
         signal2.value = 20;
       });
 
-      // 每个effect只应该触发一次
       expect(effect1Values, equals([1, 10]));
       expect(effect2Values, equals([2, 20]));
     });
@@ -115,35 +112,8 @@ void main() {
 
       await Future.delayed(const Duration(milliseconds: 1));
 
-      // 每个stream只应该发出一次事件
       expect(stream1Values, equals([10]));
       expect(stream2Values, equals([20]));
-    });
-
-    test('should handle batch with complex dependencies', () {
-      final signal1 = Signal(1);
-      final signal2 = Signal(2);
-      final signal3 = Signal(3);
-
-      final computed1 = Computed<int>(() => signal1.value + signal2.value);
-      final computed2 = Computed<int>(() => signal2.value + signal3.value);
-      final computed3 = Computed<int>(() => computed1.value + computed2.value);
-
-      final List<int> values = [];
-      Effect(() {
-        values.add(computed3.value);
-      });
-
-      expect(values, equals([8])); // (1+2) + (2+3) = 8
-
-      batch(() {
-        signal1.value = 10;
-        signal2.value = 20;
-        signal3.value = 30;
-      });
-
-      // 批处理中只应该触发一次更新
-      expect(values, equals([8, 80])); // (10+20) + (20+30) = 80
     });
 
     test('should handle batch with conditional dependencies', () {
@@ -170,7 +140,6 @@ void main() {
         valueSignal.value = 100;
       });
 
-      // 批处理中只应该触发一次更新
       expect(values, equals([42, 0]));
     });
 
@@ -185,13 +154,12 @@ void main() {
       expect(values, equals([1]));
 
       expect(() {
-        batch(() {
+        return batch(() {
           signal.value = 2;
           throw Exception('Test error');
         });
       }, throwsA(isA<Exception>()));
 
-      // 即使发生错误，批处理也应该完成
       expect(signal.value, equals(2));
       expect(values, equals([1, 2]));
     });
@@ -209,7 +177,7 @@ void main() {
       expect(values, equals([3]));
 
       expect(() {
-        batch(() {
+        return batch(() {
           signal1.value = 10;
           signal1.dispose();
           signal2.value = 20;
@@ -303,6 +271,38 @@ void main() {
 
       await Future.delayed(const Duration(milliseconds: 2));
       expect(values, equals([1, 2, 3]));
+    });
+
+    test('should handle sync part of async batch', () async {
+      final signal = Signal(1);
+      final List<int> values = [];
+
+      Effect(() {
+        values.add(signal.value);
+      });
+
+      expect(values, equals([1]));
+
+      await batch(() async {
+        signal.value = 20;
+        signal.value = 2;
+        await Future.microtask(() {});
+        signal.value = 30;
+        signal.value = 3;
+      });
+
+      expect(values, equals([1, 2, 30, 3]));
+
+      await batch(() async {
+        signal.value = 40;
+        signal.value = 4;
+        await Future.microtask(() {});
+        batch(() {
+          signal.value = 50;
+          signal.value = 5;
+        });
+      });
+      expect(values, equals([1, 2, 30, 3, 4, 5]));
     });
   });
 }

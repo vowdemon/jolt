@@ -1,6 +1,6 @@
 import 'package:jolt/jolt.dart';
 import 'package:test/test.dart';
-import 'test_helpers.dart';
+import 'utils.dart';
 
 void main() {
   group('Extension methods', () {

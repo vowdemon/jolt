@@ -1,8 +1,7 @@
-import '../jolt/base.dart';
-import '../jolt/utils.dart';
 import '../jolt/computed.dart';
 import '../jolt/effect.dart';
 import '../jolt/signal.dart';
+import 'debug.dart';
 import 'system.dart';
 
 class GlobalReactiveSystem extends ReactiveSystem {
@@ -77,13 +76,11 @@ class GlobalReactiveSystem extends ReactiveSystem {
   void unwatched(node) {
     if (node is EffectBaseNode) {
       // if (!node.flags.hasAny(ReactiveFlags.mutable)) {
-      effectScopeDispose(node);
-      tryDispose(node);
+      node.dispose();
     } else if (node.depsTail != null) {
       node.depsTail = null;
       node.flags = 17 /* ReactiveFlags.mutable | ReactiveFlags.dirty */;
       purgeDeps(node);
-      tryDispose(node);
     }
   }
 
@@ -95,18 +92,6 @@ class GlobalReactiveSystem extends ReactiveSystem {
       queued[index] = e;
     } else {
       queued.add(e);
-    }
-  }
-
-  /// Try to dispose a reactive node
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
-  void tryDispose(ReactiveNode node) {
-    if (node is EffectBaseNode) {
-      node.dispose();
-    } else if (node is JReadonlyValue) {
-      node.tryDispose();
     }
   }
 
@@ -162,13 +147,8 @@ class GlobalReactiveSystem extends ReactiveSystem {
 
     try {
       final oldValue = computed.pendingValue;
-      final isChanged =
-          (oldValue != (computed.pendingValue = computed.getter()));
-      if (isChanged) {
-        JoltConfig.observer
-            ?.onComputedUpdated(computed, computed.pendingValue, oldValue);
-      }
-      return isChanged;
+
+      return (oldValue != (computed.pendingValue = computed.getter()));
     } finally {
       activeSub = prevSub;
       computed.flags &= ~4 /* ReactiveFlags.recursedCheck */;
@@ -182,13 +162,8 @@ class GlobalReactiveSystem extends ReactiveSystem {
   @pragma('dart2js:prefer-inline')
   bool updateSignal<T>(Signal<T> signal) {
     signal.flags = 1 /* ReactiveFlags.mutable */;
-    final isChanged =
-        signal.currentValue != (signal.currentValue = signal.pendingValue);
-    if (isChanged) {
-      JoltConfig.observer
-          ?.onSignalUpdated(signal, signal.pendingValue, signal.currentValue);
-    }
-    return isChanged;
+
+    return signal.currentValue != (signal.currentValue = signal.pendingValue);
   }
 
   /// Remove the pending flag from a reactive node
@@ -253,7 +228,11 @@ class GlobalReactiveSystem extends ReactiveSystem {
         if (subs != null) {
           shallowPropagate(subs);
         }
-        JoltConfig.observer?.onComputedNotified(computed);
+
+        assert(() {
+          getJoltDebugFn(computed)?.call(DebugNodeOperationType.set, computed);
+          return true;
+        }());
       }
     } else if (flags == 0 /* ReactiveFlags.none */) {
       computed.flags = 1 /* ReactiveFlags.mutable */;
@@ -263,11 +242,22 @@ class GlobalReactiveSystem extends ReactiveSystem {
       } finally {
         activeSub = prevSub;
       }
+
+      assert(() {
+        getJoltDebugFn(computed)?.call(DebugNodeOperationType.set, computed);
+        return true;
+      }());
     }
     final sub = activeSub;
     if (sub != null) {
       link(computed, sub, cycle);
     }
+
+    assert(() {
+      getJoltDebugFn(computed)?.call(DebugNodeOperationType.get, computed);
+      return true;
+    }());
+
     return computed.pendingValue as T;
   }
 
@@ -289,6 +279,11 @@ class GlobalReactiveSystem extends ReactiveSystem {
     if (computed.subs != null && batchDepth == 0) {
       flush();
     }
+
+    assert(() {
+      getJoltDebugFn(computed)?.call(DebugNodeOperationType.notify, computed);
+      return true;
+    }());
   }
 
   /// Set a signal's value and trigger updates
@@ -306,6 +301,12 @@ class GlobalReactiveSystem extends ReactiveSystem {
           flush();
         }
       }
+
+      assert(() {
+        getJoltDebugFn(signal)?.call(DebugNodeOperationType.set, signal);
+
+        return true;
+      }());
     }
     return newValue;
   }
@@ -328,10 +329,17 @@ class GlobalReactiveSystem extends ReactiveSystem {
       if (sub.flags & 3 /** ReactiveFlags.mutable | ReactiveFlags.watching */ !=
           0) {
         link(signal, sub, cycle);
+
         break;
       }
       sub = sub.subs?.sub;
     }
+
+    assert(() {
+      getJoltDebugFn(signal)?.call(DebugNodeOperationType.get, signal);
+      return true;
+    }());
+
     return signal.currentValue as T;
   }
 
@@ -353,10 +361,20 @@ class GlobalReactiveSystem extends ReactiveSystem {
     if (signal.subs != null && batchDepth == 0) {
       flush();
     }
+
+    assert(() {
+      getJoltDebugFn(signal)?.call(DebugNodeOperationType.notify, signal);
+      return true;
+    }());
   }
 
   /// Dispose an effect and clean up its dependencies
   void nodeDispose(ReactiveNode e) {
+    assert(() {
+      getJoltDebugFn(e)?.call(DebugNodeOperationType.dispose, e);
+      return true;
+    }());
+
     e.depsTail = null;
     e.flags = 0 /* ReactiveFlags.none */;
     purgeDeps(e);
@@ -365,12 +383,6 @@ class GlobalReactiveSystem extends ReactiveSystem {
       unlink(sub);
     }
   }
-
-  /// Dispose an effect and clean up its dependencies
-  late final effectDispose = nodeDispose;
-
-  /// Dispose an effect scope and clean up its dependencies
-  late final effectScopeDispose = nodeDispose;
 
   /// Purge the dependencies of a reactive node
   @pragma('vm:prefer-inline')

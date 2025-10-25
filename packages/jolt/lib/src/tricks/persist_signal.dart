@@ -4,15 +4,13 @@ import 'package:jolt/jolt.dart';
 
 class PersistSignal<T> extends Signal<T> {
   PersistSignal({
-    T? initialValue,
+    T Function()? initialValue,
     required this.read,
     required this.write,
     bool lazy = false,
     this.writeDelay = Duration.zero,
-    super.autoDispose,
-  }) : super(initialValue) {
+  }) : super(initialValue != null ? initialValue() : null) {
     if (!lazy) {
-      hasInitialized = true;
       _load();
     }
   }
@@ -24,7 +22,7 @@ class PersistSignal<T> extends Signal<T> {
   Future<void>? _initialValueFuture;
 
   factory PersistSignal.lazy({
-    T? initialValue,
+    T Function()? initialValue,
     required FutureOr<T> Function() read,
     required FutureOr<void> Function(T value) write,
   }) =>
@@ -36,35 +34,27 @@ class PersistSignal<T> extends Signal<T> {
       );
 
   Future<void> _load() async {
-    if (_initialValueFuture != null) {
-      return _initialValueFuture;
-    }
-    final version = ++_version;
-    _initialValueFuture = Future(() async {
+    _initialValueFuture ??= Future(() async {
+      final version = ++_version;
       final result = await read();
-      if (_version == version) {
-        super.set(result);
-      }
+      if (_version == version) super.set(result);
       hasInitialized = true;
       return;
     });
 
-    await _initialValueFuture;
+    return _initialValueFuture;
   }
 
   @override
   T get() {
-    if (!hasInitialized) {
-      _load();
-    }
+    if (!hasInitialized) _load();
 
     return super.get();
   }
 
-  Future<T> getEnsure() async {
-    if (!hasInitialized) {
-      await _load();
-    }
+  Future<T> getEnsured() async {
+    if (!hasInitialized) await _load();
+
     return super.get();
   }
 
@@ -78,9 +68,14 @@ class PersistSignal<T> extends Signal<T> {
 
     if (writeDelay != Duration.zero) {
       _timer?.cancel();
-      _timer = Timer(writeDelay, () {
-        write(value);
-        _timer = null;
+      _timer = Timer(writeDelay, () async {
+        try {
+          await write(value);
+        } catch (e, s) {
+          Zone.current.handleUncaughtError(e, s);
+        } finally {
+          _timer = null;
+        }
       });
     } else {
       write(value);
@@ -90,10 +85,9 @@ class PersistSignal<T> extends Signal<T> {
   final FutureOr<T> Function() read;
   final FutureOr<void> Function(T value) write;
 
-  Future<void> ensureInitialized(FutureOr<void> Function()? fn) async {
-    if (!hasInitialized) {
-      await _load();
-    }
+  Future<void> ensure(FutureOr<void> Function()? fn) async {
+    if (!hasInitialized) await _load();
+
     await fn?.call();
   }
 }

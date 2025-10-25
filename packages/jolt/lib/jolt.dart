@@ -121,7 +121,6 @@ export 'src/jolt/effect.dart';
 export 'src/jolt/computed.dart';
 export 'src/jolt/signal.dart';
 export 'src/jolt/async.dart';
-export 'src/jolt/utils.dart' show JoltConfig;
 export 'src/jolt/untracked.dart';
 export 'src/jolt/batch.dart';
 
@@ -130,5 +129,4 @@ export 'src/jolt/collection/list_signal.dart';
 export 'src/jolt/collection/map_signal.dart';
 export 'src/jolt/collection/set_signal.dart';
 export 'src/jolt/extension/signal.dart';
-export 'src/jolt/extension/stream.dart';
-export 'src/jolt/extension/watcher.dart';
+export 'src/jolt/extension/stream.dart' hide getStreamHolder;

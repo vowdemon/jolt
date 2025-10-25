@@ -1,9 +1,8 @@
-import 'dart:async';
+import 'package:jolt/src/core/debug.dart';
 import 'package:meta/meta.dart';
 
 import 'base.dart';
 import '../core/reactive.dart';
-import 'utils.dart';
 
 /// A reactive signal that holds a value and notifies subscribers when it changes.
 ///
@@ -23,8 +22,7 @@ import 'utils.dart';
 /// // Use in computed values
 /// final doubled = Computed(() => counter.value * 2);
 /// ```
-class Signal<T> extends JReadonlyValue<T>
-    implements JWritableValue<T>, ReadonlySignal<T> {
+class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
   /// Creates a new signal with the given initial value.
   ///
   /// Parameters:
@@ -36,12 +34,16 @@ class Signal<T> extends JReadonlyValue<T>
   /// final name = Signal('Alice');
   /// final counter = Signal(0, autoDispose: true);
   /// ```
-  Signal(
-    T? value, {
-    super.autoDispose,
-  })  : currentValue = value,
+  Signal(T? value, {JoltDebugFn? onDebug})
+      : currentValue = value,
         super(flags: 1 /* ReactiveFlags.mutable */, pendingValue: value) {
-    JoltConfig.observer?.onSignalCreated(this);
+    assert(() {
+      if (onDebug != null) {
+        setJoltDebugFn(this, onDebug);
+        onDebug(DebugNodeOperationType.create, this);
+      }
+      return true;
+    }());
   }
 
   @internal
@@ -84,6 +86,7 @@ class Signal<T> extends JReadonlyValue<T>
   @override
   T get() {
     assert(!isDisposed);
+
     return globalReactiveSystem.signalGetter(this);
   }
 
@@ -125,23 +128,14 @@ class Signal<T> extends JReadonlyValue<T>
   void notify() {
     super.notify();
     globalReactiveSystem.signalNotify(this);
-    JoltConfig.observer?.onSignalNotified(this);
-  }
-
-  @override
-  @internal
-  void tryDispose() {
-    if (autoDispose) {
-      scheduleMicrotask(dispose);
-    }
   }
 
   @override
   @internal
   void onDispose() {
-    JoltConfig.observer?.onSignalDisposed(this);
     globalReactiveSystem.nodeDispose(this);
     currentValue = null;
+    pendingValue = null;
   }
 }
 
@@ -160,9 +154,10 @@ class Signal<T> extends JReadonlyValue<T>
 ///   void increment() => _count.value++;
 /// }
 /// ```
-abstract class ReadonlySignal<T> implements JReadonlyValue<T> {
-  ReadonlySignal();
-}
+abstract interface class ReadonlySignal<T> implements JReadonlyValue<T> {}
+
+abstract interface class WritableSignal<T>
+    implements JWritableValue<T>, ReadonlySignal<T> {}
 
 /// Extension methods for Signal to provide additional functionality.
 extension JoltSignalExtension<T> on Signal<T> {

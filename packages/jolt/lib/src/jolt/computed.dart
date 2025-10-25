@@ -1,10 +1,9 @@
-import 'dart:async';
 import 'package:meta/meta.dart';
 
+import '../core/debug.dart';
 import '../core/reactive.dart';
 import 'base.dart';
 import 'signal.dart';
-import 'utils.dart';
 
 /// A computed value that automatically updates when its dependencies change.
 ///
@@ -22,7 +21,7 @@ import 'utils.dart';
 /// firstName.value = 'Jane';
 /// print(fullName.value); // "Jane Doe" - automatically updated
 /// ```
-class Computed<T> extends JReadonlyValue<T> {
+class Computed<T> extends JReadonlyValue<T> implements ReadonlySignal<T> {
   /// Creates a new computed value with the given getter function.
   ///
   /// Parameters:
@@ -42,9 +41,15 @@ class Computed<T> extends JReadonlyValue<T> {
   Computed(
     this.getter, {
     T? initialValue,
-    super.autoDispose,
+    JoltDebugFn? onDebug,
   }) : super(flags: 0 /* ReactiveFlags.none */, pendingValue: initialValue) {
-    JoltConfig.observer?.onComputedCreated(this);
+    assert(() {
+      if (onDebug != null) {
+        setJoltDebugFn(this, onDebug);
+        onDebug(DebugNodeOperationType.create, this);
+      }
+      return true;
+    }());
   }
 
   /// The function that computes the value of this computed.
@@ -101,22 +106,13 @@ class Computed<T> extends JReadonlyValue<T> {
   void notify() {
     super.notify();
     globalReactiveSystem.computedNotify(this);
-    JoltConfig.observer?.onComputedNotified(this);
-  }
-
-  @override
-  @internal
-  void tryDispose() {
-    if (autoDispose) {
-      scheduleMicrotask(dispose);
-    }
   }
 
   @override
   @internal
   void onDispose() {
-    JoltConfig.observer?.onComputedDisposed(this);
     globalReactiveSystem.nodeDispose(this);
+    pendingValue = null;
   }
 }
 
@@ -143,8 +139,7 @@ class Computed<T> extends JReadonlyValue<T> {
 /// print(fullName.value); // "John Doe"
 /// fullName.value = 'Jane Smith'; // Updates firstName and lastName
 /// ```
-class WritableComputed<T> extends Computed<T>
-    implements JWritableValue<T>, Signal<T> {
+class WritableComputed<T> extends Computed<T> implements Signal<T> {
   /// Creates a new writable computed value.
   ///
   /// Parameters:
@@ -162,8 +157,7 @@ class WritableComputed<T> extends Computed<T>
   /// );
   /// ```
   WritableComputed(super.getter, this.setter,
-      {super.initialValue, super.autoDispose})
-      : currentValue = initialValue;
+      {super.initialValue, super.onDebug});
 
   /// The function called when this computed value is set.
   final void Function(T) setter;
@@ -199,7 +193,7 @@ class WritableComputed<T> extends Computed<T>
   @override
   void set(T newValue) {
     assert(!isDisposed);
-    currentValue = pendingValue;
+    currentValue = newValue;
     setter(newValue);
   }
 }

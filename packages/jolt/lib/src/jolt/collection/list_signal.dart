@@ -349,7 +349,6 @@ class ListSignal<E> extends Signal<List<E>> with ListSignalMixin<E> {
   ///
   /// Parameters:
   /// - [value]: Initial list content, defaults to empty list if null
-  /// - [autoDispose]: Whether to automatically dispose when no longer referenced
   ///
   /// Example:
   /// ```dart
@@ -357,5 +356,5 @@ class ListSignal<E> extends Signal<List<E>> with ListSignalMixin<E> {
   /// final numbers = ListSignal([1, 2, 3]);
   /// final autoList = ListSignal(['a', 'b'], autoDispose: true);
   /// ```
-  ListSignal(List<E>? value, {super.autoDispose}) : super(value ?? []);
+  ListSignal(List<E>? value, {super.onDebug}) : super(value ?? []);
 }

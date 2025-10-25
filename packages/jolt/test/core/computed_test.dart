@@ -146,7 +146,6 @@ void main() {
         signal2.value = 20;
       });
 
-      // 批处理中只应该触发一次更新
       expect(values, equals([3, 30]));
     });
 
@@ -166,7 +165,6 @@ void main() {
       conditionSignal.value = false;
       expect(computed.value, equals(0));
 
-      // 当条件为false时，改变valueSignal不应该影响computed
       valueSignal.value = 100;
       expect(computed.value, equals(0));
 
@@ -321,7 +319,6 @@ void main() {
         dualComputed.value = 12;
       });
 
-      // 批处理中只应该触发一次更新
       expect(values, equals([2, 12]));
       expect(signal.value, equals(6));
     });
@@ -339,7 +336,7 @@ void main() {
       expect(dualComputed.value, equals(2));
 
       expect(() => dualComputed.value = -10, throwsA(isA<ArgumentError>()));
-      expect(signal.value, equals(1)); // 原始值应该保持不变
+      expect(signal.value, equals(1));
     });
 
     test('computed notify times', () {

@@ -1,8 +1,9 @@
 import 'dart:async';
 
-import 'package:free_disposer/free_disposer.dart';
+import 'package:shared_interfaces/shared_interfaces.dart';
 
 import 'signal.dart';
+import 'utils.dart';
 
 /// Represents the state of an asynchronous operation.
 ///
@@ -281,18 +282,13 @@ class StreamSource<T> implements AsyncSource<T> {
     _sub = _stream.listen(
       (value) => signal.set(AsyncData(value)),
       onError: (err, st) => signal.set(AsyncError(err, st)),
-      onDone: () {},
     );
-
-    signal.disposeWith(() {
-      _sub?.cancel();
-      _sub = null;
-    });
   }
 
   @override
   FutureOr<void> dispose() {
-    return _sub?.cancel();
+    _sub?.cancel();
+    _sub = null;
   }
 }
 
@@ -321,13 +317,11 @@ class AsyncSignal<T> extends Signal<AsyncState<T>> {
   /// Parameters:
   /// - [source]: The async source to manage
   /// - [initialValue]: Optional initial async state
-  /// - [autoDispose]: Whether to automatically dispose when no longer referenced
-  AsyncSignal(AsyncSource<T> source,
-      {AsyncState<T>? initialValue, super.autoDispose})
+  AsyncSignal(AsyncSource<T> source, {AsyncState<T>? initialValue})
       : _source = source,
         super(initialValue ?? AsyncLoading<T>()) {
     _source.start(this);
-    disposeWith(_source.dispose);
+    attachToJoltAttachments(this, _source.dispose);
   }
 
   final AsyncSource<T> _source;
@@ -379,12 +373,6 @@ class AsyncSignal<T> extends Signal<AsyncState<T>> {
   factory AsyncSignal.fromStream(Stream<T> stream) {
     return AsyncSignal(StreamSource(stream));
   }
-
-  @override
-  void onDispose() {
-    super.onDispose();
-    _source.dispose();
-  }
 }
 
 /// A specialized async signal for Future-based operations.
@@ -404,9 +392,7 @@ class FutureSignal<T> extends AsyncSignal<T> {
   ///
   /// Parameters:
   /// - [future]: The future to manage
-  /// - [autoDispose]: Whether to automatically dispose when no longer referenced
-  FutureSignal(Future<T> future, {super.autoDispose})
-      : super(FutureSource(future));
+  FutureSignal(Future<T> future) : super(FutureSource(future));
 }
 
 /// A specialized async signal for Stream-based operations.
@@ -426,7 +412,5 @@ class StreamSignal<T> extends AsyncSignal<T> {
   ///
   /// Parameters:
   /// - [stream]: The stream to manage
-  /// - [autoDispose]: Whether to automatically dispose when no longer referenced
-  StreamSignal(Stream<T> stream, {super.autoDispose})
-      : super(StreamSource(stream));
+  StreamSignal(Stream<T> stream) : super(StreamSource(stream));
 }

@@ -1,12 +1,12 @@
 import 'dart:async';
 
-import 'package:free_disposer/free_disposer.dart';
+import 'package:jolt/src/core/debug.dart';
+import 'package:shared_interfaces/shared_interfaces.dart';
 import 'package:meta/meta.dart';
 
 import '../core/reactive.dart';
 import '../core/system.dart';
 import 'untracked.dart';
-import 'utils.dart';
 
 /// Interface for reactive nodes that can execute effect functions.
 abstract interface class JEffectNode implements ReactiveNode {
@@ -81,7 +81,15 @@ class EffectScope extends EffectBaseNode {
   ///   scope.add(() => print('Scope disposed'));
   /// });
   /// ```
-  EffectScope(this.fn) : super(flags: 0 /* ReactiveFlags.none */) {
+  EffectScope(this.fn, {JoltDebugFn? onDebug})
+      : super(flags: 0 /* ReactiveFlags.none */) {
+    assert(() {
+      if (onDebug != null) {
+        setJoltDebugFn(this, onDebug);
+        onDebug(DebugNodeOperationType.create, this);
+      }
+      return true;
+    }());
     final prevSub = globalReactiveSystem.setActiveSub(this);
     if (prevSub != null) {
       globalReactiveSystem.link(this, prevSub, 0);
@@ -92,8 +100,12 @@ class EffectScope extends EffectBaseNode {
     } finally {
       globalReactiveSystem.setActiveSub(prevSub);
     }
-
-    JoltConfig.observer?.onEffectScopeCreated(this);
+    assert(() {
+      untracked(() {
+        getJoltDebugFn(this)?.call(DebugNodeOperationType.effect, this);
+      });
+      return true;
+    }());
   }
 
   /// Runs a function within this scope's context.
@@ -118,7 +130,16 @@ class EffectScope extends EffectBaseNode {
     final prevSub = globalReactiveSystem.setActiveSub(this);
 
     try {
-      return fn(this);
+      final result = fn(this);
+
+      assert(() {
+        untracked(() {
+          getJoltDebugFn(this)?.call(DebugNodeOperationType.effect, this);
+        });
+        return true;
+      }());
+
+      return result;
     } finally {
       globalReactiveSystem.setActiveSub(prevSub);
     }
@@ -129,7 +150,6 @@ class EffectScope extends EffectBaseNode {
 
   @override
   void onDispose() {
-    JoltConfig.observer?.onEffectScopeDisposed(this);
     globalReactiveSystem.nodeDispose(this);
   }
 }
@@ -174,13 +194,21 @@ class Effect extends EffectBaseNode implements JEffectNode {
   ///
   /// effect.run(); // Manually run the effect
   /// ```
-  Effect(this.fn, {bool immediately = true})
+  Effect(this.fn, {bool immediately = true, JoltDebugFn? onDebug})
       : super(flags: 2 /* ReactiveFlags.watching */) {
+    assert(() {
+      if (onDebug != null) {
+        setJoltDebugFn(this, onDebug);
+        onDebug(DebugNodeOperationType.create, this);
+      }
+      return true;
+    }());
+
     final prevSub = globalReactiveSystem.getActiveSub();
     if (prevSub != null) {
       globalReactiveSystem.link(this, prevSub, 0);
     }
-    JoltConfig.observer?.onEffectCreated(this);
+
     if (immediately) {
       run();
     }
@@ -192,6 +220,12 @@ class Effect extends EffectBaseNode implements JEffectNode {
   @pragma('dart2js:prefer-inline')
   void effectFn() {
     fn();
+    assert(() {
+      untracked(() {
+        getJoltDebugFn(this)?.call(DebugNodeOperationType.effect, this);
+      });
+      return true;
+    }());
   }
 
   /// The function that defines the effect's behavior.
@@ -216,12 +250,15 @@ class Effect extends EffectBaseNode implements JEffectNode {
     } finally {
       globalReactiveSystem.setActiveSub(prevSub);
     }
-    JoltConfig.observer?.onEffectTriggered(this);
+    assert(() {
+      getJoltDebugFn(this)?.call(DebugNodeOperationType.effect, this);
+
+      return true;
+    }());
   }
 
   @override
   void onDispose() {
-    JoltConfig.observer?.onEffectDisposed(this);
     globalReactiveSystem.nodeDispose(this);
   }
 }
@@ -276,8 +313,16 @@ class Watcher<T> extends EffectBaseNode implements JEffectNode {
   ///   when: (newValue, oldValue) => newValue > oldValue, // Only when increasing
   /// );
   /// ```
-  Watcher(this.sourcesFn, this.fn, {bool immediately = false, this.when})
+  Watcher(this.sourcesFn, this.fn,
+      {bool immediately = false, this.when, JoltDebugFn? onDebug})
       : super(flags: 2 /* ReactiveFlags.watching */) {
+    assert(() {
+      if (onDebug != null) {
+        setJoltDebugFn(this, onDebug);
+        onDebug(DebugNodeOperationType.create, this);
+      }
+      return true;
+    }());
     final prevSub = globalReactiveSystem.setActiveSub(this);
     if (prevSub != null) {
       globalReactiveSystem.link(this, prevSub, 0);
@@ -287,12 +332,16 @@ class Watcher<T> extends EffectBaseNode implements JEffectNode {
       if (immediately) {
         fn(prevSources, prevSources);
         _first = false;
-        JoltConfig.observer?.onWatcherTriggered(this);
+        assert(() {
+          untracked(() {
+            getJoltDebugFn(this)?.call(DebugNodeOperationType.effect, this);
+          });
+          return true;
+        }());
       }
     } finally {
       globalReactiveSystem.setActiveSub(prevSub);
     }
-    JoltConfig.observer?.onWatcherCreated(this);
   }
 
   bool _first = true;
@@ -314,12 +363,11 @@ class Watcher<T> extends EffectBaseNode implements JEffectNode {
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
   void effectFn() {
-    trigger();
+    run();
   }
 
   @override
   void onDispose() {
-    JoltConfig.observer?.onWatcherDisposed(this);
     globalReactiveSystem.nodeDispose(this);
   }
 
@@ -332,11 +380,17 @@ class Watcher<T> extends EffectBaseNode implements JEffectNode {
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
-  bool trigger() {
+  bool run() {
     final sources = sourcesFn();
     if (!_first &&
         ((when == null && sources == prevSources) ||
             (when != null && !when!(sources, prevSources)))) {
+      assert(() {
+        untracked(() {
+          getJoltDebugFn(this)?.call(DebugNodeOperationType.effect, this);
+        });
+        return true;
+      }());
       return false;
     }
     untracked(() {
@@ -344,7 +398,14 @@ class Watcher<T> extends EffectBaseNode implements JEffectNode {
     });
     prevSources = sources;
     _first = false;
-    JoltConfig.observer?.onWatcherTriggered(this);
+
+    assert(() {
+      untracked(() {
+        getJoltDebugFn(this)?.call(DebugNodeOperationType.effect, this);
+      });
+      return true;
+    }());
+
     return true;
   }
 }

@@ -1,5 +1,7 @@
 import 'dart:collection';
 
+import 'package:jolt/src/core/debug.dart';
+
 import '../base.dart';
 import '../computed.dart';
 
@@ -51,14 +53,13 @@ class IterableSignal<E> extends Computed<Iterable<E>>
   ///
   /// Parameters:
   /// - [getter]: Function that computes the iterable value
-  /// - [autoDispose]: Whether to automatically dispose when no longer referenced
   ///
   /// Example:
   /// ```dart
   /// final source = Signal([1, 2, 3]);
   /// final doubled = IterableSignal(() => source.value.map((x) => x * 2));
   /// ```
-  IterableSignal(super.getter, {super.autoDispose});
+  IterableSignal(super.getter, {super.onDebug});
 
   /// Creates a reactive iterable from a static iterable value.
   ///
@@ -81,8 +82,7 @@ class IterableSignal<E> extends Computed<Iterable<E>>
   ///   print('Items: ${reactiveIterable.toList()}');
   /// });
   /// ```
-  factory IterableSignal.value(Iterable<E> iterable,
-      {bool autoDispose = false}) {
-    return IterableSignal(() => iterable, autoDispose: autoDispose);
+  factory IterableSignal.value(Iterable<E> iterable, {JoltDebugFn? onDebug}) {
+    return IterableSignal(() => iterable, onDebug: onDebug);
   }
 }

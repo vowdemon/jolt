@@ -1,6 +1,6 @@
 import 'package:jolt/jolt.dart';
 import 'package:test/test.dart';
-import 'test_helpers.dart';
+import '../utils.dart';
 
 void main() {
   group('Effect', () {
@@ -163,7 +163,7 @@ void main() {
       expect(effect.isDisposed, isTrue);
 
       signal.value = 2;
-      // 已释放的effect不应该重新运行
+
       expect(values, equals([1]));
     });
 
@@ -200,7 +200,6 @@ void main() {
         signal2.value = 20;
       });
 
-      // 批处理中只应该触发一次更新
       expect(values, equals([3, 30]));
     });
 
@@ -259,7 +258,7 @@ void main() {
       bool setted = false;
       Effect(() {
         values.add(signal.value);
-        // 在effect中执行异步操作
+
         Future.delayed(const Duration(milliseconds: 1), () {
           if (setted) return;
           setted = true;
@@ -314,12 +313,10 @@ void main() {
 
       expect(values, equals([0]));
 
-      // 快速连续更改值
       for (int i = 1; i <= 10; i++) {
         signal.value = i;
       }
 
-      // 应该记录所有值
       expect(values, equals([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]));
     });
 
@@ -497,7 +494,6 @@ void main() {
         signal2.value = 20;
       });
 
-      // 批处理中只应该触发一次更新
       expect(values, equals([3, 30]));
     });
 
@@ -536,7 +532,6 @@ void main() {
         Effect(() {
           values.add(signal.value);
         });
-        // 在scope中执行异步操作
         Future.delayed(const Duration(milliseconds: 1), () {
           values.add(signal.value * 10);
         });

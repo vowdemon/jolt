@@ -385,7 +385,6 @@ class SetSignal<E> extends Signal<Set<E>> with SetSignalMixin<E> {
   ///
   /// Parameters:
   /// - [value]: Initial set content, defaults to empty set if null
-  /// - [autoDispose]: Whether to automatically dispose when no longer referenced
   ///
   /// Example:
   /// ```dart
@@ -393,5 +392,5 @@ class SetSignal<E> extends Signal<Set<E>> with SetSignalMixin<E> {
   /// final tags = SetSignal({'dart', 'flutter'});
   /// final autoSet = SetSignal({'tag1', 'tag2'}, autoDispose: true);
   /// ```
-  SetSignal(Set<E>? value, {super.autoDispose}) : super(value ?? {});
+  SetSignal(Set<E>? value, {super.onDebug}) : super(value ?? {});
 }

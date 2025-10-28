@@ -1,3 +1,8 @@
+## 0.0.6
+
+- chore: use `melos` for monorepo management
+- feat: add mutual conversion between `ValueListenable`/`ValueNotifier` and `signal`
+
 ## 0.0.5
 - docs: update README
 - chore: bump minimum required jolt version to 0.0.5

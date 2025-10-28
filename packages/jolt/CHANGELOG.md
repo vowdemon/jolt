@@ -1,3 +1,10 @@
+## 0.0.6
+
+- chore: use `melos` for monorepo management
+- fix: fix outdated documentation API comments
+- fix: peek in signal
+- fix: expose onDispose method for subclass
+
 ## 0.0.5
 
 - **BREAKING**: remove autoDispose, MapEntrySignal, joltObserver

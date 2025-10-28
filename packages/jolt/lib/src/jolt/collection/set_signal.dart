@@ -385,12 +385,13 @@ class SetSignal<E> extends Signal<Set<E>> with SetSignalMixin<E> {
   ///
   /// Parameters:
   /// - [value]: Initial set content, defaults to empty set if null
+  /// - [onDebug]: Optional debug callback for reactive system debugging
   ///
   /// Example:
   /// ```dart
   /// final emptySet = SetSignal<String>(null); // Creates empty set
   /// final tags = SetSignal({'dart', 'flutter'});
-  /// final autoSet = SetSignal({'tag1', 'tag2'}, autoDispose: true);
+  /// final autoSet = SetSignal({'tag1', 'tag2'});
   /// ```
   SetSignal(Set<E>? value, {super.onDebug}) : super(value ?? {});
 }

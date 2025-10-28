@@ -32,7 +32,7 @@ class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
   /// Example:
   /// ```dart
   /// final name = Signal('Alice');
-  /// final counter = Signal(0, autoDispose: true);
+  /// final counter = Signal(0);
   /// ```
   Signal(T? value, {JoltDebugFn? onDebug})
       : currentValue = value,
@@ -62,7 +62,7 @@ class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
   @override
   T get peek {
     assert(!isDisposed);
-    return pendingValue as T;
+    return currentValue as T;
   }
 
   /// Returns the current value and establishes a reactive dependency.
@@ -131,7 +131,7 @@ class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
   }
 
   @override
-  @internal
+  @mustCallSuper
   void onDispose() {
     globalReactiveSystem.nodeDispose(this);
     currentValue = null;

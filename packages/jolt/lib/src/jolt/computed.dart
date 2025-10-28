@@ -109,7 +109,7 @@ class Computed<T> extends JReadonlyValue<T> implements ReadonlySignal<T> {
   }
 
   @override
-  @internal
+  @mustCallSuper
   void onDispose() {
     globalReactiveSystem.nodeDispose(this);
     pendingValue = null;
@@ -146,7 +146,6 @@ class WritableComputed<T> extends Computed<T> implements Signal<T> {
   /// - [getter]: Function that computes the value from dependencies
   /// - [setter]: Function called when the computed value is set
   /// - [initialValue]: Optional initial value
-  /// - [autoDispose]: Whether to automatically dispose when no longer referenced
   ///
   /// Example:
   /// ```dart

@@ -21,7 +21,6 @@ abstract class JReadonlyValue<T> extends ReactiveNode
   ///
   /// Parameters:
   /// - [flags]: Reactive flags for this node
-  /// - [autoDispose]: Whether to automatically dispose when no longer referenced
   /// - [pendingValue]: Initial internal value storage
   JReadonlyValue({required super.flags, this.pendingValue});
 

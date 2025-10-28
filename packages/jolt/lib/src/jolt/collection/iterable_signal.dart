@@ -65,7 +65,7 @@ class IterableSignal<E> extends Computed<Iterable<E>>
   ///
   /// Parameters:
   /// - [iterable]: The static iterable to wrap
-  /// - [autoDispose]: Whether to automatically dispose when no longer referenced
+  /// - [onDebug]: Optional debug callback for reactive system debugging
   ///
   /// Returns: An IterableSignal that always returns the given iterable
   ///

@@ -349,12 +349,13 @@ class ListSignal<E> extends Signal<List<E>> with ListSignalMixin<E> {
   ///
   /// Parameters:
   /// - [value]: Initial list content, defaults to empty list if null
+  /// - [onDebug]: Optional debug callback for reactive system debugging
   ///
   /// Example:
   /// ```dart
   /// final emptyList = ListSignal<String>(null); // Creates empty list
   /// final numbers = ListSignal([1, 2, 3]);
-  /// final autoList = ListSignal(['a', 'b'], autoDispose: true);
+  /// final autoList = ListSignal(['a', 'b']);
   /// ```
   ListSignal(List<E>? value, {super.onDebug}) : super(value ?? []);
 }

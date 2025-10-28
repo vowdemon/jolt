@@ -1,0 +1,25 @@
+name: _
+publish_to: none
+
+environment:
+  sdk: ">=3.6.0 <4.0.0"
+
+workspace:
+  - packages/jolt
+  - packages/jolt_flutter
+  - packages/jolt_hooks
+
+dev_dependencies:
+  melos: ^7.3.0
+
+ignore:
+  - 'packages/**/example'
+
+melos:
+  command:
+    bootstrap:
+      environment:
+        sdk: ">=3.6.0 <4.0.0"
+      
+      dependencies:
+        meta: ^1.0.0

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+<module fileurl="file://$PROJECT_DIR$/packages/jolt/melos_jolt.iml" filepath="$PROJECT_DIR$/packages/jolt/melos_jolt.iml"/>
+<module fileurl="file://$PROJECT_DIR$/packages/jolt_flutter/melos_jolt_flutter.iml" filepath="$PROJECT_DIR$/packages/jolt_flutter/melos_jolt_flutter.iml"/>
+<module fileurl="file://$PROJECT_DIR$/packages/jolt_hooks/melos_jolt_hooks.iml" filepath="$PROJECT_DIR$/packages/jolt_hooks/melos_jolt_hooks.iml"/>
+<module fileurl="file://$PROJECT_DIR$/melos__.iml" filepath="$PROJECT_DIR$/melos__.iml"/>
+    </modules>
+  </component>
+</project>

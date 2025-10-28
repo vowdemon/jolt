@@ -1,5 +1,5 @@
 name: jolt_hooks
-description: "Hooks for jolt"
+description: "Flutter hooks for jolt"
 
 repository: https://github.com/vowdemon/jolt
 
@@ -11,9 +11,10 @@ topics:
 
 version: 0.0.5
 
-environment:
-  sdk: ">=3.0.0 <4.0.0"
+resolution: workspace
 
+environment:
+  sdk: ">=3.6.0 <4.0.0"
 
 dependencies:
   flutter:
@@ -22,11 +23,9 @@ dependencies:
   flutter_hooks: ^0.21.3+1
   jolt: ^0.0.5
 
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
   jolt_flutter: ^0.0.5
 
-  flutter_lints: ^6.0.0
-
+  flutter_lints: ^5.0.0

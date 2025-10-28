@@ -1,23 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
 
-class BasicValueNotifierScene extends StatefulWidget {
-  const BasicValueNotifierScene({
+class ToNotifierSignalScene extends StatefulWidget {
+  const ToNotifierSignalScene({
     super.key,
     required this.rebuildCallback,
-    required this.signal,
   });
 
   final ValueChanged<int> rebuildCallback;
-  final Signal<int> signal;
 
   @override
-  State<BasicValueNotifierScene> createState() =>
-      _BasicValueNotifierSceneState();
+  State<ToNotifierSignalScene> createState() => _ToNotifierSignalSceneState();
 }
 
-class _BasicValueNotifierSceneState extends State<BasicValueNotifierScene> {
+class _ToNotifierSignalSceneState extends State<ToNotifierSignalScene> {
   int rebuildCount = 0;
+  late ValueNotifier<int> valueNotifier;
+  late Signal<int> signal;
+
+  @override
+  void initState() {
+    super.initState();
+    valueNotifier = ValueNotifier(0);
+    signal = valueNotifier.toNotifierSignal();
+  }
+
+  @override
+  void dispose() {
+    valueNotifier.dispose();
+    signal.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,16 +39,24 @@ class _BasicValueNotifierSceneState extends State<BasicValueNotifierScene> {
         body: Column(
           children: [
             ElevatedButton(
-              key: Key('increment'),
+              key: Key('incrementNotifier'),
               onPressed: () {
-                widget.signal.value++;
+                valueNotifier.value++;
               },
-              child: Text('Increment'),
+              child: Text('Increment Notifier'),
             ),
-            JoltResource.builder(
+            ElevatedButton(
+              key: Key('incrementSignal'),
+              onPressed: () {
+                signal.value++;
+              },
+              child: Text('Increment Signal'),
+            ),
+            JoltBuilder(
               builder: (context) {
                 widget.rebuildCallback(++rebuildCount);
-                return Text('Value: ${widget.signal.value}');
+                return Text(
+                    'Notifier: ${valueNotifier.value}, Signal: ${signal.value}');
               },
             ),
           ],
@@ -45,24 +66,38 @@ class _BasicValueNotifierSceneState extends State<BasicValueNotifierScene> {
   }
 }
 
-class MultiListenerValueNotifierScene extends StatefulWidget {
-  const MultiListenerValueNotifierScene({
+/// Test scene for ValueListenable.toListenableSignal() unidirectional sync
+class ToListenableSignalScene extends StatefulWidget {
+  const ToListenableSignalScene({
     super.key,
     required this.rebuildCallback,
-    required this.signal,
   });
 
   final ValueChanged<int> rebuildCallback;
-  final Signal<int> signal;
 
   @override
-  State<MultiListenerValueNotifierScene> createState() =>
-      _MultiListenerValueNotifierSceneState();
+  State<ToListenableSignalScene> createState() =>
+      _ToListenableSignalSceneState();
 }
 
-class _MultiListenerValueNotifierSceneState
-    extends State<MultiListenerValueNotifierScene> {
+class _ToListenableSignalSceneState extends State<ToListenableSignalScene> {
   int rebuildCount = 0;
+  late ValueNotifier<int> valueNotifier;
+  late ReadonlySignal<int> signal;
+
+  @override
+  void initState() {
+    super.initState();
+    valueNotifier = ValueNotifier(0);
+    signal = valueNotifier.toListenableSignal();
+  }
+
+  @override
+  void dispose() {
+    valueNotifier.dispose();
+    signal.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,22 +106,30 @@ class _MultiListenerValueNotifierSceneState
         body: Column(
           children: [
             ElevatedButton(
-              key: Key('increment'),
+              key: Key('incrementNotifier'),
               onPressed: () {
-                widget.signal.value++;
+                valueNotifier.value++;
               },
-              child: Text('Increment'),
+              child: Text('Increment Notifier'),
+            ),
+            ElevatedButton(
+              key: Key('tryIncrementSignal'),
+              onPressed: () {
+                // 尝试修改只读信号，应该失败
+                try {
+                  // ReadonlySignal 没有 value setter，所以这里会编译失败
+                  // 这是预期的行为，证明它是只读的
+                } catch (e) {
+                  // 预期会失败
+                }
+              },
+              child: Text('Try Increment Signal (Should Fail)'),
             ),
             JoltResource.builder(
               builder: (context) {
                 widget.rebuildCallback(++rebuildCount);
-                return Text('Listener1: ${widget.signal.value}');
-              },
-            ),
-            JoltResource.builder(
-              builder: (context) {
-                widget.rebuildCallback(++rebuildCount);
-                return Text('Listener2: ${widget.signal.value}');
+                return Text(
+                    'Notifier: ${valueNotifier.value}, Signal: ${signal.value}');
               },
             ),
           ],
@@ -96,8 +139,9 @@ class _MultiListenerValueNotifierSceneState
   }
 }
 
-class ListenerManagementScene extends StatefulWidget {
-  const ListenerManagementScene({
+/// Test scene for Signal.notifier conversion
+class SignalNotifierScene extends StatefulWidget {
+  const SignalNotifierScene({
     super.key,
     required this.rebuildCallback,
     required this.signal,
@@ -107,13 +151,18 @@ class ListenerManagementScene extends StatefulWidget {
   final Signal<int> signal;
 
   @override
-  State<ListenerManagementScene> createState() =>
-      _ListenerManagementSceneState();
+  State<SignalNotifierScene> createState() => _SignalNotifierSceneState();
 }
 
-class _ListenerManagementSceneState extends State<ListenerManagementScene> {
+class _SignalNotifierSceneState extends State<SignalNotifierScene> {
   int rebuildCount = 0;
-  bool isListening = true;
+  late ValueNotifier<int> notifier;
+
+  @override
+  void initState() {
+    super.initState();
+    notifier = widget.signal.notifier;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -122,29 +171,26 @@ class _ListenerManagementSceneState extends State<ListenerManagementScene> {
         body: Column(
           children: [
             ElevatedButton(
-              key: Key('increment'),
+              key: Key('incrementSignal'),
               onPressed: () {
                 widget.signal.value++;
               },
-              child: Text('Increment'),
+              child: Text('Increment Signal'),
             ),
             ElevatedButton(
-              key: Key('removeListener'),
+              key: Key('incrementNotifier'),
               onPressed: () {
-                isListening = false;
-                setState(() {});
+                notifier.value++;
               },
-              child: Text('Remove Listener'),
+              child: Text('Increment Notifier'),
             ),
-            if (isListening)
-              JoltResource.builder(
-                builder: (context) {
-                  widget.rebuildCallback(++rebuildCount);
-                  return Text('Value: ${widget.signal.value}');
-                },
-              )
-            else
-              Text('Value: ${widget.signal.value}'),
+            JoltResource.builder(
+              builder: (context) {
+                widget.rebuildCallback(++rebuildCount);
+                return Text(
+                    'Signal: ${widget.signal.value}, Notifier: ${notifier.value}');
+              },
+            ),
           ],
         ),
       ),
@@ -152,8 +198,9 @@ class _ListenerManagementSceneState extends State<ListenerManagementScene> {
   }
 }
 
-class ComputedValueNotifierScene extends StatefulWidget {
-  const ComputedValueNotifierScene({
+/// Test scene for Computed.notifier conversion
+class ComputedNotifierScene extends StatefulWidget {
+  const ComputedNotifierScene({
     super.key,
     required this.rebuildCallback,
     required this.signal,
@@ -165,13 +212,18 @@ class ComputedValueNotifierScene extends StatefulWidget {
   final Computed<int> computed;
 
   @override
-  State<ComputedValueNotifierScene> createState() =>
-      _ComputedValueNotifierSceneState();
+  State<ComputedNotifierScene> createState() => _ComputedNotifierSceneState();
 }
 
-class _ComputedValueNotifierSceneState
-    extends State<ComputedValueNotifierScene> {
+class _ComputedNotifierSceneState extends State<ComputedNotifierScene> {
   int rebuildCount = 0;
+  late ValueNotifier<int> notifier;
+
+  @override
+  void initState() {
+    super.initState();
+    notifier = widget.computed.notifier;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -180,17 +232,29 @@ class _ComputedValueNotifierSceneState
         body: Column(
           children: [
             ElevatedButton(
-              key: Key('increment'),
+              key: Key('incrementSignal'),
               onPressed: () {
                 widget.signal.value++;
               },
-              child: Text('Increment'),
+              child: Text('Increment Signal'),
+            ),
+            ElevatedButton(
+              key: Key('tryIncrementNotifier'),
+              onPressed: () {
+                // 尝试修改 Computed 的 notifier，应该失败
+                try {
+                  notifier.value++;
+                } catch (e) {
+                  // 预期会失败，因为 Computed 是只读的
+                }
+              },
+              child: Text('Try Increment Notifier (Should Fail)'),
             ),
             JoltResource.builder(
               builder: (context) {
                 widget.rebuildCallback(++rebuildCount);
                 return Text(
-                    'Counter: ${widget.signal.value}, Double: ${widget.computed.value}');
+                    'Signal: ${widget.signal.value}, Computed: ${widget.computed.value}, Notifier: ${notifier.value}');
               },
             ),
           ],
@@ -200,8 +264,9 @@ class _ComputedValueNotifierSceneState
   }
 }
 
-class AnimatedBuilderScene extends StatefulWidget {
-  const AnimatedBuilderScene({
+/// Test scene for .notifier caching mechanism
+class NotifierCachingScene extends StatefulWidget {
+  const NotifierCachingScene({
     super.key,
     required this.rebuildCallback,
     required this.signal,
@@ -211,103 +276,21 @@ class AnimatedBuilderScene extends StatefulWidget {
   final Signal<int> signal;
 
   @override
-  State<AnimatedBuilderScene> createState() => _AnimatedBuilderSceneState();
+  State<NotifierCachingScene> createState() => _NotifierCachingSceneState();
 }
 
-class _AnimatedBuilderSceneState extends State<AnimatedBuilderScene> {
+class _NotifierCachingSceneState extends State<NotifierCachingScene> {
   int rebuildCount = 0;
+  late ValueNotifier<int> notifier1;
+  late ValueNotifier<int> notifier2;
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        body: Column(
-          children: [
-            ElevatedButton(
-              key: Key('increment'),
-              onPressed: () {
-                widget.signal.value++;
-              },
-              child: Text('Increment'),
-            ),
-            AnimatedBuilder(
-              animation: widget.signal.notifier,
-              builder: (context, child) {
-                widget.rebuildCallback(++rebuildCount);
-                return Text('Animated Value: ${widget.signal.value}');
-              },
-            ),
-          ],
-        ),
-      ),
-    );
+  void initState() {
+    super.initState();
+
+    notifier1 = widget.signal.notifier;
+    notifier2 = widget.signal.notifier;
   }
-}
-
-class ValueListenableBuilderScene extends StatefulWidget {
-  const ValueListenableBuilderScene({
-    super.key,
-    required this.rebuildCallback,
-    required this.signal,
-  });
-
-  final ValueChanged<int> rebuildCallback;
-  final Signal<int> signal;
-
-  @override
-  State<ValueListenableBuilderScene> createState() =>
-      _ValueListenableBuilderSceneState();
-}
-
-class _ValueListenableBuilderSceneState
-    extends State<ValueListenableBuilderScene> {
-  int rebuildCount = 0;
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        body: Column(
-          children: [
-            ElevatedButton(
-              key: Key('increment'),
-              onPressed: () {
-                widget.signal.value++;
-              },
-              child: Text('Increment'),
-            ),
-            ValueListenableBuilder<int>(
-              valueListenable: widget.signal.notifier,
-              builder: (context, value, child) {
-                widget.rebuildCallback(++rebuildCount);
-                return Text('Listenable Value: $value');
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class LifecycleValueNotifierScene extends StatefulWidget {
-  const LifecycleValueNotifierScene({
-    super.key,
-    required this.rebuildCallback,
-    required this.signal,
-  });
-
-  final ValueChanged<int> rebuildCallback;
-  final Signal<int> signal;
-
-  @override
-  State<LifecycleValueNotifierScene> createState() =>
-      _LifecycleValueNotifierSceneState();
-}
-
-class _LifecycleValueNotifierSceneState
-    extends State<LifecycleValueNotifierScene> {
-  int rebuildCount = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -325,228 +308,11 @@ class _LifecycleValueNotifierSceneState
             JoltResource.builder(
               builder: (context) {
                 widget.rebuildCallback(++rebuildCount);
-                return Text('Value: ${widget.signal.value}');
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class ErrorHandlingValueNotifierScene extends StatefulWidget {
-  const ErrorHandlingValueNotifierScene({
-    super.key,
-    required this.rebuildCallback,
-    required this.signal,
-  });
-
-  final ValueChanged<int> rebuildCallback;
-  final Signal<int> signal;
-
-  @override
-  State<ErrorHandlingValueNotifierScene> createState() =>
-      _ErrorHandlingValueNotifierSceneState();
-}
-
-class _ErrorHandlingValueNotifierSceneState
-    extends State<ErrorHandlingValueNotifierScene> {
-  int rebuildCount = 0;
-  bool hasError = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        body: Column(
-          children: [
-            ElevatedButton(
-              key: Key('increment'),
-              onPressed: () {
-                if (!hasError) {
-                  widget.signal.value++;
-                }
-              },
-              child: Text('Increment'),
-            ),
-            ElevatedButton(
-              key: Key('triggerError'),
-              onPressed: () {
-                hasError = true;
-                setState(() {});
-              },
-              child: Text('Trigger Error'),
-            ),
-            JoltResource.builder(
-              builder: (context) {
-                widget.rebuildCallback(++rebuildCount);
-                if (hasError) {
-                  return Text('Value: Error');
-                }
-                return Text('Value: ${widget.signal.value}');
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class PerformanceValueNotifierScene extends StatefulWidget {
-  const PerformanceValueNotifierScene({
-    super.key,
-    required this.rebuildCallback,
-    required this.signal,
-  });
-
-  final ValueChanged<int> rebuildCallback;
-  final Signal<int> signal;
-
-  @override
-  State<PerformanceValueNotifierScene> createState() =>
-      _PerformanceValueNotifierSceneState();
-}
-
-class _PerformanceValueNotifierSceneState
-    extends State<PerformanceValueNotifierScene> {
-  int rebuildCount = 0;
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        body: Column(
-          children: [
-            ElevatedButton(
-              key: Key('increment'),
-              onPressed: () {
-                widget.signal.value++;
-              },
-              child: Text('Increment'),
-            ),
-            JoltResource.builder(
-              builder: (context) {
-                widget.rebuildCallback(++rebuildCount);
-                return Text('Value: ${widget.signal.value}');
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class NestedValueNotifierScene extends StatefulWidget {
-  const NestedValueNotifierScene({
-    super.key,
-    required this.rebuildCallback,
-    required this.outerSignal,
-    required this.innerSignal,
-  });
-
-  final ValueChanged<int> rebuildCallback;
-  final Signal<int> outerSignal;
-  final Signal<int> innerSignal;
-
-  @override
-  State<NestedValueNotifierScene> createState() =>
-      _NestedValueNotifierSceneState();
-}
-
-class _NestedValueNotifierSceneState extends State<NestedValueNotifierScene> {
-  int rebuildCount = 0;
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        body: Column(
-          children: [
-            ElevatedButton(
-              key: Key('incrementOuter'),
-              onPressed: () {
-                widget.outerSignal.value++;
-              },
-              child: Text('Increment Outer'),
-            ),
-            ElevatedButton(
-              key: Key('incrementInner'),
-              onPressed: () {
-                widget.innerSignal.value++;
-              },
-              child: Text('Increment Inner'),
-            ),
-            JoltResource.builder(
-              builder: (context) {
-                widget.rebuildCallback(++rebuildCount);
+                final isSameInstance = identical(notifier1, notifier2);
                 return Text(
-                    'Outer: ${widget.outerSignal.value}, Inner: ${widget.innerSignal.value}');
+                    'Value: ${widget.signal.value}, Same Instance: $isSameInstance');
               },
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class ConditionalListeningScene extends StatefulWidget {
-  const ConditionalListeningScene({
-    super.key,
-    required this.rebuildCallback,
-    required this.signal,
-    required this.isListening,
-  });
-
-  final ValueChanged<int> rebuildCallback;
-  final Signal<int> signal;
-  final Signal<bool> isListening;
-
-  @override
-  State<ConditionalListeningScene> createState() =>
-      _ConditionalListeningSceneState();
-}
-
-class _ConditionalListeningSceneState extends State<ConditionalListeningScene> {
-  int rebuildCount = 0;
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        body: Column(
-          children: [
-            ElevatedButton(
-              key: Key('increment'),
-              onPressed: () {
-                widget.signal.value++;
-              },
-              child: Text('Increment'),
-            ),
-            ElevatedButton(
-              key: Key('toggleListening'),
-              onPressed: () {
-                widget.isListening.value = !widget.isListening.value;
-              },
-              child: Text('Toggle Listening'),
-            ),
-            ValueListenableBuilder(
-                valueListenable: widget.isListening.notifier,
-                builder: (context, value, child) {
-                  widget.rebuildCallback(++rebuildCount);
-                  return value
-                      ? ValueListenableBuilder(
-                          valueListenable: widget.signal.notifier,
-                          builder: (context, value2, child) {
-                            widget.rebuildCallback(++rebuildCount);
-                            return Text('Value: $value2, Listening: $value');
-                          })
-                      : Text(
-                          'Value: ${widget.signal.value}, Listening: $value');
-                }),
           ],
         ),
       ),

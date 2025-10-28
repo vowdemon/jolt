@@ -241,12 +241,9 @@ class _ComputedNotifierSceneState extends State<ComputedNotifierScene> {
             ElevatedButton(
               key: Key('tryIncrementNotifier'),
               onPressed: () {
-                // 尝试修改 Computed 的 notifier，应该失败
                 try {
                   notifier.value++;
-                } catch (e) {
-                  // 预期会失败，因为 Computed 是只读的
-                }
+                } catch (_) {}
               },
               child: Text('Try Increment Notifier (Should Fail)'),
             ),

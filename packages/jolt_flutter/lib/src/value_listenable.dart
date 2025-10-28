@@ -1,15 +1,21 @@
 part of 'value_notifier.dart';
 
 extension JoltValueListenableExtension<T> on jolt.JReadonlyValue<T> {
-  /// Converts this Jolt value to a Flutter ValueNotifier.
+  /// Converts this Jolt value to a Flutter ValueListenable.
   ///
-  /// Returns a cached ValueNotifier instance that stays synchronized
-  /// with this Jolt value. Multiple calls return the same instance.
+  /// Returns a cached instance that stays synchronized with this Jolt value.
+  /// Multiple calls return the same instance.
   ///
   /// Example:
   /// ```dart
   /// final signal = Signal(42);
-  /// final notifier = signal.notifier;
+  /// final listenable = signal.listenable;
+  ///
+  /// // Use with ValueListenableBuilder
+  /// ValueListenableBuilder<int>(
+  ///   valueListenable: listenable,
+  ///   builder: (context, value, child) => Text('$value'),
+  /// )
   /// ```
   JoltValueListenable<T> get listenable {
     JoltValueListenable<T>? notifier =
@@ -27,8 +33,26 @@ class JoltValueListenable<T> extends _JoltValueNotifierBase<T>
 }
 
 extension JoltFlutterListenableExtension<T> on ValueListenable<T> {
-  jolt.ReadonlySignal<T> toListenableSignal() {
-    return _ValueListenableSignal(this);
+  /// Converts this ValueListenable to a read-only Signal.
+  ///
+  /// Creates a unidirectional bridge from Flutter's ValueListenable to Jolt.
+  /// Changes to the original ValueListenable will be synchronized to the Signal,
+  /// but the Signal cannot be modified.
+  ///
+  /// Parameters:
+  /// - [onDebug]: Optional debug callback for reactive system debugging
+  ///
+  /// Example:
+  /// ```dart
+  /// final notifier = ValueNotifier(0);
+  /// final signal = notifier.toListenableSignal();
+  ///
+  /// // Only notifier changes sync to signal
+  /// notifier.value = 1; // signal.value becomes 1
+  /// // signal.value = 2; // This would throw an error
+  /// ```
+  jolt.ReadonlySignal<T> toListenableSignal({JoltDebugFn? onDebug}) {
+    return _ValueListenableSignal(this, onDebug: onDebug);
   }
 }
 

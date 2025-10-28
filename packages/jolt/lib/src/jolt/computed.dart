@@ -108,8 +108,12 @@ class Computed<T> extends JReadonlyValue<T> implements ReadonlySignal<T> {
     globalReactiveSystem.computedNotify(this);
   }
 
+  /// Disposes the computed value and cleans up resources.
+  ///
+  /// Removes the computed value from the reactive system and clears stored values.
   @override
   @mustCallSuper
+  @protected
   void onDispose() {
     globalReactiveSystem.nodeDispose(this);
     pendingValue = null;

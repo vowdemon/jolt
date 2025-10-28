@@ -130,8 +130,12 @@ class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
     globalReactiveSystem.signalNotify(this);
   }
 
+  /// Disposes the signal and cleans up resources.
+  ///
+  /// Removes the signal from the reactive system and clears stored values.
   @override
   @mustCallSuper
+  @protected
   void onDispose() {
     globalReactiveSystem.nodeDispose(this);
     currentValue = null;

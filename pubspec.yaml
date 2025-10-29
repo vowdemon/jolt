@@ -26,3 +26,5 @@ melos:
       
       dependencies:
         meta: ^1.0.0
+    version:
+      workspaceChangelog: false

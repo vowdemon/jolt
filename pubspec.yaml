@@ -16,6 +16,9 @@ ignore:
   - 'packages/**/example'
 
 melos:
+  ide:
+    intellij:
+      enabled: false
   command:
     bootstrap:
       environment:

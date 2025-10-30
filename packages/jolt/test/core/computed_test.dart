@@ -3,6 +3,35 @@ import 'package:test/test.dart';
 
 void main() {
   group('Computed', () {
+    group('initial value', () {
+      test('should only affect peek when initialValue is provided', () {
+        final computed = Computed<int>(() => 10, initialValue: 5);
+        expect(computed.peek, equals(5));
+        expect(computed.value, equals(10));
+      });
+
+      test('should have peek initialize value when initialValue is null', () {
+        final computed = Computed<int>(() => 10);
+        expect(computed.peek, equals(10));
+        expect(computed.value, equals(10));
+      });
+
+      test('should treat peek as untracked', () {
+        final signal = Signal(1);
+        final computed = Computed<int>(() => signal.value * 2);
+        Effect(() {
+          computed.peek;
+        });
+
+        expect(computed.peek, equals(2));
+        expect(computed.value, equals(2));
+
+        signal.value = 2;
+        expect(computed.peek, equals(2));
+        expect(computed.value, equals(4));
+      });
+    });
+
     test('should create computed with getter function', () {
       final signal = Signal(5);
       final computed = Computed<int>(() => signal.value * 2);

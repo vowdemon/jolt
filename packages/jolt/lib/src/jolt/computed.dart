@@ -2,8 +2,10 @@ import 'package:meta/meta.dart';
 
 import '../core/debug.dart';
 import '../core/reactive.dart';
+
 import 'base.dart';
 import 'signal.dart';
+import 'untracked.dart';
 
 /// A computed value that automatically updates when its dependencies change.
 ///
@@ -68,6 +70,10 @@ class Computed<T> extends JReadonlyValue<T> implements ReadonlySignal<T> {
   @override
   T get peek {
     assert(!isDisposed);
+
+    if (flags == 0) {
+      return untracked(() => globalReactiveSystem.computedGetter(this));
+    }
 
     return pendingValue as T;
   }

@@ -8,6 +8,7 @@ workspace:
   - packages/jolt
   - packages/jolt_flutter
   - packages/jolt_hooks
+  - packages/jolt_surge
 
 dev_dependencies:
   melos: ^7.3.0

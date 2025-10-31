@@ -1,3 +1,7 @@
+## 0.0.7
+
+- fix: make Computed.peek initialize via untracked and return cached value
+
 ## 0.0.6
 
 - chore: use `melos` for monorepo management

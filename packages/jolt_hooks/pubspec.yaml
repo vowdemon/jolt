@@ -1,5 +1,5 @@
 name: jolt_hooks
-description: "Flutter hooks for jolt"
+description: "Flutter hooks integration for the Jolt reactive state management system, providing declarative hooks for signals, computed values, effects, and more."
 
 repository: https://github.com/vowdemon/jolt
 
@@ -9,7 +9,7 @@ topics:
   - signals
   - hook
 
-version: 0.0.5+1
+version: 0.0.6
 
 resolution: workspace
 
@@ -21,11 +21,11 @@ dependencies:
     sdk: flutter
 
   flutter_hooks: ^0.21.3+1
-  jolt: ^0.0.6
+  jolt: ^0.0.7
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  jolt_flutter: ^0.0.6
+  jolt_flutter: ^0.0.7
 
   flutter_lints: ^5.0.0

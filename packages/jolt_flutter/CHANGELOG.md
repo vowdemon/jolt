@@ -1,3 +1,7 @@
+## 0.0.7
+
+- chore: update dependencies
+
 ## 0.0.6
 
 - chore: use `melos` for monorepo management

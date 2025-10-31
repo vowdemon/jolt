@@ -1,7 +1,15 @@
 name: jolt_surge
 description: A lightweight reactive state container for Flutter, built on Jolt Signals and inspired by BLoC's Cubit architecture.
 
-version: 0.0.1-beta.0
+repository: https://github.com/vowdemon/jolt
+
+topics:
+  - jolt
+  - state-management
+  - signals
+  - surge
+
+version: 0.0.1-beta.1
 
 environment:
   sdk: ">=3.6.0 <4.0.0"
@@ -11,7 +19,7 @@ resolution: workspace
 dependencies:
   flutter:
     sdk: flutter
-  jolt: ^0.0.6
+  jolt: ^0.0.7
   provider: ^6.1.5+1
   shared_interfaces: ^0.0.2
 

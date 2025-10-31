@@ -1,4 +1,5 @@
 import 'package:jolt_flutter/jolt_flutter.dart';
+import 'package:jolt/jolt.dart';
 import 'package:flutter/widgets.dart';
 import 'package:jolt_surge/jolt_surge.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -77,6 +78,103 @@ void main() {
           surge.emit(1);
           await Future.delayed(const Duration(milliseconds: 1));
           expect(states, equals([1]));
+        });
+      });
+
+      group('create parameter', () {
+        test('should use Signal by default', () {
+          final surge = TestSurgeWithCreate(0);
+          expect(surge.state, 0);
+          expect(surge.raw, isA<Signal<int>>());
+
+          surge.emit(1);
+          expect(surge.state, 1);
+
+          // Verify it's reactive
+          final states = <int>[];
+          Effect(() {
+            states.add(surge.state);
+          });
+          expect(states, equals([1]));
+
+          surge.emit(2);
+          expect(states, equals([1, 2]));
+        });
+
+        test('should use custom create function when provided', () {
+          Signal<int>? customSignal;
+          final surge = TestSurgeWithCreate(10, creator: (state) {
+            customSignal = Signal(state);
+            return customSignal!;
+          });
+
+          expect(surge.state, 10);
+          expect(surge.raw, equals(customSignal));
+          expect(customSignal, isNotNull);
+
+          surge.emit(20);
+          expect(surge.state, 20);
+          expect(customSignal!.value, 20);
+
+          // Verify it's reactive
+          final states = <int>[];
+          Effect(() {
+            states.add(surge.state);
+          });
+          expect(states, equals([20]));
+
+          surge.emit(30);
+          expect(states, equals([20, 30]));
+        });
+
+        test('should work with WritableComputed as create function', () {
+          final baseSignal = Signal<int>(0);
+          final surge = TestSurgeWithCreate(100, creator: (state) {
+            // Initialize baseSignal with the initial state
+            baseSignal.value = state;
+            return WritableComputed(
+              () => baseSignal.value,
+              (value) => baseSignal.value = value,
+            );
+          });
+
+          expect(surge.state, 100);
+          expect(baseSignal.value, 100);
+
+          surge.emit(200);
+          expect(surge.state, 200);
+          expect(baseSignal.value, 200);
+
+          // Verify it's reactive
+          final states = <int>[];
+          Effect(() {
+            states.add(surge.state);
+          });
+          expect(states, equals([200]));
+
+          surge.emit(300);
+          expect(states, equals([200, 300]));
+
+          // Verify changes to base signal reflect in surge
+          baseSignal.value = 400;
+          expect(surge.state, 400);
+          expect(states, equals([200, 300, 400]));
+        });
+
+        test('should handle multiple surges with different create functions',
+            () {
+          final surge1 = TestSurgeWithCreate(1);
+          final surge2 =
+              TestSurgeWithCreate(2, creator: (state) => Signal(state * 2));
+
+          expect(surge1.state, 1);
+          expect(surge2.state, 4); // 2 * 2
+
+          surge1.emit(10);
+          surge2.emit(20);
+
+          expect(surge1.state, 10);
+          expect(surge2.state, 20);
         });
       });
     });
@@ -1517,4 +1615,8 @@ class TestSurgeObserver extends SurgeObserver {
   void onDispose(surge) {
     disposed.add(surge);
   }
+}
+
+class TestSurgeWithCreate extends Surge<int> {
+  TestSurgeWithCreate(super.initialState, {super.creator});
 }

@@ -766,6 +766,170 @@ void main() {
           }
         }
       });
+
+      test('write error does not affect signal value - synchronous error', () {
+        final storage = <String, String>{};
+        bool writeThrew = false;
+
+        final persistSignal = PersistSignal<String>(
+          initialValue: () => 'initial',
+          read: () async => storage['key'] ?? 'default',
+          write: (value) {
+            writeThrew = true;
+            throw Exception('Write failed');
+          },
+        );
+
+        // Value should be set even if write throws
+        // Note: synchronous write errors will throw, but super.set() is called first
+        try {
+          persistSignal.value = 'updated';
+        } catch (e) {
+          // Exception is expected, but value should still be set
+        }
+        expect(persistSignal.value, equals('updated'));
+        expect(writeThrew, isTrue);
+
+        // Storage should not be updated due to error
+        expect(storage['key'], isNull);
+      });
+
+      test('write error does not affect signal value - async error', () async {
+        final storage = <String, String>{};
+        bool writeThrew = false;
+
+        final persistSignal = PersistSignal<String>(
+          initialValue: () => 'initial',
+          read: () async => storage['key'] ?? 'default',
+          write: (value) async {
+            writeThrew = true;
+            await Future.delayed(const Duration(milliseconds: 10));
+            throw Exception('Async write failed');
+          },
+        );
+
+        persistSignal.value = 'updated';
+
+        expect(persistSignal.peek, equals('updated'));
+        expect(persistSignal.value, equals('updated'));
+
+        await Future.delayed(const Duration(milliseconds: 20));
+        expect(writeThrew, isTrue);
+
+        expect(persistSignal.peek, equals('updated'));
+        expect(persistSignal.value, equals('updated'));
+
+        expect(storage['key'], isNull);
+      });
+
+      test('write error does not affect signal value - with writeDelay',
+          () async {
+        final storage = <String, String>{};
+        bool writeThrew = false;
+
+        final persistSignal = PersistSignal<String>(
+          initialValue: () => 'initial',
+          read: () async => storage['key'] ?? 'default',
+          write: (value) async {
+            writeThrew = true;
+            throw Exception('Delayed write failed');
+          },
+          writeDelay: const Duration(milliseconds: 50),
+        );
+
+        // Value should be set immediately (before delayed write executes)
+        persistSignal.value = 'updated';
+        // Use peek to verify internal value directly
+        expect(persistSignal.peek, equals('updated'));
+        expect(persistSignal.value, equals('updated'));
+        expect(writeThrew, isFalse);
+
+        // Wait for delayed write to execute and fail
+        await Future.delayed(const Duration(milliseconds: 100));
+        expect(writeThrew, isTrue);
+
+        // Signal value should still be correct (not affected by delayed write error)
+        expect(persistSignal.peek, equals('updated'));
+        expect(persistSignal.value, equals('updated'));
+        // Storage should not be updated due to error
+        expect(storage['key'], isNull);
+      });
+
+      test('write error does not affect signal value - multiple writes',
+          () async {
+        final storage = <String, String>{};
+        int writeCallCount = 0;
+        bool shouldThrow = false;
+
+        final persistSignal = PersistSignal<String>(
+          initialValue: () => 'initial',
+          read: () async => storage['key'] ?? 'default',
+          write: (value) async {
+            writeCallCount++;
+            if (shouldThrow) {
+              throw Exception('Write failed for $value');
+            }
+            storage['key'] = value;
+          },
+        );
+
+        // First write succeeds
+        persistSignal.value = 'first';
+        await Future.delayed(const Duration(milliseconds: 10));
+        expect(persistSignal.value, equals('first'));
+        expect(storage['key'], equals('first'));
+        expect(writeCallCount, equals(1));
+
+        // Second write fails, but signal value should still be set
+        shouldThrow = true;
+        try {
+          persistSignal.value = 'second';
+        } catch (e) {
+          // Exception is expected for sync errors
+        }
+        expect(persistSignal.value, equals('second'));
+        await Future.delayed(const Duration(milliseconds: 10));
+        expect(persistSignal.value, equals('second'));
+        // Storage should still have old value
+        expect(storage['key'], equals('first'));
+        expect(writeCallCount, equals(2));
+
+        // Third write succeeds again
+        shouldThrow = false;
+        persistSignal.value = 'third';
+        await Future.delayed(const Duration(milliseconds: 10));
+        expect(persistSignal.value, equals('third'));
+        expect(storage['key'], equals('third'));
+        expect(writeCallCount, equals(3));
+      });
+
+      test('write error does not affect reactive updates', () async {
+        final storage = <String, String>{};
+        final changes = <String>[];
+
+        final persistSignal = PersistSignal<String>(
+          initialValue: () => 'initial',
+          read: () async => storage['key'] ?? 'default',
+          write: (value) async {
+            throw Exception('Write failed');
+          },
+        );
+
+        Effect(() {
+          changes.add(persistSignal.value);
+        });
+
+        expect(changes, equals(['initial']));
+
+        // Value should update and trigger reactive updates even if write fails
+        try {
+          persistSignal.value = 'updated';
+        } catch (e) {
+          // Exception is expected for sync errors
+        }
+        expect(changes, equals(['initial', 'updated']));
+        expect(persistSignal.value, equals('updated'));
+      });
     });
 
     group('Tricks Integration', () {
@@ -818,8 +982,8 @@ void main() {
 
         final persistSignal = PersistSignal<String>(
           initialValue: () => converted.value,
-          read: () async => converted.value,
-          write: (value) async => converted.value = value,
+          read: () => converted.value,
+          write: (value) => converted.value = value,
         );
 
         final changes = <String>[];

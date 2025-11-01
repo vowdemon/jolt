@@ -80,7 +80,7 @@ class PersistSignal<T> extends Signal<T> {
     _initialValueFuture ??= Future(() async {
       final version = ++_version;
       final result = await read();
-      if (_version == version) super.set(result);
+      if (_version == version && !hasInitialized) super.set(result);
       hasInitialized = true;
       return;
     });
@@ -117,15 +117,22 @@ class PersistSignal<T> extends Signal<T> {
       _timer?.cancel();
       _timer = Timer(writeDelay, () async {
         try {
-          await write(value);
-        } catch (e, s) {
-          Zone.current.handleUncaughtError(e, s);
+          final result = write(value);
+          if (result is Future) {
+            await result;
+          }
+        } catch (_) {
+          // ignore write error
         } finally {
           _timer = null;
         }
       });
     } else {
-      write(value);
+      final result = write(value);
+      if (result is Future) {
+        // ignore write error
+        result.catchError((_) {});
+      }
     }
   }
 

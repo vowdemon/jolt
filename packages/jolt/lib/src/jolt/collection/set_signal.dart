@@ -273,12 +273,6 @@ mixin SetSignalMixin<E>
     return value.toSet();
   }
 
-  /// Returns a string representation of this set.
-  @override
-  String toString() {
-    return value.toString();
-  }
-
   /// Reduces the set to a single value using the given combine function.
   ///
   /// This is a non-mutating operation.

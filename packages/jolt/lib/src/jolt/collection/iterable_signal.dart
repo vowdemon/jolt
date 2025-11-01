@@ -20,6 +20,13 @@ mixin IterableSignalMixin<E> implements IterableBase<E>, IMutableCollection {
   /// access to the iterable's elements.
   @override
   Iterator<E> get iterator => value.iterator;
+
+  /// Returns a string representation of the iterable.
+  ///
+  /// This is a non-mutating operation that returns a string representation
+  /// of the iterable's elements.
+  @override
+  String toString() => value.toString();
 }
 
 /// A reactive iterable that computes its value from a getter function.

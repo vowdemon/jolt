@@ -39,6 +39,12 @@ void detachFromJoltAttachments(Object target, Disposer disposer) {
 }
 
 @internal
+@visibleForTesting
+Set<Disposer> getJoltAttachments(Object target) {
+  return joltAttachments[target] ?? {};
+}
+
+@internal
 void manuallyDisposeJoltAttachments(Object target) {
   final disposers = joltAttachments[target];
   if (disposers != null) {

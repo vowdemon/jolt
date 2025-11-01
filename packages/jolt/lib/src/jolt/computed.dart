@@ -172,7 +172,7 @@ class WritableComputed<T> extends Computed<T> implements Signal<T> {
   final void Function(T) setter;
 
   @override
-  Object? currentValue;
+  Object? cachedValue;
 
   /// Sets a new value for this writable computed.
   ///
@@ -202,7 +202,7 @@ class WritableComputed<T> extends Computed<T> implements Signal<T> {
   @override
   void set(T newValue) {
     assert(!isDisposed);
-    currentValue = newValue;
+    cachedValue = newValue;
     setter(newValue);
   }
 }

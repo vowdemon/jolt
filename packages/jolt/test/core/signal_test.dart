@@ -208,5 +208,37 @@ void main() {
 
       expect(values, equals([1, 4]));
     });
+
+    test('should return ReadonlySignal type after readonly', () {
+      final signal = Signal(5);
+
+      expect(signal.value, equals(5));
+
+      final ReadonlySignal<int> readonlySignal = signal.readonly();
+
+      expect(readonlySignal, isA<ReadonlySignal<int>>());
+      expect(readonlySignal.value, equals(5));
+
+      signal.value = 6;
+      expect(readonlySignal.value, equals(6));
+    });
+
+    test('should return value.toString() in toString', () {
+      final signal = Signal(42);
+      expect(signal.toString(), equals('42'));
+      expect(signal.toString(), equals(signal.value.toString()));
+
+      signal.value = 100;
+      expect(signal.toString(), equals('100'));
+      expect(signal.toString(), equals(signal.value.toString()));
+
+      final stringSignal = Signal('hello');
+      expect(stringSignal.toString(), equals('hello'));
+      expect(stringSignal.toString(), equals(stringSignal.value.toString()));
+
+      stringSignal.value = 'world';
+      expect(stringSignal.toString(), equals('world'));
+      expect(stringSignal.toString(), equals(stringSignal.value.toString()));
+    });
   });
 }

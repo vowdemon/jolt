@@ -113,6 +113,8 @@ void main() {
       final future = Future.value(42);
       final asyncSignal = AsyncSignal.fromFuture(future);
 
+      expect(asyncSignal.source, isA<FutureSource<int>>());
+
       expect(asyncSignal.value, isA<AsyncLoading<int>>());
       expect(asyncSignal.data, isNull);
 
@@ -125,6 +127,8 @@ void main() {
     test('should create AsyncSignal with StreamSource', () async {
       final stream = Stream.value(42);
       final asyncSignal = AsyncSignal.fromStream(stream);
+
+      expect(asyncSignal.source, isA<StreamSource<int>>());
 
       expect(asyncSignal.value, isA<AsyncLoading<int>>());
       expect(asyncSignal.data, isNull);

@@ -35,7 +35,7 @@ class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
   /// final counter = Signal(0);
   /// ```
   Signal(T? value, {JoltDebugFn? onDebug})
-      : currentValue = value,
+      : cachedValue = value,
         super(flags: 1 /* ReactiveFlags.mutable */, pendingValue: value) {
     assert(() {
       if (onDebug != null) {
@@ -47,7 +47,7 @@ class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
   }
 
   @internal
-  dynamic currentValue;
+  dynamic cachedValue;
 
   /// Returns the current value without establishing a reactive dependency.
   ///
@@ -62,7 +62,7 @@ class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
   @override
   T get peek {
     assert(!isDisposed);
-    return currentValue as T;
+    return pendingValue as T;
   }
 
   /// Returns the current value and establishes a reactive dependency.
@@ -138,7 +138,7 @@ class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
   @protected
   void onDispose() {
     globalReactiveSystem.nodeDispose(this);
-    currentValue = null;
+    cachedValue = null;
     pendingValue = null;
   }
 }

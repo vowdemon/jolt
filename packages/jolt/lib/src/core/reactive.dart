@@ -164,7 +164,7 @@ class GlobalReactiveSystem extends ReactiveSystem {
   bool updateSignal<T>(Signal<T> signal) {
     signal.flags = 1 /* ReactiveFlags.mutable */;
 
-    return signal.currentValue != (signal.currentValue = signal.pendingValue);
+    return signal.cachedValue != (signal.cachedValue = signal.pendingValue);
   }
 
   /// Remove the pending flag from a reactive node
@@ -341,7 +341,7 @@ class GlobalReactiveSystem extends ReactiveSystem {
       return true;
     }());
 
-    return signal.currentValue as T;
+    return signal.cachedValue as T;
   }
 
   /// Force update a signal without changing its value

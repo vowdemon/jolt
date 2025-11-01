@@ -333,6 +333,223 @@ void main() {
       signal.value = TestPerson('Bob', 25);
       expect(values, equals([TestPerson('Alice', 30), TestPerson('Bob', 25)]));
     });
+
+    test('should support many effects', () {
+      // Create a signal that will trigger many effects at once
+      final signal = Signal(0);
+
+      // Create more than 64 effects to test queued.add expansion
+      // (queue initial size is 64)
+      const int effectCount = 100;
+      final List<List<int>> allValues = List.generate(
+        effectCount,
+        (_) => <int>[],
+      );
+
+      for (int i = 0; i < effectCount; i++) {
+        final index = i;
+        Effect(() {
+          allValues[index].add(signal.value);
+        });
+      }
+
+      // Verify all effects ran initially
+      for (int i = 0; i < effectCount; i++) {
+        expect(allValues[i], equals([0]));
+      }
+
+      // Trigger all effects simultaneously
+      signal.value = 1;
+
+      // Verify all effects were flushed correctly
+      for (int i = 0; i < effectCount; i++) {
+        expect(allValues[i], equals([0, 1]));
+      }
+
+      // Trigger again to ensure queued.add still works correctly
+      signal.value = 2;
+
+      // Verify all effects were flushed again
+      for (int i = 0; i < effectCount; i++) {
+        expect(allValues[i], equals([0, 1, 2]));
+      }
+    });
+
+    test(
+        'should handle effect modifying values during recursedCheck propagation',
+        () {
+      // Create complex scenario where effect modifies values during execution
+      // This triggers complex recursive propagation with recursedCheck state
+      final signalA = Signal(1);
+      final signalB = Signal(2);
+      final signalC = Signal(3);
+
+      late Computed<int> computed1;
+      late Computed<int> computed2;
+      late Computed<int> computed3;
+      late Computed<int> computed4;
+
+      // Computed 1 depends on signalA
+      computed1 = Computed<int>(() => signalA.value * 10);
+
+      // Computed 2 depends on computed1 and signalB
+      computed2 = Computed<int>(() {
+        // Access computed1 during recursedCheck
+        final c1 = computed1.value;
+        return c1 + signalB.value;
+      });
+
+      // Computed 3 depends on computed2, but also accesses computed1
+      computed3 = Computed<int>(() {
+        // Access computed1 during recursedCheck state
+        computed1.value;
+        return computed2.value * 2;
+      });
+
+      // Computed 4 depends on computed3 and computed1
+      computed4 = Computed<int>(() {
+        // Access computed1 during recursedCheck state
+        computed1.value;
+        return computed3.value + computed1.value;
+      });
+
+      final effectValues = <int>[];
+      final effectCallCount = <int>[0];
+      final modifiedOnce = <bool>[false];
+
+      // Effect depends on computed4, and modifies signal values during execution
+      // This creates complex propagation where nodes are in recursedCheck state
+      // but are neither dirty nor pending, triggering the special branch
+      Effect(() {
+        effectCallCount[0]++;
+        // Access multiple computed values during recursedCheck
+        computed4.value;
+        computed2.value;
+        computed3.value;
+
+        // Modify signal values during effect execution (only once to avoid infinite loop)
+        // This triggers new propagation while effect is in recursedCheck state
+        if (!modifiedOnce[0] && signalA.value == 2) {
+          modifiedOnce[0] = true;
+          signalB.value = signalB.value + 1;
+        }
+
+        effectValues.add(computed4.value);
+      });
+
+      expect(computed1.value, equals(10));
+      expect(computed2.value, equals(12));
+      expect(computed3.value, equals(24));
+      expect(computed4.value, equals(34));
+      expect(effectValues, equals([34]));
+      expect(effectCallCount[0], equals(1));
+
+      // Update signalA to trigger complex propagation
+      // During propagation, effect runs and modifies signalB,
+      // creating cascading updates with recursedCheck states
+      signalA.value = 2;
+
+      expect(computed1.value, equals(20));
+      expect(computed2.value, equals(23)); // signalB was incremented by effect
+      expect(computed3.value, equals(46));
+      expect(computed4.value, equals(66));
+      expect(effectValues.length, greaterThan(1)); // Effect runs multiple times
+
+      // Create another complex scenario with batch update
+      batch(() {
+        signalA.value = 3;
+        signalC.value = 10;
+      });
+
+      expect(computed1.value, equals(30));
+    });
+
+    test(
+        'should trigger recursedCheck branch with effect modifying computed dependencies',
+        () {
+      // Create scenario with multiple effects and computed values
+      // where effects modify signals that other computed values depend on
+      final signal1 = Signal(1);
+      final signal2 = Signal(2);
+      final signal3 = Signal(0);
+
+      late Computed<int> compA;
+      late Computed<int> compB;
+      late Computed<int> compC;
+
+      // Computed A depends on signal1
+      compA = Computed<int>(() => signal1.value * 5);
+
+      // Computed B depends on compA and signal2
+      compB = Computed<int>(() {
+        // Access compA during recursedCheck
+        compA.value;
+        return compA.value + signal2.value;
+      });
+
+      // Computed C depends on compB and also accesses compA
+      compC = Computed<int>(() {
+        // Access compA during recursedCheck state
+        compA.value;
+        return compB.value * 2;
+      });
+
+      final effect1Values = <int>[];
+      final effect2Values = <int>[];
+      final effect1Called = <bool>[false];
+      final effect2Called = <bool>[false];
+
+      // Effect 1 depends on compC and modifies signal3 (not signal2 to avoid loops)
+      Effect(() {
+        if (!effect1Called[0]) {
+          effect1Called[0] = true;
+          effect1Values.add(compC.value);
+          // Modify signal3 during recursedCheck (not signal2 to avoid infinite loop)
+          signal3.value = signal3.value + 1;
+        }
+      });
+
+      // Effect 2 depends on compB and accesses compA
+      Effect(() {
+        if (!effect2Called[0]) {
+          effect2Called[0] = true;
+          // Access compA during recursedCheck
+          compA.value;
+          effect2Values.add(compB.value);
+          // Modify signal3 during recursedCheck (not signal1 to avoid infinite loop)
+          signal3.value = signal3.value + 1;
+        }
+      });
+
+      expect(compA.value, equals(5));
+      expect(compB.value, equals(7));
+      expect(compC.value, equals(14));
+
+      // Update signal1 to trigger complex propagation
+      // Effects will modify signal3 during their recursedCheck state,
+      // creating cascading updates that trigger the special branch
+      signal1.value = 3;
+
+      expect(compA.value, equals(15));
+      // compB = compA + signal2 = 15 + 2 = 17 (signal2 unchanged)
+      expect(compB.value, equals(17));
+      expect(compC.value, equals(34));
+
+      // Reset flags for next test
+      effect1Called[0] = false;
+      effect2Called[0] = false;
+
+      // Test with batch update
+      batch(() {
+        signal1.value = 5;
+        signal2.value = 10;
+      });
+
+      expect(compA.value, equals(25));
+      // compB = compA + signal2 = 25 + 10 = 35
+      expect(compB.value, equals(35));
+      expect(compC.value, equals(70));
+    });
   });
 
   group('EffectScope', () {

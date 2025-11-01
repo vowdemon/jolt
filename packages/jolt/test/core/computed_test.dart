@@ -396,5 +396,72 @@ void main() {
       fullName.value = 'Jane1 Smith2';
       expect(count, equals(4));
     });
+
+    test('should return Computed type after readonly', () {
+      final signal = Signal(5);
+      final writableComputed = WritableComputed<int>(
+        () => signal.value * 2,
+        (value) => signal.value = value ~/ 2,
+      );
+
+      expect(writableComputed.value, equals(10));
+
+      final Computed<int> readonlyComputed = writableComputed.readonly();
+
+      expect(readonlyComputed, isA<Computed<int>>());
+      expect(readonlyComputed.value, equals(10));
+
+      signal.value = 6;
+      expect(readonlyComputed.value, equals(12));
+    });
+  });
+
+  group('toString', () {
+    test('should return value.toString() in toString', () {
+      final signal = Signal(5);
+      final computed = Computed<int>(() => signal.value * 2);
+
+      expect(computed.toString(), equals('10'));
+      expect(computed.toString(), equals(computed.value.toString()));
+
+      signal.value = 6;
+      expect(computed.toString(), equals('12'));
+      expect(computed.toString(), equals(computed.value.toString()));
+
+      final stringSignal = Signal('hello');
+      final stringComputed =
+          Computed<String>(() => stringSignal.value.toUpperCase());
+
+      expect(stringComputed.toString(), equals('HELLO'));
+      expect(
+          stringComputed.toString(), equals(stringComputed.value.toString()));
+
+      stringSignal.value = 'world';
+      expect(stringComputed.toString(), equals('WORLD'));
+      expect(
+          stringComputed.toString(), equals(stringComputed.value.toString()));
+    });
+
+    test('should return value.toString() in toString for WritableComputed', () {
+      final signal = Signal(5);
+      final writableComputed = WritableComputed<int>(
+        () => signal.value * 2,
+        (value) => signal.value = value ~/ 2,
+      );
+
+      expect(writableComputed.toString(), equals('10'));
+      expect(writableComputed.toString(),
+          equals(writableComputed.value.toString()));
+
+      signal.value = 6;
+      expect(writableComputed.toString(), equals('12'));
+      expect(writableComputed.toString(),
+          equals(writableComputed.value.toString()));
+
+      writableComputed.value = 20;
+      expect(writableComputed.toString(), equals('20'));
+      expect(writableComputed.toString(),
+          equals(writableComputed.value.toString()));
+    });
   });
 }

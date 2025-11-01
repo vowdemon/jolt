@@ -1,4 +1,5 @@
 import 'package:jolt/jolt.dart';
+import 'package:jolt/src/core/reactive.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -201,7 +202,7 @@ void main() {
         }
       });
 
-      // 批处理中只应该触发一次更新
+      // Should only trigger one update during batch
       expect(values, equals([0, 100]));
     });
 
@@ -225,7 +226,7 @@ void main() {
         dualComputed.value = 16;
       });
 
-      // 批处理中只应该触发一次更新
+      // Should only trigger one update during batch
       expect(values, equals([2, 16]));
       expect(signal.value, equals(8));
     });
@@ -241,10 +242,10 @@ void main() {
       expect(values, equals([1]));
 
       batch(() {
-        // 空批处理
+        // Empty batch
       });
 
-      // 空批处理不应该触发任何更新
+      // Empty batch should not trigger any updates
       expect(values, equals([1]));
     });
 
@@ -260,13 +261,13 @@ void main() {
 
       batch(() {
         signal.value = 2;
-        // 在批处理中执行异步操作
+        // Execute async operation in batch
         Future.delayed(const Duration(milliseconds: 1), () {
           signal.value = 3;
         });
       });
 
-      // 批处理应该立即完成，异步操作在批处理外执行
+      // Batch should complete immediately, async operation executes outside batch
       expect(values, equals([1, 2]));
 
       await Future.delayed(const Duration(milliseconds: 2));
@@ -303,6 +304,109 @@ void main() {
         });
       });
       expect(values, equals([1, 2, 30, 3, 4, 5]));
+    });
+
+    group('getBatchDepth', () {
+      test('should correctly track depth with multiple batch calls', () {
+        expect(globalReactiveSystem.getBatchDepth(), equals(0));
+
+        batch(() {
+          expect(globalReactiveSystem.getBatchDepth(), equals(1));
+        });
+
+        expect(globalReactiveSystem.getBatchDepth(), equals(0));
+
+        batch(() {
+          expect(globalReactiveSystem.getBatchDepth(), equals(1));
+
+          batch(() {
+            expect(globalReactiveSystem.getBatchDepth(), equals(2));
+          });
+
+          expect(globalReactiveSystem.getBatchDepth(), equals(1));
+        });
+
+        expect(globalReactiveSystem.getBatchDepth(), equals(0));
+      });
+
+      test('should flush effects only when outermost batch completes', () {
+        final signal = Signal(1);
+        final List<int> values = [];
+
+        Effect(() {
+          values.add(signal.value);
+        });
+
+        expect(values, equals([1]));
+
+        batch(() {
+          expect(globalReactiveSystem.getBatchDepth(), equals(1));
+          signal.value = 10;
+
+          batch(() {
+            expect(globalReactiveSystem.getBatchDepth(), equals(2));
+            signal.value = 20;
+            // In nested batch, values should not be updated yet
+            expect(values, equals([1]));
+            expect(signal.value, equals(20));
+          });
+
+          expect(globalReactiveSystem.getBatchDepth(), equals(1));
+          // Still in batch, values should not be updated yet
+          expect(values, equals([1]));
+          expect(signal.value, equals(20));
+
+          signal.value = 30;
+          expect(signal.value, equals(30));
+        });
+
+        // After outermost batch ends, depth should be 0, flush should have been executed
+        expect(globalReactiveSystem.getBatchDepth(), equals(0));
+        expect(values, equals([1, 30]));
+      });
+
+      test('should flush effects correctly after nested batch completes', () {
+        final signal1 = Signal(1);
+        final signal2 = Signal(2);
+        final List<int> values1 = [];
+        final List<int> values2 = [];
+
+        Effect(() {
+          values1.add(signal1.value);
+        });
+
+        Effect(() {
+          values2.add(signal2.value);
+        });
+
+        expect(values1, equals([1]));
+        expect(values2, equals([2]));
+
+        batch(() {
+          signal1.value = 10;
+          expect(globalReactiveSystem.getBatchDepth(), equals(1));
+
+          batch(() {
+            signal2.value = 20;
+            signal1.value = 15;
+            expect(globalReactiveSystem.getBatchDepth(), equals(2));
+            // In nested batch, values should not be updated yet
+            expect(values1, equals([1]));
+            expect(values2, equals([2]));
+          });
+
+          expect(globalReactiveSystem.getBatchDepth(), equals(1));
+          signal2.value = 25;
+          // Still in batch, values should not be updated yet
+          expect(values1, equals([1]));
+          expect(values2, equals([2]));
+        });
+
+        // After outermost batch ends, depth should be 0, flush should have been executed
+        expect(globalReactiveSystem.getBatchDepth(), equals(0));
+        expect(values1, equals([1, 15]));
+        expect(values2, equals([2, 25]));
+      });
     });
   });
 }

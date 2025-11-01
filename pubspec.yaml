@@ -1,6 +1,8 @@
 name: _
 publish_to: none
 
+repository: https://github.com/vowdemon/jolt
+
 environment:
   sdk: ">=3.6.0 <4.0.0"
 
@@ -9,12 +11,10 @@ workspace:
   - packages/jolt_flutter
   - packages/jolt_hooks
   - packages/jolt_surge
+  - packages/jolt_hooks/example
 
 dev_dependencies:
   melos: ^7.3.0
-
-ignore:
-  - 'packages/**/example'
 
 melos:
   ide:
@@ -24,8 +24,30 @@ melos:
     bootstrap:
       environment:
         sdk: ">=3.6.0 <4.0.0"
-      
+
       dependencies:
         meta: ^1.0.0
+      dev_dependencies:
+        test: any
+
     version:
-      workspaceChangelog: false
+      branch: main
+      releaseUrl: true
+      includeCommitId: true
+      linkToCommits: true
+
+  scripts:
+    test:select:
+      run: melos exec -c 1 -- flutter test --coverage
+      packageFilters:
+        dirExists: test
+      description: Run `flutter test` for selected packages.
+
+    test:
+      run: melos run test:select --no-select
+      description: Run all Flutter tests in this project.
+
+    coverage:combine:
+      run: |
+        chmod +x ./.github/scripts/merge_converage.sh
+        ./.github/scripts/merge_converage.sh

@@ -1,0 +1,13 @@
+name: Setup environment and cache dependencies
+description: Prepare flutter and dart dependencies
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        channel: stable
+        cache: true
+    - name: Setup melos
+      uses: bluefireteam/melos-action@v3

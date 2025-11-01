@@ -37,6 +37,8 @@ melos:
       linkToCommits: true
 
   scripts:
+    analyze:
+      run: melos exec -c 3 -- flutter analyze
     test:select:
       run: melos exec -c 1 -- flutter test --coverage
       packageFilters:

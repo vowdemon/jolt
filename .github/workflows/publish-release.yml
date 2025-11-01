@@ -20,4 +20,4 @@ jobs:
       - uses: ./.github/actions/prepare
       - uses: bluefireteam/melos-action@v3
         with:
-          publish-dry-run: true
+          publish: true

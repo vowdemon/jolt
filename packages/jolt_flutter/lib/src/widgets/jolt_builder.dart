@@ -9,9 +9,20 @@ import 'package:jolt/jolt.dart' as jolt;
 ///
 /// This is the primary widget for creating reactive UIs with Jolt signals.
 ///
+/// ## Usage
+///
+/// Any signal, computed value, or reactive collection accessed within the [builder]
+/// will be automatically tracked. When these reactive values change, the widget
+/// rebuilds to reflect the new state.
+///
+/// Multiple signals accessed in the same builder will trigger a single rebuild
+/// when any of them change. Batch updates are handled automatically, ensuring
+/// only one rebuild occurs per frame.
+///
 /// ## Parameters
 ///
-/// - [builder]: Function that builds the widget tree and can access signals
+/// - [builder]: Function that builds the widget tree and can access signals.
+///   This builder runs in a reactive scope, automatically tracking dependencies.
 ///
 /// ## Example
 ///
@@ -32,23 +43,16 @@ import 'package:jolt/jolt.dart' as jolt;
 ///   ),
 /// )
 /// ```
-class JoltBuilder extends Widget {
+class JoltBuilder extends StatelessWidget {
   const JoltBuilder({super.key, required this.builder});
 
   /// Function that builds the widget tree and can access reactive signals.
-  final Widget Function(
-    BuildContext context,
-  ) builder;
-
-  /// Builds the widget in a reactive scope.
   ///
-  /// ## Parameters
-  ///
-  /// - [context]: The build context
-  ///
-  /// ## Returns
-  ///
-  /// The widget built by the [builder] function
+  /// Any signal, computed value, or reactive collection accessed within this
+  /// builder will be automatically tracked, and the widget will rebuild when
+  /// any of them change.
+  final Widget Function(BuildContext context) builder;
+  @override
   Widget build(
     BuildContext context,
   ) =>
@@ -59,7 +63,10 @@ class JoltBuilder extends Widget {
 }
 
 /// Element for [JoltBuilder] that manages reactive rebuilds.
-class JoltBuilderElement extends ComponentElement {
+///
+/// This element creates an [EffectScope] to track dependencies and automatically
+/// triggers rebuilds when tracked signals change.
+class JoltBuilderElement extends StatelessElement {
   JoltBuilderElement(JoltBuilder super.widget);
 
   @override
@@ -102,7 +109,6 @@ class JoltBuilderElement extends ComponentElement {
       markNeedsBuild();
     } else {
       SchedulerBinding.instance.endOfFrame.then((_) {
-        if (_effect?.isDisposed ?? true) return;
         markNeedsBuild();
       });
     }
@@ -118,9 +124,8 @@ class JoltBuilderElement extends ComponentElement {
   }
 
   @override
-  void update(JoltBuilder newWidget) {
+  void update(StatelessWidget newWidget) {
     super.update(newWidget);
-
     assert(widget == newWidget);
     _lastBuiltWidget = null;
     rebuild(force: true);

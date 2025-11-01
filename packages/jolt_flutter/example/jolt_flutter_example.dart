@@ -14,7 +14,7 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
 
-    return JoltResource(
+    return JoltProvider(
       create: (context) {
         final brightness = Signal(Brightness.light);
         final counter = Signal(0);
@@ -46,7 +46,7 @@ class MainApp extends StatelessWidget {
                     : Colors.black,
               ),
               child: Center(
-                child: JoltResource(
+                child: JoltProvider(
                   create: (context) {
                     final lastCounter = Signal(0);
 

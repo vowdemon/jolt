@@ -932,6 +932,291 @@ void main() {
       });
     });
 
+    group('setEnsured', () {
+      test('should rollback on write failure in optimistic mode', () async {
+        final storage = <String, String>{};
+        final persistSignal = PersistSignal<String>(
+          initialValue: () => 'initial',
+          read: () async => storage['key'] ?? 'default',
+          write: (value) {
+            if (value == 'fail') throw Exception('Write failed');
+            storage['key'] = value;
+          },
+        );
+
+        expect(persistSignal.value, equals('initial'));
+
+        // Successful write
+        final success =
+            await persistSignal.setEnsured('success', optimistic: true);
+        expect(success, isTrue);
+        expect(persistSignal.value, equals('success'));
+        expect(storage['key'], equals('success'));
+
+        // Failed write should rollback
+        final failed = await persistSignal.setEnsured('fail', optimistic: true);
+        expect(failed, isFalse);
+        expect(persistSignal.value, equals('success')); // Rolled back
+        expect(storage['key'], equals('success')); // Not updated
+      });
+
+      test('should not set value on write failure in non-optimistic mode',
+          () async {
+        final storage = <String, String>{};
+        final persistSignal = PersistSignal<String>(
+          initialValue: () => 'initial',
+          read: () async => storage['key'] ?? 'default',
+          write: (value) {
+            if (value == 'fail') throw Exception('Write failed');
+            storage['key'] = value;
+          },
+        );
+
+        expect(persistSignal.value, equals('initial'));
+
+        // Failed write should not update signal
+        final failed =
+            await persistSignal.setEnsured('fail', optimistic: false);
+        expect(failed, isFalse);
+        expect(persistSignal.value, equals('initial')); // Not updated
+        expect(storage['key'], isNull); // Not written
+
+        // Successful write should update signal
+        final success =
+            await persistSignal.setEnsured('success', optimistic: false);
+        expect(success, isTrue);
+        expect(persistSignal.value, equals('success'));
+        expect(storage['key'], equals('success'));
+      });
+
+      test('should wait for regular set writes before setEnsured', () async {
+        final storage = <String, String>{};
+        final persistSignal = PersistSignal<String>(
+          initialValue: () => 'initial',
+          read: () async => storage['key'] ?? 'default',
+          write: (value) async {
+            await Future.delayed(const Duration(milliseconds: 50));
+            storage['key'] = value;
+          },
+        );
+
+        // Start a regular set (async write)
+        persistSignal.value = 'regular';
+        expect(persistSignal.value, equals('regular'));
+
+        // setEnsured should wait for regular set to complete
+        final result =
+            await persistSignal.setEnsured('ensured', optimistic: false);
+        expect(result, isTrue);
+        expect(
+            storage['key'], equals('ensured')); // Ensured write should be last
+        expect(persistSignal.value, equals('ensured'));
+      });
+
+      test('should handle rollback correctly when regular set intervenes',
+          () async {
+        final storage = <String, String>{};
+        bool shouldFail = false;
+        final persistSignal = PersistSignal<String>(
+          initialValue: () => 'initial',
+          read: () async => storage['key'] ?? 'default',
+          write: (value) async {
+            await Future.delayed(const Duration(milliseconds: 30));
+            if (shouldFail) throw Exception('Write failed');
+            storage['key'] = value;
+          },
+        );
+
+        expect(persistSignal.value, equals('initial'));
+
+        // Start optimistic setEnsured that will fail
+        shouldFail = true;
+        final setEnsuredFuture =
+            persistSignal.setEnsured('fail', optimistic: true);
+
+        // In optimistic mode, value should be set immediately after await _waitForWrites
+        // But since it's async, we need to wait a bit for the value to be set
+        await Future.delayed(const Duration(milliseconds: 5));
+        expect(persistSignal.value, equals('fail')); // Optimistically set
+
+        // Regular set intervenes during write
+        persistSignal.value = 'regular';
+        expect(persistSignal.value, equals('regular'));
+
+        // Wait for setEnsured to fail
+        final failed = await setEnsuredFuture;
+        expect(failed, isFalse);
+
+        // Should not rollback because regular set intervened (version changed)
+        expect(persistSignal.value, equals('regular')); // Kept regular value
+        expect(storage['key'], isNull); // Nothing written yet
+      });
+
+      test('should handle load correctly when writes are in progress',
+          () async {
+        final storage = <String, String>{};
+        storage['key'] = 'stored_value';
+
+        final persistSignal = PersistSignal<String>.lazy(
+          read: () async {
+            await Future.delayed(const Duration(milliseconds: 50));
+            return storage['key'] ?? 'default';
+          },
+          write: (value) async {
+            await Future.delayed(const Duration(milliseconds: 50));
+            storage['key'] = value;
+          },
+        );
+
+        // Start a regular set (async write)
+        persistSignal.value = 'written';
+        expect(persistSignal.value, equals('written'));
+
+        // Load should wait for write to complete
+        final loaded = await persistSignal.getEnsured();
+        expect(loaded, equals('written')); // Should get the value after write
+      });
+
+      test('should handle multiple setEnsured operations correctly', () async {
+        final storage = <String, String>{};
+        final persistSignal = PersistSignal<String>(
+          initialValue: () => 'initial',
+          read: () async => storage['key'] ?? 'default',
+          write: (value) async {
+            await Future.delayed(const Duration(milliseconds: 20));
+            storage['key'] = value;
+          },
+        );
+
+        // Start multiple setEnsured operations
+        final future1 = persistSignal.setEnsured('value1', optimistic: false);
+        final future2 = persistSignal.setEnsured('value2', optimistic: false);
+
+        final results = await Future.wait([future1, future2]);
+        expect(results[0], isTrue);
+        expect(results[1], isTrue);
+
+        // Last write should win
+        expect(storage['key'], equals('value2'));
+        expect(persistSignal.value, equals('value2'));
+      });
+
+      test('should handle optimistic rollback with concurrent regular set',
+          () async {
+        final storage = <String, String>{};
+        final persistSignal = PersistSignal<String>(
+          initialValue: () => 'initial',
+          read: () async => storage['key'] ?? 'default',
+          write: (value) async {
+            await Future.delayed(const Duration(milliseconds: 30));
+            if (value == 'fail') throw Exception('Write failed');
+            storage['key'] = value;
+          },
+        );
+
+        // Start optimistic setEnsured that will fail
+        final setEnsuredFuture =
+            persistSignal.setEnsured('fail', optimistic: true);
+
+        // Wait a bit for optimistic value to be set
+        await Future.delayed(const Duration(milliseconds: 5));
+        expect(persistSignal.value, equals('fail')); // Optimistically set
+
+        // Regular set intervenes
+        persistSignal.value = 'regular';
+        expect(persistSignal.value, equals('regular'));
+
+        // Wait for setEnsured to complete
+        final failed = await setEnsuredFuture;
+        expect(failed, isFalse);
+
+        // Should not rollback because regular set changed version
+        expect(persistSignal.value, equals('regular'));
+      });
+
+      test('should handle rollback correctly when load intervenes', () async {
+        final storage = <String, String>{};
+        storage['key'] = 'loaded_value';
+
+        final persistSignal = PersistSignal<String>.lazy(
+          read: () async {
+            await Future.delayed(const Duration(milliseconds: 40));
+            return storage['key'] ?? 'default';
+          },
+          write: (value) async {
+            await Future.delayed(const Duration(milliseconds: 40));
+            if (value == 'fail') throw Exception('Write failed');
+            storage['key'] = value;
+          },
+        );
+
+        // Wait for initial load
+        await persistSignal.getEnsured();
+        expect(persistSignal.value, equals('loaded_value'));
+
+        // Start optimistic setEnsured that will fail
+        final setEnsuredFuture =
+            persistSignal.setEnsured('fail', optimistic: true);
+
+        // Wait a bit for optimistic value to be set
+        await Future.delayed(const Duration(milliseconds: 5));
+        expect(persistSignal.value, equals('fail')); // Optimistically set
+
+        // Load intervenes during write - it will wait for write to complete
+        // But since hasInitialized is true, getEnsured won't reload from storage
+        // It will just return the current value after waiting for writes
+        final loadFuture = persistSignal.getEnsured();
+
+        // Wait for both operations
+        final results = await Future.wait([setEnsuredFuture, loadFuture]);
+        expect(results[0], isFalse); // setEnsured failed
+
+        // Load waited for write to complete, but since hasInitialized is true,
+        // it won't reload from storage, so it returns the current optimistic value
+        // However, setEnsured failed, so optimistic value should be rolled back
+        // But if load happens before rollback, we get the optimistic value
+        final loaded = results[1];
+        // The actual behavior: load waits for writes, then returns current value
+        // Since optimistic value was set, we get 'fail' (but setEnsured will rollback after)
+        // Actually, load might complete before setEnsured's rollback
+        expect(loaded, anyOf(['fail', 'loaded_value'])); // Could be either
+        // After both complete, value should be rolled back or loaded value
+        await Future.delayed(const Duration(milliseconds: 50));
+        expect(persistSignal.value,
+            equals('loaded_value')); // Eventually rolled back or loaded
+      });
+
+      test('should handle optimistic mode with writeDelay', () async {
+        final storage = <String, String>{};
+        final persistSignal = PersistSignal<String>(
+          initialValue: () => 'initial',
+          read: () async => storage['key'] ?? 'default',
+          write: (value) {
+            if (value == 'fail') throw Exception('Write failed');
+            storage['key'] = value;
+          },
+          writeDelay: const Duration(milliseconds: 50),
+        );
+
+        expect(persistSignal.value, equals('initial'));
+
+        // Successful write with delay
+        final success =
+            await persistSignal.setEnsured('success', optimistic: true);
+        expect(success, isTrue);
+        expect(persistSignal.value, equals('success'));
+        await Future.delayed(const Duration(milliseconds: 60));
+        expect(storage['key'], equals('success'));
+
+        // Failed write with delay should rollback
+        final failed = await persistSignal.setEnsured('fail', optimistic: true);
+        expect(failed, isFalse);
+        expect(persistSignal.value, equals('success')); // Rolled back
+        await Future.delayed(const Duration(milliseconds: 60));
+        expect(storage['key'], equals('success')); // Not updated
+      });
+    });
+
     group('Tricks Integration', () {
       test('ConvertComputed with PersistSignal', () async {
         final storage = <String, String>{};

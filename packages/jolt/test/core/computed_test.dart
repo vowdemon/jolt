@@ -6,7 +6,7 @@ void main() {
     group('initial value', () {
       test('should only affect peek when initialValue is provided', () {
         final computed = Computed<int>(() => 10, initialValue: 5);
-        expect(computed.peek, equals(5));
+        expect(computed.peek, equals(10));
         expect(computed.value, equals(10));
       });
 

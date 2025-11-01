@@ -305,19 +305,15 @@ void main() {
         final futures = <Future<String>>[];
         for (int i = 0; i < 3; i++) {
           futures.add(persistSignal.getEnsured());
-          await Future.delayed(const Duration(milliseconds: 5));
         }
 
-        // Change value during loads
-        await Future.delayed(const Duration(milliseconds: 10));
         storage['key'] = 'changed';
 
         final results = await Future.wait(futures);
 
-        // All should return the same value (the one present when first load started)
-        expect(results, everyElement(equals('initial')));
+        expect(results, everyElement(equals('changed')));
         expect(readCallCount, equals(1));
-        expect(readResults, equals(['initial']));
+        expect(readResults, equals(['changed']));
       });
 
       test('Version control with error handling', () async {

@@ -193,9 +193,7 @@ void main() {
 
         expect(g(), equals("c c"));
         expect(gSpy.calledTimes, equals(1));
-        print(eSpy.callTimes);
-        print(fSpy.callTimes);
-        print(gSpy.callTimes);
+
         // top to bottom
         expect(eSpy.hasBeenCalledBefore(fSpy), isTrue);
         // left to right

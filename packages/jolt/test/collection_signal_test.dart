@@ -142,9 +142,9 @@ void main() {
 
         // forEach
         final forEachValues = <int>[];
-        for (var e in listSignal) {
-          forEachValues.add(e);
-        }
+        // ignore: avoid_function_literals_in_foreach_calls
+        listSignal.forEach((e) => forEachValues.add(e));
+
         expect(forEachValues, equals([1, 2, 3, 4, 5]));
 
         // Operator +
@@ -572,9 +572,13 @@ void main() {
 
         // Iterator
         final values = <int>[];
-        for (final value in setSignal) {
-          values.add(value);
+        // ignore: avoid_function_literals_in_foreach_calls
+        expect(setSignal.iterator.moveNext(), isTrue);
+        final iterator = setSignal.iterator;
+        while (iterator.moveNext()) {
+          values.add(iterator.current);
         }
+
         expect(values.length, equals(5));
         expect(values.toSet(), equals({1, 2, 3, 4, 5}));
 
@@ -623,9 +627,9 @@ void main() {
 
         // forEach
         final forEachValues = <int>[];
-        for (var e in setSignal) {
-          forEachValues.add(e);
-        }
+        // ignore: avoid_function_literals_in_foreach_calls
+        setSignal.forEach((e) => forEachValues.add(e));
+
         expect(forEachValues.length, equals(5));
         expect(forEachValues.toSet(), equals({1, 2, 3, 4, 5}));
 
@@ -925,9 +929,9 @@ void main() {
 
         // Iterator
         final values = <int>[];
-        for (final value in iterableSignal) {
-          values.add(value);
-        }
+        // ignore: avoid_function_literals_in_foreach_calls
+        iterableSignal.value.forEach((e) => values.add(e));
+
         expect(values, equals([1, 2, 3, 4, 5]));
 
         // Query methods

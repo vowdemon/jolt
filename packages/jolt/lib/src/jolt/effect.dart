@@ -230,8 +230,6 @@ class Effect extends EffectBaseNode implements JEffectNode {
   /// The function that defines the effect's behavior.
   final void Function() fn;
 
-  bool initialized = false;
-
   /// Manually runs the effect function.
   ///
   /// This establishes the effect as the current reactive context,
@@ -266,7 +264,7 @@ class Effect extends EffectBaseNode implements JEffectNode {
 typedef SourcesFn<T> = T Function();
 
 /// Function type for handling watcher value changes.
-typedef WatcherFn<T> = FutureOr<void> Function(T newValue, T oldValue);
+typedef WatcherFn<T> = FutureOr<void> Function(T newValue, T? oldValue);
 
 /// Function type for determining when a watcher should trigger.
 typedef WhenFn<T> = bool Function(T newValue, T oldValue);
@@ -329,8 +327,8 @@ class Watcher<T> extends EffectBaseNode implements JEffectNode {
     try {
       prevSources = sourcesFn();
       if (immediately) {
-        fn(prevSources, prevSources);
-        _first = false;
+        fn(prevSources, null);
+
         assert(() {
           untracked(() {
             getJoltDebugFn(this)?.call(DebugNodeOperationType.effect, this);
@@ -342,8 +340,6 @@ class Watcher<T> extends EffectBaseNode implements JEffectNode {
       globalReactiveSystem.setActiveSub(prevSub);
     }
   }
-
-  bool _first = true;
 
   /// Function that provides the source values to watch.
   final SourcesFn<T> sourcesFn;
@@ -381,22 +377,21 @@ class Watcher<T> extends EffectBaseNode implements JEffectNode {
   @pragma('dart2js:prefer-inline')
   bool run() {
     final sources = sourcesFn();
-    if (!_first &&
-        ((when == null && sources == prevSources) ||
-            (when != null && !when!(sources, prevSources)))) {
+    if (((when == null && sources == prevSources) ||
+        (when != null && !when!(sources, prevSources)))) {
       assert(() {
         untracked(() {
           getJoltDebugFn(this)?.call(DebugNodeOperationType.effect, this);
         });
         return true;
       }());
+
       return false;
     }
     untracked(() {
       fn(sources, prevSources);
     });
     prevSources = sources;
-    _first = false;
 
     assert(() {
       untracked(() {

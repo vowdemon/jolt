@@ -51,7 +51,7 @@ class MainApp extends StatelessWidget {
                     final lastCounter = Signal(0);
 
                     Watcher(() => store.doubleCount.value, (_, oldValue) {
-                      lastCounter.value = oldValue;
+                      lastCounter.value = oldValue!;
                     });
                     return lastCounter;
                   },

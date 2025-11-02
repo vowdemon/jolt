@@ -1602,16 +1602,19 @@ class TestSurgeObserver extends SurgeObserver {
 
   @override
   void onCreate(surge) {
+    super.onCreate(surge);
     created.add(surge);
   }
 
   @override
   void onChange(surge, Change change) {
+    super.onChange(surge, change);
     changes.add(change);
   }
 
   @override
   void onDispose(surge) {
+    super.onDispose(surge);
     disposed.add(surge);
   }
 }

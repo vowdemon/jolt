@@ -202,8 +202,15 @@ class WritableComputed<T> extends Computed<T> implements Signal<T> {
   @override
   void set(T newValue) {
     assert(!isDisposed);
-    cachedValue = newValue;
-    setter(newValue);
+    globalReactiveSystem.startBatch();
+    try {
+      setter(newValue);
+      cachedValue = newValue;
+    } catch (_) {
+      rethrow;
+    } finally {
+      globalReactiveSystem.endBatch();
+    }
   }
 }
 

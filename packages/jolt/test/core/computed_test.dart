@@ -376,10 +376,8 @@ void main() {
         (value) {
           final parts = value.split(' ');
           if (parts.length >= 2) {
-            batch(() {
-              firstName.value = parts[0];
-              lastName.value = parts.sublist(1).join(' ');
-            });
+            firstName.value = parts[0];
+            lastName.value = parts.sublist(1).join(' ');
           }
         },
       );

@@ -589,4 +589,423 @@ void main() {
       expect(find.text('Iterable: [2, 4, 6]'), findsOneWidget);
     });
   });
+
+  group('useJoltWidget', () {
+    testWidgets('should render with initial values', (tester) async {
+      final counter = Signal(0);
+      final name = Signal('Flutter');
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HookBuilder(
+            builder: (context) => useJoltWidget(() {
+              return Text('Count: ${counter.value}, Name: ${name.value}',
+                  textDirection: TextDirection.ltr);
+            }),
+          ),
+        ),
+      );
+
+      expect(find.text('Count: 0, Name: Flutter'), findsOneWidget);
+    });
+
+    testWidgets('should rebuild when signal changes', (tester) async {
+      final counter = Signal(0);
+      int buildCount = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HookBuilder(
+            builder: (context) => useJoltWidget(() {
+              buildCount++;
+              return Text('Count: ${counter.value}',
+                  textDirection: TextDirection.ltr);
+            }),
+          ),
+        ),
+      );
+
+      expect(buildCount, equals(1));
+      expect(find.text('Count: 0'), findsOneWidget);
+
+      counter.value = 5;
+      await tester.pumpAndSettle();
+
+      expect(buildCount, greaterThan(1));
+      expect(find.text('Count: 5'), findsOneWidget);
+    });
+
+    testWidgets('should respond to multiple signal changes', (tester) async {
+      final counter = Signal(0);
+      final name = Signal('A');
+      int buildCount = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HookBuilder(
+            builder: (context) => useJoltWidget(() {
+              buildCount++;
+              return Text('Count: ${counter.value}, Name: ${name.value}',
+                  textDirection: TextDirection.ltr);
+            }),
+          ),
+        ),
+      );
+
+      final initialBuildCount = buildCount;
+
+      counter.value = 10;
+      await tester.pumpAndSettle();
+
+      expect(buildCount, greaterThan(initialBuildCount));
+      expect(find.text('Count: 10, Name: A'), findsOneWidget);
+
+      name.value = 'B';
+      await tester.pumpAndSettle();
+
+      expect(buildCount, greaterThan(initialBuildCount + 1));
+      expect(find.text('Count: 10, Name: B'), findsOneWidget);
+    });
+
+    testWidgets('should respond to computed signal changes', (tester) async {
+      final counter = Signal(0);
+      final doubled = Computed(() => counter.value * 2);
+      int buildCount = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HookBuilder(
+            builder: (context) => useJoltWidget(() {
+              buildCount++;
+              return Text('Count: ${counter.value}, Doubled: ${doubled.value}',
+                  textDirection: TextDirection.ltr);
+            }),
+          ),
+        ),
+      );
+
+      final initialBuildCount = buildCount;
+
+      counter.value = 5;
+      await tester.pumpAndSettle();
+
+      expect(buildCount, greaterThan(initialBuildCount));
+      expect(find.text('Count: 5, Doubled: 10'), findsOneWidget);
+    });
+
+    testWidgets('should handle nested useJoltWidget with independent rebuilds',
+        (tester) async {
+      final outerSignal = Signal('Outer');
+      final innerSignal = Signal('Inner');
+      int outerBuildCount = 0;
+      int innerBuildCount = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HookBuilder(
+            builder: (context) => useJoltWidget(() {
+              outerBuildCount++;
+              return Column(
+                children: [
+                  Text('OuterOuter: ${outerSignal.value}'),
+                  HookBuilder(builder: (context) {
+                    return useJoltWidget(() {
+                      innerBuildCount++;
+                      return Column(
+                        textDirection: TextDirection.ltr,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('Outer: ${outerSignal.value}'),
+                          Text('Inner: ${innerSignal.value}'),
+                        ],
+                      );
+                    });
+                  }),
+                ],
+              );
+            }),
+          ),
+        ),
+      );
+
+      final initialOuterBuildCount = outerBuildCount;
+      final initialInnerBuildCount = innerBuildCount;
+
+      expect(outerBuildCount, equals(1));
+      expect(innerBuildCount, equals(1));
+
+      outerSignal.value = 'OuterUpdated';
+      await tester.pumpAndSettle();
+
+      expect(outerBuildCount, equals(initialOuterBuildCount + 1));
+      expect(innerBuildCount, equals(initialInnerBuildCount + 1));
+
+      expect(find.text('Outer: OuterUpdated'), findsOneWidget);
+
+      innerSignal.value = 'InnerUpdated';
+      await tester.pumpAndSettle();
+
+      expect(outerBuildCount, equals(initialOuterBuildCount + 1));
+      expect(innerBuildCount, equals(initialInnerBuildCount + 2));
+      expect(find.text('Inner: InnerUpdated'), findsOneWidget);
+    });
+
+    testWidgets(
+        'should dispose resources correctly and stop responding after unmount',
+        (tester) async {
+      final counter = Signal(0);
+      int buildCount = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HookBuilder(
+            builder: (context) => useJoltWidget(() {
+              buildCount++;
+              return Text('Count: ${counter.value}',
+                  textDirection: TextDirection.ltr);
+            }),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      expect(buildCount, greaterThan(0));
+      final initialBuildCount = buildCount;
+
+      counter.value = 1;
+      await tester.pumpAndSettle();
+
+      expect(buildCount, greaterThan(initialBuildCount));
+
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+      await tester.pumpAndSettle();
+
+      final buildCountBeforeUnmount = buildCount;
+
+      counter.value = 2;
+      await tester.pumpAndSettle();
+
+      expect(buildCount, equals(buildCountBeforeUnmount));
+    });
+
+    testWidgets('should handle batch updates', (tester) async {
+      final counter = Signal(0);
+      int buildCount = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HookBuilder(
+            builder: (context) => useJoltWidget(() {
+              buildCount++;
+              return Text('Count: ${counter.value}',
+                  textDirection: TextDirection.ltr);
+            }),
+          ),
+        ),
+      );
+
+      final initialBuildCount = buildCount;
+
+      batch(() {
+        counter.value = 1;
+        counter.value = 2;
+        counter.value = 3;
+      });
+
+      await tester.pumpAndSettle();
+
+      expect(buildCount, equals(initialBuildCount + 1));
+      expect(find.text('Count: 3'), findsOneWidget);
+    });
+
+    testWidgets('should work with keys parameter', (tester) async {
+      final counter1 = Signal(0);
+      final counter2 = Signal(10);
+      int buildCount = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HookBuilder(
+            builder: (context) => useJoltWidget(
+              () {
+                buildCount++;
+                return Text('Count: ${counter1.value}',
+                    textDirection: TextDirection.ltr);
+              },
+              keys: [1],
+            ),
+          ),
+        ),
+      );
+
+      final initialBuildCount = buildCount;
+
+      counter1.value = 5;
+      await tester.pumpAndSettle();
+
+      expect(buildCount, greaterThan(initialBuildCount));
+      expect(find.text('Count: 5'), findsOneWidget);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HookBuilder(
+            builder: (context) => useJoltWidget(
+              () {
+                buildCount++;
+                return Text('Count: ${counter2.value}',
+                    textDirection: TextDirection.ltr);
+              },
+              keys: [2],
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Count: 10'), findsOneWidget);
+    });
+
+    testWidgets('should rebuild when parent widget changes', (tester) async {
+      final counter = Signal(0);
+      Widget parent = MaterialApp(
+        home: HookBuilder(
+          builder: (context) => useJoltWidget(() {
+            return Text('Count: ${counter.value}',
+                textDirection: TextDirection.ltr);
+          }),
+        ),
+      );
+
+      await tester.pumpWidget(parent);
+
+      expect(find.text('Count: 0'), findsOneWidget);
+
+      parent = MaterialApp(
+        theme: ThemeData(primaryColor: Colors.blue),
+        home: HookBuilder(
+          builder: (context) => useJoltWidget(() {
+            return Text('Count: ${counter.value}',
+                textDirection: TextDirection.ltr);
+          }),
+        ),
+      );
+
+      await tester.pumpWidget(parent);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Count: 0'), findsOneWidget);
+    });
+
+    testWidgets('should handle signal changes in builder', (tester) async {
+      final counter = Signal(0);
+      final nestedCounter = Signal(0);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HookBuilder(
+            builder: (context) => useJoltWidget(() {
+              if (counter.value == 0) {
+                nestedCounter.value = 50;
+              }
+              return Column(
+                textDirection: TextDirection.ltr,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Count: ${counter.value}'),
+                  Text('Nested: ${nestedCounter.value}'),
+                ],
+              );
+            }),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Count: 0'), findsOneWidget);
+      expect(find.text('Nested: 50'), findsOneWidget);
+    });
+
+    testWidgets('should work with ListSignal', (tester) async {
+      final listSignal = Signal(ListSignal<int>([1, 2, 3]));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HookBuilder(
+            builder: (context) => useJoltWidget(() {
+              return Text('List: ${listSignal.value.join(", ")}',
+                  textDirection: TextDirection.ltr);
+            }),
+          ),
+        ),
+      );
+
+      expect(find.text('List: 1, 2, 3'), findsOneWidget);
+
+      listSignal.value.add(4);
+      await tester.pumpAndSettle();
+
+      expect(find.text('List: 1, 2, 3, 4'), findsOneWidget);
+    });
+
+    testWidgets('should work with MapSignal', (tester) async {
+      final mapSignal = Signal(MapSignal<String, int>({'a': 1, 'b': 2}));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HookBuilder(
+            builder: (context) => useJoltWidget(() {
+              return Text(
+                  'Map: ${mapSignal.value['a']}, ${mapSignal.value['b']}',
+                  textDirection: TextDirection.ltr);
+            }),
+          ),
+        ),
+      );
+
+      expect(find.text('Map: 1, 2'), findsOneWidget);
+
+      mapSignal.value['c'] = 3;
+      await tester.pumpAndSettle();
+
+      expect(find.text('Map: 1, 2'), findsOneWidget);
+      expect(mapSignal.value['c'], equals(3));
+    });
+
+    testWidgets('should handle external and internal signals', (tester) async {
+      final outerSignal = Signal(0);
+      late Signal<int> innerSignal;
+      int buildCount = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HookBuilder(builder: (context) {
+            innerSignal = useSignal(0);
+            return useJoltWidget(() {
+              buildCount++;
+              return Text(
+                  'Outer: ${outerSignal.value}, Inner: ${innerSignal.value}',
+                  textDirection: TextDirection.ltr);
+            });
+          }),
+        ),
+      );
+
+      expect(buildCount, equals(1));
+      expect(find.text('Outer: 0, Inner: 0'), findsOneWidget);
+
+      outerSignal.value = 1;
+      await tester.pumpAndSettle();
+
+      expect(buildCount, equals(2));
+      expect(find.text('Outer: 1, Inner: 0'), findsOneWidget);
+
+      innerSignal.value = 1;
+      await tester.pumpAndSettle();
+
+      expect(buildCount, equals(3));
+      expect(find.text('Outer: 1, Inner: 1'), findsOneWidget);
+    });
+  });
 }

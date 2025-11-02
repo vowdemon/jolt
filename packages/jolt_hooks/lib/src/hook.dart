@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:jolt/jolt.dart';
 import 'package:jolt/tricks.dart';
@@ -576,4 +578,47 @@ IterableSignal<T> useIterableSignal<T>(
   JoltDebugFn? onDebug,
 }) {
   return use(JoltHook(IterableSignal(getter, onDebug: onDebug), keys: keys));
+}
+
+/// Creates a reactive widget hook that automatically rebuilds when dependencies change.
+///
+/// This hook wraps a widget builder function within a Jolt [Effect], automatically
+/// tracking any signals or computed values accessed during the build. When any
+/// tracked dependencies change, the widget is automatically rebuilt.
+///
+/// **Important:** This hook must be used within a [HookBuilder]. If you need to
+/// use signals outside of [HookBuilder], create them using [Signal] or [Computed]
+/// directly without the `use` prefix.
+///
+/// Parameters:
+/// - [builder]: Function that builds the widget. Any signals or computed values
+///   accessed within this function will be tracked as dependencies.
+/// - [keys]: Optional keys for hook memoization. When keys change, the hook
+///   will be recreated.
+///
+/// Returns: A [Widget] that automatically rebuilds when its dependencies change
+///
+/// Example:
+/// ```dart
+/// final counter = signal(0);
+/// Widget build(BuildContext context) {
+///   return HookBuilder(
+///     builder: (context) {
+///       return useJoltWidget(() {
+///         return Column(
+///           children: [
+///             Text('Count: ${counter.value}'),
+///             ElevatedButton(
+///               onPressed: () => counter.value++,
+///               child: Text('Increment'),
+///             ),
+///           ],
+///         );
+///       });
+///     },
+///   );
+/// }
+/// ```
+T useJoltWidget<T extends Widget>(T Function() builder, {List<Object?>? keys}) {
+  return use(JoltWidgetHook(builder, keys: keys));
 }

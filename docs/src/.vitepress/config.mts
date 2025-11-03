@@ -8,6 +8,8 @@ export default defineConfig({
   head: [
     ['meta', { name: 'keywords', content: 'jolt, reactive, state management, dart, flutter, signals' }],
     ['meta', { name: 'author', content: 'vowdemon' }],
+    ['script', { defer: '', 'data-domain': 'jolt.vowdemon.com', src: 'https://pa.vowzero.xyz/js/script.outbound-links.pageview-props.tagged-events.js' },],
+    ['script', {}, `window.plausible = window.plausible || function() { (window.plausible.q = window.plausible.q || []).push(arguments) }`]
   ],
 
   markdown: {

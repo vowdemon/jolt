@@ -82,7 +82,7 @@ class EffectScope extends EffectBaseNode {
   /// });
   /// ```
   EffectScope(void Function(EffectScope scope)? fn, {JoltDebugFn? onDebug})
-      : super(flags: 0 /* ReactiveFlags.none */) {
+      : super(flags: ReactiveFlags.none) {
     assert(() {
       if (onDebug != null) {
         setJoltDebugFn(this, onDebug);
@@ -194,7 +194,7 @@ class Effect extends EffectBaseNode implements JEffectNode {
   /// effect.run(); // Manually run the effect
   /// ```
   Effect(this.fn, {bool immediately = true, JoltDebugFn? onDebug})
-      : super(flags: 2 /* ReactiveFlags.watching */) {
+      : super(flags: ReactiveFlags.watching) {
     assert(() {
       if (onDebug != null) {
         setJoltDebugFn(this, onDebug);
@@ -312,7 +312,7 @@ class Watcher<T> extends EffectBaseNode implements JEffectNode {
   /// ```
   Watcher(this.sourcesFn, this.fn,
       {bool immediately = false, this.when, JoltDebugFn? onDebug})
-      : super(flags: 2 /* ReactiveFlags.watching */) {
+      : super(flags: ReactiveFlags.watching) {
     assert(() {
       if (onDebug != null) {
         setJoltDebugFn(this, onDebug);

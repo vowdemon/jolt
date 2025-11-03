@@ -1,6 +1,7 @@
 import 'package:jolt/src/core/debug.dart';
 import 'package:meta/meta.dart';
 
+import '../core/system.dart' show ReactiveFlags;
 import 'base.dart';
 import '../core/reactive.dart';
 
@@ -36,7 +37,7 @@ class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
   /// ```
   Signal(T? value, {JoltDebugFn? onDebug})
       : cachedValue = value,
-        super(flags: 1 /* ReactiveFlags.mutable */, pendingValue: value) {
+        super(flags: ReactiveFlags.mutable, pendingValue: value) {
     assert(() {
       if (onDebug != null) {
         setJoltDebugFn(this, onDebug);

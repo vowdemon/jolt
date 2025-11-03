@@ -207,8 +207,6 @@ class WritableComputed<T> extends Computed<T> implements Signal<T> {
     try {
       setter(newValue);
       cachedValue = newValue;
-    } catch (_) {
-      rethrow;
     } finally {
       globalReactiveSystem.endBatch();
     }

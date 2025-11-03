@@ -9,14 +9,13 @@ import '../core/system.dart';
 import 'untracked.dart';
 
 /// Interface for reactive nodes that can execute effect functions.
-abstract interface class JEffectNode implements ReactiveNode {
+abstract interface class EffectBase implements ReactiveNode {
   /// Executes the effect function.
   void effectFn();
 }
 
 /// Base class for all effect nodes in the reactive system.
-abstract class EffectBaseNode extends ReactiveNode
-    implements ChainedDisposable {
+abstract class JEffect extends ReactiveNode implements ChainedDisposable {
   /// Create an effect base node.
   ///
   /// Parameters:
@@ -25,7 +24,7 @@ abstract class EffectBaseNode extends ReactiveNode
   /// - [subsTail]: Tail of subscribers list
   /// - [deps]: Dependencies list
   /// - [depsTail]: Tail of dependencies list
-  EffectBaseNode({
+  JEffect({
     required super.flags,
     super.subs,
     super.subsTail,
@@ -34,13 +33,37 @@ abstract class EffectBaseNode extends ReactiveNode
   });
 
   bool isDisposed = false;
+  late final List<Disposer> _cleanups = [];
 
   @override
   @mustCallSuper
   void dispose() {
     if (isDisposed) return;
     isDisposed = true;
+    _doCleanup();
     onDispose();
+  }
+
+  @internal
+  onCleanUp(Disposer fn) {
+    _cleanups.add(fn);
+  }
+
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
+  void _doCleanup() {
+    if (_cleanups.isEmpty) return;
+    for (final cleanup in _cleanups) {
+      cleanup();
+    }
+    _cleanups.clear();
+  }
+
+  @override
+  @mustCallSuper
+  void onDispose() {
+    globalReactiveSystem.nodeDispose(this);
   }
 }
 
@@ -62,7 +85,7 @@ abstract class EffectBaseNode extends ReactiveNode
 /// // Later, dispose all effects in the scope
 /// scope.dispose();
 /// ```
-class EffectScope extends EffectBaseNode {
+class EffectScope extends JEffect {
   /// Creates a new effect scope and runs the provided function.
   ///
   /// Parameters:
@@ -95,11 +118,13 @@ class EffectScope extends EffectBaseNode {
       globalReactiveSystem.link(this, prevSub, 0);
     }
 
+    final prevScope = globalReactiveSystem.setActiveScope(this);
     try {
       if (fn != null) {
         fn(this);
       }
     } finally {
+      globalReactiveSystem.setActiveScope(prevScope);
       globalReactiveSystem.setActiveSub(prevSub);
     }
     assert(() {
@@ -130,7 +155,7 @@ class EffectScope extends EffectBaseNode {
     T Function(EffectScope scope) fn,
   ) {
     final prevSub = globalReactiveSystem.setActiveSub(this);
-
+    final prevScope = globalReactiveSystem.setActiveScope(this);
     try {
       final result = fn(this);
 
@@ -143,13 +168,9 @@ class EffectScope extends EffectBaseNode {
 
       return result;
     } finally {
+      globalReactiveSystem.setActiveScope(prevScope);
       globalReactiveSystem.setActiveSub(prevSub);
     }
-  }
-
-  @override
-  void onDispose() {
-    globalReactiveSystem.nodeDispose(this);
   }
 }
 
@@ -173,7 +194,7 @@ class EffectScope extends EffectBaseNode {
 ///
 /// effect.dispose(); // Stop the effect
 /// ```
-class Effect extends EffectBaseNode implements JEffectNode {
+class Effect extends JEffect implements EffectBase {
   /// Creates a new effect with the given function.
   ///
   /// Parameters:
@@ -218,6 +239,7 @@ class Effect extends EffectBaseNode implements JEffectNode {
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
   void effectFn() {
+    _doCleanup();
     fn();
     assert(() {
       untracked(() {
@@ -241,22 +263,8 @@ class Effect extends EffectBaseNode implements JEffectNode {
   /// effect.run(); // Prints: "Hello"
   /// ```
   void run() {
-    final prevSub = globalReactiveSystem.setActiveSub(this);
-    try {
-      fn();
-    } finally {
-      globalReactiveSystem.setActiveSub(prevSub);
-    }
-    assert(() {
-      getJoltDebugFn(this)?.call(DebugNodeOperationType.effect, this);
-
-      return true;
-    }());
-  }
-
-  @override
-  void onDispose() {
-    globalReactiveSystem.nodeDispose(this);
+    flags |= ReactiveFlags.dirty;
+    globalReactiveSystem.run(this);
   }
 }
 
@@ -290,7 +298,7 @@ typedef WhenFn<T> = bool Function(T newValue, T oldValue);
 /// count.value = 1; // Triggers watcher
 /// name.value = 'Bob'; // Triggers watcher
 /// ```
-class Watcher<T> extends EffectBaseNode implements JEffectNode {
+class Watcher<T> extends JEffect implements EffectBase {
   /// Creates a new watcher with the given sources and callback.
   ///
   /// Parameters:
@@ -327,8 +335,12 @@ class Watcher<T> extends EffectBaseNode implements JEffectNode {
     try {
       prevSources = sourcesFn();
       if (immediately) {
-        fn(prevSources, null);
-
+        untracked(() {
+          final prevWatcher = activeWatcher;
+          activeWatcher = this;
+          fn(prevSources, null);
+          activeWatcher = prevWatcher;
+        });
         assert(() {
           untracked(() {
             getJoltDebugFn(this)?.call(DebugNodeOperationType.effect, this);
@@ -340,6 +352,8 @@ class Watcher<T> extends EffectBaseNode implements JEffectNode {
       globalReactiveSystem.setActiveSub(prevSub);
     }
   }
+
+  static Watcher? activeWatcher;
 
   /// Function that provides the source values to watch.
   final SourcesFn<T> sourcesFn;
@@ -358,12 +372,8 @@ class Watcher<T> extends EffectBaseNode implements JEffectNode {
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
   void effectFn() {
+    _doCleanup();
     run();
-  }
-
-  @override
-  void onDispose() {
-    globalReactiveSystem.nodeDispose(this);
   }
 
   /// Triggers the watcher to check for changes and potentially execute.
@@ -389,7 +399,10 @@ class Watcher<T> extends EffectBaseNode implements JEffectNode {
       return false;
     }
     untracked(() {
+      final prevWatcher = activeWatcher;
+      activeWatcher = this;
       fn(sources, prevSources);
+      activeWatcher = prevWatcher;
     });
     prevSources = sources;
 
@@ -402,4 +415,30 @@ class Watcher<T> extends EffectBaseNode implements JEffectNode {
 
     return true;
   }
+}
+
+@pragma('vm:prefer-inline')
+@pragma('wasm:prefer-inline')
+@pragma('dart2js:prefer-inline')
+void onEffectCleanup(Disposer fn, {JEffect? owner}) {
+  assert(
+      owner != null ||
+          globalReactiveSystem.getActiveSub() is JEffect ||
+          Watcher.activeWatcher != null,
+      'onCleanup can only be used within an effect');
+
+  (owner ??
+          Watcher.activeWatcher ??
+          globalReactiveSystem.getActiveSub()! as JEffect)
+      .onCleanUp(fn);
+}
+
+@pragma('vm:prefer-inline')
+@pragma('wasm:prefer-inline')
+@pragma('dart2js:prefer-inline')
+void onScopeDispose(Disposer fn, {EffectScope? owner}) {
+  assert(owner != null || globalReactiveSystem.getActiveScope() != null,
+      'onScopeDispose can only be used within an effect scope');
+
+  (owner ?? globalReactiveSystem.getActiveScope()!).onCleanUp(fn);
 }

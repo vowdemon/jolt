@@ -58,8 +58,8 @@ class JoltHookState<T, S extends JReadonlyValue<T>>
 ///
 /// Type parameters:
 /// - [T]: The type parameter for the effect
-/// - [S]: The specific effect node type (extends [EffectBaseNode])
-class JoltEffectHook<S extends EffectBaseNode> extends Hook<S> {
+/// - [S]: The specific effect node type (extends [JEffect])
+class JoltEffectHook<S extends JEffect> extends Hook<S> {
   /// Creates a Jolt effect hook with the given effect node.
   ///
   /// Parameters:
@@ -78,7 +78,7 @@ class JoltEffectHook<S extends EffectBaseNode> extends Hook<S> {
 ///
 /// Manages the lifecycle of the wrapped effect node, ensuring proper
 /// disposal when the hook is removed from the widget tree.
-class JoltEffectHookState<S extends EffectBaseNode>
+class JoltEffectHookState<S extends JEffect>
     extends HookState<S, JoltEffectHook<S>> {
   late final _instance = hook.joltEffect;
 
@@ -107,7 +107,7 @@ class JoltEffectHookState<S extends EffectBaseNode>
 ///
 /// Type parameters:
 /// - [T]: The type parameter for the effect
-/// - [S]: The specific effect node type (extends [EffectBaseNode])
+/// - [S]: The specific effect node type (extends [JEffect])
 class JoltWidgetHook<T extends Widget> extends Hook<T> {
   /// Creates a Jolt effect hook with the given effect node.
   ///

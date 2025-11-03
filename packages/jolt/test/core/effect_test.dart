@@ -1118,4 +1118,421 @@ void main() {
     expect(innerValues, equals([115, 125, 127]));
     expect(crossValues, equals([100, 200]));
   });
+
+  group('onEffectCleanup', () {
+    test('should call cleanup when effect is disposed', () {
+      final cleanupCalled = <bool>[false];
+
+      final effect = Effect(() {
+        onEffectCleanup(() {
+          cleanupCalled[0] = true;
+        });
+      });
+
+      expect(cleanupCalled[0], isFalse);
+
+      effect.dispose();
+
+      expect(cleanupCalled[0], isTrue);
+    });
+
+    test('should call all cleanups when effect runs again', () {
+      final signal = Signal(1);
+      final cleanup1Called = <bool>[false];
+      final cleanup2Called = <bool>[false];
+      final cleanup3Called = <bool>[false];
+
+      Effect(() {
+        signal.value;
+        onEffectCleanup(() {
+          cleanup1Called[0] = true;
+        });
+        onEffectCleanup(() {
+          cleanup2Called[0] = true;
+        });
+        onEffectCleanup(() {
+          cleanup3Called[0] = true;
+        });
+      });
+
+      // Cleanups should not be called during initial registration
+      expect(cleanup1Called[0], isFalse);
+      expect(cleanup2Called[0], isFalse);
+      expect(cleanup3Called[0], isFalse);
+
+      // Trigger effect to run again, all cleanups should be called
+      signal.value = 2;
+      expect(cleanup1Called[0], isTrue);
+      expect(cleanup2Called[0], isTrue);
+      expect(cleanup3Called[0], isTrue);
+    });
+
+    test('should call all cleanups when effect is disposed', () {
+      final cleanup1Called = <bool>[false];
+      final cleanup2Called = <bool>[false];
+
+      final effect = Effect(() {
+        onEffectCleanup(() {
+          cleanup1Called[0] = true;
+        });
+        onEffectCleanup(() {
+          cleanup2Called[0] = true;
+        });
+      });
+
+      expect(cleanup1Called[0], isFalse);
+      expect(cleanup2Called[0], isFalse);
+
+      effect.dispose();
+
+      // All cleanups should be called on dispose
+      expect(cleanup1Called[0], isTrue);
+      expect(cleanup2Called[0], isTrue);
+    });
+
+    test('should call cleanups in registration order', () {
+      final signal = Signal(1);
+      final cleanupOrder = <int>[];
+
+      Effect(() {
+        signal.value;
+        onEffectCleanup(() {
+          cleanupOrder.add(1);
+        });
+        onEffectCleanup(() {
+          cleanupOrder.add(2);
+        });
+        onEffectCleanup(() {
+          cleanupOrder.add(3);
+        });
+      });
+
+      signal.value = 2;
+
+      // Cleanups should be called in registration order
+      expect(cleanupOrder, equals([1, 2, 3]));
+    });
+
+    test('should clear cleanups after execution', () {
+      final signal = Signal(1);
+      final cleanupCallCount = <int>[0];
+
+      Effect(() {
+        signal.value;
+        // Register cleanup - will be called before next run
+        onEffectCleanup(() {
+          cleanupCallCount[0]++;
+        });
+      });
+
+      expect(cleanupCallCount[0], equals(0));
+
+      // First run - cleanup registered but not called yet
+      signal.value = 2;
+      // Cleanup is called before effect runs, then cleared
+      expect(cleanupCallCount[0], equals(1));
+
+      // Second run - cleanup is called again because it's re-registered in effect
+      signal.value = 3;
+      // Effect runs again, registers cleanup again, so it's called before this run
+      expect(cleanupCallCount[0], equals(2));
+    });
+
+    test('should allow multiple cleanups in nested effects', () {
+      final signal = Signal(1);
+      final outerCleanup1Called = <bool>[false];
+      final outerCleanup2Called = <bool>[false];
+      final innerCleanupCalled = <bool>[false];
+
+      late Effect innerEffect;
+
+      Effect(() {
+        signal.value;
+        onEffectCleanup(() {
+          outerCleanup1Called[0] = true;
+        });
+        onEffectCleanup(() {
+          outerCleanup2Called[0] = true;
+        });
+
+        innerEffect = Effect(() {
+          signal.value;
+          onEffectCleanup(() {
+            innerCleanupCalled[0] = true;
+          });
+        });
+      });
+
+      expect(outerCleanup1Called[0], isFalse);
+      expect(outerCleanup2Called[0], isFalse);
+      expect(innerCleanupCalled[0], isFalse);
+
+      // Dispose inner effect
+      innerEffect.dispose();
+      expect(innerCleanupCalled[0], isTrue);
+      expect(outerCleanup1Called[0], isFalse);
+      expect(outerCleanup2Called[0], isFalse);
+
+      // Trigger outer effect
+      signal.value = 2;
+      expect(outerCleanup1Called[0], isTrue);
+      expect(outerCleanup2Called[0], isTrue);
+    });
+
+    test('should work with Watcher', () {
+      final signal = Signal(1);
+      final cleanupCalled = <bool>[false];
+      final watcherValues = <int>[];
+
+      final watcher = Watcher(
+        () => signal.value,
+        (newValue, _) {
+          watcherValues.add(newValue);
+          // onEffectCleanup can automatically detect Watcher via activeWatcher
+          onEffectCleanup(() {
+            cleanupCalled[0] = true;
+          });
+        },
+      );
+
+      expect(cleanupCalled[0], isFalse);
+      expect(watcherValues, isEmpty);
+
+      // Trigger watcher
+      signal.value = 2;
+      expect(watcherValues, equals([2]));
+      // Cleanup should not be called yet (only registered)
+      expect(cleanupCalled[0], isFalse);
+
+      // Dispose watcher - cleanup should be called
+      watcher.dispose();
+      expect(cleanupCalled[0], isTrue);
+    });
+
+    test('should call all cleanups in Watcher when it runs again', () {
+      final signal = Signal(1);
+      final cleanup1Called = <bool>[false];
+      final cleanup2Called = <bool>[false];
+      final cleanup3Called = <bool>[false];
+
+      Watcher(
+        () => signal.value,
+        (newValue, _) {
+          // onEffectCleanup automatically detects Watcher via activeWatcher
+          onEffectCleanup(() {
+            cleanup1Called[0] = true;
+          });
+          onEffectCleanup(() {
+            cleanup2Called[0] = true;
+          });
+          onEffectCleanup(() {
+            cleanup3Called[0] = true;
+          });
+        },
+      );
+
+      expect(cleanup1Called[0], isFalse);
+      expect(cleanup2Called[0], isFalse);
+      expect(cleanup3Called[0], isFalse);
+
+      // Trigger watcher first time - no cleanup called yet
+      signal.value = 2;
+      expect(cleanup1Called[0], isFalse);
+      expect(cleanup2Called[0], isFalse);
+      expect(cleanup3Called[0], isFalse);
+
+      // Trigger watcher again - all cleanups should be called
+      signal.value = 3;
+      expect(cleanup1Called[0], isTrue);
+      expect(cleanup2Called[0], isTrue);
+      expect(cleanup3Called[0], isTrue);
+    });
+
+    test('should call cleanups in Watcher in registration order', () {
+      final signal = Signal(1);
+      final cleanupOrder = <int>[];
+
+      Watcher(
+        () => signal.value,
+        (newValue, _) {
+          onEffectCleanup(() {
+            cleanupOrder.add(1);
+          });
+          onEffectCleanup(() {
+            cleanupOrder.add(2);
+          });
+          onEffectCleanup(() {
+            cleanupOrder.add(3);
+          });
+        },
+      );
+
+      // First trigger - no cleanup yet
+      signal.value = 2;
+      expect(cleanupOrder, isEmpty);
+
+      // Second trigger - cleanups should be called in order
+      signal.value = 3;
+      expect(cleanupOrder, equals([1, 2, 3]));
+    });
+
+    test('should call cleanup when Watcher is disposed', () {
+      final signal = Signal(1);
+      final cleanupCalled = <bool>[false];
+
+      final watcher = Watcher(
+        () => signal.value,
+        (newValue, _) {
+          onEffectCleanup(() {
+            cleanupCalled[0] = true;
+          });
+        },
+      );
+
+      expect(cleanupCalled[0], isFalse);
+
+      // Trigger watcher to register cleanup
+      signal.value = 2;
+      expect(
+          cleanupCalled[0], isFalse); // Cleanup registered but not called yet
+
+      watcher.dispose();
+
+      expect(cleanupCalled[0], isTrue);
+    });
+  });
+
+  group('onScopeDispose', () {
+    test('should call cleanup when EffectScope is disposed', () {
+      final cleanupCalled = <bool>[false];
+
+      final scope = EffectScope((scope) {
+        onScopeDispose(() {
+          cleanupCalled[0] = true;
+        });
+      });
+
+      expect(cleanupCalled[0], isFalse);
+
+      scope.dispose();
+
+      expect(cleanupCalled[0], isTrue);
+    });
+
+    test('should call all cleanups when EffectScope is disposed', () {
+      final cleanup1Called = <bool>[false];
+      final cleanup2Called = <bool>[false];
+      final cleanup3Called = <bool>[false];
+
+      final scope = EffectScope((scope) {
+        onScopeDispose(() {
+          cleanup1Called[0] = true;
+        });
+        onScopeDispose(() {
+          cleanup2Called[0] = true;
+        });
+        onScopeDispose(() {
+          cleanup3Called[0] = true;
+        });
+      });
+
+      expect(cleanup1Called[0], isFalse);
+      expect(cleanup2Called[0], isFalse);
+      expect(cleanup3Called[0], isFalse);
+
+      scope.dispose();
+
+      // All cleanups should be called on dispose
+      expect(cleanup1Called[0], isTrue);
+      expect(cleanup2Called[0], isTrue);
+      expect(cleanup3Called[0], isTrue);
+    });
+
+    test('should call cleanups in EffectScope in registration order', () {
+      final cleanupOrder = <int>[];
+
+      final scope = EffectScope((scope) {
+        onScopeDispose(() {
+          cleanupOrder.add(1);
+        });
+        onScopeDispose(() {
+          cleanupOrder.add(2);
+        });
+        onScopeDispose(() {
+          cleanupOrder.add(3);
+        });
+      });
+
+      scope.dispose();
+
+      // Cleanups should be called in registration order
+      expect(cleanupOrder, equals([1, 2, 3]));
+    });
+
+    test('should work with nested EffectScopes', () {
+      final outerCleanupCalled = <bool>[false];
+      final innerCleanupCalled = <bool>[false];
+      late EffectScope innerScope;
+
+      final outerScope = EffectScope((scope) {
+        onScopeDispose(() {
+          outerCleanupCalled[0] = true;
+        });
+
+        innerScope = EffectScope((scope) {
+          onScopeDispose(() {
+            innerCleanupCalled[0] = true;
+          });
+        });
+      });
+
+      expect(outerCleanupCalled[0], isFalse);
+      expect(innerCleanupCalled[0], isFalse);
+
+      // Dispose inner scope
+      innerScope.dispose();
+      expect(innerCleanupCalled[0], isTrue);
+      expect(outerCleanupCalled[0], isFalse);
+
+      // Dispose outer scope
+      outerScope.dispose();
+      expect(outerCleanupCalled[0], isTrue);
+    });
+
+    test('should work with scope.run() method', () {
+      final cleanupCalled = <bool>[false];
+
+      final scope = EffectScope(null);
+
+      scope.run((scope) {
+        onScopeDispose(() {
+          cleanupCalled[0] = true;
+        });
+      });
+
+      expect(cleanupCalled[0], isFalse);
+
+      scope.dispose();
+
+      expect(cleanupCalled[0], isTrue);
+    });
+
+    test('should work with explicit owner parameter', () {
+      final cleanupCalled = <bool>[false];
+      final EffectScope scope = EffectScope(null);
+
+      EffectScope(null).run((s) {
+        // Use explicit owner parameter
+        onScopeDispose(() {
+          cleanupCalled[0] = true;
+        }, owner: scope);
+      });
+
+      expect(cleanupCalled[0], isFalse);
+
+      scope.dispose();
+
+      expect(cleanupCalled[0], isTrue);
+    });
+  });
 }

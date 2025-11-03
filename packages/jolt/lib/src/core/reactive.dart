@@ -19,10 +19,12 @@ class GlobalReactiveSystem extends ReactiveSystem {
   int queuedLength = 0;
 
   /// The queue of effects to be executed
-  final List<JEffectNode?> queued = List.filled(64, null, growable: true);
+  final List<EffectBase?> queued = List.filled(64, null, growable: true);
 
   /// The currently active effect or scope
   ReactiveNode? activeSub;
+
+  EffectScope? activeScope;
 
   /// Update a signal or computed value
   @pragma('vm:prefer-inline')
@@ -42,8 +44,8 @@ class GlobalReactiveSystem extends ReactiveSystem {
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
-  void notify(covariant EffectBaseNode e) {
-    EffectBaseNode? effect = e;
+  void notify(covariant JEffect e) {
+    JEffect? effect = e;
     int insertIndex = queuedLength;
     int firstInsertedIndex = insertIndex;
 
@@ -51,8 +53,8 @@ class GlobalReactiveSystem extends ReactiveSystem {
       effect!.flags &= ~(ReactiveFlags.watching);
 
       // queued[insertIndex++] = effect;
-      _queueSet(insertIndex++, effect as JEffectNode?);
-      effect = effect.subs?.sub as EffectBaseNode?;
+      _queueSet(insertIndex++, effect as EffectBase?);
+      effect = effect.subs?.sub as JEffect?;
       if (effect == null || effect.flags & (ReactiveFlags.watching) == 0) {
         break;
       }
@@ -74,7 +76,7 @@ class GlobalReactiveSystem extends ReactiveSystem {
   @pragma('dart2js:prefer-inline')
   @override
   void unwatched(node) {
-    if (node is EffectBaseNode) {
+    if (node is JEffect) {
       // if (!node.flags.hasAny(ReactiveFlags.mutable)) {
       node.dispose();
     } else if (node.depsTail != null) {
@@ -87,7 +89,7 @@ class GlobalReactiveSystem extends ReactiveSystem {
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
-  void _queueSet(int index, JEffectNode? e) {
+  void _queueSet(int index, EffectBase? e) {
     if (index < queued.length) {
       queued[index] = e;
     } else {
@@ -108,6 +110,21 @@ class GlobalReactiveSystem extends ReactiveSystem {
     final prevSub = activeSub;
     activeSub = sub;
     return prevSub;
+  }
+
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
+  EffectScope? getActiveScope() => activeScope;
+
+  /// Set the currently active subscriber
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
+  EffectScope? setActiveScope(EffectScope? scope) {
+    final prevScope = activeScope;
+    activeScope = scope;
+    return prevScope;
   }
 
   /// Start a batch update to defer effect execution
@@ -175,7 +192,7 @@ class GlobalReactiveSystem extends ReactiveSystem {
   }
 
   /// Run an effect with the given flags
-  void run(JEffectNode e) {
+  void run(EffectBase e) {
     final flags = e.flags;
     if (flags & (ReactiveFlags.dirty) != 0 ||
         (flags & (ReactiveFlags.pending) != 0 && checkDirty(e.deps!, e))) {

@@ -116,7 +116,7 @@ class EffectFlags {
 /// These flags are used internally by the reactive system to track the
 /// state and lifecycle of reactive nodes during dependency tracking
 /// and update propagation.
-class ReactiveFlags {
+abstract final class ReactiveFlags {
   /// No flags set - node is inactive.
   static const none = 0;
 

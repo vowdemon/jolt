@@ -11,7 +11,7 @@ hero:
       link: /jolt/getting-started
     - theme: alt
       text: View Docs
-      link: /jolt/
+      link: /jolt/getting-started
 
 features:
   - title: 🚀 High Performance

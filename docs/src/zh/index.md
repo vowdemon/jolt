@@ -11,7 +11,7 @@ hero:
       link: /zh/jolt/getting-started
     - theme: alt
       text: 查看文档
-      link: /zh/jolt/
+      link: /zh/jolt/getting-started
 
 features:
   - title: 🚀 高性能

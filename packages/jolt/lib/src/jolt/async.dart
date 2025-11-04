@@ -322,7 +322,7 @@ class AsyncSignal<T> extends Signal<AsyncState<T>> {
       : _source = source,
         super(initialValue ?? AsyncLoading<T>()) {
     _source.start(this);
-    attachToJoltAttachments(this, _source.dispose);
+    JFinalizer.attachToJoltAttachments(this, _source.dispose);
   }
 
   final AsyncSource<T> _source;

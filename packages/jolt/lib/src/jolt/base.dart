@@ -38,16 +38,19 @@ abstract class JReadonlyValue<T> extends ReactiveNode
   T get();
 
   /// Whether this reactive value has been disposed.
-  bool isDisposed = false;
+  bool get isDisposed => _isDisposed;
+
+  @protected
+  bool _isDisposed = false;
 
   /// Disposes this reactive value and cleans up resources.
   @override
   @mustCallSuper
   void dispose() {
-    if (isDisposed) return;
-    isDisposed = true;
+    if (_isDisposed) return;
+    _isDisposed = true;
     onDispose();
-    manuallyDisposeJoltAttachments(this);
+    JFinalizer.disposeObject(this);
     pendingValue = null;
   }
 

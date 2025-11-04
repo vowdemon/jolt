@@ -42,7 +42,7 @@ extension JoltStreamValueExtension<T> on JReadonlyValue<T> {
         },
       );
 
-      attachToJoltAttachments(this, s.dispose);
+      JFinalizer.attachToJoltAttachments(this, s.dispose);
     }
 
     return s.stream;

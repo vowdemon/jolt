@@ -9,64 +9,64 @@ void main() {
         final signal = Signal(0);
         int count = 0;
 
-        attachToJoltAttachments(signal, () {
+        JFinalizer.attachToJoltAttachments(signal, () {
           count++;
         });
 
-        expect(getJoltAttachments(signal), isNotEmpty);
+        expect(JFinalizer.getJoltAttachments(signal), isNotEmpty);
 
         signal.dispose();
 
         expect(count, equals(1));
-        expect(getJoltAttachments(signal), isEmpty);
+        expect(JFinalizer.getJoltAttachments(signal), isEmpty);
       });
 
       test('should be idempotent when manually disposing attachments', () {
         final signal = Signal(0);
         int count = 0;
 
-        attachToJoltAttachments(signal, () {
+        JFinalizer.attachToJoltAttachments(signal, () {
           count++;
         });
 
-        expect(getJoltAttachments(signal), isNotEmpty);
+        expect(JFinalizer.getJoltAttachments(signal), isNotEmpty);
 
-        manuallyDisposeJoltAttachments(signal);
-
-        expect(count, equals(1));
-        expect(getJoltAttachments(signal), isEmpty);
-
-        manuallyDisposeJoltAttachments(signal);
+        JFinalizer.disposeObject(signal);
 
         expect(count, equals(1));
-        expect(getJoltAttachments(signal), isEmpty);
+        expect(JFinalizer.getJoltAttachments(signal), isEmpty);
+
+        JFinalizer.disposeObject(signal);
+
+        expect(count, equals(1));
+        expect(JFinalizer.getJoltAttachments(signal), isEmpty);
 
         signal.dispose();
 
         expect(count, equals(1));
-        expect(getJoltAttachments(signal), isEmpty);
+        expect(JFinalizer.getJoltAttachments(signal), isEmpty);
       });
 
       test('should allow manual detachment by calling returned disposer', () {
         final signal = Signal(0);
         int count = 0;
 
-        final disposer = attachToJoltAttachments(signal, () {
+        final disposer = JFinalizer.attachToJoltAttachments(signal, () {
           count++;
         });
 
-        expect(getJoltAttachments(signal), isNotEmpty);
+        expect(JFinalizer.getJoltAttachments(signal), isNotEmpty);
         expect(count, equals(0));
 
         disposer();
 
         expect(count, equals(0));
-        expect(getJoltAttachments(signal), isEmpty);
+        expect(JFinalizer.getJoltAttachments(signal), isEmpty);
 
         signal.dispose();
 
         expect(count, equals(0));
-        expect(getJoltAttachments(signal), isEmpty);
+        expect(JFinalizer.getJoltAttachments(signal), isEmpty);
       });
 
       test('should detach using detachFromJoltAttachments', () {
@@ -77,20 +77,20 @@ void main() {
           count++;
         }
 
-        attachToJoltAttachments(signal, originalDisposer);
+        JFinalizer.attachToJoltAttachments(signal, originalDisposer);
 
-        expect(getJoltAttachments(signal), isNotEmpty);
+        expect(JFinalizer.getJoltAttachments(signal), isNotEmpty);
         expect(count, equals(0));
 
-        detachFromJoltAttachments(signal, originalDisposer);
+        JFinalizer.detachFromJoltAttachments(signal, originalDisposer);
 
         expect(count, equals(0));
-        expect(getJoltAttachments(signal), isEmpty);
+        expect(JFinalizer.getJoltAttachments(signal), isEmpty);
 
         signal.dispose();
 
         expect(count, equals(0));
-        expect(getJoltAttachments(signal), isEmpty);
+        expect(JFinalizer.getJoltAttachments(signal), isEmpty);
       });
     });
   });

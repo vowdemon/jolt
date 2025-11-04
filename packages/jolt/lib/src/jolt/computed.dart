@@ -56,7 +56,8 @@ class Computed<T> extends JReadonlyValue<T> implements ReadonlySignal<T> {
   }
 
   /// The function that computes the value of this computed.
-  T Function() getter;
+  @protected
+  final T Function() getter;
 
   /// Returns the current computed value without establishing a reactive dependency.
   ///

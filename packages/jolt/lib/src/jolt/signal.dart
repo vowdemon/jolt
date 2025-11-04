@@ -47,7 +47,7 @@ class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
     }());
   }
 
-  @internal
+  @protected
   dynamic cachedValue;
 
   /// Returns the current value without establishing a reactive dependency.

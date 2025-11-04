@@ -21,7 +21,7 @@ void main() {
 
       Effect(() {
         values.add(signal.value);
-      });
+      }).isDisposed;
 
       expect(values, equals([1]));
 

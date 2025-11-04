@@ -32,14 +32,16 @@ abstract class JEffect extends ReactiveNode implements ChainedDisposable {
     super.depsTail,
   });
 
-  bool isDisposed = false;
+  bool _isDisposed = false;
   late final List<Disposer> _cleanups = [];
+
+  bool get isDisposed => _isDisposed;
 
   @override
   @mustCallSuper
   void dispose() {
-    if (isDisposed) return;
-    isDisposed = true;
+    if (_isDisposed) return;
+    _isDisposed = true;
     _doCleanup();
     onDispose();
   }
@@ -61,6 +63,7 @@ abstract class JEffect extends ReactiveNode implements ChainedDisposable {
 
   @override
   @mustCallSuper
+  @protected
   void onDispose() {
     globalReactiveSystem.nodeDispose(this);
   }
@@ -217,10 +220,11 @@ class Effect extends JEffect implements EffectBase {
     }
   }
 
-  @override
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
+  @override
+  @protected
   void effectFn() {
     _doCleanup();
     fn();
@@ -233,6 +237,7 @@ class Effect extends JEffect implements EffectBase {
   }
 
   /// The function that defines the effect's behavior.
+  @protected
   final void Function() fn;
 
   /// Manually runs the effect function.
@@ -339,23 +344,27 @@ class Watcher<T> extends JEffect implements EffectBase {
   static Watcher? activeWatcher;
 
   /// Function that provides the source values to watch.
+  @protected
   final SourcesFn<T> sourcesFn;
 
   /// Callback function executed when sources change.
+  @protected
   final WatcherFn<T> fn;
 
   /// Optional condition function for custom trigger logic.
+  @protected
   final WhenFn<T>? when;
 
   /// The previous source values for comparison.
+  @protected
   late T prevSources;
 
-  @override
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
+  @override
+  @protected
   void effectFn() {
-    _doCleanup();
     run();
   }
 
@@ -369,6 +378,7 @@ class Watcher<T> extends JEffect implements EffectBase {
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
   void run() {
+    _doCleanup();
     final sources = sourcesFn();
     final shouldTrigger =
         when == null ? sources != prevSources : when!(sources, prevSources);

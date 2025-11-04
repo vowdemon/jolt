@@ -1,3 +1,5 @@
+import 'package:meta/meta.dart';
+
 import 'debug.dart';
 
 /// Base class for all reactive nodes in the dependency graph.
@@ -23,18 +25,23 @@ class ReactiveNode {
   });
 
   /// First dependency link in the chain.
+  @protected
   Link? deps;
 
   /// Last dependency link in the chain.
+  @protected
   Link? depsTail;
 
   /// First subscriber link in the chain.
+  @protected
   Link? subs;
 
   /// Last subscriber link in the chain.
+  @protected
   Link? subsTail;
 
   /// Reactive flags for this node.
+  @protected
   int flags;
 }
 
@@ -88,7 +95,7 @@ class Link {
 
 /// Stack data structure for managing recursive operations.
 ///
-/// Stack is used internally by the reactive system to manage recursive
+/// Stack is used protectedly by the reactive system to manage recursive
 /// traversal of the dependency graph during updates.
 class Stack<T> {
   /// Creates a stack node with the given value and previous node.
@@ -107,7 +114,7 @@ class Stack<T> {
 
 /// Flags for tracking reactive node state.
 ///
-/// These flags are used internally by the reactive system to track the
+/// These flags are used protectedly by the reactive system to track the
 /// state and lifecycle of reactive nodes during dependency tracking
 /// and update propagation.
 abstract final class ReactiveFlags {

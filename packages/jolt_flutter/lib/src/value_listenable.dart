@@ -68,25 +68,15 @@ class _ValueListenableSignal<T> extends jolt.Signal<T> {
 
     listenable.addListener(_listener);
 
-    _disposer = () {
+    JFinalizer.attachToJoltAttachments(this, () {
       listenable.removeListener(_listener);
-    };
-    disposeWith(_disposer);
+    });
   }
 
   late VoidCallback _listener;
 
-  Disposer? _disposer;
-
   @override
   void set(T value) {
     throw UnimplementedError();
-  }
-
-  @override
-  void onDispose() {
-    super.onDispose();
-    _disposer?.call();
-    _disposer = null;
   }
 }

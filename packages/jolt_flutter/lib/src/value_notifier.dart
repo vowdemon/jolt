@@ -1,7 +1,8 @@
 import 'package:flutter/foundation.dart';
-import 'package:free_disposer/free_disposer.dart';
+import 'package:jolt/core.dart' show JFinalizer;
 import 'package:jolt/jolt.dart' as jolt;
 import 'package:jolt_flutter/jolt_flutter.dart';
+import 'package:shared_interfaces/shared_interfaces.dart';
 
 part 'value_listenable.dart';
 
@@ -77,7 +78,7 @@ class _JoltValueNotifierBase<T> {
                 ? (newValue, oldValue) => true
                 : null)
         .dispose;
-    _disposerJolt = joltValue.disposeWith(dispose);
+    _disposerJolt = JFinalizer.attachToJoltAttachments(joltValue, dispose);
   }
 
   /// The underlying Jolt value being wrapped.
@@ -159,28 +160,18 @@ class _NotifierSignal<T> extends jolt.Signal<T> {
 
     _notifier!.addListener(_listener!);
 
-    _disposer = () {
+    JFinalizer.attachToJoltAttachments(this, () {
       _notifier!.removeListener(_listener!);
       _notifier = null;
-    };
-
-    disposeWith(_disposer);
+    });
   }
 
   VoidCallback? _listener;
   ValueNotifier<T>? _notifier;
-  Disposer? _disposer;
 
   @override
   void set(T value) {
     if (isDisposed) return;
     _notifier?.value = value;
-  }
-
-  @override
-  void onDispose() {
-    super.onDispose();
-    _disposer?.call();
-    _disposer = null;
   }
 }

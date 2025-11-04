@@ -17,8 +17,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  free_disposer: ^1.1.3
   jolt: ^0.0.7
+  shared_interfaces: ^0.0.2
 
 dev_dependencies:
   flutter_test:

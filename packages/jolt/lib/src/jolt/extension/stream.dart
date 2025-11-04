@@ -51,8 +51,11 @@ extension JoltStreamValueExtension<T> on JReadonlyValue<T> {
   /// Creates a stream subscription that listens to changes in this reactive value.
   ///
   /// Parameters:
-  /// - [listener]: Function called with each new value
-  /// - [immediately]: Whether to call the listener immediately with the current value
+  /// - [onData]: Function called with each new value
+  /// - [onError]: Optional function called when an error occurs
+  /// - [onDone]: Optional function called when the stream is closed
+  /// - [cancelOnError]: Whether to cancel the subscription on error
+  /// - [immediately]: Whether to call [onData] immediately with the current value
   ///
   /// Returns: A StreamSubscription that can be used to cancel the listener
   ///

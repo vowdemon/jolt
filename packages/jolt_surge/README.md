@@ -1,20 +1,104 @@
-## jolt_surge
+# Jolt Surge
 
-A lightweight, signal-driven state container and Flutter widget set built on top of Jolt Signals. It provides predictable rebuilds, composable listeners, and selector-based rendering with fine-grained tracking control.
+A lightweight, signal-driven state management library for Flutter built on top of [Jolt Signals](https://pub.dev/packages/jolt). Jolt Surge provides a predictable state container pattern inspired by [BLoC's Cubit](https://bloclibrary.dev/#/coreconcepts?id=cubit), with fine-grained rebuild control, composable listeners, and selector-based rendering.
 
+## Documentation
 
-### Key Concepts
-- Surge<State>: a small state container with `state`, `emit(next)`, `dispose()`, and `SurgeObserver` hooks.
-- Widgets:
-  - SurgeProvider: provide a `Surge` instance via `create` or `.value`.
-  - SurgeConsumer: unified consume point with `builder`, `listener`, `buildWhen`, `listenWhen`.
-  - SurgeBuilder: `builder`-only convenience.
-  - SurgeListener: `listener`-only convenience.
-  - SurgeSelector: rebuilds only when selected value changes (by `==`).
+[Official Documentation](https://jolt.vowdemon.com)
 
-Tracking semantics:
-- builder and listener are strictly non-tracked (untracked).
-- buildWhen, listenWhen, selector are tracked by default (they can depend on external signals). To opt-out, wrap your reads with `untracked(() => ...)` or use `peek`.
+## Overview
+
+Jolt Surge combines the simplicity and predictability of the Cubit pattern with the reactive capabilities of Jolt Signals. Unlike traditional state management solutions, Surge leverages Jolt's automatic dependency tracking system, enabling you to build highly efficient Flutter applications with minimal boilerplate.
+
+**Key Features:**
+- 🎯 **Predictable State Management**: Simple API with `emit()` and `state` properties
+- 🔄 **Reactive State Container**: Built on Jolt Signals with automatic dependency tracking
+- ⚡ **Fine-Grained Rebuild Control**: Conditional rebuilding and listening with `buildWhen` and `listenWhen`
+- 🎨 **Composable Listeners**: Separate side effects from UI rendering
+- 📊 **Selector-Based Rendering**: Optimize rebuilds with selector functions
+- 🧹 **Automatic Lifecycle Management**: Optional automatic disposal with `SurgeProvider`
+
+## Core Concepts
+
+### Surge<State>
+
+A reactive state container that manages state through Jolt Signals. It provides:
+- `state`: Get the current state value (reactive, tracked)
+- `emit(next)`: Emit a new state value
+- `dispose()`: Clean up resources
+- `onChange()`: Hook for observing state transitions
+
+### Widgets
+
+- **SurgeProvider**: Provides a Surge instance to the widget tree via `create` or `.value` constructors
+- **SurgeConsumer**: Unified widget providing both `builder` and `listener` functionality with conditional controls
+- **SurgeBuilder**: Convenience widget for builder-only functionality
+- **SurgeListener**: Convenience widget for listener-only functionality (side effects)
+- **SurgeSelector**: Fine-grained rebuild control using selector functions
+
+### Tracking Semantics
+
+Understanding tracking behavior is crucial for optimal performance:
+
+- **Non-tracked (untracked)**: `builder` and `listener` functions are executed within an untracked context, preventing unnecessary reactive dependencies
+- **Tracked by default**: `buildWhen`, `listenWhen`, and `selector` functions are tracked by default, allowing them to depend on external signals
+- **Opt-out**: To disable tracking, wrap your reads with `untracked(() => ...)` or use `peek` property
+
+## Comparison with Cubit
+
+Jolt Surge's API is ~90% similar to BLoC's Cubit, making it easy to migrate between them. If you're familiar with Cubit, you can seamlessly switch to Surge and experience a signal-powered version of Cubit. However, there are key differences that leverage Jolt's reactive capabilities:
+
+### Similarities
+
+| Feature | Cubit | Surge |
+|---------|-------|-------|
+| State container | `Cubit<State>` | `Surge<State>` |
+| State access | `state` getter | `state` getter |
+| State emission | `emit(State)` | `emit(State)` |
+| Lifecycle hook | `onChange(Change)` | `onChange(Change)` |
+| Disposal | `close()` | `dispose()` |
+| Provider pattern | `BlocProvider` | `SurgeProvider` |
+| Builder widget | `BlocBuilder` | `SurgeBuilder` |
+| Listener widget | `BlocListener` | `SurgeListener` |
+| Conditional rebuild | `buildWhen` | `buildWhen` |
+
+### Key Differences
+
+1. **Reactive Foundation**
+   - **Cubit**: Built on Stream, requires explicit subscription management
+   - **Surge**: Built on Jolt Signals, automatic dependency tracking and reactive updates
+
+2. **State Access**
+   - **Cubit**: `state` is a simple getter, no automatic dependency tracking
+   - **Surge**: `state` is reactive and tracked, automatically creates dependencies in Effects and Computed
+
+3. **Signal Integration**
+   - **Cubit**: Limited ability to integrate with other reactive systems
+   - **Surge**: Can depend on external Jolt signals in `buildWhen`, `listenWhen`, and `selector` functions
+
+4. **Performance Optimizations**
+   - **Cubit**: Relies on Stream-based updates
+   - **Surge**: Leverages Jolt's fine-grained dependency tracking for optimal rebuilds
+
+### Code Example
+
+The API is nearly identical, making it easy to switch between Cubit and Surge:
+
+```dart
+// Cubit
+class CounterCubit extends Cubit<int> {
+  CounterCubit() : super(0);
+  void increment() => emit(state + 1);
+}
+
+// Surge (signal-powered Cubit)
+class CounterSurge extends Surge<int> {
+  CounterSurge() : super(0);
+  void increment() => emit(state + 1);
+}
+```
+
+The main difference is the underlying reactive system: Cubit uses Streams, while Surge uses Jolt Signals, providing automatic dependency tracking and better performance optimizations. You can easily migrate between them and experience the benefits of signal-based state management.
 
 ## Quick Start
 
@@ -120,16 +204,66 @@ Disable selector tracking:
 selector: (state, s) => untracked(() => externalSignal.valueAsLabel(state)),
 ```
 
-## Direct surge param (bypass Provider)
-You can pass a `surge` directly to any widget; it will ignore outer providers and follow instance changes:
+## Advanced Usage
+
+### Custom State Creator
+
+By default, Surge uses `Signal` to store state. You can customize the state storage mechanism using the `creator` parameter:
+
 ```dart
-final s1 = CounterSurge();
-final s2 = CounterSurge();
-
-Widget view(CounterSurge surge) => SurgeBuilder<CounterSurge, int>(
-  surge: surge,
-  builder: (context, state, s) => Text('count: $state'),
-);
-
-// swap instances to follow a new surge
+class CustomSurge extends Surge<int> {
+  CustomSurge() : super(
+    0,
+    creator: (state) => WritableComputed(
+      () => baseSignal.value,
+      (value) => baseSignal.value = value,
+    ),
+  );
+}
 ```
+
+This is useful when you need to derive state from other signals or implement custom reactive behavior.
+
+### SurgeObserver
+
+Monitor Surge lifecycle events globally using `SurgeObserver`:
+
+```dart
+class MyObserver extends SurgeObserver {
+  @override
+  void onCreate(Surge surge) {
+    print('Surge created: $surge');
+  }
+
+  @override
+  void onChange(Surge surge, Change change) {
+    print('State changed: ${change.currentState} -> ${change.nextState}');
+  }
+
+  @override
+  void onDispose(Surge surge) {
+    print('Surge disposed: $surge');
+  }
+}
+
+// Set global observer
+SurgeObserver.observer = MyObserver();
+```
+
+## Related Packages
+
+Jolt Surge is part of the Jolt ecosystem. Explore these related packages:
+
+| Package | Description |
+|---------|-------------|
+| [jolt](https://pub.dev/packages/jolt) | Core library providing Signals, Computed, Effects, and reactive collections |
+| [jolt_flutter](https://pub.dev/packages/jolt_flutter) | Flutter widgets: JoltBuilder, JoltSelector, JoltProvider |
+| [jolt_hooks](https://pub.dev/packages/jolt_hooks) | Hooks API: useSignal, useComputed, useJoltEffect, useJoltWidget |
+
+## Acknowledgments
+
+Jolt Surge is inspired by the [Cubit](https://bloclibrary.dev/#/coreconcepts?id=cubit) pattern from the [BLoC](https://bloclibrary.dev/) library. We extend our gratitude to the BLoC team for their excellent design patterns and architectural insights that have influenced the development of this library.
+
+## License
+
+This project is part of the Jolt ecosystem. See individual package licenses for details.

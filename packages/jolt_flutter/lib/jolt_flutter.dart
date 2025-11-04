@@ -1,9 +1,13 @@
-/// A Flutter integration package for Jolt reactive state management.
+/// A Flutter integration package for [Jolt](https://pub.dev/packages/jolt) reactive state management.
 ///
 /// This package provides Flutter-specific widgets and utilities for working with
 /// Jolt signals, computed values, and reactive state. It includes widgets like
 /// [JoltBuilder] for reactive UI updates and seamless integration with Flutter's
 /// ValueNotifier system.
+///
+/// ## Documentation
+///
+/// [Official Documentation](https://jolt.vowdemon.com)
 ///
 /// ## Example
 ///

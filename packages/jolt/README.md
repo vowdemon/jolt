@@ -3,6 +3,10 @@
 Jolt is a lightweight reactive state management library for Dart and Flutter.  
 It offers signals, computed values, effects, async states, and reactive collections.
 
+## Documentation
+
+[Official Documentation](https://jolt.vowdemon.com)
+
 ## Features
 
 - **🚀 High Performance**: Built on [alien_signals](https://github.com/stackblitz/alien-signals) for optimal performance
@@ -286,6 +290,16 @@ theme.value = 'dark'; // Automatically saved to storage
 - Always dispose signals and effects when no longer needed
 - Use `EffectScope` for automatic cleanup of multiple effects
 - Disposed signals throw `AssertionError` when accessed
+
+## Related Packages
+
+Jolt is part of the Jolt ecosystem. Explore these related packages:
+
+| Package | Description |
+|---------|-------------|
+| [jolt_flutter](https://pub.dev/packages/jolt_flutter) | Flutter widgets: JoltBuilder, JoltSelector, JoltProvider |
+| [jolt_hooks](https://pub.dev/packages/jolt_hooks) | Hooks API: useSignal, useComputed, useJoltEffect, useJoltWidget |
+| [jolt_surge](https://pub.dev/packages/jolt_surge) | Signal-powered Cubit pattern: Surge, SurgeProvider, SurgeConsumer |
 
 ## License
 

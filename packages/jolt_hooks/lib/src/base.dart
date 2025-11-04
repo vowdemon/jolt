@@ -99,24 +99,23 @@ class JoltEffectHookState<S extends JEffect>
   // coverage:ignore-end
 }
 
-/// A Flutter hook that wraps Jolt effect nodes.
+/// A Flutter hook that wraps Jolt reactive widget builders.
 ///
-/// This hook provides integration between Jolt's effect system and Flutter's
-/// hook system, ensuring proper lifecycle management for effects, watchers,
-/// and effect scopes.
+/// This hook provides integration between Jolt's reactive system and Flutter
+/// widgets, ensuring proper lifecycle management for reactive widget builders.
+/// The widget is automatically rebuilt when any tracked dependencies change.
 ///
 /// Type parameters:
-/// - [T]: The type parameter for the effect
-/// - [S]: The specific effect node type (extends [JEffect])
+/// - [T]: The widget type returned by the builder
 class JoltWidgetHook<T extends Widget> extends Hook<T> {
-  /// Creates a Jolt effect hook with the given effect node.
+  /// Creates a Jolt widget hook with the given builder function.
   ///
   /// Parameters:
-  /// - [joltEffect]: The effect node to wrap
+  /// - [builder]: The builder function that creates the widget
   /// - [keys]: Optional keys for hook memoization
   const JoltWidgetHook(this.builder, {super.keys});
 
-  /// The effect node wrapped by this hook.
+  /// The builder function that creates the widget.
   final T Function() builder;
 
   @override
@@ -125,8 +124,8 @@ class JoltWidgetHook<T extends Widget> extends Hook<T> {
 
 /// The state class for [JoltWidgetHook].
 ///
-/// Manages the lifecycle of the wrapped effect node, ensuring proper
-/// disposal when the hook is removed from the widget tree.
+/// Manages the lifecycle of the reactive widget builder, ensuring proper
+/// disposal of the effect when the hook is removed from the widget tree.
 class JoltWidgetHookState<T extends Widget>
     extends HookState<T, JoltWidgetHook<T>> {
   Effect? _effect;

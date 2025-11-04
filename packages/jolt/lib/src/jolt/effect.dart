@@ -32,11 +32,25 @@ abstract class JEffect extends ReactiveNode implements ChainedDisposable {
     super.depsTail,
   });
 
+  /// Whether this effect has been disposed.
   bool _isDisposed = false;
+
+  /// List of cleanup functions to be executed when this effect is disposed or re-run.
   late final List<Disposer> _cleanups = [];
 
+  /// Whether this effect has been disposed.
+  ///
+  /// Returns true if the effect has been disposed, false otherwise.
+  /// Once disposed, the effect will no longer track dependencies or execute.
   bool get isDisposed => _isDisposed;
 
+  /// Disposes this effect and cleans up all resources.
+  ///
+  /// This method executes all registered cleanup functions and removes
+  /// the effect from the reactive system. After disposal, the effect
+  /// will no longer track dependencies or execute.
+  ///
+  /// This method is idempotent - calling it multiple times has no effect.
   @override
   @mustCallSuper
   void dispose() {
@@ -46,10 +60,30 @@ abstract class JEffect extends ReactiveNode implements ChainedDisposable {
     onDispose();
   }
 
+  /// Registers a cleanup function to be called when this effect is disposed or re-run.
+  ///
+  /// Parameters:
+  /// - [fn]: The cleanup function to register
+  ///
+  /// Cleanup functions are executed in the order they were registered, either
+  /// when the effect is disposed or before the effect function is re-run.
+  ///
+  /// Example:
+  /// ```dart
+  /// final effect = Effect(() {
+  ///   final subscription = someStream.listen((data) {});
+  ///   onEffectCleanup(() => subscription.cancel());
+  /// });
+  /// ```
   onCleanUp(Disposer fn) {
     _cleanups.add(fn);
   }
 
+  /// Executes all registered cleanup functions and clears the cleanup list.
+  ///
+  /// This method is called automatically when the effect is disposed or
+  /// before the effect function is re-run. Cleanup functions are executed
+  /// in the order they were registered.
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
@@ -61,6 +95,14 @@ abstract class JEffect extends ReactiveNode implements ChainedDisposable {
     _cleanups.clear();
   }
 
+  /// Called when this effect is being disposed.
+  ///
+  /// This method is called by [dispose] to perform cleanup operations.
+  /// Subclasses can override this method to add custom disposal logic,
+  /// but must call `super.onDispose()`.
+  ///
+  /// This method removes the effect from the reactive system and cleans
+  /// up its dependencies.
   @override
   @mustCallSuper
   @protected
@@ -77,34 +119,39 @@ abstract class JEffect extends ReactiveNode implements ChainedDisposable {
 ///
 /// Example:
 /// ```dart
-/// final scope = EffectScope((scope) {
-///   final signal = Signal(0);
-///   Effect(() => print('Value: ${signal.value}'));
+/// final scope = EffectScope()
+///   ..run(() {
+///     final signal = Signal(0);
+///     Effect(() => print('Value: ${signal.value}'));
 ///
-///   // Both signal and effect will be disposed when scope is disposed
-/// });
+///     // Both signal and effect will be disposed when scope is disposed
+///   });
 ///
 /// // Later, dispose all effects in the scope
 /// scope.dispose();
 /// ```
 class EffectScope extends JEffect {
-  /// Creates a new effect scope and runs the provided function.
+  /// Creates a new effect scope.
   ///
   /// Parameters:
-  /// - [fn]: Function to execute within the scope context
+  /// - [detach]: Whether to detach this scope from its parent scope. If true,
+  ///   the scope will not be automatically disposed when its parent is disposed.
+  ///   Defaults to false.
+  /// - [onDebug]: Optional debug callback for reactive system debugging
   ///
-  /// The function receives the scope instance as a parameter, allowing
-  /// you to manually add disposers or access scope functionality.
+  /// The scope is automatically linked to its parent scope (if any) unless
+  /// [detach] is true. Use [run] to execute code within the scope context.
   ///
   /// Example:
   /// ```dart
-  /// final scope = EffectScope((scope) {
-  ///   final signal = Signal(0);
-  ///   Effect(() => print(signal.value));
+  /// final scope = EffectScope()
+  ///   ..run(() {
+  ///     final signal = Signal(0);
+  ///     Effect(() => print(signal.value));
   ///
-  ///   // Manually add a disposer
-  ///   scope.add(() => print('Scope disposed'));
-  /// });
+  ///     // Register cleanup function
+  ///     onScopeDispose(() => print('Scope disposed'));
+  ///   });
   /// ```
   EffectScope({bool? detach, JoltDebugFn? onDebug})
       : super(flags: ReactiveFlags.none) {
@@ -132,9 +179,9 @@ class EffectScope extends JEffect {
   ///
   /// Example:
   /// ```dart
-  /// final scope = EffectScope((scope) {});
+  /// final scope = EffectScope();
   ///
-  /// final result = scope.run((scope) {
+  /// final result = scope.run(() {
   ///   final signal = Signal(42);
   ///   return signal.value;
   /// });
@@ -341,6 +388,14 @@ class Watcher<T> extends JEffect implements EffectBase {
     }
   }
 
+  /// The currently active watcher instance.
+  ///
+  /// This static field tracks the active watcher when its callback is executed
+  /// within an untracked context. This allows [onEffectCleanup] to automatically
+  /// detect the active watcher even when called within [untracked] blocks.
+  ///
+  /// This field is set before calling the watcher's callback function and
+  /// restored afterwards to maintain the previous watcher context.
   static Watcher? activeWatcher;
 
   /// Function that provides the source values to watch.
@@ -403,6 +458,23 @@ class Watcher<T> extends JEffect implements EffectBase {
   }
 }
 
+/// Registers a cleanup function to be executed when the current effect is disposed or re-run.
+///
+/// Parameters:
+/// - [fn]: The cleanup function to register
+/// - [owner]: Optional effect owner. If not provided, automatically detects the current
+///   active effect from the reactive context or the active watcher.
+///
+/// This function can only be called within an effect or watcher context. The cleanup
+/// function will be executed before the effect re-runs or when the effect is disposed.
+///
+/// Example:
+/// ```dart
+/// Effect(() {
+///   final timer = Timer.periodic(Duration(seconds: 1), (_) {});
+///   onEffectCleanup(() => timer.cancel());
+/// });
+/// ```
 @pragma('vm:prefer-inline')
 @pragma('wasm:prefer-inline')
 @pragma('dart2js:prefer-inline')
@@ -419,6 +491,24 @@ void onEffectCleanup(Disposer fn, {JEffect? owner}) {
       .onCleanUp(fn);
 }
 
+/// Registers a cleanup function to be executed when the current effect scope is disposed.
+///
+/// Parameters:
+/// - [fn]: The cleanup function to register
+/// - [owner]: Optional effect scope owner. If not provided, automatically detects
+///   the current active effect scope from the reactive context.
+///
+/// This function can only be called within an effect scope context. The cleanup
+/// function will be executed when the effect scope is disposed.
+///
+/// Example:
+/// ```dart
+/// final scope = EffectScope()
+///   ..run(() {
+///     final subscription = someStream.listen((data) {});
+///     onScopeDispose(() => subscription.cancel());
+///   });
+/// ```
 @pragma('vm:prefer-inline')
 @pragma('wasm:prefer-inline')
 @pragma('dart2js:prefer-inline')

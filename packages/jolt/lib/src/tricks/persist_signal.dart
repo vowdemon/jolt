@@ -24,12 +24,15 @@ class PersistSignal<T> extends Signal<T> {
   /// Creates a persistent signal with the given configuration.
   ///
   /// Parameters:
-  /// - [initialValue]: Optional initial value if storage is empty
+  /// - [initialValue]: Optional function that returns the initial value if storage is empty
   /// - [read]: Function to read the value from storage
   /// - [write]: Function to write the value to storage
   /// - [lazy]: Whether to load the value lazily (on first access)
   /// - [writeDelay]: Delay before writing to storage (for debouncing)
   /// - [onDebug]: Optional debug callback
+  ///
+  /// If [lazy] is false, the value will be loaded from storage immediately.
+  /// If [lazy] is true, the value will be loaded on first access via [value] or [get].
   PersistSignal(
       {T Function()? initialValue,
       required this.read,

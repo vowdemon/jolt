@@ -2,6 +2,7 @@ name: jolt_hooks
 description: "Flutter hooks integration for the Jolt reactive state management system, providing declarative hooks for signals, computed values, effects, and more."
 
 repository: https://github.com/vowdemon/jolt
+homepage: https://jolt.vowdemon.com
 
 topics:
   - jolt

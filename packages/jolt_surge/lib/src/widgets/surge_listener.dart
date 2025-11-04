@@ -3,7 +3,61 @@ import 'package:flutter/widgets.dart';
 import '../surge.dart';
 import 'surge_consumer.dart';
 
+/// A convenience widget that listens to Surge state changes for side effects.
+///
+/// SurgeListener is a simplified version of [SurgeConsumer] that only provides
+/// the `listener` functionality. It's designed for handling side effects like
+/// showing SnackBars, sending analytics events, or navigating without rebuilding UI.
+///
+/// Unlike [SurgeBuilder], this widget doesn't rebuild its child. It simply
+/// passes through the child widget and executes the listener when state changes.
+///
+/// Example:
+/// ```dart
+/// SurgeListener<CounterSurge, int>(
+///   listenWhen: (prev, next, s) => next > prev, // Only listen when increasing
+///   listener: (context, state, surge) {
+///     // Only handle side effects, doesn't build UI
+///     print('Count increased to: $state');
+///     ScaffoldMessenger.of(context).showSnackBar(
+///       SnackBar(content: Text('Count is now: $state')),
+///     );
+///   },
+///   child: const SizedBox.shrink(),
+/// );
+/// ```
+///
+/// See also:
+/// - [SurgeConsumer] for both builder and listener functionality
+/// - [SurgeBuilder] for builder-only functionality
+/// - [SurgeSelector] for fine-grained rebuild control with selector
 class SurgeListener<T extends Surge<S>, S> extends SurgeConsumer<T, S> {
+  /// Creates a SurgeListener widget.
+  ///
+  /// Parameters:
+  /// - [key]: The widget key
+  /// - [child]: The child widget to display (not rebuilt)
+  /// - [listener]: The listener function for handling side effects
+  /// - [listenWhen]: Optional condition function to control when to execute listener.
+  ///   Returns true to execute, false to skip. Defaults to always executing.
+  /// - [surge]: Optional Surge instance. If not provided, will be obtained from context
+  ///
+  /// The listener function is called whenever the state changes and [listenWhen]
+  /// returns true. It is executed within an [untracked] context to avoid creating
+  /// reactive dependencies.
+  ///
+  /// Example:
+  /// ```dart
+  /// SurgeListener<CounterSurge, int>(
+  ///   listenWhen: (prev, next, s) => next > prev, // Only when increasing
+  ///   listener: (context, state, surge) {
+  ///     ScaffoldMessenger.of(context).showSnackBar(
+  ///       SnackBar(content: Text('Count increased to: $state')),
+  ///     );
+  ///   },
+  ///   child: const SizedBox.shrink(),
+  /// );
+  /// ```
   SurgeListener(
       {super.key,
       required Widget child,

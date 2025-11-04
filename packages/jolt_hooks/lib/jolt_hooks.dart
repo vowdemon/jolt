@@ -1,22 +1,43 @@
-/// Jolt Hooks - Flutter hooks integration for Jolt reactive system.
+/// A Flutter hooks integration package for [Jolt](https://pub.dev/packages/jolt) reactive state management.
 ///
-/// This library provides Flutter hooks that integrate with Jolt's reactive
-/// state management system, enabling reactive programming in Flutter widgets.
+/// Jolt Hooks provides a comprehensive Hooks API built on [flutter_hooks](https://pub.dev/packages/flutter_hooks),
+/// enabling you to use Jolt's reactive primitives seamlessly within Flutter's hook system.
+/// All hooks automatically dispose their resources when the widget is removed from the tree,
+/// ensuring memory safety and preventing leaks.
 ///
-/// ## Getting Started
+/// ## Documentation
+///
+/// [Official Documentation](https://jolt.vowdemon.com)
+///
+/// ## Quick Start
 ///
 /// ```dart
-/// import 'package:jolt_hooks/jolt_hooks.dart';
+/// import 'package:flutter/material.dart';
 /// import 'package:flutter_hooks/flutter_hooks.dart';
+/// import 'package:jolt_hooks/jolt_hooks.dart';
 ///
-/// class MyWidget extends HookWidget {
+/// class CounterWidget extends HookWidget {
 ///   @override
 ///   Widget build(BuildContext context) {
 ///     final count = useSignal(0);
+///     final doubled = useComputed(() => count.value * 2);
 ///
-///     return ElevatedButton(
-///       onPressed: () => count.value++,
-///       child: Text('Count: ${count.value}'),
+///     return Scaffold(
+///       body: HookBuilder(
+///         builder: (context) => useJoltWidget(() {
+///           return Column(
+///             mainAxisAlignment: MainAxisAlignment.center,
+///             children: [
+///               Text('Count: ${count.value}'),
+///               Text('Doubled: ${doubled.value}'),
+///               ElevatedButton(
+///                 onPressed: () => count.value++,
+///                 child: Text('Increment'),
+///               ),
+///             ],
+///           );
+///         }),
+///       ),
 ///     );
 ///   }
 /// }
@@ -24,9 +45,11 @@
 ///
 /// ## Integration with JoltBuilder
 ///
-/// Use `JoltBuilder` from `jolt_flutter` package to reactively rebuild widgets:
+/// You can also use `JoltBuilder` from `jolt_flutter` package for reactive UI updates:
 ///
 /// ```dart
+/// import 'package:jolt_flutter/jolt_flutter.dart';
+///
 /// Widget build(BuildContext context) {
 ///   final count = useSignal(0);
 ///

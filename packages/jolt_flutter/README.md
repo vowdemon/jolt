@@ -4,6 +4,10 @@ A Flutter integration package for [Jolt](https://pub.dev/packages/jolt) reactive
 
 Jolt Flutter provides Flutter-specific widgets and utilities for working with Jolt signals, computed values, and reactive state. It includes widgets like `JoltBuilder` for reactive UI updates and seamless integration with Flutter's ValueNotifier system.
 
+## Documentation
+
+[Official Documentation](https://jolt.vowdemon.com)
+
 ## Features
 
 - **🎯 Reactive Widgets**: `JoltBuilder` and `JoltSelector` for automatic UI updates
@@ -79,56 +83,57 @@ final user = Signal(User(name: 'John', age: 30));
 
 // Only rebuilds when the user's name changes, not age
 JoltSelector(
-  selector: () => user.value.name,
-  builder: (context) => Text('Hello ${user.value.name}'),
+  selector: (prev) => user.value.name,
+  builder: (context, name) => Text('Hello $name'),
 )
 ```
 
-### JoltResource
+The `selector` function receives the previous selected value (or `null` on first run) and returns the new value to watch. Rebuilds occur only when the returned value changes.
 
-A widget that provides local component state management with lifecycle callbacks:
+### JoltProvider
+
+A widget that provides resources with lifecycle management:
 
 ```dart
-class CounterStore implements JoltState {
+class CounterStore extends JoltState {
   final counter = Signal(0);
   Timer? _timer;
 
-  CounterStore(BuildContext context) : super(context);
-
   @override
-  void onMount() {
+  void onMount(BuildContext context) {
     _timer = Timer.periodic(Duration(seconds: 1), (_) {
       counter.value++;
     });
   }
 
   @override
-  void onUnmount() {
+  void onUnmount(BuildContext context) {
     _timer?.cancel();
   }
 }
 
-JoltResource<CounterStore>(
-  create: (context) => CounterStore(context),
+JoltProvider<CounterStore>(
+  create: (context) => CounterStore(),
   builder: (context, store) => Text('Count: ${store.counter.value}'),
 )
 ```
 
-### Simple Builder
-
-For cases without state management:
+Access the resource from descendant widgets:
 
 ```dart
-JoltResource.builder(
-  builder: (context) => Text('Value: ${signal.value}'),
+Builder(
+  builder: (context) {
+    final store = JoltProvider.of<CounterStore>(context);
+    return Text('Count: ${store.counter.value}');
+  },
 )
 ```
 
 ## ValueNotifier Integration
 
-### JoltValueNotifier
+### Converting Jolt Signals to ValueNotifier
 
-Bridge Jolt signals with Flutter's ValueNotifier system:
+Bridge Jolt signals with Flutter's ValueNotifier system using the extension:
 
 ```dart
 final counter = Signal(0);
@@ -137,7 +142,7 @@ final notifier = counter.notifier; // Returns JoltValueNotifier
 // Use with AnimatedBuilder
 AnimatedBuilder(
   animation: notifier,
-  builder: (context, child) => Text('Count: ${counter.value}'),
+  builder: (context, child) => Text('Count: ${notifier.value}'),
 )
 
 // Use with ValueListenableBuilder
@@ -145,6 +150,19 @@ ValueListenableBuilder<int>(
   valueListenable: notifier,
   builder: (context, value, child) => Text('Count: $value'),
 )
+```
+
+### Converting ValueNotifier to Jolt Signal
+
+Convert Flutter's ValueNotifier to Jolt signals for bidirectional sync:
+
+```dart
+final notifier = ValueNotifier(0);
+final signal = notifier.toNotifierSignal();
+
+// Changes sync bidirectionally
+notifier.value = 1; // signal.value becomes 1
+signal.value = 2;   // notifier.value becomes 2
 ```
 
 ### Automatic Synchronization
@@ -200,33 +218,21 @@ final user = Signal(User(name: 'John', age: 30));
 
 // Only rebuilds when name changes
 JoltSelector(
-  selector: () => user.value.name,
-  builder: (context) => Text('Hello ${user.value.name}'),
+  selector: (prev) => user.value.name,
+  builder: (context, name) => Text('Hello $name'),
 )
 ```
 
-## Flutter Widget Integration
+### Batch Updates
 
-### With AnimatedBuilder
-
-```dart
-final counter = Signal(0);
-
-AnimatedBuilder(
-  animation: counter.notifier,
-  builder: (context, child) => Text('Count: ${counter.value}'),
-)
-```
-
-### With ValueListenableBuilder
+Batch multiple signal updates to avoid unnecessary rebuilds:
 
 ```dart
-final counter = Signal(0);
-
-ValueListenableBuilder<int>(
-  valueListenable: counter.notifier,
-  builder: (context, value, child) => Text('Count: $value'),
-)
+batch(() {
+  counter.value++;
+  name.value = 'New Name';
+  // Only one rebuild occurs
+});
 ```
 
 ## Important Notes
@@ -238,13 +244,24 @@ ValueListenableBuilder<int>(
 
 ### Memory Management
 - Signals are automatically disposed when widgets are disposed
-- Use `JoltResource` for manual resource management
+- `JoltProvider` manages resource lifecycle with `JoltState`
 - ValueNotifier integration handles cleanup automatically
 
 ### Performance Tips
 - Use `JoltSelector` for fine-grained updates
 - Batch multiple signal updates with `batch()`
 - Avoid accessing signals in widget constructors
+- Use `JoltProvider` for resources that need lifecycle management
+
+## Related Packages
+
+Jolt Flutter is part of the Jolt ecosystem. Explore these related packages:
+
+| Package | Description |
+|---------|-------------|
+| [jolt](https://pub.dev/packages/jolt) | Core library providing Signals, Computed, Effects, and reactive collections |
+| [jolt_hooks](https://pub.dev/packages/jolt_hooks) | Hooks API: useSignal, useComputed, useJoltEffect, useJoltWidget |
+| [jolt_surge](https://pub.dev/packages/jolt_surge) | Signal-powered Cubit pattern: Surge, SurgeProvider, SurgeConsumer |
 
 ## License
 

@@ -1,22 +1,37 @@
 # Jolt Hooks
 
-Flutter hooks integration for the Jolt reactive state management system.
+A Flutter hooks integration package for [Jolt](https://pub.dev/packages/jolt) reactive state management. Jolt Hooks provides a comprehensive Hooks API built on [flutter_hooks](https://pub.dev/packages/flutter_hooks), enabling you to use Jolt's reactive primitives seamlessly within Flutter's hook system.
 
-## Usage
+## Documentation
 
-### Using JoltBuilder (Widget-based)
+[Official Documentation](https://jolt.vowdemon.com)
 
-`JoltBuilder` is a `StatelessWidget` that creates a reactive scope. It's ideal for use in regular `Widget` build methods:
+## Overview
+
+Jolt Hooks bridges Jolt's reactive state management system with Flutter's hook architecture, providing automatic lifecycle management and seamless integration with other Flutter hooks. All hooks automatically dispose their resources when the widget is removed from the tree, ensuring memory safety and preventing leaks.
+
+**Key Features:**
+- 🎯 **Comprehensive Hooks API**: Full coverage of Jolt's reactive primitives
+- 🔄 **Automatic Lifecycle Management**: Resources are automatically disposed
+- ⚡ **Seamless Integration**: Works perfectly with other Flutter hooks
+- 🎨 **Type-Safe**: Full type safety with Dart's type system
+- 📦 **Reactive Collections**: Hooks for List, Map, Set, and Iterable signals
+- 🔧 **Advanced Features**: Async signals, persistent signals, and effect scopes
+
+## Quick Start
+
+### Basic Usage
 
 ```dart
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:jolt_hooks/jolt_hooks.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
-import 'package:jolt/jolt.dart';
 
-class CounterWidget extends StatelessWidget {
+class CounterWidget extends HookWidget {
   @override
   Widget build(BuildContext context) {
-    final count = Signal(0);
+    final count = useSignal(0);
     
     return Scaffold(
       body: JoltBuilder(
@@ -31,17 +46,10 @@ class CounterWidget extends StatelessWidget {
 }
 ```
 
-### Using useJoltWidget (Hook-based)
-
-`useJoltWidget` is a Flutter hook that wraps a widget builder in a reactive effect. It must be used within a `HookBuilder` and is perfect for integrating with other hooks:
+### Reactive Collections
 
 ```dart
-import 'package:flutter/material.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:jolt_hooks/jolt_hooks.dart';
-import 'package:jolt/jolt.dart';
-
-class CounterWidget extends HookWidget {
+class TodoListWidget extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final count = useSignal(0);
@@ -80,3 +88,13 @@ class CounterWidget extends HookWidget {
 | `usePersistSignal` | Creates a persistent signal |
 | `useJoltStream` | Creates a stream from a reactive value |
 | `useJoltWidget` | Creates a reactive widget that rebuilds when dependencies change |
+
+## Related Packages
+
+Jolt Hooks is part of the Jolt ecosystem. Explore these related packages:
+
+| Package | Description |
+|---------|-------------|
+| [jolt](https://pub.dev/packages/jolt) | Core library providing Signals, Computed, Effects, and reactive collections |
+| [jolt_flutter](https://pub.dev/packages/jolt_flutter) | Flutter widgets: JoltBuilder, JoltSelector, JoltProvider |
+| [jolt_surge](https://pub.dev/packages/jolt_surge) | Signal-powered Cubit pattern: Surge, SurgeProvider, SurgeConsumer |

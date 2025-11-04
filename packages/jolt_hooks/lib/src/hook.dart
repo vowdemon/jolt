@@ -382,7 +382,7 @@ Watcher useJoltWatcher<T>(
 /// Example:
 /// ```dart
 /// Widget build(BuildContext context) {
-///   useJoltEffectScope((scope) {
+///   useJoltEffectScope(fn: (scope) {
 ///     final count = useSignal(0);
 ///     final name = useSignal('User');
 ///
@@ -604,10 +604,10 @@ IterableSignal<T> useIterableSignal<T>(
 ///
 /// Example:
 /// ```dart
-/// final counter = signal(0);
 /// Widget build(BuildContext context) {
 ///   return HookBuilder(
 ///     builder: (context) {
+///       final counter = useSignal(0);
 ///       return useJoltWidget(() {
 ///         return Column(
 ///           children: [

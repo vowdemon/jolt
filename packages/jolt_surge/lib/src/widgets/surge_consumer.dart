@@ -4,7 +4,67 @@ import 'package:provider/provider.dart';
 
 import '../surge.dart';
 
+/// A unified widget that provides both builder and listener functionality.
+///
+/// SurgeConsumer provides fine-grained control over when to rebuild the UI
+/// and when to execute side effects (listeners). It supports conditional
+/// rebuilding and listening through [buildWhen] and [listenWhen] callbacks.
+///
+/// **Key Features:**
+/// - **builder**: Builds the UI, default behavior is untracked (doesn't create
+///   reactive dependencies), only rebuilds when [buildWhen] returns true
+/// - **listener**: Handles side effects (like showing SnackBar, sending analytics
+///   events, etc.), default behavior is untracked, only executes when [listenWhen]
+///   returns true
+/// - **buildWhen**: Controls whether to rebuild, default is tracked (can depend
+///   on external signals)
+/// - **listenWhen**: Controls whether to execute the listener, default is tracked
+///   (can depend on external signals)
+///
+/// Example:
+/// ```dart
+/// SurgeConsumer<CounterSurge, int>(
+///   buildWhen: (prev, next, s) => next.isEven, // Only rebuild when even
+///   listenWhen: (prev, next, s) => next > prev, // Only listen when increasing
+///   builder: (context, state, s) => Text('count: $state'),
+///   listener: (context, state, s) {
+///     // Side effects: show SnackBar or send analytics events
+///     ScaffoldMessenger.of(context).showSnackBar(
+///       SnackBar(content: Text('Count is now: $state')),
+///     );
+///   },
+/// );
+/// ```
+///
+/// See also:
+/// - [SurgeBuilder] for builder-only functionality
+/// - [SurgeListener] for listener-only functionality
+/// - [SurgeSelector] for fine-grained rebuild control with selector
 class SurgeConsumer<T extends Surge<S>, S> extends StatefulWidget {
+  /// Creates a SurgeConsumer widget.
+  ///
+  /// Parameters:
+  /// - [key]: The widget key
+  /// - [builder]: The builder function that builds the UI based on state
+  /// - [listener]: Optional listener function for side effects
+  /// - [buildWhen]: Optional condition function to control when to rebuild.
+  ///   Returns true to rebuild, false to skip. Defaults to always rebuilding.
+  ///   This function is tracked by default (can depend on external signals).
+  /// - [listenWhen]: Optional condition function to control when to execute listener.
+  ///   Returns true to execute, false to skip. Defaults to always executing.
+  ///   This function is tracked by default (can depend on external signals).
+  /// - [surge]: Optional Surge instance. If not provided, will be obtained from context
+  ///
+  /// Both [buildWhen] and [listenWhen] are tracked by default, meaning they can
+  /// depend on external signals. If you need to use external signals without
+  /// tracking them, use [untracked]:
+  ///
+  /// ```dart
+  /// SurgeConsumer<CounterSurge, int>(
+  ///   buildWhen: (prev, next, s) => untracked(() => shouldRebuildSignal.value),
+  ///   // ...
+  /// );
+  /// ```
   const SurgeConsumer({
     super.key,
     required this.builder,
@@ -14,10 +74,68 @@ class SurgeConsumer<T extends Surge<S>, S> extends StatefulWidget {
     this.surge,
   });
 
+  /// The builder function that builds the UI based on state.
+  ///
+  /// Parameters:
+  /// - [context]: The build context
+  /// - [state]: The current state value
+  /// - [surge]: The Surge instance
+  ///
+  /// Returns: The widget to build
+  ///
+  /// This function is called whenever the state changes and [buildWhen] returns true.
   final Widget Function(BuildContext context, S state, T surge) builder;
+
+  /// Optional listener function for handling side effects.
+  ///
+  /// Parameters:
+  /// - [context]: The build context
+  /// - [state]: The current state value
+  /// - [surge]: The Surge instance
+  ///
+  /// This function is called whenever the state changes and [listenWhen] returns true.
+  /// It is executed within an [untracked] context to avoid creating reactive dependencies.
+  ///
+  /// Use this for side effects like showing SnackBars, sending analytics events,
+  /// or navigating to other screens.
   final void Function(BuildContext context, S state, T surge)? listener;
+
+  /// Optional condition function to control when to rebuild.
+  ///
+  /// Parameters:
+  /// - [prevState]: The previous state value
+  /// - [newState]: The new state value
+  /// - [surge]: The Surge instance
+  ///
+  /// Returns: true to rebuild, false to skip
+  ///
+  /// This function is tracked by default, meaning it can depend on external signals.
+  /// If you need to use external signals without tracking them, wrap the access
+  /// in [untracked].
+  ///
+  /// If not provided, the widget will rebuild on every state change.
   final bool Function(S prevState, S newState, T surge)? buildWhen;
+
+  /// Optional condition function to control when to execute the listener.
+  ///
+  /// Parameters:
+  /// - [prevState]: The previous state value
+  /// - [newState]: The new state value
+  /// - [surge]: The Surge instance
+  ///
+  /// Returns: true to execute listener, false to skip
+  ///
+  /// This function is tracked by default, meaning it can depend on external signals.
+  /// If you need to use external signals without tracking them, wrap the access
+  /// in [untracked].
+  ///
+  /// If not provided, the listener will execute on every state change.
   final bool Function(S prevState, S newState, T surge)? listenWhen;
+
+  /// Optional Surge instance.
+  ///
+  /// If not provided, the Surge will be obtained from the widget tree using
+  /// `context.read<T>()`. If provided, this specific instance will be used.
   final T? surge;
 
   @override

@@ -202,11 +202,11 @@ abstract interface class AsyncSource<T> implements Disposable {
   /// Starts the async operation and connects it to the given signal.
   ///
   /// Parameters:
-  /// - [emit]: The AsyncSignal to emit states to
+  /// - [signal]: The AsyncSignal to emit states to
   ///
   /// This method should set up the async operation and emit appropriate
   /// AsyncState values as the operation progresses.
-  void start(AsyncSignal<T> emit);
+  void start(AsyncSignal<T> signal);
 
   @override
   FutureOr<void> dispose();

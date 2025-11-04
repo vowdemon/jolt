@@ -92,12 +92,12 @@ void main() {
     test('debug effect scope', () {
       final counter = DebugCounter();
 
-      final e = EffectScope((_) => 1, onDebug: counter.onDebug);
+      final e = EffectScope(onDebug: counter.onDebug)..run(() => 1);
 
       expect(counter.createCount, equals(1));
       expect(counter.count, equals(2));
 
-      e.run((_) => 1);
+      e.run(() => 1);
       // run when the scope is created
       expect(counter.effectCount, equals(2));
       expect(counter.count, equals(3));
@@ -118,15 +118,18 @@ void main() {
       final c = Computed(() => s.value, onDebug: cCounter.onDebug);
       late Effect e;
       late Watcher w;
-      final es = EffectScope((_) {
-        e = Effect(() => c.value, onDebug: eCounter.onDebug);
-        w = Watcher(
-          () => c.value,
-          (value, _) => value,
-          onDebug: wCounter.onDebug,
-          when: (newValue, oldValue) => true,
+      final es = EffectScope(onDebug: esCounter.onDebug)
+        ..run(
+          () {
+            e = Effect(() => c.value, onDebug: eCounter.onDebug);
+            w = Watcher(
+              () => c.value,
+              (value, _) => value,
+              onDebug: wCounter.onDebug,
+              when: (newValue, oldValue) => true,
+            );
+          },
         );
-      }, onDebug: esCounter.onDebug);
 
       expect(sCounter.linked, equals(1));
       expect(cCounter.linked, equals(2));

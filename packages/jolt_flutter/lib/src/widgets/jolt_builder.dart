@@ -79,9 +79,10 @@ class JoltBuilderElement extends StatelessElement {
   @override
   void mount(Element? parent, Object? newSlot) {
     _lastBuiltWidget = null;
-    _scope = jolt.EffectScope((scope) {
-      _effect = jolt.Effect(_effectFn, immediately: false);
-    });
+    _scope = jolt.EffectScope()
+      ..run(() {
+        _effect = jolt.Effect(_effectFn, immediately: false);
+      });
 
     super.mount(parent, newSlot);
   }

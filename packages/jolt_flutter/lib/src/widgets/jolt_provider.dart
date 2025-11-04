@@ -154,16 +154,17 @@ class JoltProviderElement<T> extends ComponentElement {
 
   @override
   void mount(Element? parent, Object? newSlot) {
-    _scope = jolt.EffectScope((scope) {
-      _store = widget.create?.call(
-        this,
-      );
-    });
+    _scope = jolt.EffectScope()
+      ..run(() {
+        _store = widget.create?.call(
+          this,
+        );
+      });
 
     super.mount(parent, newSlot);
 
     if (_store is JoltState) {
-      _scope!.run((_) {
+      _scope!.run(() {
         (_store as JoltState).onMount(this);
       });
     }
@@ -172,7 +173,7 @@ class JoltProviderElement<T> extends ComponentElement {
   @override
   void unmount() {
     if (_store is JoltState) {
-      _scope!.run((_) {
+      _scope!.run(() {
         (_store as JoltState).onUnmount(this);
       });
     }
@@ -215,7 +216,7 @@ class JoltProviderElement<T> extends ComponentElement {
     if (createChanged) {
       T? newStore;
       if (newWidget.create != null) {
-        _scope!.run((_) {
+        _scope!.run(() {
           newStore = newWidget.create!.call(this) as T?;
         });
       }
@@ -224,7 +225,7 @@ class JoltProviderElement<T> extends ComponentElement {
 
       if (storeChanged) {
         if (oldStore is JoltState) {
-          _scope!.run((_) {
+          _scope!.run(() {
             (oldStore as JoltState).onUnmount(this);
           });
         }
@@ -232,7 +233,7 @@ class JoltProviderElement<T> extends ComponentElement {
         _store = newStore;
 
         if (_store is JoltState) {
-          _scope!.run((_) {
+          _scope!.run(() {
             (_store as JoltState).onMount(this);
           });
         }

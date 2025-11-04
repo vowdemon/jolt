@@ -392,12 +392,16 @@ Watcher useJoltWatcher<T>(
 ///   return Text('Component with scoped effects');
 /// }
 /// ```
-EffectScope useJoltEffectScope(
-  void Function(EffectScope scope)? fn, {
+EffectScope useJoltEffectScope({
+  void Function(EffectScope scope)? fn,
   List<Object?>? keys,
   JoltDebugFn? onDebug,
 }) {
-  return use(JoltEffectHook(EffectScope(fn, onDebug: onDebug), keys: keys));
+  final scope = EffectScope(onDebug: onDebug);
+  if (fn != null) {
+    scope.run(() => fn(scope));
+  }
+  return use(JoltEffectHook(scope, keys: keys));
 }
 
 /// Creates a stream hook from a reactive value.

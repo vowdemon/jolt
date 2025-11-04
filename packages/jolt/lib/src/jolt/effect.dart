@@ -44,7 +44,6 @@ abstract class JEffect extends ReactiveNode implements ChainedDisposable {
     onDispose();
   }
 
-  @internal
   onCleanUp(Disposer fn) {
     _cleanups.add(fn);
   }
@@ -104,7 +103,7 @@ class EffectScope extends JEffect {
   ///   scope.add(() => print('Scope disposed'));
   /// });
   /// ```
-  EffectScope(void Function(EffectScope scope)? fn, {JoltDebugFn? onDebug})
+  EffectScope({bool? detach, JoltDebugFn? onDebug})
       : super(flags: ReactiveFlags.none) {
     assert(() {
       if (onDebug != null) {
@@ -113,26 +112,12 @@ class EffectScope extends JEffect {
       }
       return true;
     }());
-    final prevSub = globalReactiveSystem.setActiveSub(this);
-    if (prevSub != null) {
-      globalReactiveSystem.link(this, prevSub, 0);
-    }
-
-    final prevScope = globalReactiveSystem.setActiveScope(this);
-    try {
-      if (fn != null) {
-        fn(this);
+    if (!(detach ?? false)) {
+      final prevSub = globalReactiveSystem.getActiveSub();
+      if (prevSub != null) {
+        globalReactiveSystem.link(this, prevSub, 0);
       }
-    } finally {
-      globalReactiveSystem.setActiveScope(prevScope);
-      globalReactiveSystem.setActiveSub(prevSub);
     }
-    assert(() {
-      untracked(() {
-        getJoltDebugFn(this)?.call(DebugNodeOperationType.effect, this);
-      });
-      return true;
-    }());
   }
 
   /// Runs a function within this scope's context.
@@ -151,13 +136,11 @@ class EffectScope extends JEffect {
   ///   return signal.value;
   /// });
   /// ```
-  T run<T>(
-    T Function(EffectScope scope) fn,
-  ) {
+  T run<T>(T Function() fn) {
     final prevSub = globalReactiveSystem.setActiveSub(this);
     final prevScope = globalReactiveSystem.setActiveScope(this);
     try {
-      final result = fn(this);
+      final result = fn();
 
       assert(() {
         untracked(() {

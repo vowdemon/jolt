@@ -112,29 +112,30 @@ class JoltSelectorElement<T> extends ComponentElement {
 
   @override
   void mount(Element? parent, Object? newSlot) {
-    _scope = jolt.EffectScope((scope) {
-      _effect = jolt.Effect(() {
-        final oldState = _state;
-        late T state = widget.selector(_state);
-        _state = state;
+    _scope = jolt.EffectScope()
+      ..run(() {
+        _effect = jolt.Effect(() {
+          final oldState = _state;
+          late T state = widget.selector(_state);
+          _state = state;
 
-        if (_isFirst) {
-          _isFirst = false;
-        } else if (oldState != state) {
-          if (switch (SchedulerBinding.instance.schedulerPhase) {
-            SchedulerPhase.idle => true,
-            SchedulerPhase.postFrameCallbacks => true,
-            _ => false,
-          }) {
-            markNeedsBuild();
-          } else {
-            SchedulerBinding.instance.endOfFrame.then((_) {
+          if (_isFirst) {
+            _isFirst = false;
+          } else if (oldState != state) {
+            if (switch (SchedulerBinding.instance.schedulerPhase) {
+              SchedulerPhase.idle => true,
+              SchedulerPhase.postFrameCallbacks => true,
+              _ => false,
+            }) {
               markNeedsBuild();
-            });
+            } else {
+              SchedulerBinding.instance.endOfFrame.then((_) {
+                markNeedsBuild();
+              });
+            }
           }
-        }
+        });
       });
-    });
 
     super.mount(parent, newSlot);
   }

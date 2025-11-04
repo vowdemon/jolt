@@ -34,7 +34,7 @@ Disposer effect(void Function() fn) {
 
 /// Create an effect scope for managing multiple effects
 Disposer effectScope(void Function() fn) {
-  final EffectScope e = EffectScope((_) => fn());
+  final EffectScope e = EffectScope()..run(() => fn());
 
   return e.dispose;
 }

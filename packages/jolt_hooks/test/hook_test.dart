@@ -399,7 +399,7 @@ void main() {
             final signal = useSignal(0);
 
             // Create an effect scope
-            useJoltEffectScope((scope) {
+            useJoltEffectScope(fn: (scope) {
               scopeEffectCount++;
               // Access signal within the scope
               signal.value;

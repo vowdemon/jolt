@@ -557,9 +557,10 @@ void main() {
       final signal = Signal(1);
       final List<int> values = [];
 
-      final _ = EffectScope((_) {
-        values.add(signal.value);
-      });
+      final _ = EffectScope()
+        ..run(() {
+          values.add(signal.value);
+        });
 
       expect(values, equals([1]));
       // scope is disposed
@@ -569,9 +570,10 @@ void main() {
       final signal = Signal(1);
       final List<int> values = [];
 
-      final _ = EffectScope((_) {
-        values.add(signal.value);
-      });
+      final _ = EffectScope()
+        ..run(() {
+          values.add(signal.value);
+        });
 
       expect(values, equals([1]));
 
@@ -585,13 +587,14 @@ void main() {
       late Computed<int> computed;
       late Effect effect;
       final values = <int>[];
-      final scope = EffectScope((s) {
-        signal = Signal(1);
-        computed = Computed<int>(() => signal.value * 2);
-        effect = Effect(() {
-          values.add(signal.value);
+      final scope = EffectScope()
+        ..run(() {
+          signal = Signal(1);
+          computed = Computed<int>(() => signal.value * 2);
+          effect = Effect(() {
+            values.add(signal.value);
+          });
         });
-      });
 
       expect(scope.isDisposed, isFalse);
       expect(signal.isDisposed, isFalse);
@@ -615,19 +618,21 @@ void main() {
       late EffectScope outerScope;
       late EffectScope innerScope;
 
-      outerScope = EffectScope((_) {
-        Effect(() {
-          outerValues.add(signal.value);
-        });
-
-        innerScope = EffectScope((_) {
+      outerScope = EffectScope()
+        ..run(() {
           Effect(() {
-            innerValues.add(signal.value * 2);
+            outerValues.add(signal.value);
           });
-        });
 
-        // innerScope is disposed
-      });
+          innerScope = EffectScope()
+            ..run(() {
+              Effect(() {
+                innerValues.add(signal.value * 2);
+              });
+            });
+
+          // innerScope is disposed
+        });
 
       expect(outerValues, equals([1]));
       expect(innerValues, equals([2]));
@@ -646,17 +651,19 @@ void main() {
       final List<int> scope1Values = [];
       final List<int> scope2Values = [];
 
-      final scope1 = EffectScope((_) {
-        Effect(() {
-          scope1Values.add(signal.value);
+      final scope1 = EffectScope()
+        ..run(() {
+          Effect(() {
+            scope1Values.add(signal.value);
+          });
         });
-      });
 
-      final scope2 = EffectScope((_) {
-        Effect(() {
-          scope2Values.add(signal.value * 2);
+      final scope2 = EffectScope()
+        ..run(() {
+          Effect(() {
+            scope2Values.add(signal.value * 2);
+          });
         });
-      });
 
       expect(scope1Values, equals([1]));
       expect(scope2Values, equals([2]));
@@ -678,14 +685,15 @@ void main() {
       final signal = Signal(1);
       final List<int> values = [];
 
-      final _ = EffectScope((_) {
-        Effect(() {
-          values.add(signal.value);
-          if (signal.value > 1) {
-            throw Exception('Test error');
-          }
+      final _ = EffectScope()
+        ..run(() {
+          Effect(() {
+            values.add(signal.value);
+            if (signal.value > 1) {
+              throw Exception('Test error');
+            }
+          });
         });
-      });
 
       expect(values, equals([1]));
 
@@ -698,11 +706,12 @@ void main() {
       final signal2 = Signal(2);
       final List<int> values = [];
 
-      final _ = EffectScope((_) {
-        Effect(() {
-          values.add(signal1.value + signal2.value);
+      final _ = EffectScope()
+        ..run(() {
+          Effect(() {
+            values.add(signal1.value + signal2.value);
+          });
         });
-      });
 
       expect(values, equals([3]));
 
@@ -720,14 +729,15 @@ void main() {
       final List<int> trackedValues = [];
       final List<int> untrackedValues = [];
 
-      final _ = EffectScope((_) {
-        Effect(() {
-          trackedValues.add(signal1.value);
+      final _ = EffectScope()
+        ..run(() {
+          Effect(() {
+            trackedValues.add(signal1.value);
+          });
+          Effect(() {
+            untrackedValues.add(untracked(() => signal2.value));
+          });
         });
-        Effect(() {
-          untrackedValues.add(untracked(() => signal2.value));
-        });
-      });
 
       expect(trackedValues, equals([1]));
       expect(untrackedValues, equals([2]));
@@ -745,14 +755,15 @@ void main() {
       final signal = Signal(1);
       final List<int> values = [];
 
-      final _ = EffectScope((_) {
-        Effect(() {
-          values.add(signal.value);
+      final _ = EffectScope()
+        ..run(() {
+          Effect(() {
+            values.add(signal.value);
+          });
+          Future.delayed(const Duration(milliseconds: 1), () {
+            values.add(signal.value * 10);
+          });
         });
-        Future.delayed(const Duration(milliseconds: 1), () {
-          values.add(signal.value * 10);
-        });
-      });
 
       expect(values, equals([1]));
 
@@ -767,11 +778,12 @@ void main() {
       final stringSignal = Signal('hello');
       final List<String> values = [];
 
-      final _ = EffectScope((_) {
-        Effect(() {
-          values.add(stringSignal.value);
+      final _ = EffectScope()
+        ..run(() {
+          Effect(() {
+            values.add(stringSignal.value);
+          });
         });
-      });
 
       expect(values, equals(['hello']));
 
@@ -783,11 +795,12 @@ void main() {
       final signal = Signal<int?>(null);
       final List<int?> values = [];
 
-      final _ = EffectScope((_) {
-        Effect(() {
-          values.add(signal.value);
+      final _ = EffectScope()
+        ..run(() {
+          Effect(() {
+            values.add(signal.value);
+          });
         });
-      });
 
       expect(values, equals([null]));
 
@@ -799,11 +812,12 @@ void main() {
       final signal = Signal(0);
       final List<int> values = [];
 
-      final _ = EffectScope((_) {
-        Effect(() {
-          values.add(signal.value);
+      final _ = EffectScope()
+        ..run(() {
+          Effect(() {
+            values.add(signal.value);
+          });
         });
-      });
 
       expect(values, equals([0]));
 
@@ -820,11 +834,12 @@ void main() {
       final signal = Signal(TestPerson('Alice', 30));
       final List<TestPerson> values = [];
 
-      final _ = EffectScope((_) {
-        Effect(() {
-          values.add(signal.value);
+      final _ = EffectScope()
+        ..run(() {
+          Effect(() {
+            values.add(signal.value);
+          });
         });
-      });
 
       expect(values, equals([TestPerson('Alice', 30)]));
 
@@ -1000,38 +1015,42 @@ void main() {
     late Effect innerEffect1;
     late Effect innerEffect2;
 
-    outerScope = EffectScope((s) {
-      outerSignal = Signal(1);
-      outerComputed = Computed(() => outerSignal.value + globalSignal.value);
+    outerScope = EffectScope()
+      ..run(() {
+        outerSignal = Signal(1);
+        outerComputed = Computed(() => outerSignal.value + globalSignal.value);
 
-      outerEffect = Effect(() {
-        outerValues.add(outerComputed.value);
-      });
-
-      midScope = EffectScope((s) {
-        midSignal = Signal(5);
-        midComputed = Computed(() => midSignal.value + outerSignal.value);
-
-        midEffect = Effect(() {
-          midValues.add(midComputed.value);
+        outerEffect = Effect(() {
+          outerValues.add(outerComputed.value);
         });
 
-        innerScope = EffectScope((s) {
-          innerSignal = Signal(100);
-          innerComputed = Computed(
-            () => innerSignal.value + midSignal.value + globalSignal.value,
-          );
+        midScope = EffectScope()
+          ..run(() {
+            midSignal = Signal(5);
+            midComputed = Computed(() => midSignal.value + outerSignal.value);
 
-          innerEffect1 = Effect(() {
-            innerValues.add(innerComputed.value);
-          });
+            midEffect = Effect(() {
+              midValues.add(midComputed.value);
+            });
 
-          innerEffect2 = Effect(() {
-            crossValues.add(innerSignal.value * outerSignal.value);
+            innerScope = EffectScope()
+              ..run(() {
+                innerSignal = Signal(100);
+                innerComputed = Computed(
+                  () =>
+                      innerSignal.value + midSignal.value + globalSignal.value,
+                );
+
+                innerEffect1 = Effect(() {
+                  innerValues.add(innerComputed.value);
+                });
+
+                innerEffect2 = Effect(() {
+                  crossValues.add(innerSignal.value * outerSignal.value);
+                });
+              });
           });
-        });
       });
-    });
 
     expect(globalEffectValues, equals([20]));
     expect(outerValues, equals([11]));
@@ -1406,11 +1425,12 @@ void main() {
     test('should call cleanup when EffectScope is disposed', () {
       final cleanupCalled = <bool>[false];
 
-      final scope = EffectScope((scope) {
-        onScopeDispose(() {
-          cleanupCalled[0] = true;
+      final scope = EffectScope()
+        ..run(() {
+          onScopeDispose(() {
+            cleanupCalled[0] = true;
+          });
         });
-      });
 
       expect(cleanupCalled[0], isFalse);
 
@@ -1424,17 +1444,18 @@ void main() {
       final cleanup2Called = <bool>[false];
       final cleanup3Called = <bool>[false];
 
-      final scope = EffectScope((scope) {
-        onScopeDispose(() {
-          cleanup1Called[0] = true;
+      final scope = EffectScope()
+        ..run(() {
+          onScopeDispose(() {
+            cleanup1Called[0] = true;
+          });
+          onScopeDispose(() {
+            cleanup2Called[0] = true;
+          });
+          onScopeDispose(() {
+            cleanup3Called[0] = true;
+          });
         });
-        onScopeDispose(() {
-          cleanup2Called[0] = true;
-        });
-        onScopeDispose(() {
-          cleanup3Called[0] = true;
-        });
-      });
 
       expect(cleanup1Called[0], isFalse);
       expect(cleanup2Called[0], isFalse);
@@ -1451,17 +1472,18 @@ void main() {
     test('should call cleanups in EffectScope in registration order', () {
       final cleanupOrder = <int>[];
 
-      final scope = EffectScope((scope) {
-        onScopeDispose(() {
-          cleanupOrder.add(1);
+      final scope = EffectScope()
+        ..run(() {
+          onScopeDispose(() {
+            cleanupOrder.add(1);
+          });
+          onScopeDispose(() {
+            cleanupOrder.add(2);
+          });
+          onScopeDispose(() {
+            cleanupOrder.add(3);
+          });
         });
-        onScopeDispose(() {
-          cleanupOrder.add(2);
-        });
-        onScopeDispose(() {
-          cleanupOrder.add(3);
-        });
-      });
 
       scope.dispose();
 
@@ -1474,17 +1496,19 @@ void main() {
       final innerCleanupCalled = <bool>[false];
       late EffectScope innerScope;
 
-      final outerScope = EffectScope((scope) {
-        onScopeDispose(() {
-          outerCleanupCalled[0] = true;
-        });
-
-        innerScope = EffectScope((scope) {
+      final outerScope = EffectScope()
+        ..run(() {
           onScopeDispose(() {
-            innerCleanupCalled[0] = true;
+            outerCleanupCalled[0] = true;
           });
+
+          innerScope = EffectScope()
+            ..run(() {
+              onScopeDispose(() {
+                innerCleanupCalled[0] = true;
+              });
+            });
         });
-      });
 
       expect(outerCleanupCalled[0], isFalse);
       expect(innerCleanupCalled[0], isFalse);
@@ -1502,9 +1526,9 @@ void main() {
     test('should work with scope.run() method', () {
       final cleanupCalled = <bool>[false];
 
-      final scope = EffectScope(null);
+      final scope = EffectScope();
 
-      scope.run((scope) {
+      scope.run(() {
         onScopeDispose(() {
           cleanupCalled[0] = true;
         });
@@ -1519,9 +1543,9 @@ void main() {
 
     test('should work with explicit owner parameter', () {
       final cleanupCalled = <bool>[false];
-      final EffectScope scope = EffectScope(null);
+      final EffectScope scope = EffectScope();
 
-      EffectScope(null).run((s) {
+      EffectScope().run(() {
         // Use explicit owner parameter
         onScopeDispose(() {
           cleanupCalled[0] = true;
@@ -1533,6 +1557,133 @@ void main() {
       scope.dispose();
 
       expect(cleanupCalled[0], isTrue);
+    });
+  });
+
+  group('EffectScope detach parameter', () {
+    test('should link to parent scope by default', () {
+      late EffectScope outerScope;
+      late EffectScope innerScope;
+
+      outerScope = EffectScope()
+        ..run(() {
+          innerScope = EffectScope()
+            ..run(() {
+              // Inner scope created within outer scope
+            });
+        });
+
+      expect(outerScope.isDisposed, isFalse);
+      expect(innerScope.isDisposed, isFalse);
+
+      // When outer scope is disposed, inner scope should also be disposed
+      outerScope.dispose();
+
+      expect(outerScope.isDisposed, isTrue);
+      expect(innerScope.isDisposed, isTrue);
+    });
+
+    test('should not link to parent scope when detach is true', () {
+      late EffectScope outerScope;
+      late EffectScope innerScope;
+
+      outerScope = EffectScope()
+        ..run(() {
+          innerScope = EffectScope(detach: true)
+            ..run(() {
+              // Inner scope created with detach: true
+            });
+        });
+
+      expect(outerScope.isDisposed, isFalse);
+      expect(innerScope.isDisposed, isFalse);
+
+      // When outer scope is disposed, inner scope should NOT be disposed
+      outerScope.dispose();
+
+      expect(outerScope.isDisposed, isTrue);
+      expect(innerScope.isDisposed, isFalse);
+
+      // Inner scope should still work independently
+      innerScope.dispose();
+      expect(innerScope.isDisposed, isTrue);
+    });
+
+    test('should not link to parent scope when detach is explicitly false', () {
+      late EffectScope outerScope;
+      late EffectScope innerScope;
+
+      outerScope = EffectScope()
+        ..run(() {
+          innerScope = EffectScope(detach: false)
+            ..run(() {
+              // Inner scope created with detach: false (should link)
+            });
+        });
+
+      expect(outerScope.isDisposed, isFalse);
+      expect(innerScope.isDisposed, isFalse);
+
+      // When outer scope is disposed, inner scope should also be disposed
+      outerScope.dispose();
+
+      expect(outerScope.isDisposed, isTrue);
+      expect(innerScope.isDisposed, isTrue);
+    });
+
+    test('should work with detach in nested scopes', () {
+      late EffectScope outerScope;
+      late EffectScope midScope;
+      late EffectScope innerScope;
+
+      outerScope = EffectScope()
+        ..run(() {
+          midScope = EffectScope(detach: true)
+            ..run(() {
+              innerScope = EffectScope()
+                ..run(() {
+                  // Inner scope should link to midScope
+                });
+            });
+        });
+
+      expect(outerScope.isDisposed, isFalse);
+      expect(midScope.isDisposed, isFalse);
+      expect(innerScope.isDisposed, isFalse);
+
+      // Dispose outer scope - midScope should NOT be disposed (detached)
+      outerScope.dispose();
+
+      expect(outerScope.isDisposed, isTrue);
+      expect(midScope.isDisposed, isFalse);
+      expect(innerScope.isDisposed, isFalse);
+
+      // Dispose midScope - innerScope should be disposed (linked)
+      midScope.dispose();
+
+      expect(midScope.isDisposed, isTrue);
+      expect(innerScope.isDisposed, isTrue);
+    });
+
+    test('should not link when created outside any scope with detach default',
+        () {
+      final scope = EffectScope();
+
+      expect(scope.isDisposed, isFalse);
+
+      // Scope created outside any parent scope should not be linked
+      // This is expected behavior - nothing to dispose it
+      scope.dispose();
+      expect(scope.isDisposed, isTrue);
+    });
+
+    test('should not link when created outside any scope with detach true', () {
+      final scope = EffectScope(detach: true);
+
+      expect(scope.isDisposed, isFalse);
+
+      scope.dispose();
+      expect(scope.isDisposed, isTrue);
     });
   });
 }

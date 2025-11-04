@@ -368,25 +368,20 @@ class Watcher<T> extends JEffect implements EffectBase {
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
-  bool run() {
+  void run() {
     final sources = sourcesFn();
-    if (((when == null && sources == prevSources) ||
-        (when != null && !when!(sources, prevSources)))) {
-      assert(() {
-        untracked(() {
-          getJoltDebugFn(this)?.call(DebugNodeOperationType.effect, this);
-        });
-        return true;
-      }());
+    final shouldTrigger =
+        when == null ? sources != prevSources : when!(sources, prevSources);
 
-      return false;
+    if (shouldTrigger) {
+      untracked(() {
+        final prevWatcher = activeWatcher;
+        activeWatcher = this;
+        fn(sources, prevSources);
+        activeWatcher = prevWatcher;
+      });
     }
-    untracked(() {
-      final prevWatcher = activeWatcher;
-      activeWatcher = this;
-      fn(sources, prevSources);
-      activeWatcher = prevWatcher;
-    });
+
     prevSources = sources;
 
     assert(() {
@@ -395,8 +390,6 @@ class Watcher<T> extends JEffect implements EffectBase {
       });
       return true;
     }());
-
-    return true;
   }
 }
 

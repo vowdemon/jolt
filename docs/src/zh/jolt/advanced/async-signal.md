@@ -3,9 +3,7 @@
 
 # 异步信号
 
-> **注意**：异步信号是实验功能，API 可能会发生变化。
-
-异步信号在响应式系统中用于处理异步操作，包括 Future 和 Stream。Jolt 提供了 `AsyncSignal`、`FutureSignal` 和 `StreamSignal` 来管理异步操作的状态（加载中、成功、错误等），并在状态变化时自动通知订阅者。适用于数据加载、实时数据流等场景。
+异步信号在响应式系统中用于处理异步操作，包括 Future 和 Stream。Jolt 提供了 `AsyncSignal` 来管理异步操作的状态（加载中、成功、错误等），并在状态变化时自动通知订阅者。适用于数据加载、实时数据流等场景。
 
 ```dart
 import 'package:jolt/jolt.dart';
@@ -48,16 +46,11 @@ final stream = Stream.periodic(Duration(seconds: 1), (i) => i);
 final dataSignal = AsyncSignal.fromStream(stream);
 ```
 
-### FutureSignal
+### 使用扩展方法创建
 
-`FutureSignal` 是专门用于处理 Future 的信号，是 `AsyncSignal` 的便捷封装：
+Jolt 提供了扩展方法，可以更方便地创建异步信号：
 
-```dart
-final future = Future.delayed(Duration(seconds: 1), () => 'Hello');
-final futureSignal = FutureSignal(future);
-```
-
-使用扩展方法：
+从 Future 创建：
 
 ```dart
 Future<String> fetchData() async {
@@ -68,16 +61,7 @@ Future<String> fetchData() async {
 final signal = fetchData().toAsyncSignal();
 ```
 
-### StreamSignal
-
-`StreamSignal` 是专门用于处理 Stream 的信号，是 `AsyncSignal` 的便捷封装：
-
-```dart
-final stream = Stream.periodic(Duration(seconds: 1), (i) => i);
-final streamSignal = StreamSignal(stream);
-```
-
-使用扩展方法：
+从 Stream 创建：
 
 ```dart
 Stream<int> getDataStream() {
@@ -91,7 +75,7 @@ final signal = getDataStream().toStreamSignal();
 
 ### 状态判断
 
-`AsyncSignal` 的值是 `AsyncState`，有四种状态：
+`AsyncSignal` 的值是 `AsyncState`，有三种状态：
 
 ```dart
 final asyncSignal = AsyncSignal.fromFuture(fetchUser());
@@ -105,8 +89,6 @@ Effect(() {
     print('成功: ${state.data}');
   } else if (state.isError) {
     print('错误: ${state.error}');
-  } else if (state.isRefreshing) {
-    print('刷新中，数据: ${state.data}');
   }
 });
 ```

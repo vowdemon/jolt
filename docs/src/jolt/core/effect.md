@@ -77,6 +77,40 @@ count.value = 20;
 
 A disposed Effect will no longer respond to dependency changes.
 
+## Cleanup Functions
+
+Effect supports registering cleanup functions that are executed before the Effect re-runs or when it is disposed. This is useful for cleaning up subscriptions, canceling timers, and similar scenarios.
+
+### onEffectCleanup
+
+Use `onEffectCleanup` to register a cleanup function:
+
+```dart
+Effect(() {
+  final timer = Timer.periodic(Duration(seconds: 1), (_) {
+    print('Tick');
+  });
+  
+  // Register cleanup function, executed when Effect re-runs or is disposed
+  onEffectCleanup(() => timer.cancel());
+});
+```
+
+Cleanup functions are executed in the following cases:
+- Before the Effect re-runs (when dependencies change)
+- When the Effect is disposed (when `dispose()` is called)
+
+**Note**: `onEffectCleanup` must be called in a synchronous context. If you need to use cleanup functions in asynchronous operations (such as `Future`, `async/await`), you should directly use the `effect.onCleanUp()` method:
+
+```dart
+final effect = Effect(() async {
+  final subscription = await someAsyncOperation();
+  
+  // In async context, use effect.onCleanUp() directly
+  effect.onCleanUp(() => subscription.cancel());
+});
+```
+
 ## Usage Notes
 
 ### Avoid Infinite Loops

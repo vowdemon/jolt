@@ -10,24 +10,25 @@ import 'package:jolt/jolt.dart';
 
 void main() {
   // Create a scope
-  final scope = EffectScope((scope) {
-    final count = Signal(0);
-    
-    // Create side effects within the scope
-    Effect(() {
-      print('Count: ${count.value}');
+  final scope = EffectScope()
+    ..run(() {
+      final count = Signal(0);
+      
+      // Create side effects within the scope
+      Effect(() {
+        print('Count: ${count.value}');
+      });
+      
+      // Create a watcher within the scope
+      Watcher(
+        () => count.value,
+        (newValue, oldValue) {
+          print('Changed from $oldValue to $newValue');
+        },
+      );
+      
+      // Side effects within the scope will be automatically cleaned up when scope is disposed
     });
-    
-    // Create a watcher within the scope
-    Watcher(
-      () => count.value,
-      (newValue, oldValue) {
-        print('Changed from $oldValue to $newValue');
-      },
-    );
-    
-    // Side effects within the scope will be automatically cleaned up when scope is disposed
-  });
   
   // Dispose the scope
   scope.dispose();
@@ -36,31 +37,32 @@ void main() {
 
 ## Creation
 
-### Pass Execution Function Immediately
-
-You can pass an execution function immediately when creating an EffectScope:
+After creating an EffectScope, use the `run()` method to execute code within the scope context:
 
 ```dart
-final scope = EffectScope((scope) {
-  Effect(() {
-    print('Side effect');
+final scope = EffectScope()
+  ..run(() {
+    Effect(() {
+      print('Side effect');
+    });
+    
+    Watcher(
+      () => signal.value,
+      (newValue, oldValue) {
+        print('Value changed');
+      },
+    );
   });
-  
-  Watcher(
-    () => signal.value,
-    (newValue, oldValue) {
-      print('Value changed');
-    },
-  );
-});
 ```
 
-### Without Execution Function
-
-You can also create an EffectScope without passing an execution function and use the `run()` method later:
+You can also create the scope first and use the `run()` method later:
 
 ```dart
 final scope = EffectScope();
+
+scope.run(() {
+  // Execute code within the scope
+});
 ```
 
 ## Usage
@@ -70,9 +72,9 @@ final scope = EffectScope();
 You can use the `scope.run()` method to run a function within the scope context. Side effects and watchers created within this context will be managed by the scope:
 
 ```dart
-final scope = EffectScope(null);
+final scope = EffectScope();
 
-scope.run((scope) {
+scope.run(() {
   final count = Signal(0);
   final name = Signal('Alice');
   
@@ -95,9 +97,9 @@ name.value = 'Bob';
 The `run()` method returns the result of the function execution:
 
 ```dart
-final scope = EffectScope(null);
+final scope = EffectScope();
 
-final result = scope.run((scope) {
+final result = scope.run(() {
   final signal = Signal(42);
   return signal.value;
 });
@@ -105,23 +107,59 @@ final result = scope.run((scope) {
 print(result); // Output: 42
 ```
 
+## Cleanup Functions
+
+EffectScope supports registering cleanup functions that are executed when the scope is disposed.
+
+### onScopeDispose
+
+Use `onScopeDispose` to register a cleanup function:
+
+```dart
+final scope = EffectScope()
+  ..run(() {
+    final subscription = someStream.listen((data) {
+      print('Data: $data');
+    });
+    
+    // Register cleanup function, executed when scope is disposed
+    onScopeDispose(() => subscription.cancel());
+  });
+
+// Cleanup function will be executed automatically when scope is disposed
+scope.dispose();
+```
+
+**Note**: `onScopeDispose` must be called in a synchronous context. If you need to use cleanup functions in asynchronous operations (such as `Future`, `async/await`), you should directly use the `scope.onCleanUp()` method:
+
+```dart
+final scope = EffectScope()
+  ..run(() async {
+    final subscription = await someAsyncOperation();
+    
+    // In async context, use scope.onCleanUp() directly
+    scope.onCleanUp(() => subscription.cancel());
+  });
+```
+
 ## Disposal
 
 When an EffectScope is no longer needed, you should call the `dispose()` method to destroy it. All side effects and watchers within the scope will be automatically cleaned up:
 
 ```dart
-final scope = EffectScope((scope) {
-  Effect(() {
-    print('Side effect');
+final scope = EffectScope()
+  ..run(() {
+    Effect(() {
+      print('Side effect');
+    });
+    
+    Watcher(
+      () => signal.value,
+      (newValue, oldValue) {
+        print('Value changed');
+      },
+    );
   });
-  
-  Watcher(
-    () => signal.value,
-    (newValue, oldValue) {
-      print('Value changed');
-    },
-  );
-});
 
 scope.dispose();
 ```

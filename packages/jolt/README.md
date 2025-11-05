@@ -9,14 +9,12 @@ It offers signals, computed values, effects, async states, and reactive collecti
 
 ## Features
 
-- **🚀 High Performance**: Built on [alien_signals](https://github.com/stackblitz/alien-signals) for optimal performance
-- **🎯 Fine-Grained Reactivity**: Precise dependency tracking and updates
-- **📦 Collection Support**: Reactive List, Map, Set, and Iterable
-- **🔄 Async Operations**: Seamless Future and Stream handling
-- **🛠️ Practical Utilities**: Type conversion and persistence helpers
-- **🎨 Framework Agnostic**: Works with any Dart/Flutter application
-- **🧹 Memory Efficient**: Automatic cleanup and disposal
-- **🔧 Rich Extensions**: Comprehensive extension methods
+- **⚡ Fine-Grained Reactive Updates**: Precisely track every dependency and update only what actually changed, delivering smooth, responsive applications
+- **🎯 Clean and Elegant API**: Lightweight design with intuitive API, complete type safety, making your code more elegant and secure
+- **🚀 Exceptional Performance**: Deeply optimized for exceptional performance, maintaining smooth operation even in large, complex applications
+- **🧹 Intelligent Resource Management**: Automatic dependency tracking and smart resource cleanup. EffectScope provides unified lifecycle management, eliminating memory leaks
+- **📦 Complete Ecosystem**: Rich ecosystem with reactive collections (List, Map, Set, Iterable), async operations (Future & Stream), type conversion, and persistence helpers
+- **🔧 Zero-Cost Migration**: Comprehensive extension methods and utilities with clear API design, enabling smooth migration from other solutions
 
 Jolt provides a complete reactive programming solution with signals, computed values, effects, and reactive collections. It's designed for building responsive applications with automatic dependency tracking and efficient updates.
 

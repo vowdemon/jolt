@@ -36,7 +36,7 @@ count.value = 5;  // 自动触发 Effect 和 Computed 更新
 - **计算值 (Computed)**: 基于其他信号自动计算的派生值
 - **副作用 (Effect)**: 响应式副作用函数
 - **响应式集合**: ListSignal、MapSignal、SetSignal、IterableSignal
-- **异步状态**: AsyncSignal、FutureSignal、StreamSignal
+- **异步状态**: AsyncSignal
 - **实用工具**: 类型转换、持久化、批处理等
 
 ### [jolt_hooks](https://pub.dev/packages/jolt_hooks)
@@ -81,7 +81,7 @@ void main() {
 - [Untracked](./core/untracked.md) - 非跟踪访问
 
 ### 高级
-- [异步信号](./advanced/async-signal.md) - AsyncSignal、FutureSignal、StreamSignal
+- [异步信号](./advanced/async-signal.md) - AsyncSignal
 - [合集信号](./advanced/collection-signal.md) - ListSignal、SetSignal、MapSignal、IterableSignal
 - [ConvertComputed](./advanced/convert-computed.md) - 类型转换信号
 - [PersistSignal](./advanced/persist-signal.md) - 持久化信号

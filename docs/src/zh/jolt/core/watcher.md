@@ -137,3 +137,43 @@ count.value = 20;
 ```
 
 销毁后的 Watcher 不会再响应依赖的变化。
+
+## 清理函数
+
+Watcher 支持注册清理函数，这些函数会在 Watcher 重新运行前或被销毁时执行。这对于清理订阅、取消定时器等场景非常有用。
+
+### onEffectCleanup
+
+使用 `onEffectCleanup` 注册清理函数：
+
+```dart
+Watcher(
+  () => count.value,
+  (newValue, oldValue) {
+    final timer = Timer.periodic(Duration(seconds: 1), (_) {
+      print('Tick: $newValue');
+    });
+    
+    // 注册清理函数，在 Watcher 重新运行或销毁时执行
+    onEffectCleanup(() => timer.cancel());
+  },
+);
+```
+
+清理函数会在以下情况执行：
+- Watcher 重新运行前（sources 值变化时）
+- Watcher 被销毁时（调用 `dispose()`）
+
+**注意**：`onEffectCleanup` 必须在同步上下文中调用。如果在异步操作（如 `Future`、`async/await`）中需要使用清理函数，应该直接使用 `watcher.onCleanUp()` 方法：
+
+```dart
+final watcher = Watcher(
+  () => count.value,
+  (newValue, oldValue) async {
+    final subscription = await someAsyncOperation();
+    
+    // 在异步中，直接使用 watcher.onCleanUp()
+    watcher.onCleanUp(() => subscription.cancel());
+  },
+);
+```

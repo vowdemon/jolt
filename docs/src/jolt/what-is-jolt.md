@@ -78,7 +78,7 @@ void main() {
 - [Untracked](./core/untracked.md) - Non-tracking access
 
 ### Advanced Topics
-- [Async Signal](./advanced/async-signal.md) - AsyncSignal, FutureSignal, StreamSignal
+- [Async Signal](./advanced/async-signal.md) - AsyncSignal
 - [Collection Signal](./advanced/collection-signal.md) - ListSignal, SetSignal, MapSignal, IterableSignal
 - [ConvertComputed](./advanced/convert-computed.md) - Type-converting signals
 - [PersistSignal](./advanced/persist-signal.md) - Persistent signals

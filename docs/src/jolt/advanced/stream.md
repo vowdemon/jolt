@@ -5,50 +5,6 @@
 
 Stream provides bidirectional conversion functionality between signals and streams in the reactive system. You can convert signals to streams for integration with other streaming APIs, or convert streams to signals for use in the reactive system. Suitable for integration with StreamBuilder, stream-based data processing, event streams, and similar scenarios.
 
-## Creation
-
-### Signal to Stream
-
-Any reactive value can be converted to a stream through the `.stream` property:
-
-```dart
-final count = Signal(0);
-final stream = count.stream;
-```
-
-You can also use the `listen` method:
-
-```dart
-final count = Signal(0);
-
-final subscription = count.listen(
-  (value) => print('Value: $value'),
-  immediately: true, // Execute immediately
-);
-```
-
-### Stream to Signal
-
-Use `StreamSignal` to convert a stream to a signal:
-
-```dart
-Stream<int> getDataStream() {
-  return Stream.periodic(Duration(seconds: 1), (i) => i);
-}
-
-final signal = StreamSignal(getDataStream());
-```
-
-Using extension methods:
-
-```dart
-Stream<int> getDataStream() {
-  return Stream.periodic(Duration(seconds: 1), (i) => i);
-}
-
-final signal = getDataStream().toStreamSignal();
-```
-
 ## Signal to Stream
 
 Any reactive value can be converted to a stream through the `.stream` property:
@@ -96,14 +52,14 @@ StreamBuilder<int>(
 
 ## Stream to Signal
 
-Use `StreamSignal` to convert a stream to a signal:
+Use `AsyncSignal.fromStream` to convert a stream to a signal:
 
 ```dart
 Stream<int> getDataStream() {
   return Stream.periodic(Duration(seconds: 1), (i) => i);
 }
 
-final signal = StreamSignal(getDataStream());
+final signal = AsyncSignal.fromStream(getDataStream());
 
 Effect(() {
   final state = signal.value;

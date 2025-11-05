@@ -10,20 +10,20 @@ hero:
       text: 快速开始
       link: /zh/jolt/getting-started
     - theme: alt
-      text: 查看文档
-      link: /zh/jolt/getting-started
+      text: API参考
+      link: https://pub.dev/documentation/jolt/latest/
 
 features:
-  - title: 🚀 高性能
-    details: 基于 alien_signals 构建，经过优化的性能。细粒度的依赖跟踪，只更新真正依赖变化的部分。
-  - title: 🎯 自动依赖追踪
-    details: 访问响应式数据时自动建立依赖关系，数据变化时自动触发更新，无需手动管理订阅。
-  - title: 📦 功能完整
-    details: 提供信号、计算值、副作用、响应式集合、异步状态管理等完整的响应式编程解决方案。
-  - title: 🎨 框架无关
-    details: 核心库可在纯 Dart 项目中使用，Flutter 集成通过独立包提供，按需使用。
-  - title: 🧹 内存高效
-    details: 自动依赖跟踪和清理，支持手动 dispose 释放资源，EffectScope 统一管理生命周期。
-  - title: 🔧 易于使用
-    details: 简洁的 API 设计，完整的类型安全支持，丰富的文档和示例，学习成本低。
+  - title: ⚡ 细粒度响应式更新
+    details: 精准追踪每个依赖关系，只更新真正变化的部分，让应用响应如丝般顺滑。
+  - title: 🎯 简洁优雅的 API
+    details: 轻量设计，直观易用，完整的类型安全保障，让代码更优雅、更安全。
+  - title: 🚀 卓越性能表现
+    details: 深度优化的性能表现，即使在大型复杂应用中也能保持流畅运行。
+  - title: 🧹 智能资源管理
+    details: 自动追踪依赖，智能清理资源，EffectScope 统一管理生命周期，告别内存泄漏。
+  - title: 📦 完整生态体系
+    details: 丰富的周边库生态，覆盖从基础到高级的各类场景，满足不同开发需求。
+  - title: 🔧 零成本迁移
+    details: 完善的文档与示例，清晰的 API 设计，让你轻松从其他方案平滑迁移。
 ---

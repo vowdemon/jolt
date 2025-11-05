@@ -5,50 +5,6 @@
 
 Stream 在响应式系统中提供了信号和流之间的双向转换功能。可以将信号转换为流以便与其他流式 API 集成，也可以将流转换为信号以便在响应式系统中使用。适用于与 StreamBuilder、流式数据处理、事件流等场景的集成。
 
-## 创建
-
-### 信号转流
-
-任何响应式值都可以通过 `.stream` 属性转换为流：
-
-```dart
-final count = Signal(0);
-final stream = count.stream;
-```
-
-也可以使用 `listen` 方法：
-
-```dart
-final count = Signal(0);
-
-final subscription = count.listen(
-  (value) => print('值: $value'),
-  immediately: true, // 立即执行
-);
-```
-
-### 流转信号
-
-使用 `StreamSignal` 可以将流转换为信号：
-
-```dart
-Stream<int> getDataStream() {
-  return Stream.periodic(Duration(seconds: 1), (i) => i);
-}
-
-final signal = StreamSignal(getDataStream());
-```
-
-使用扩展方法：
-
-```dart
-Stream<int> getDataStream() {
-  return Stream.periodic(Duration(seconds: 1), (i) => i);
-}
-
-final signal = getDataStream().toStreamSignal();
-```
-
 ## 信号转流
 
 任何响应式值都可以通过 `.stream` 属性转换为流：
@@ -96,14 +52,14 @@ StreamBuilder<int>(
 
 ## 流转信号
 
-使用 `StreamSignal` 可以将流转换为信号：
+使用 `AsyncSignal.fromStream` 可以将流转换为信号：
 
 ```dart
 Stream<int> getDataStream() {
   return Stream.periodic(Duration(seconds: 1), (i) => i);
 }
 
-final signal = StreamSignal(getDataStream());
+final signal = AsyncSignal.fromStream(getDataStream());
 
 Effect(() {
   final state = signal.value;

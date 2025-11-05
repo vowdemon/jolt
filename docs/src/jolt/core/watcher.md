@@ -138,3 +138,43 @@ count.value = 20;
 
 A disposed Watcher will no longer respond to dependency changes.
 
+## Cleanup Functions
+
+Watcher supports registering cleanup functions that are executed before the Watcher re-runs or when it is disposed. This is useful for cleaning up subscriptions, canceling timers, and similar scenarios.
+
+### onEffectCleanup
+
+Use `onEffectCleanup` to register a cleanup function:
+
+```dart
+Watcher(
+  () => count.value,
+  (newValue, oldValue) {
+    final timer = Timer.periodic(Duration(seconds: 1), (_) {
+      print('Tick: $newValue');
+    });
+    
+    // Register cleanup function, executed when Watcher re-runs or is disposed
+    onEffectCleanup(() => timer.cancel());
+  },
+);
+```
+
+Cleanup functions are executed in the following cases:
+- Before the Watcher re-runs (when sources value changes)
+- When the Watcher is disposed (when `dispose()` is called)
+
+**Note**: `onEffectCleanup` must be called in a synchronous context. If you need to use cleanup functions in asynchronous operations (such as `Future`, `async/await`), you should directly use the `watcher.onCleanUp()` method:
+
+```dart
+final watcher = Watcher(
+  () => count.value,
+  (newValue, oldValue) async {
+    final subscription = await someAsyncOperation();
+    
+    // In async context, use watcher.onCleanUp() directly
+    watcher.onCleanUp(() => subscription.cancel());
+  },
+);
+```
+

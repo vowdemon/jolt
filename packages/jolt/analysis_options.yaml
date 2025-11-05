@@ -18,9 +18,9 @@ include: package:lints/recommended.yaml
 #   rules:
 #     - camel_case_types
 
-analyzer:
-  errors:
-    invalid_use_of_protected_member: ignore
+# analyzer:
+#   errors:
+#     invalid_use_of_protected_member: ignore
 # For more information about the core and recommended set of lints, see
 # https://dart.dev/go/core-lints
 

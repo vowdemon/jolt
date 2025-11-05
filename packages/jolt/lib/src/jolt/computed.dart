@@ -56,7 +56,6 @@ class Computed<T> extends JReadonlyValue<T> implements ReadonlySignal<T> {
   }
 
   /// The function that computes the value of this computed.
-  @protected
   final T Function() getter;
 
   /// Returns the current computed value without establishing a reactive dependency.
@@ -171,7 +170,6 @@ class WritableComputed<T> extends Computed<T> implements Signal<T> {
       {super.initialValue, super.onDebug});
 
   /// The function called when this computed value is set.
-  @protected
   final void Function(T) setter;
 
   @override

@@ -271,7 +271,8 @@ class Effect extends JEffect implements EffectBase {
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
   @override
-  @protected
+
+  /// Do not call this method directly
   void effectFn() {
     _doCleanup();
     fn();
@@ -418,7 +419,8 @@ class Watcher<T> extends JEffect implements EffectBase {
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
   @override
-  @protected
+
+  /// Do not call this method directly, use [run] instead
   void effectFn() {
     run();
   }

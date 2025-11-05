@@ -25,7 +25,6 @@ abstract class JReadonlyValue<T> extends ReactiveNode
   JReadonlyValue({required super.flags, this.pendingValue});
 
   /// Internal storage for the node's value.
-  @protected
   Object? pendingValue;
 
   /// Returns the current value without establishing a reactive dependency.

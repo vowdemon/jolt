@@ -1,5 +1,3 @@
-import 'package:meta/meta.dart';
-
 import 'debug.dart';
 
 /// Base class for all reactive nodes in the dependency graph.
@@ -25,23 +23,18 @@ class ReactiveNode {
   });
 
   /// First dependency link in the chain.
-  @protected
   Link? deps;
 
   /// Last dependency link in the chain.
-  @protected
   Link? depsTail;
 
   /// First subscriber link in the chain.
-  @protected
   Link? subs;
 
   /// Last subscriber link in the chain.
-  @protected
   Link? subsTail;
 
   /// Reactive flags for this node.
-  @protected
   int flags;
 }
 

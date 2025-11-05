@@ -1,6 +1,6 @@
 name: jolt_flutter
-description: "A Flutter extension of jolt that provides reactive UI support, enabling automatic synchronization between state and interface."
-version: 0.0.7
+description: "Flutter library for jolt reactive signals library that builds reactive widgets from signals, automatically updating UI when signals change."
+version: 1.0.0
 
 repository: https://github.com/vowdemon/jolt
 homepage: https://jolt.vowdemon.com
@@ -19,7 +19,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  jolt: ^0.0.7
+  jolt: ^1.0.0
   shared_interfaces: ^0.0.2
 
 dev_dependencies:

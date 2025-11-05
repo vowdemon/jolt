@@ -22,11 +22,13 @@ import 'effect.dart';
 /// // subscription will be cancelled when signal is garbage collected
 /// ```
 abstract final class JFinalizer {
+  // coverage:ignore-start
   static final joltFinalizer = Finalizer<Set<Disposer>>((disposers) {
     for (final disposer in disposers) {
       disposer();
     }
   });
+  // coverage:ignore-end
 
   static final joltAttachments = Expando<Set<Disposer>>();
 

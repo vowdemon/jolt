@@ -10,7 +10,7 @@ topics:
   - signals
   - surge
 
-version: 0.0.1-beta.1
+version: 1.0.0
 
 environment:
   sdk: ">=3.6.0 <4.0.0"
@@ -20,7 +20,7 @@ resolution: workspace
 dependencies:
   flutter:
     sdk: flutter
-  jolt: ^0.0.7
+  jolt: ^1.0.0
   provider: ^6.1.5+1
   shared_interfaces: ^0.0.2
 

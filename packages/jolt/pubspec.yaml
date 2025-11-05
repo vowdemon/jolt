@@ -1,6 +1,6 @@
 name: jolt
-description: A lightweight reactive state management library built on alien_signals, focused on simple and efficient state handling.
-version: 0.0.7
+description: A lightweight, high-performance reactive signals library for Dart/Flutter with fine-grained updates and intelligent resource management.
+version: 1.0.0
 
 repository: https://github.com/vowdemon/jolt
 homepage: https://jolt.vowdemon.com

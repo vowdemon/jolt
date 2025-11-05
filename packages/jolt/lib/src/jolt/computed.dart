@@ -171,6 +171,7 @@ class WritableComputed<T> extends Computed<T> implements Signal<T> {
       {super.initialValue, super.onDebug});
 
   /// The function called when this computed value is set.
+  @protected
   final void Function(T) setter;
 
   @override

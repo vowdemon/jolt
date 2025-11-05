@@ -242,7 +242,7 @@ PersistSignal<T> usePersistSignal<T>(
 /// ```dart
 /// Widget build(BuildContext context) {
 ///   final userData = useAsyncSignal(
-///     FutureSource(() async {
+///     source: FutureSource(() async {
 ///       final response = await http.get('/api/user');
 ///       return User.fromJson(response.data);
 ///     }),
@@ -263,7 +263,7 @@ AsyncSignal<T> useAsyncSignal<T>(
 }) {
   return use(
     JoltHook(
-      AsyncSignal(source, initialValue: initialValue, onDebug: onDebug),
+      AsyncSignal(source: source, initialValue: initialValue, onDebug: onDebug),
       keys: keys,
     ),
   );

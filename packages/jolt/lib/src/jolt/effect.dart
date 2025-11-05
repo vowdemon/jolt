@@ -75,7 +75,7 @@ abstract class JEffect extends ReactiveNode implements ChainedDisposable {
   ///   onEffectCleanup(() => subscription.cancel());
   /// });
   /// ```
-  onCleanUp(Disposer fn) {
+  void onCleanUp(Disposer fn) {
     _cleanups.add(fn);
   }
 

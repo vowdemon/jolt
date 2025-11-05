@@ -11,6 +11,32 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 Packages with breaking changes:
 
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`jolt` - `v1.0.1`](#jolt---v101)
+ - [`jolt_surge` - `v1.0.1`](#jolt_surge---v101)
+
+---
+
+#### `jolt` - `v1.0.1`
+
+ - **REVERT**(jolt): protected annotations for pub score. ([3efd724c](https://github.com/vowdemon/jolt/commit/3efd724ca8f4078800d3a3b8595562e31c35bae1))
+
+#### `jolt_surge` - `v1.0.1`
+
+ - **FIX**(jolt_surge): add example. ([4565580e](https://github.com/vowdemon/jolt/commit/4565580e90c4f21e0b7491f730e26448f4b25d2f))
+
+
+## 2025-11-06
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
  - [`jolt_flutter` - `v1.0.0`](#jolt_flutter---v100)
 
 Packages with other changes:

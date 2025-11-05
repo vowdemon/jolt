@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:jolt/jolt.dart';
 
 class DebugCounter {
@@ -78,13 +80,11 @@ class TestPerson {
   int get hashCode => name.hashCode ^ age.hashCode;
 }
 
-class TestSource<T> implements AsyncSource<T> {
+class TestSource<T> extends AsyncSource<T> {
   bool _disposed = false;
 
   @override
-  void start(dynamic emit) {
-    // emit.set(AsyncData('test' as T));
-  }
+  FutureOr<void> subscribe(void Function(AsyncState<T> state) emit) {}
 
   @override
   void dispose() {

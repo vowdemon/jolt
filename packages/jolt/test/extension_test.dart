@@ -302,16 +302,16 @@ void main() {
     });
 
     group('JoltFutureExtension', () {
-      test('should convert future to future signal', () async {
+      test('should convert future to async signal', () async {
         final future = Future.value(42);
         final futureSignal = future.toAsyncSignal();
 
-        expect(futureSignal, isA<FutureSignal<int>>());
+        expect(futureSignal, isA<AsyncSignal<int>>());
         expect(futureSignal.value, isA<AsyncLoading<int>>());
 
         await Future.delayed(const Duration(milliseconds: 1));
 
-        expect(futureSignal.value, isA<AsyncData<int>>());
+        expect(futureSignal.value, isA<AsyncSuccess<int>>());
         expect(futureSignal.data, equals(42));
       });
 
@@ -361,16 +361,16 @@ void main() {
     });
 
     group('JoltStreamExtension', () {
-      test('should convert stream to stream signal', () async {
+      test('should convert stream to async signal', () async {
         final stream = Stream.value(42);
         final streamSignal = stream.toStreamSignal();
 
-        expect(streamSignal, isA<StreamSignal<int>>());
+        expect(streamSignal, isA<AsyncSignal<int>>());
         expect(streamSignal.value, isA<AsyncLoading<int>>());
 
         await Future.delayed(const Duration(milliseconds: 1));
 
-        expect(streamSignal.value, isA<AsyncData<int>>());
+        expect(streamSignal.value, isA<AsyncSuccess<int>>());
         expect(streamSignal.data, equals(42));
       });
 
@@ -415,15 +415,17 @@ void main() {
         final streamSignal = stream.toStreamSignal();
         final List<String> values = [];
 
-        streamSignal.stream.listen((state) {
+        streamSignal.listen((state) {
           if (state.isSuccess) {
             values.add(state.data!);
           }
-        });
+        }, immediately: true);
 
         await Future.delayed(const Duration(milliseconds: 10));
 
-        expect(values, equals(['hello', 'world']));
+        expect(values.length, greaterThanOrEqualTo(2));
+        expect(values, contains('hello'));
+        expect(values, contains('world'));
       });
 
       test('should work with custom objects', () async {

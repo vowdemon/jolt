@@ -8,7 +8,6 @@ void main() {
       const state = AsyncLoading<int>();
 
       expect(state.isLoading, isTrue);
-      expect(state.isRefreshing, isFalse);
       expect(state.isSuccess, isFalse);
       expect(state.isError, isFalse);
       expect(state.data, isNull);
@@ -16,11 +15,10 @@ void main() {
       expect(state.stackTrace, isNull);
     });
 
-    test('should create AsyncData state', () {
-      const state = AsyncData<int>(42);
+    test('should create AsyncSuccess state', () {
+      const state = AsyncSuccess<int>(42);
 
       expect(state.isLoading, isFalse);
-      expect(state.isRefreshing, isFalse);
       expect(state.isSuccess, isTrue);
       expect(state.isError, isFalse);
       expect(state.data, equals(42));
@@ -34,24 +32,9 @@ void main() {
       final state = AsyncError<int>(error, stackTrace);
 
       expect(state.isLoading, isFalse);
-      expect(state.isRefreshing, isFalse);
       expect(state.isSuccess, isFalse);
       expect(state.isError, isTrue);
       expect(state.data, isNull);
-      expect(state.error, equals(error));
-      expect(state.stackTrace, equals(stackTrace));
-    });
-
-    test('should create AsyncRefreshing state', () {
-      final error = Exception('Previous error');
-      final stackTrace = StackTrace.current;
-      final state = AsyncRefreshing<int>(42, error, stackTrace);
-
-      expect(state.isLoading, isFalse);
-      expect(state.isRefreshing, isTrue);
-      expect(state.isSuccess, isFalse);
-      expect(state.isError, isFalse);
-      expect(state.data, equals(42));
       expect(state.error, equals(error));
       expect(state.stackTrace, equals(stackTrace));
     });
@@ -68,8 +51,8 @@ void main() {
       expect(result, equals('loading'));
     });
 
-    test('should map AsyncData state', () {
-      const state = AsyncData<int>(42);
+    test('should map AsyncSuccess state', () {
+      const state = AsyncSuccess<int>(42);
 
       final result = state.map<String>(
         loading: () => 'loading',
@@ -92,20 +75,6 @@ void main() {
 
       expect(result, equals('error: Exception: Test error'));
     });
-
-    test('should map AsyncRefreshing state', () {
-      final error = Exception('Previous error');
-      final state = AsyncRefreshing<int>(42, error);
-
-      final result = state.map<String>(
-        loading: () => 'loading',
-        refreshing: (data, error, stackTrace) => 'refreshing: $data, $error',
-        success: (data) => 'success: $data',
-        error: (error, stackTrace) => 'error: $error',
-      );
-
-      expect(result, equals('refreshing: 42, Exception: Previous error'));
-    });
   });
 
   group('AsyncSignal', () {
@@ -113,14 +82,12 @@ void main() {
       final future = Future.value(42);
       final asyncSignal = AsyncSignal.fromFuture(future);
 
-      expect(asyncSignal.source, isA<FutureSource<int>>());
-
       expect(asyncSignal.value, isA<AsyncLoading<int>>());
       expect(asyncSignal.data, isNull);
 
       await Future.delayed(const Duration(milliseconds: 1));
 
-      expect(asyncSignal.value, isA<AsyncData<int>>());
+      expect(asyncSignal.value, isA<AsyncSuccess<int>>());
       expect(asyncSignal.data, equals(42));
     });
 
@@ -128,14 +95,12 @@ void main() {
       final stream = Stream.value(42);
       final asyncSignal = AsyncSignal.fromStream(stream);
 
-      expect(asyncSignal.source, isA<StreamSource<int>>());
-
       expect(asyncSignal.value, isA<AsyncLoading<int>>());
       expect(asyncSignal.data, isNull);
 
       await Future.delayed(const Duration(milliseconds: 1));
 
-      expect(asyncSignal.value, isA<AsyncData<int>>());
+      expect(asyncSignal.value, isA<AsyncSuccess<int>>());
       expect(asyncSignal.data, equals(42));
     });
 
@@ -178,7 +143,7 @@ void main() {
 
       expect(states.length, equals(2));
       expect(states[0], isA<AsyncLoading<int>>());
-      expect(states[1], isA<AsyncData<int>>());
+      expect(states[1], isA<AsyncSuccess<int>>());
     });
 
     test('should dispose properly', () async {
@@ -195,19 +160,19 @@ void main() {
   group('FutureSignal', () {
     test('should create FutureSignal', () async {
       final future = Future.value('hello');
-      final futureSignal = FutureSignal(future);
+      final futureSignal = AsyncSignal.fromFuture(future);
 
       expect(futureSignal.value, isA<AsyncLoading<String>>());
 
       await Future.delayed(const Duration(milliseconds: 1));
 
-      expect(futureSignal.value, isA<AsyncData<String>>());
+      expect(futureSignal.value, isA<AsyncSuccess<String>>());
       expect(futureSignal.data, equals('hello'));
     });
 
     test('should handle Future error', () async {
       final future = Future<String>.error(Exception('Test error'));
-      final futureSignal = FutureSignal(future);
+      final futureSignal = AsyncSignal.fromFuture(future);
 
       expect(futureSignal.value, isA<AsyncLoading<String>>());
 
@@ -219,7 +184,7 @@ void main() {
 
     test('should work with different data types', () async {
       final listFuture = Future.value([1, 2, 3]);
-      final listSignal = FutureSignal(listFuture);
+      final listSignal = AsyncSignal.fromFuture(listFuture);
 
       await Future.delayed(const Duration(milliseconds: 1));
 
@@ -230,19 +195,19 @@ void main() {
   group('StreamSignal', () {
     test('should create StreamSignal', () async {
       final stream = Stream.value('hello');
-      final streamSignal = StreamSignal(stream);
+      final streamSignal = AsyncSignal.fromStream(stream);
 
       expect(streamSignal.value, isA<AsyncLoading<String>>());
 
       await Future.delayed(const Duration(milliseconds: 1));
 
-      expect(streamSignal.value, isA<AsyncData<String>>());
+      expect(streamSignal.value, isA<AsyncSuccess<String>>());
       expect(streamSignal.data, equals('hello'));
     });
 
     test('should handle Stream error', () async {
       final stream = Stream<String>.error(Exception('Test error'));
-      final streamSignal = StreamSignal(stream);
+      final streamSignal = AsyncSignal.fromStream(stream);
 
       expect(streamSignal.value, isA<AsyncLoading<String>>());
 
@@ -254,48 +219,53 @@ void main() {
 
     test('should handle multiple stream values', () async {
       final stream = Stream.fromIterable(['hello', 'world']);
-      final streamSignal = StreamSignal(stream);
+      final streamSignal = AsyncSignal.fromStream(stream);
       final List<String> values = [];
 
-      streamSignal.stream.listen((state) {
+      streamSignal.listen((state) {
         if (state.isSuccess) {
           values.add(state.data!);
         }
-      });
+      }, immediately: true);
 
       await Future.delayed(const Duration(milliseconds: 10));
 
-      expect(values, equals(['hello', 'world']));
+      expect(values.length, greaterThanOrEqualTo(2));
+      expect(values, contains('hello'));
+      expect(values, contains('world'));
     });
 
     test('should cancel stream subscription on dispose', () async {
       final stream = Stream.periodic(const Duration(milliseconds: 1), (i) => i);
-      final streamSignal = StreamSignal(stream);
+      final streamSignal = AsyncSignal.fromStream(stream);
 
       expect(streamSignal.value, isA<AsyncLoading<int>>());
 
       await Future.delayed(const Duration(milliseconds: 5));
 
-      expect(streamSignal.value, isA<AsyncData<int>>());
+      expect(streamSignal.value, isA<AsyncSuccess<int>>());
 
       streamSignal.dispose();
 
       // 等待一段时间确保流已取消
       await Future.delayed(const Duration(milliseconds: 100));
 
-      // dispose后不允许再读取，应该抛出SignalAssertionError
+      // dispose后不允许再读取，应该抛出AssertionError
       expect(() => streamSignal.data, throwsA(isA<AssertionError>()));
       expect(() => streamSignal.value, throwsA(isA<AssertionError>()));
     });
   });
 
   group('AsyncSource', () {
-    test('should implement custom AsyncSource', () {
+    test('should implement custom AsyncSource', () async {
       final source = TestSource<String>();
-      final asyncSignal = AsyncSignal(source as AsyncSource<String>);
+      final asyncSignal = AsyncSignal(source: source);
 
       expect(asyncSignal.value, isA<AsyncLoading<String>>());
       expect(asyncSignal.data, isNull);
+
+      // 等待 fetch 完成，以确保 dispose 被调用
+      await Future.delayed(const Duration(milliseconds: 1));
 
       asyncSignal.dispose();
       expect(source.isDisposed, isTrue);

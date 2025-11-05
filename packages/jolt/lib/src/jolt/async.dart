@@ -3,15 +3,13 @@ import 'dart:async';
 import 'package:shared_interfaces/shared_interfaces.dart';
 
 import 'signal.dart';
-import 'shared.dart';
 
 /// Represents the state of an asynchronous operation.
 ///
 /// AsyncState is a sealed class that represents different states of async operations:
 /// - [AsyncLoading]: Initial loading state
-/// - [AsyncData]: Success state with data
+/// - [AsyncSuccess]: Success state with data
 /// - [AsyncError]: Error state with error information
-/// - [AsyncRefreshing]: Refreshing state while maintaining previous data
 ///
 /// Example:
 /// ```dart
@@ -31,50 +29,37 @@ sealed class AsyncState<T> {
   /// Whether this state represents a loading operation.
   bool get isLoading => this is AsyncLoading<T>;
 
-  /// Whether this state represents a refreshing operation.
-  bool get isRefreshing => this is AsyncRefreshing<T>;
-
   /// Whether this state represents a successful operation with data.
-  bool get isSuccess => this is AsyncData<T>;
+  bool get isSuccess => this is AsyncSuccess<T>;
 
   /// Whether this state represents an error.
   bool get isError => this is AsyncError<T>;
 
   /// The data from the async operation, if available.
   ///
-  /// Returns the data for [AsyncData] and [AsyncRefreshing] states,
+  /// Returns the data for [AsyncSuccess] state,
   /// null for [AsyncLoading] and [AsyncError] states.
-  T? get data => switch (this) {
-        AsyncData<T>(:final value) => value,
-        AsyncRefreshing<T>(:final value) => value,
-        _ => null,
-      };
+  T? get data =>
+      this is AsyncSuccess<T> ? (this as AsyncSuccess<T>).value : null;
 
   /// The error from the async operation, if any.
   ///
-  /// Returns the error for [AsyncError] and [AsyncRefreshing] states,
-  /// null for [AsyncLoading] and [AsyncData] states.
-  Object? get error => switch (this) {
-        AsyncError<T>(:final error) => error,
-        AsyncRefreshing<T>(:final error) => error,
-        _ => null,
-      };
+  /// Returns the error for [AsyncError] state,
+  /// null for [AsyncLoading] and [AsyncSuccess] states.
+  Object? get error =>
+      this is AsyncError<T> ? (this as AsyncError<T>).error : null;
 
   /// The stack trace from the async operation error, if any.
   ///
-  /// Returns the stack trace for [AsyncError] and [AsyncRefreshing] states,
+  /// Returns the stack trace for [AsyncError] state,
   /// null for other states.
-  StackTrace? get stackTrace => switch (this) {
-        AsyncError<T>(:final stackTrace) => stackTrace,
-        AsyncRefreshing<T>(:final stackTrace) => stackTrace,
-        _ => null,
-      };
+  StackTrace? get stackTrace =>
+      this is AsyncError<T> ? (this as AsyncError<T>).stackTrace : null;
 
   /// Maps the async state to a value based on its current state.
   ///
   /// Parameters:
   /// - [loading]: Function called for loading state
-  /// - [refreshing]: Function called for refreshing state
   /// - [success]: Function called for success state with data
   /// - [error]: Function called for error state
   ///
@@ -86,20 +71,17 @@ sealed class AsyncState<T> {
   ///   loading: () => 'Loading...',
   ///   success: (data) => 'Success: $data',
   ///   error: (error, stackTrace) => 'Error: $error',
-  ///   refreshing: (data, error, stackTrace) => 'Refreshing: $data',
   /// );
   /// ```
   R? map<R>({
     R Function()? loading,
-    R Function(T?, Object?, StackTrace?)? refreshing,
     R Function(T)? success,
     R Function(Object?, StackTrace?)? error,
   }) =>
       switch (this) {
         AsyncLoading<T>() => loading?.call(),
-        AsyncRefreshing<T>() => refreshing?.call(data, this.error, stackTrace),
         AsyncError<T>() => error?.call(this.error, stackTrace),
-        AsyncData<T>() => success?.call(data as T),
+        AsyncSuccess<T>() => success?.call(data as T),
       };
 }
 
@@ -113,38 +95,8 @@ sealed class AsyncState<T> {
 /// final state = AsyncLoading<String>();
 /// print(state.isLoading); // true
 /// ```
-class AsyncLoading<T> extends AsyncState<T> {
+final class AsyncLoading<T> extends AsyncState<T> {
   const AsyncLoading();
-}
-
-/// Represents the refreshing state of an async operation.
-///
-/// This state indicates that an async operation is refreshing
-/// while maintaining access to previous data and potential error information.
-///
-/// Example:
-/// ```dart
-/// final state = AsyncRefreshing('old data', someError, stackTrace);
-/// print(state.isRefreshing); // true
-/// print(state.data); // 'old data'
-/// ```
-class AsyncRefreshing<T> extends AsyncState<T> {
-  /// Creates a refreshing state with optional previous value and error.
-  ///
-  /// Parameters:
-  /// - [value]: The previous value to maintain during refresh
-  /// - [error]: Optional error from previous operation
-  /// - [stackTrace]: Optional stack trace from previous error
-  const AsyncRefreshing(this.value, [this.error, this.stackTrace]);
-
-  /// The previous value maintained during refresh.
-  final T? value;
-
-  @override
-  final Object? error;
-
-  @override
-  final StackTrace? stackTrace;
 }
 
 /// Represents the success state of an async operation with data.
@@ -154,16 +106,16 @@ class AsyncRefreshing<T> extends AsyncState<T> {
 ///
 /// Example:
 /// ```dart
-/// final state = AsyncData('Hello World');
+/// final state = AsyncSuccess('Hello World');
 /// print(state.isSuccess); // true
 /// print(state.data); // 'Hello World'
 /// ```
-class AsyncData<T> extends AsyncState<T> {
+final class AsyncSuccess<T> extends AsyncState<T> {
   /// Creates a success state with the given value.
   ///
   /// Parameters:
   /// - [value]: The successful result data
-  const AsyncData(this.value);
+  const AsyncSuccess(this.value);
 
   /// The successful result data.
   final T value;
@@ -179,7 +131,7 @@ class AsyncData<T> extends AsyncState<T> {
 /// print(state.isError); // true
 /// print(state.error); // 'Something went wrong'
 /// ```
-class AsyncError<T> extends AsyncState<T> {
+final class AsyncError<T> extends AsyncState<T> {
   /// Creates an error state with the given error and optional stack trace.
   ///
   /// Parameters:
@@ -198,18 +150,11 @@ class AsyncError<T> extends AsyncState<T> {
 ///
 /// AsyncSource defines how to start and manage an asynchronous operation
 /// that emits values to an AsyncSignal.
-abstract interface class AsyncSource<T> implements Disposable {
-  /// Starts the async operation and connects it to the given signal.
-  ///
-  /// Parameters:
-  /// - [signal]: The AsyncSignal to emit states to
-  ///
-  /// This method should set up the async operation and emit appropriate
-  /// AsyncState values as the operation progresses.
-  void start(AsyncSignal<T> signal);
+abstract class AsyncSource<T> implements Disposable {
+  FutureOr<void> subscribe(void Function(AsyncState<T> state) emit);
 
   @override
-  FutureOr<void> dispose();
+  FutureOr<void> dispose() {}
 }
 
 /// An async source that wraps a Future.
@@ -223,7 +168,7 @@ abstract interface class AsyncSource<T> implements Disposable {
 /// final source = FutureSource(future);
 /// final signal = AsyncSignal(source);
 /// ```
-class FutureSource<T> implements AsyncSource<T> {
+class FutureSource<T> extends AsyncSource<T> {
   /// Creates a future source with the given future.
   ///
   /// Parameters:
@@ -234,21 +179,14 @@ class FutureSource<T> implements AsyncSource<T> {
 
   /// Starts the future and emits appropriate states.
   ///
-  /// Emits [AsyncLoading] initially, then either [AsyncData] on success
+  /// Emits [AsyncLoading] initially, then either [AsyncSuccess] on success
   /// or [AsyncError] on failure.
   @override
-  void start(AsyncSignal<T> signal) {
-    signal.set(AsyncLoading<T>());
+  FutureOr<void> subscribe(emit) {
     _future
-        .then(
-          (value) => signal.set(AsyncData(value)),
-          onError: (err, st) => signal.set(AsyncError(err, st)),
-        )
-        .ignore();
+        .then((data) => emit(AsyncSuccess(data)))
+        .catchError((e, st) => emit(AsyncError(e, st)));
   }
-
-  @override
-  FutureOr<void> dispose() {}
 }
 
 /// An async source that wraps a Stream.
@@ -262,7 +200,7 @@ class FutureSource<T> implements AsyncSource<T> {
 /// final source = StreamSource(stream);
 /// final signal = AsyncSignal(source);
 /// ```
-class StreamSource<T> implements AsyncSource<T> {
+class StreamSource<T> extends AsyncSource<T> {
   /// Creates a stream source with the given stream.
   ///
   /// Parameters:
@@ -274,19 +212,21 @@ class StreamSource<T> implements AsyncSource<T> {
 
   /// Starts listening to the stream and emits appropriate states.
   ///
-  /// Emits [AsyncLoading] initially, then [AsyncData] for each stream value
+  /// Emits [AsyncLoading] initially, then [AsyncSuccess] for each stream value
   /// or [AsyncError] for stream errors.
   @override
-  void start(AsyncSignal<T> signal) {
-    signal.set(AsyncLoading<T>());
+  FutureOr<void> subscribe(emit) async {
+    final Completer<void> completer = Completer<void>();
     _sub = _stream.listen(
-      (value) => signal.set(AsyncData(value)),
-      onError: (err, st) => signal.set(AsyncError(err, st)),
+      (data) => emit(AsyncSuccess(data)),
+      onError: (e, st) => emit(AsyncError(e, st)),
+      onDone: completer.complete,
     );
+    await completer.future;
   }
 
   @override
-  FutureOr<void> dispose() {
+  void dispose() {
     _sub?.cancel();
     _sub = null;
   }
@@ -317,29 +257,41 @@ class AsyncSignal<T> extends Signal<AsyncState<T>> {
   /// Parameters:
   /// - [source]: The async source to manage
   /// - [initialValue]: Optional initial async state
-  AsyncSignal(AsyncSource<T> source,
-      {AsyncState<T>? initialValue, super.onDebug})
-      : _source = source,
-        super(initialValue ?? AsyncLoading<T>()) {
-    _source.start(this);
-    JFinalizer.attachToJoltAttachments(this, _source.dispose);
+  AsyncSignal({
+    AsyncSource<T>? source,
+    AsyncState<T>? initialValue,
+    super.onDebug,
+  }) : super(initialValue ?? AsyncLoading<T>()) {
+    if (source != null) {
+      fetch(source);
+    }
   }
 
-  final AsyncSource<T> _source;
-
-  /// The async source being managed by this signal.
-  AsyncSource<T> get source => _source;
-
-  /// Convenient access to the data from the current async state.
-  ///
-  /// Returns the data if available, null otherwise.
-  ///
-  /// Example:
-  /// ```dart
-  /// final signal = AsyncSignal.fromFuture(someFuture);
-  /// print(signal.data); // null initially, then the future result
-  /// ```
   T? get data => value.data;
+
+  Disposer? _sourceDisposer;
+
+  Future<void> fetch(AsyncSource<T> source) async {
+    _sourceDisposer?.call();
+    _sourceDisposer = null;
+
+    void emit(AsyncState<T> state) {
+      if (!isDisposed) set(state);
+    }
+
+    final future = source.subscribe(emit);
+    _sourceDisposer = source.dispose;
+    final currentDisposer = source.dispose;
+
+    try {
+      await future;
+    } finally {
+      if (_sourceDisposer == currentDisposer) {
+        _sourceDisposer = null;
+        currentDisposer();
+      }
+    }
+  }
 
   /// Creates an async signal from a Future.
   ///
@@ -355,7 +307,7 @@ class AsyncSignal<T> extends Signal<AsyncState<T>> {
   /// );
   /// ```
   factory AsyncSignal.fromFuture(Future<T> future) {
-    return AsyncSignal(FutureSource(future));
+    return AsyncSignal(source: FutureSource(future));
   }
 
   /// Creates an async signal from a Stream.
@@ -372,46 +324,6 @@ class AsyncSignal<T> extends Signal<AsyncState<T>> {
   /// );
   /// ```
   factory AsyncSignal.fromStream(Stream<T> stream) {
-    return AsyncSignal(StreamSource(stream));
+    return AsyncSignal(source: StreamSource(stream));
   }
-}
-
-/// A specialized async signal for Future-based operations.
-///
-/// FutureSignal is a convenience class for working with Future-based
-/// async operations, providing the same functionality as AsyncSignal
-/// with a more specific constructor.
-///
-/// Example:
-/// ```dart
-/// final signal = FutureSignal(
-///   Future.delayed(Duration(seconds: 1), () => 'Hello')
-/// );
-/// ```
-class FutureSignal<T> extends AsyncSignal<T> {
-  /// Creates a future signal with the given future.
-  ///
-  /// Parameters:
-  /// - [future]: The future to manage
-  FutureSignal(Future<T> future) : super(FutureSource(future));
-}
-
-/// A specialized async signal for Stream-based operations.
-///
-/// StreamSignal is a convenience class for working with Stream-based
-/// async operations, providing the same functionality as AsyncSignal
-/// with a more specific constructor.
-///
-/// Example:
-/// ```dart
-/// final signal = StreamSignal(
-///   Stream.periodic(Duration(seconds: 1), (i) => i)
-/// );
-/// ```
-class StreamSignal<T> extends AsyncSignal<T> {
-  /// Creates a stream signal with the given stream.
-  ///
-  /// Parameters:
-  /// - [stream]: The stream to manage
-  StreamSignal(Stream<T> stream) : super(StreamSource(stream));
 }

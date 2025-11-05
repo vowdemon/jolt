@@ -102,46 +102,44 @@ extension JoltIterableExtension<E> on Iterable<E> {
 extension JoltFutureExtension<T> on Future<T> {
   /// Converts this future to a reactive async signal.
   ///
-  /// The resulting FutureSignal automatically manages the async state
-  /// transitions from loading to success/error, providing reactive
-  /// access to the future's progress and result.
+  /// The resulting AsyncSignal automatically manages the loading, success,
+  /// and error states of the future.
   ///
-  /// Returns: A new FutureSignal that manages this future's lifecycle
+  /// Returns: A new AsyncSignal that manages the future's lifecycle
   ///
   /// Example:
   /// ```dart
-  /// final dataSignal = fetchUserData().toAsyncSignal();
+  /// final future = Future.delayed(Duration(seconds: 1), () => 'Hello');
+  /// final signal = future.toAsyncSignal();
   ///
   /// Effect(() {
-  ///   final state = dataSignal.value;
-  ///   if (state.isLoading) print('Loading user data...');
-  ///   if (state.isSuccess) print('User: ${state.data}');
-  ///   if (state.isError) print('Error: ${state.error}');
+  ///   if (signal.value.isSuccess) {
+  ///     print('Data: ${signal.data}');
+  ///   }
   /// });
   /// ```
-  FutureSignal<T> toAsyncSignal() => FutureSignal(this);
+  AsyncSignal<T> toAsyncSignal() => AsyncSignal.fromFuture(this);
 }
 
-/// Extension methods for converting Stream to reactive StreamSignal.
+/// Extension methods for converting Stream to reactive AsyncSignal.
 extension JoltStreamExtension<T> on Stream<T> {
-  /// Converts this stream to a reactive stream signal.
+  /// Converts this stream to a reactive async signal.
   ///
-  /// The resulting StreamSignal automatically manages the stream's
-  /// lifecycle and provides reactive access to stream events through
-  /// async state transitions.
+  /// The resulting AsyncSignal automatically manages the loading, success,
+  /// and error states for each stream event.
   ///
-  /// Returns: A new StreamSignal that manages this stream's lifecycle
+  /// Returns: A new AsyncSignal that manages the stream's lifecycle
   ///
   /// Example:
   /// ```dart
-  /// final eventSignal = eventStream.toStreamSignal();
+  /// final stream = Stream.periodic(Duration(seconds: 1), (i) => i);
+  /// final signal = stream.toStreamSignal();
   ///
   /// Effect(() {
-  ///   final state = eventSignal.value;
-  ///   if (state.isLoading) print('Waiting for events...');
-  ///   if (state.isSuccess) print('Event: ${state.data}');
-  ///   if (state.isError) print('Stream error: ${state.error}');
+  ///   if (signal.value.isSuccess) {
+  ///     print('Data: ${signal.data}');
+  ///   }
   /// });
   /// ```
-  StreamSignal<T> toStreamSignal() => StreamSignal(this);
+  AsyncSignal<T> toStreamSignal() => AsyncSignal.fromStream(this);
 }

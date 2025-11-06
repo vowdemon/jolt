@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
+import 'package:shared_interfaces/shared_interfaces.dart';
 
 // Test store class
 class _TestStore extends JoltState {
@@ -35,6 +36,48 @@ class _ConstStore {
   final String value;
 
   const _ConstStore(this.value);
+}
+
+// Disposable store without JoltState
+class _DisposableStore implements Disposable {
+  final counter = Signal(0);
+  bool disposed = false;
+
+  @override
+  void dispose() {
+    disposed = true;
+    counter.dispose();
+  }
+}
+
+// Store that implements both JoltState and Disposable
+class _DisposableJoltStateStore extends JoltState implements Disposable {
+  _DisposableJoltStateStore(this.context);
+
+  final BuildContext context;
+
+  final counter = Signal(0);
+  bool mounted = false;
+  bool unmounted = false;
+  bool disposed = false;
+
+  @override
+  void onMount(BuildContext context) {
+    super.onMount(context);
+    mounted = true;
+  }
+
+  @override
+  void onUnmount(BuildContext context) {
+    super.onUnmount(context);
+    unmounted = true;
+  }
+
+  @override
+  void dispose() {
+    disposed = true;
+    counter.dispose();
+  }
 }
 
 void main() {
@@ -521,77 +564,617 @@ void main() {
       store!.counter.dispose();
     });
 
-    testWidgets('should create store when create changes from null to value',
-        (tester) async {
+    testWidgets('should work with value parameter', (tester) async {
       _TestStore? store;
 
-      Widget widget = MaterialApp(
-        home: JoltProvider<_TestStore>(
-          create: null,
-          builder: (context, s) => Text('Count: ${s.counter.value}'),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) {
+              store = _TestStore(context);
+              // Reset states
+              store!.mounted = false;
+              store!.unmounted = false;
+              return JoltProvider<_TestStore>(
+                value: store!,
+                builder: (context, s) => Text('Count: ${s.counter.value}'),
+              );
+            },
+          ),
         ),
       );
 
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
-
-      expect(find.text('Count: 0'), findsNothing);
-
-      widget = MaterialApp(
-        home: JoltProvider<_TestStore>(
-          create: (context) {
-            store = _TestStore(context);
-            return store!;
-          },
-          builder: (context, s) => Text('Count: ${s.counter.value}'),
-        ),
-      );
-
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
-
-      expect(store, isNotNull);
-      expect(store!.mounted, isTrue);
+      // Should not call onMount when using value
+      expect(store!.mounted, isFalse);
       expect(find.text('Count: 0'), findsOneWidget);
 
+      await tester.pumpAndSettle();
+      expect(store!.mounted, isFalse);
+      expect(store!.unmounted, isFalse);
+
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+      await tester.pumpAndSettle();
+
+      // Should not call onUnmount when using value
+      expect(store!.unmounted, isFalse);
       store!.counter.dispose();
     });
 
-    testWidgets('should handle store when create changes from value to null',
+    testWidgets('should not call lifecycle for value parameter',
         (tester) async {
-      _TestStore? store;
+      final store = _SimpleStore();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: JoltProvider<_SimpleStore>(
+            value: store,
+            builder: (context, s) => Text('Count: ${s.counter.value}'),
+          ),
+        ),
+      );
+
+      expect(find.text('Count: 0'), findsOneWidget);
+
+      store.counter.value = 5;
+      await tester.pumpAndSettle();
+
+      expect(find.text('Count: 5'), findsOneWidget);
+
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+      await tester.pumpAndSettle();
+
+      // Store should still work (not disposed)
+      store.counter.value = 10;
+      expect(store.counter.value, equals(10));
+      store.counter.dispose();
+    });
+
+    testWidgets('should switch from create to new create', (tester) async {
+      _TestStore? store1;
+      _TestStore? store2;
 
       Widget widget = MaterialApp(
         home: JoltProvider<_TestStore>(
           create: (context) {
-            store = _TestStore(context);
-            return store!;
+            store1 = _TestStore(context);
+            return store1!;
           },
-          builder: (context, s) => Text('Count: ${s.counter.value}'),
+          builder: (context, s) => Text('Store1: ${s.counter.value}'),
         ),
       );
 
       await tester.pumpWidget(widget);
       await tester.pumpAndSettle();
 
-      expect(store, isNotNull);
-      expect(store!.mounted, isTrue);
-      expect(find.text('Count: 0'), findsOneWidget);
+      expect(store1, isNotNull);
+      expect(store1!.mounted, isTrue);
+      expect(store1!.unmounted, isFalse);
 
       widget = MaterialApp(
         home: JoltProvider<_TestStore>(
-          create: null,
-          builder: (context, s) => Text('Count: ${s.counter.value}'),
+          create: (context) {
+            store2 = _TestStore(context);
+            return store2!;
+          },
+          builder: (context, s) => Text('Store2: ${s.counter.value}'),
         ),
       );
 
       await tester.pumpWidget(widget);
       await tester.pumpAndSettle();
 
-      expect(store!.unmounted, isTrue);
-      expect(find.text('Count: 0'), findsNothing);
+      // Old store should be unmounted
+      expect(store1!.unmounted, isTrue);
+      // New store should be mounted
+      expect(store2, isNotNull);
+      expect(store2!.mounted, isTrue);
+      expect(store2!.unmounted, isFalse);
+      expect(find.text('Store2: 0'), findsOneWidget);
 
+      store1!.counter.dispose();
+      store2!.counter.dispose();
+    });
+
+    testWidgets('should switch from create to value', (tester) async {
+      _TestStore? createdStore;
+      _TestStore? valueStore;
+
+      Widget widget = MaterialApp(
+        home: JoltProvider<_TestStore>(
+          create: (context) {
+            createdStore = _TestStore(context);
+            return createdStore!;
+          },
+          builder: (context, s) => Text('Created: ${s.counter.value}'),
+        ),
+      );
+
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+
+      expect(createdStore, isNotNull);
+      expect(createdStore!.mounted, isTrue);
+      expect(createdStore!.unmounted, isFalse);
+
+      widget = MaterialApp(
+        home: Builder(
+          builder: (context) {
+            valueStore = _TestStore(context);
+            valueStore!.mounted = false;
+            valueStore!.unmounted = false;
+            return JoltProvider<_TestStore>(
+              value: valueStore!,
+              builder: (context, s) => Text('Value: ${s.counter.value}'),
+            );
+          },
+        ),
+      );
+
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+
+      // Created store should be unmounted and disposed
+      expect(createdStore!.unmounted, isTrue);
+      // Value store should not have lifecycle called
+      expect(valueStore!.mounted, isFalse);
+      expect(valueStore!.unmounted, isFalse);
+      expect(find.text('Value: 0'), findsOneWidget);
+
+      createdStore!.counter.dispose();
+      valueStore!.counter.dispose();
+    });
+
+    testWidgets('should switch from value to new value', (tester) async {
+      _TestStore? valueStore1;
+      _TestStore? valueStore2;
+
+      Widget widget = MaterialApp(
+        home: Builder(
+          builder: (context) {
+            valueStore1 = _TestStore(context);
+            valueStore1!.mounted = false;
+            valueStore1!.unmounted = false;
+            return JoltProvider<_TestStore>(
+              value: valueStore1!,
+              builder: (context, s) => Text('Value1: ${s.counter.value}'),
+            );
+          },
+        ),
+      );
+
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+
+      expect(valueStore1!.mounted, isFalse);
+      expect(valueStore1!.unmounted, isFalse);
+      expect(find.text('Value1: 0'), findsOneWidget);
+
+      widget = MaterialApp(
+        home: Builder(
+          builder: (context) {
+            valueStore2 = _TestStore(context);
+            valueStore2!.mounted = false;
+            valueStore2!.unmounted = false;
+            return JoltProvider<_TestStore>(
+              value: valueStore2!,
+              builder: (context, s) => Text('Value2: ${s.counter.value}'),
+            );
+          },
+        ),
+      );
+
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+
+      // Old value store should not have lifecycle called
+      expect(valueStore1!.mounted, isFalse);
+      expect(valueStore1!.unmounted, isFalse);
+      // New value store should not have lifecycle called
+      expect(valueStore2!.mounted, isFalse);
+      expect(valueStore2!.unmounted, isFalse);
+      expect(find.text('Value2: 0'), findsOneWidget);
+
+      valueStore1!.counter.dispose();
+      valueStore2!.counter.dispose();
+    });
+
+    testWidgets('should switch from value to create', (tester) async {
+      _TestStore? valueStore;
+      _TestStore? createdStore;
+
+      Widget widget = MaterialApp(
+        home: Builder(
+          builder: (context) {
+            valueStore = _TestStore(context);
+            valueStore!.mounted = false;
+            valueStore!.unmounted = false;
+            return JoltProvider<_TestStore>(
+              value: valueStore!,
+              builder: (context, s) => Text('Value: ${s.counter.value}'),
+            );
+          },
+        ),
+      );
+
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+
+      expect(valueStore!.mounted, isFalse);
+      expect(valueStore!.unmounted, isFalse);
+      expect(find.text('Value: 0'), findsOneWidget);
+
+      widget = MaterialApp(
+        home: JoltProvider<_TestStore>(
+          create: (context) {
+            createdStore = _TestStore(context);
+            return createdStore!;
+          },
+          builder: (context, s) => Text('Created: ${s.counter.value}'),
+        ),
+      );
+
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+
+      // Value store should not have lifecycle called (not managed by provider)
+      expect(valueStore!.mounted, isFalse);
+      expect(valueStore!.unmounted, isFalse);
+      // Created store should be mounted
+      expect(createdStore, isNotNull);
+      expect(createdStore!.mounted, isTrue);
+      expect(createdStore!.unmounted, isFalse);
+      expect(find.text('Created: 0'), findsOneWidget);
+
+      valueStore!.counter.dispose();
+      createdStore!.counter.dispose();
+    });
+
+    testWidgets('should handle value parameter with JoltState but no lifecycle',
+        (tester) async {
+      _TestStore? store;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) {
+              store = _TestStore(context);
+              store!.mounted = false;
+              store!.unmounted = false;
+              return JoltProvider<_TestStore>(
+                value: store!,
+                builder: (context, s) => Text('Count: ${s.counter.value}'),
+              );
+            },
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      expect(store!.mounted, isFalse);
+      expect(store!.unmounted, isFalse);
+
+      // Unmount widget
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+      await tester.pumpAndSettle();
+
+      // Still should not call lifecycle
+      expect(store!.mounted, isFalse);
+      expect(store!.unmounted, isFalse);
       store!.counter.dispose();
+    });
+
+    testWidgets(
+        'should dispose old Disposable resource when switching from create to value',
+        (tester) async {
+      _DisposableStore? createdStore;
+      _DisposableStore? valueStore;
+
+      Widget widget = MaterialApp(
+        home: JoltProvider<_DisposableStore>(
+          create: (context) {
+            createdStore = _DisposableStore();
+            return createdStore!;
+          },
+          builder: (context, s) => Text('Created: ${s.counter.value}'),
+        ),
+      );
+
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+
+      expect(createdStore, isNotNull);
+      expect(createdStore!.disposed, isFalse);
+      expect(find.text('Created: 0'), findsOneWidget);
+
+      widget = MaterialApp(
+        home: Builder(
+          builder: (context) {
+            valueStore = _DisposableStore();
+            return JoltProvider<_DisposableStore>(
+              value: valueStore!,
+              builder: (context, s) => Text('Value: ${s.counter.value}'),
+            );
+          },
+        ),
+      );
+
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+
+      // Created store should be disposed when switching from create to value
+      expect(createdStore!.disposed, isTrue);
+      // Value store should not be disposed
+      expect(valueStore!.disposed, isFalse);
+      expect(find.text('Value: 0'), findsOneWidget);
+
+      valueStore!.counter.dispose();
+    });
+
+    testWidgets(
+        'should dispose old JoltState resource when switching from create to value',
+        (tester) async {
+      _TestStore? createdStore;
+      _TestStore? valueStore;
+
+      Widget widget = MaterialApp(
+        home: JoltProvider<_TestStore>(
+          create: (context) {
+            createdStore = _TestStore(context);
+            return createdStore!;
+          },
+          builder: (context, s) => Text('Created: ${s.counter.value}'),
+        ),
+      );
+
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+
+      expect(createdStore, isNotNull);
+      expect(createdStore!.mounted, isTrue);
+      expect(createdStore!.unmounted, isFalse);
+      expect(find.text('Created: 0'), findsOneWidget);
+
+      widget = MaterialApp(
+        home: Builder(
+          builder: (context) {
+            valueStore = _TestStore(context);
+            valueStore!.mounted = false;
+            valueStore!.unmounted = false;
+            return JoltProvider<_TestStore>(
+              value: valueStore!,
+              builder: (context, s) => Text('Value: ${s.counter.value}'),
+            );
+          },
+        ),
+      );
+
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+
+      // Created store should be unmounted when switching from create to value
+      expect(createdStore!.unmounted, isTrue);
+      // Value store should not have lifecycle called
+      expect(valueStore!.mounted, isFalse);
+      expect(valueStore!.unmounted, isFalse);
+      expect(find.text('Value: 0'), findsOneWidget);
+
+      createdStore!.counter.dispose();
+      valueStore!.counter.dispose();
+    });
+
+    testWidgets(
+        'should dispose old DisposableJoltState resource when switching from create to value',
+        (tester) async {
+      _DisposableJoltStateStore? createdStore;
+      _DisposableJoltStateStore? valueStore;
+
+      Widget widget = MaterialApp(
+        home: JoltProvider<_DisposableJoltStateStore>(
+          create: (context) {
+            createdStore = _DisposableJoltStateStore(context);
+            return createdStore!;
+          },
+          builder: (context, s) => Text('Created: ${s.counter.value}'),
+        ),
+      );
+
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+
+      expect(createdStore, isNotNull);
+      expect(createdStore!.mounted, isTrue);
+      expect(createdStore!.unmounted, isFalse);
+      expect(createdStore!.disposed, isFalse);
+      expect(find.text('Created: 0'), findsOneWidget);
+
+      widget = MaterialApp(
+        home: Builder(
+          builder: (context) {
+            valueStore = _DisposableJoltStateStore(context);
+            valueStore!.mounted = false;
+            valueStore!.unmounted = false;
+            valueStore!.disposed = false;
+            return JoltProvider<_DisposableJoltStateStore>(
+              value: valueStore!,
+              builder: (context, s) => Text('Value: ${s.counter.value}'),
+            );
+          },
+        ),
+      );
+
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+
+      // Created store should be unmounted and disposed when switching from create to value
+      expect(createdStore!.unmounted, isTrue);
+      expect(createdStore!.disposed, isTrue);
+      // Value store should not have lifecycle called
+      expect(valueStore!.mounted, isFalse);
+      expect(valueStore!.unmounted, isFalse);
+      expect(valueStore!.disposed, isFalse);
+      expect(find.text('Value: 0'), findsOneWidget);
+
+      valueStore!.counter.dispose();
+    });
+
+    testWidgets(
+        'should dispose old Disposable resource when switching from create to new create',
+        (tester) async {
+      _DisposableStore? createdStore1;
+      _DisposableStore? createdStore2;
+
+      Widget widget = MaterialApp(
+        home: JoltProvider<_DisposableStore>(
+          create: (context) {
+            createdStore1 = _DisposableStore();
+            return createdStore1!;
+          },
+          builder: (context, s) => Text('Created1: ${s.counter.value}'),
+        ),
+      );
+
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+
+      expect(createdStore1, isNotNull);
+      expect(createdStore1!.disposed, isFalse);
+      expect(find.text('Created1: 0'), findsOneWidget);
+
+      widget = MaterialApp(
+        home: JoltProvider<_DisposableStore>(
+          create: (context) {
+            createdStore2 = _DisposableStore();
+            return createdStore2!;
+          },
+          builder: (context, s) => Text('Created2: ${s.counter.value}'),
+        ),
+      );
+
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+
+      // Old store should be disposed when switching from create to new create
+      expect(createdStore1!.disposed, isTrue);
+      // New store should not be disposed
+      expect(createdStore2, isNotNull);
+      expect(createdStore2!.disposed, isFalse);
+      expect(find.text('Created2: 0'), findsOneWidget);
+
+      createdStore2!.counter.dispose();
+    });
+
+    testWidgets(
+        'should cleanup old resource when switching from create to value in update method',
+        (tester) async {
+      _DisposableJoltStateStore? createdStore;
+      _DisposableJoltStateStore? valueStore;
+      final key = GlobalKey();
+
+      // Use the same widget key to ensure update() is called
+      Widget widget = MaterialApp(
+        home: JoltProvider<_DisposableJoltStateStore>(
+          key: key,
+          create: (context) {
+            createdStore = _DisposableJoltStateStore(context);
+            return createdStore!;
+          },
+          builder: (context, s) => Text('Created: ${s.counter.value}'),
+        ),
+      );
+
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+
+      expect(createdStore, isNotNull);
+      expect(createdStore!.mounted, isTrue);
+      expect(createdStore!.unmounted, isFalse);
+      expect(createdStore!.disposed, isFalse);
+      expect(find.text('Created: 0'), findsOneWidget);
+
+      // Update the same widget instance by changing from create to value
+      widget = MaterialApp(
+        home: Builder(
+          builder: (context) {
+            valueStore = _DisposableJoltStateStore(context);
+            valueStore!.mounted = false;
+            valueStore!.unmounted = false;
+            valueStore!.disposed = false;
+            return JoltProvider<_DisposableJoltStateStore>(
+              key: key,
+              value: valueStore!,
+              builder: (context, s) => Text('Value: ${s.counter.value}'),
+            );
+          },
+        ),
+      );
+
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+
+      // Created store should be unmounted and disposed when switching from create to value
+      // This tests the specific code path in update() method: if (switchingToValue && oldStore != null)
+      expect(createdStore!.unmounted, isTrue);
+      expect(createdStore!.disposed, isTrue);
+      // Value store should not have lifecycle called
+      expect(valueStore!.mounted, isFalse);
+      expect(valueStore!.unmounted, isFalse);
+      expect(valueStore!.disposed, isFalse);
+      expect(find.text('Value: 0'), findsOneWidget);
+
+      valueStore!.counter.dispose();
+    });
+
+    testWidgets(
+        'should cleanup old Disposable resource when switching from create to value in update method',
+        (tester) async {
+      _DisposableStore? createdStore;
+      _DisposableStore? valueStore;
+      final key = GlobalKey();
+
+      // Use the same widget key to ensure update() is called
+      Widget widget = MaterialApp(
+        home: JoltProvider<_DisposableStore>(
+          key: key,
+          create: (context) {
+            createdStore = _DisposableStore();
+            return createdStore!;
+          },
+          builder: (context, s) => Text('Created: ${s.counter.value}'),
+        ),
+      );
+
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+
+      expect(createdStore, isNotNull);
+      expect(createdStore!.disposed, isFalse);
+      expect(find.text('Created: 0'), findsOneWidget);
+
+      // Update the same widget instance by changing from create to value
+      widget = MaterialApp(
+        home: Builder(
+          builder: (context) {
+            valueStore = _DisposableStore();
+            return JoltProvider<_DisposableStore>(
+              key: key,
+              value: valueStore!,
+              builder: (context, s) => Text('Value: ${s.counter.value}'),
+            );
+          },
+        ),
+      );
+
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+
+      // Created store should be disposed when switching from create to value
+      // This tests the specific code path in update() method: if (switchingToValue && oldStore != null)
+      expect(createdStore!.disposed, isTrue);
+      // Value store should not be disposed
+      expect(valueStore!.disposed, isFalse);
+      expect(find.text('Value: 0'), findsOneWidget);
+
+      valueStore!.counter.dispose();
     });
   });
 }

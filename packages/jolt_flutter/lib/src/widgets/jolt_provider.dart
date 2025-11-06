@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:jolt/jolt.dart' as jolt;
+import 'package:shared_interfaces/shared_interfaces.dart';
 
 import 'jolt_builder.dart';
 import 'jolt_state.dart';
@@ -14,24 +15,42 @@ import 'jolt_state.dart';
 /// parameter and through [BuildContext] using [of] or [maybeOf] static methods.
 /// This makes it easy to access resources from descendant widgets without prop drilling.
 ///
-/// ## Resource Creation
+/// ## Resource Provision
 ///
-/// Resources are created using the [create] function when the widget mounts. If
-/// [create] is `null`, no resource will be created and [builder] will not be called.
+/// Resources can be provided in two ways:
+/// - **Using [create]**: A function that creates the resource when the widget mounts.
+///   The provider manages the resource's lifecycle and will call [onUnmount] and
+///   dispose the resource when it's no longer needed.
+/// - **Using [value]**: A pre-existing resource instance. When using [value], the
+///   provider does not manage the resource's lifecycle (no [onUnmount] or dispose
+///   is called by the provider). The resource should be managed externally.
+///
+/// You must provide either [create] or [value], but not both.
 ///
 /// ## Lifecycle Management
 ///
-/// If the resource implements [JoltState], lifecycle callbacks are automatically
-/// invoked:
+/// When using [create], if the resource implements [JoltState], lifecycle callbacks
+/// are automatically invoked:
 /// - [onMount] is called after the resource is created and the widget is mounted
-/// - [onUnmount] is called when the widget is unmounted
+/// - [onUnmount] is called when the widget is unmounted or when a new resource
+///   replaces the old one
+///
+/// When using [value], the provider does not manage the resource's lifecycle at all:
+/// - No [onMount] is called
+/// - No [onUnmount] is called
+/// - The resource is not disposed by the provider
+/// The resource should be managed externally.
 ///
 /// ## Resource Updates
 ///
 /// When the [create] function changes, the provider checks if a new resource should
 /// be created. If the new resource is identical to the old one (e.g., const instances),
-/// no recreation occurs. Otherwise, the old resource's [onUnmount] is called, and
-/// the new resource's [onMount] is called.
+/// no recreation occurs. Otherwise, the old resource's [onUnmount] is called (if it
+/// was created via [create]), and the new resource's [onMount] is called (if it was
+/// created via [create]).
+///
+/// When the [value] changes, the provider simply updates the provided resource without
+/// calling lifecycle callbacks or disposing the old resource.
 ///
 /// ## Parameters
 ///
@@ -39,9 +58,14 @@ import 'jolt_state.dart';
 ///   The resource is passed as the second parameter and is also accessible via
 ///   [JoltProvider.of] or [JoltProvider.maybeOf] in descendant widgets.
 /// - [create]: Optional function to create the resource when the widget mounts.
-///   If `null`, no resource is created.
+///   If provided, the provider manages the resource's lifecycle. Cannot be used
+///   together with [value].
+/// - [value]: Optional pre-existing resource instance. If provided, the provider
+///   does not manage the resource's lifecycle. Cannot be used together with [create].
 ///
 /// ## Example
+///
+/// Using [create] to create and manage a resource:
 ///
 /// ```dart
 /// class MyStore extends JoltState {
@@ -64,6 +88,18 @@ import 'jolt_state.dart';
 /// )
 /// ```
 ///
+/// Using [value] to provide an externally managed resource:
+///
+/// ```dart
+/// // Singleton store managed elsewhere
+/// final globalStore = MyStore();
+///
+/// JoltProvider<MyStore>(
+///   value: globalStore,
+///   builder: (context, store) => Text('${store.counter.value}'),
+/// )
+/// ```
+///
 /// Accessing the resource from a descendant widget:
 ///
 /// ```dart
@@ -75,11 +111,12 @@ import 'jolt_state.dart';
 /// )
 /// ```
 class JoltProvider<T> extends Widget {
-  const JoltProvider({
-    super.key,
-    required this.builder,
-    this.create,
-  });
+  const JoltProvider(
+      {super.key, required this.builder, this.create, this.value})
+      : assert(create != null || value != null,
+            'create or value must be provided'),
+        assert(!(create != null && value != null),
+            'create and value cannot be provided together');
 
   /// Function that builds the widget tree using the provided resource.
   ///
@@ -90,9 +127,26 @@ class JoltProvider<T> extends Widget {
 
   /// Optional function to create the resource when the widget mounts.
   ///
-  /// If `null`, no resource is created and [builder] will not be called.
+  /// When provided, the provider manages the resource's lifecycle:
+  /// - Calls [onMount] after creation if the resource implements [JoltState]
+  /// - Calls [onUnmount] and disposes the resource when unmounted or replaced
+  ///
   /// The function receives the build context and should return the resource instance.
+  /// Cannot be used together with [value].
   final T Function(BuildContext context)? create;
+
+  /// Optional pre-existing resource instance to provide.
+  ///
+  /// When provided, the provider does not manage the resource's lifecycle at all:
+  /// - Does not call [onMount]
+  /// - Does not call [onUnmount]
+  /// - Does not dispose the resource
+  /// - Does not call any lifecycle callbacks
+  ///
+  /// Use this when you want to provide an externally managed resource, such as
+  /// a singleton or a resource managed by another provider.
+  /// Cannot be used together with [create].
+  final T? value;
 
   @override
   JoltProviderElement<T> createElement() => JoltProviderElement(this);
@@ -156,14 +210,14 @@ class JoltProviderElement<T> extends ComponentElement {
   void mount(Element? parent, Object? newSlot) {
     _scope = jolt.EffectScope()
       ..run(() {
-        _store = widget.create?.call(
-          this,
-        );
+        // Use create function if provided, otherwise use value
+        _store = widget.create?.call(this) ?? widget.value;
       });
 
     super.mount(parent, newSlot);
 
-    if (_store is JoltState) {
+    // Only call onMount for resources created via create function
+    if (_store is JoltState && widget.create != null) {
       _scope!.run(() {
         (_store as JoltState).onMount(this);
       });
@@ -172,11 +226,21 @@ class JoltProviderElement<T> extends ComponentElement {
 
   @override
   void unmount() {
-    if (_store is JoltState) {
-      _scope!.run(() {
-        (_store as JoltState).onUnmount(this);
-      });
+    // Only handle lifecycle for resources created via create function
+    // Resources provided via value are not managed by the provider
+    if (widget.create != null && _store != null) {
+      if (_store is JoltState) {
+        _scope!.run(() {
+          (_store as JoltState).onUnmount(this);
+        });
+      }
+      if (_store is Disposable) {
+        (_store as Disposable).dispose();
+      }
     }
+    // Note: Resources provided via value are not disposed or unmounted
+    // They should be managed externally
+
     _scope?.dispose();
     _scope = null;
     _store = null;
@@ -187,7 +251,8 @@ class JoltProviderElement<T> extends ComponentElement {
   @override
   Widget build() {
     if (_store == null) {
-      // Store not created yet, return empty widget
+      // Resource not provided yet (should not happen with proper create/value),
+      // return empty widget
       return const SizedBox.shrink();
     }
 
@@ -196,7 +261,7 @@ class JoltProviderElement<T> extends ComponentElement {
       data: store,
       child: JoltBuilder(
         builder: (BuildContext context) {
-          // Store is available via closure or via JoltProvider.of<T>(context)
+          // Resource is available via closure or via JoltProvider.of<T>(context)
           return widget.builder(context, store);
         },
       ),
@@ -207,13 +272,24 @@ class JoltProviderElement<T> extends ComponentElement {
   void update(JoltProvider newWidget) {
     final oldWidget = widget;
     final oldStore = _store;
+    final oldCreate = widget.create;
+    final oldValue = widget.value;
 
     super.update(newWidget);
     assert(widget == newWidget);
 
-    final createChanged = !identical(oldWidget.create, newWidget.create);
+    final newCreate = newWidget.create;
+    final newValue = newWidget.value;
 
-    if (createChanged) {
+    final createChanged = !identical(oldWidget.create, newWidget.create);
+    final valueChanged = !identical(oldValue, newValue);
+
+    // Handle switching between create and value modes
+    final switchingToCreate = oldCreate == null && newCreate != null;
+    final switchingToValue = oldCreate != null && newCreate == null;
+
+    // Handle changes to create function or switching from value to create
+    if (createChanged || switchingToCreate) {
       T? newStore;
       if (newWidget.create != null) {
         _scope!.run(() {
@@ -224,20 +300,45 @@ class JoltProviderElement<T> extends ComponentElement {
       final storeChanged = !identical(oldStore, newStore);
 
       if (storeChanged) {
-        if (oldStore is JoltState) {
-          _scope!.run(() {
-            (oldStore as JoltState).onUnmount(this);
-          });
+        // Cleanup old resource if it was created via create function
+        if (oldCreate != null) {
+          if (oldStore is JoltState) {
+            _scope!.run(() {
+              (oldStore as JoltState).onUnmount(this);
+            });
+          }
+          if (oldStore is Disposable) {
+            (oldStore as Disposable).dispose();
+          }
         }
 
         _store = newStore;
 
-        if (_store is JoltState) {
+        // Call onMount for new resource if it was created via create function
+        if (newCreate != null && _store is JoltState) {
           _scope!.run(() {
             (_store as JoltState).onMount(this);
           });
         }
       }
+    }
+
+    // Handle changes to value parameter or switching from create to value
+    if ((valueChanged || switchingToValue) && newCreate == null) {
+      // Cleanup old resource if switching from create to value
+      // (switchingToValue implies oldCreate != null)
+      if (switchingToValue && oldStore != null) {
+        if (oldStore is JoltState) {
+          _scope!.run(() {
+            (oldStore as JoltState).onUnmount(this);
+          });
+        }
+        if (oldStore is Disposable) {
+          (oldStore as Disposable).dispose();
+        }
+      }
+      // Simply update the value, no lifecycle management for externally provided resources
+      _store = newValue;
     }
 
     rebuild(force: true);

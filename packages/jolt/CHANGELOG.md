@@ -1,3 +1,7 @@
+## 1.0.2
+
+ - **FIX**(jolt): type annotation. ([475ef361](https://github.com/vowdemon/jolt/commit/475ef36117e0e3f24d204f6db9e57ef7f5be8d78))
+
 ## 1.0.1
 
  - **REVERT**(jolt): protected annotations for pub score. ([3efd724c](https://github.com/vowdemon/jolt/commit/3efd724ca8f4078800d3a3b8595562e31c35bae1))

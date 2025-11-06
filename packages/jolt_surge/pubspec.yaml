@@ -20,7 +20,7 @@ resolution: workspace
 dependencies:
   flutter:
     sdk: flutter
-  jolt: ^1.0.0
+  jolt: ^1.0.2
   provider: ^6.1.5+1
   shared_interfaces: ^0.0.2
 

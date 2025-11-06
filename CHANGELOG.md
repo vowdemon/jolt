@@ -15,6 +15,32 @@ Packages with breaking changes:
 
 Packages with other changes:
 
+ - [`jolt` - `v1.0.2`](#jolt---v102)
+ - [`jolt_flutter` - `v1.1.0`](#jolt_flutter---v110)
+
+---
+
+#### `jolt` - `v1.0.2`
+
+ - **FIX**(jolt): type annotation. ([475ef361](https://github.com/vowdemon/jolt/commit/475ef36117e0e3f24d204f6db9e57ef7f5be8d78))
+
+#### `jolt_flutter` - `v1.1.0`
+
+ - **FEAT**(jolt): add value parameter support to JoltProvider. ([e7b4faac](https://github.com/vowdemon/jolt/commit/e7b4faac8f9702c747f1c7f0f722aa5db3efecd1))
+
+
+## 2025-11-06
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
  - [`jolt` - `v1.0.1`](#jolt---v101)
  - [`jolt_surge` - `v1.0.1`](#jolt_surge---v101)
 

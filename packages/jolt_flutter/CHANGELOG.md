@@ -1,3 +1,7 @@
+## 1.1.0
+
+ - **FEAT**(jolt): add value parameter support to JoltProvider. ([e7b4faac](https://github.com/vowdemon/jolt/commit/e7b4faac8f9702c747f1c7f0f722aa5db3efecd1))
+
 ## 1.0.0
 
 > Note: This release has breaking changes.

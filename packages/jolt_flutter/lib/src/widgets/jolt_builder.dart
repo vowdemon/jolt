@@ -1,5 +1,6 @@
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
+import 'package:jolt/core.dart';
 import 'package:jolt/jolt.dart' as jolt;
 
 /// A widget that automatically rebuilds when any signal accessed in its builder changes.
@@ -52,6 +53,10 @@ class JoltBuilder extends StatelessWidget {
   /// builder will be automatically tracked, and the widget will rebuild when
   /// any of them change.
   final Widget Function(BuildContext context) builder;
+
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
   @override
   Widget build(
     BuildContext context,
@@ -71,18 +76,12 @@ class JoltBuilderElement extends StatelessElement {
 
   @override
   JoltBuilder get widget => super.widget as JoltBuilder;
-  Widget? _lastBuiltWidget;
 
   jolt.Effect? _effect;
-  jolt.EffectScope? _scope;
 
   @override
   void mount(Element? parent, Object? newSlot) {
-    _lastBuiltWidget = null;
-    _scope = jolt.EffectScope()
-      ..run(() {
-        _effect = jolt.Effect(_effectFn, immediately: false);
-      });
+    _effect = jolt.Effect(_effectFn, immediately: false);
 
     super.mount(parent, newSlot);
   }
@@ -92,43 +91,28 @@ class JoltBuilderElement extends StatelessElement {
     _effect?.dispose();
     _effect = null;
 
-    _lastBuiltWidget = null;
     super.unmount();
-
-    _scope?.dispose();
-    _scope = null;
   }
 
   void _effectFn() {
-    _lastBuiltWidget = widget.build(this);
-
-    if (switch (SchedulerBinding.instance.schedulerPhase) {
-      SchedulerPhase.idle => true,
-      SchedulerPhase.postFrameCallbacks => true,
-      _ => false,
-    }) {
-      markNeedsBuild();
-    } else {
+    if (SchedulerBinding.instance.schedulerPhase != SchedulerPhase.idle) {
       SchedulerBinding.instance.endOfFrame.then((_) {
+        if (dirty) return;
         markNeedsBuild();
       });
+    } else {
+      if (dirty) return;
+      markNeedsBuild();
     }
   }
 
   @override
   Widget build() {
-    if (_lastBuiltWidget == null) {
-      _effect!.run();
+    final prevSub = globalReactiveSystem.setActiveSub(_effect);
+    try {
+      return widget.build(this);
+    } finally {
+      globalReactiveSystem.setActiveSub(prevSub);
     }
-
-    return _lastBuiltWidget!;
-  }
-
-  @override
-  void update(StatelessWidget newWidget) {
-    super.update(newWidget);
-    assert(widget == newWidget);
-    _lastBuiltWidget = null;
-    rebuild(force: true);
   }
 }

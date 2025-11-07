@@ -1,8 +1,9 @@
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
+import 'package:jolt/core.dart';
 import 'package:jolt/jolt.dart' as jolt;
 import 'package:shared_interfaces/shared_interfaces.dart';
 
-import 'jolt_builder.dart';
 import 'jolt_state.dart';
 
 /// A widget that provides reactive resource management with lifecycle callbacks.
@@ -203,6 +204,7 @@ class JoltProviderElement<T> extends ComponentElement {
   JoltProvider<T> get widget => super.widget as JoltProvider<T>;
 
   jolt.EffectScope? _scope;
+  jolt.Effect? _effect;
 
   T? _store;
 
@@ -212,6 +214,17 @@ class JoltProviderElement<T> extends ComponentElement {
       ..run(() {
         // Use create function if provided, otherwise use value
         _store = widget.create?.call(this) ?? widget.value;
+        _effect = jolt.Effect(() {
+          if (SchedulerBinding.instance.schedulerPhase != SchedulerPhase.idle) {
+            SchedulerBinding.instance.endOfFrame.then((_) {
+              if (dirty) return;
+              markNeedsBuild();
+            });
+          } else {
+            if (dirty) return;
+            markNeedsBuild();
+          }
+        });
       });
 
     super.mount(parent, newSlot);
@@ -240,7 +253,8 @@ class JoltProviderElement<T> extends ComponentElement {
     }
     // Note: Resources provided via value are not disposed or unmounted
     // They should be managed externally
-
+    _effect?.dispose();
+    _effect = null;
     _scope?.dispose();
     _scope = null;
     _store = null;
@@ -257,14 +271,18 @@ class JoltProviderElement<T> extends ComponentElement {
     }
 
     final store = _store as T;
+    late Widget child;
+
+    final prevSub = globalReactiveSystem.setActiveSub(_effect);
+    try {
+      child = widget.builder(this, store);
+    } finally {
+      globalReactiveSystem.setActiveSub(prevSub);
+    }
+
     return _JoltProviderData(
       data: store,
-      child: JoltBuilder(
-        builder: (BuildContext context) {
-          // Resource is available via closure or via JoltProvider.of<T>(context)
-          return widget.builder(context, store);
-        },
-      ),
+      child: child,
     );
   }
 

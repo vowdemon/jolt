@@ -106,36 +106,32 @@ class JoltSelectorElement<T> extends ComponentElement {
   JoltSelector<T> get widget => super.widget as JoltSelector<T>;
 
   jolt.Effect? _effect;
-  jolt.EffectScope? _scope;
+
   T? _state;
   bool _isFirst = true;
 
   @override
   void mount(Element? parent, Object? newSlot) {
-    _scope = jolt.EffectScope()
-      ..run(() {
-        _effect = jolt.Effect(() {
-          final oldState = _state;
-          late T state = widget.selector(_state);
-          _state = state;
+    _effect = jolt.Effect(() {
+      final oldState = _state;
+      _state = widget.selector(_state);
 
-          if (_isFirst) {
-            _isFirst = false;
-          } else if (oldState != state) {
-            if (switch (SchedulerBinding.instance.schedulerPhase) {
-              SchedulerPhase.idle => true,
-              SchedulerPhase.postFrameCallbacks => true,
-              _ => false,
-            }) {
+      if (!_isFirst) {
+        if (oldState != _state) {
+          if (SchedulerBinding.instance.schedulerPhase != SchedulerPhase.idle) {
+            SchedulerBinding.instance.endOfFrame.then((_) {
+              if (dirty) return;
               markNeedsBuild();
-            } else {
-              SchedulerBinding.instance.endOfFrame.then((_) {
-                markNeedsBuild();
-              });
-            }
+            });
+          } else {
+            if (dirty) return;
+            markNeedsBuild();
           }
-        });
-      });
+        }
+      } else {
+        _isFirst = false;
+      }
+    });
 
     super.mount(parent, newSlot);
   }
@@ -146,9 +142,6 @@ class JoltSelectorElement<T> extends ComponentElement {
     _effect = null;
 
     super.unmount();
-
-    _scope?.dispose();
-    _scope = null;
   }
 
   @override
@@ -160,7 +153,7 @@ class JoltSelectorElement<T> extends ComponentElement {
   void update(covariant Widget newWidget) {
     super.update(newWidget);
     assert(widget == newWidget);
-    _isFirst = true;
+    _state = null;
     _effect?.run();
     rebuild(force: true);
   }

@@ -446,5 +446,42 @@ void main() {
 
       counter.dispose();
     });
+
+    testWidgets('should handle modify signal in builder', (tester) async {
+      final counter = Signal(0);
+      int buildCount = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: JoltBuilder(
+            builder: (context) {
+              buildCount++;
+              if (buildCount == 1) {
+                counter.value++;
+                (context as Element).markNeedsBuild();
+              }
+              return Text('Count: ${counter.value}');
+            },
+          ),
+        ),
+      );
+
+      // First build shows initial value (0), but counter is incremented during build
+      // After markNeedsBuild, it should rebuild with new value (1)
+      final initialBuildCount = buildCount;
+
+      // First frame might show 0 or 1 depending on when the signal change happens
+      // Let's pump once to see the initial state
+      await tester.pump();
+
+      // After first build, counter was incremented and markNeedsBuild was called
+      // So we should see Count: 1 after settling
+      await tester.pumpAndSettle();
+
+      expect(buildCount, greaterThan(initialBuildCount));
+      expect(find.text('Count: 1'), findsOneWidget);
+
+      counter.dispose();
+    });
   });
 }

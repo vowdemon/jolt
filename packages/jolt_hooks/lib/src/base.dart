@@ -1,5 +1,7 @@
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:jolt/core.dart';
 import 'package:jolt/jolt.dart';
 
 /// A Flutter hook that wraps Jolt reactive values.
@@ -129,13 +131,11 @@ class JoltWidgetHook<T extends Widget> extends Hook<T> {
 class JoltWidgetHookState<T extends Widget>
     extends HookState<T, JoltWidgetHook<T>> {
   Effect? _effect;
-  T? _lastBuiltWidget;
 
   @override
   void dispose() {
     _effect?.dispose();
     _effect = null;
-    _lastBuiltWidget = null;
   }
 
   @override
@@ -144,17 +144,25 @@ class JoltWidgetHookState<T extends Widget>
   }
 
   void _effectFn() {
-    setState(() {
-      _lastBuiltWidget = hook.builder();
-    });
+    if (SchedulerBinding.instance.schedulerPhase != SchedulerPhase.idle) {
+      SchedulerBinding.instance.endOfFrame.then((_) {
+        if ((context as Element).dirty) return;
+        (context as Element).markNeedsBuild();
+      });
+    } else {
+      if ((context as Element).dirty) return;
+      (context as Element).markNeedsBuild();
+    }
   }
 
   @override
   T build(BuildContext context) {
-    if (_lastBuiltWidget == null) {
-      _effect!.run();
+    final prevSub = globalReactiveSystem.setActiveSub(_effect);
+    try {
+      return hook.builder();
+    } finally {
+      globalReactiveSystem.setActiveSub(prevSub);
     }
-    return _lastBuiltWidget!;
   }
 
   // coverage:ignore-start

@@ -12,6 +12,8 @@ import 'untracked.dart';
 abstract interface class EffectBase implements ReactiveNode {
   /// Executes the effect function.
   void effectFn();
+
+  void runEffect(GlobalReactiveSystem system);
 }
 
 /// Base class for all effect nodes in the reactive system.
@@ -56,7 +58,7 @@ abstract class JEffect extends ReactiveNode implements ChainedDisposable {
   void dispose() {
     if (_isDisposed) return;
     _isDisposed = true;
-    _doCleanup();
+    doCleanup();
     onDispose();
   }
 
@@ -87,7 +89,7 @@ abstract class JEffect extends ReactiveNode implements ChainedDisposable {
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
-  void _doCleanup() {
+  void doCleanup() {
     if (_cleanups.isEmpty) return;
     for (final cleanup in _cleanups) {
       cleanup();
@@ -155,13 +157,7 @@ class EffectScope extends JEffect {
   /// ```
   EffectScope({bool? detach, JoltDebugFn? onDebug})
       : super(flags: ReactiveFlags.none) {
-    assert(() {
-      if (onDebug != null) {
-        setJoltDebugFn(this, onDebug);
-        onDebug(DebugNodeOperationType.create, this);
-      }
-      return true;
-    }());
+    JoltDebug.create(this, onDebug);
     if (!(detach ?? false)) {
       final prevSub = globalReactiveSystem.getActiveSub();
       if (prevSub != null) {
@@ -192,12 +188,7 @@ class EffectScope extends JEffect {
     try {
       final result = fn();
 
-      assert(() {
-        untracked(() {
-          getJoltDebugFn(this)?.call(DebugNodeOperationType.effect, this);
-        });
-        return true;
-      }());
+      JoltDebug.effect(this);
 
       return result;
     } finally {
@@ -249,13 +240,7 @@ class Effect extends JEffect implements EffectBase {
   /// ```
   Effect(this.fn, {bool immediately = true, JoltDebugFn? onDebug})
       : super(flags: ReactiveFlags.watching) {
-    assert(() {
-      if (onDebug != null) {
-        setJoltDebugFn(this, onDebug);
-        onDebug(DebugNodeOperationType.create, this);
-      }
-      return true;
-    }());
+    JoltDebug.create(this, onDebug);
 
     final prevSub = globalReactiveSystem.getActiveSub();
     if (prevSub != null) {
@@ -274,15 +259,24 @@ class Effect extends JEffect implements EffectBase {
 
   /// Do not call this method directly
   void effectFn() {
-    _doCleanup();
-    fn();
-    assert(() {
-      untracked(() {
-        getJoltDebugFn(this)?.call(DebugNodeOperationType.effect, this);
-      });
-      return true;
-    }());
+    doCleanup();
+    wrappedFn();
+    JoltDebug.effect(this);
   }
+
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
+  @override
+  void runEffect(GlobalReactiveSystem system) {
+    system.runEffect(this);
+  }
+
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
+  @protected
+  void wrappedFn() => fn();
 
   /// The function that defines the effect's behavior.
   @protected
@@ -357,13 +351,8 @@ class Watcher<T> extends JEffect implements EffectBase {
   Watcher(this.sourcesFn, this.fn,
       {bool immediately = false, this.when, JoltDebugFn? onDebug})
       : super(flags: ReactiveFlags.watching) {
-    assert(() {
-      if (onDebug != null) {
-        setJoltDebugFn(this, onDebug);
-        onDebug(DebugNodeOperationType.create, this);
-      }
-      return true;
-    }());
+    JoltDebug.create(this, onDebug);
+
     final prevSub = globalReactiveSystem.setActiveSub(this);
     if (prevSub != null) {
       globalReactiveSystem.link(this, prevSub, 0);
@@ -419,23 +408,8 @@ class Watcher<T> extends JEffect implements EffectBase {
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
   @override
-
-  /// Do not call this method directly, use [run] instead
   void effectFn() {
-    run();
-  }
-
-  /// Triggers the watcher to check for changes and potentially execute.
-  ///
-  /// Returns: true if the watcher callback was executed, false otherwise
-  ///
-  /// This method compares current source values with previous values and
-  /// executes the callback if they differ (or if the custom condition is met).
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
-  void run() {
-    _doCleanup();
+    doCleanup();
     final sources = sourcesFn();
     final shouldTrigger =
         when == null ? sources != prevSources : when!(sources, prevSources);
@@ -451,12 +425,22 @@ class Watcher<T> extends JEffect implements EffectBase {
 
     prevSources = sources;
 
-    assert(() {
-      untracked(() {
-        getJoltDebugFn(this)?.call(DebugNodeOperationType.effect, this);
-      });
-      return true;
-    }());
+    JoltDebug.effect(this);
+  }
+
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
+  @override
+  void runEffect(GlobalReactiveSystem system) {
+    system.runEffect(this);
+  }
+
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
+  void run() {
+    effectFn();
   }
 }
 

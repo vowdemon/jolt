@@ -207,10 +207,7 @@ abstract class ReactiveSystem {
       dep.subs = newLink;
     }
 
-    assert(() {
-      getJoltDebugFn(dep)?.call(DebugNodeOperationType.linked, dep);
-      return true;
-    }());
+    JoltDebug.linked(dep);
   }
 
   /// Unlinks a dependency from a subscriber.
@@ -252,10 +249,7 @@ abstract class ReactiveSystem {
       unwatched(dep);
     }
 
-    assert(() {
-      getJoltDebugFn(dep)?.call(DebugNodeOperationType.unlinked, dep);
-      return true;
-    }());
+    JoltDebug.unlinked(dep);
     return nextDep;
   }
 

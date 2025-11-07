@@ -192,7 +192,17 @@ class GlobalReactiveSystem extends ReactiveSystem {
   }
 
   /// Run an effect with the given flags
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
   void run(EffectBase e) {
+    e.runEffect(this);
+  }
+
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
+  void runEffect(EffectBase e) {
     final flags = e.flags;
     if (flags & (ReactiveFlags.dirty) != 0 ||
         (flags & (ReactiveFlags.pending) != 0 && checkDirty(e.deps!, e))) {
@@ -244,10 +254,7 @@ class GlobalReactiveSystem extends ReactiveSystem {
           shallowPropagate(subs);
         }
 
-        assert(() {
-          getJoltDebugFn(computed)?.call(DebugNodeOperationType.set, computed);
-          return true;
-        }());
+        JoltDebug.set(computed);
       }
     } else if (flags == (ReactiveFlags.none)) {
       computed.flags = (ReactiveFlags.mutable);
@@ -258,20 +265,14 @@ class GlobalReactiveSystem extends ReactiveSystem {
         activeSub = prevSub;
       }
 
-      assert(() {
-        getJoltDebugFn(computed)?.call(DebugNodeOperationType.set, computed);
-        return true;
-      }());
+      JoltDebug.set(computed);
     }
     final sub = activeSub;
     if (sub != null) {
       link(computed, sub, cycle);
     }
 
-    assert(() {
-      getJoltDebugFn(computed)?.call(DebugNodeOperationType.get, computed);
-      return true;
-    }());
+    JoltDebug.get(computed);
 
     return computed.pendingValue as T;
   }
@@ -295,10 +296,7 @@ class GlobalReactiveSystem extends ReactiveSystem {
       flush();
     }
 
-    assert(() {
-      getJoltDebugFn(computed)?.call(DebugNodeOperationType.notify, computed);
-      return true;
-    }());
+    JoltDebug.notify(computed);
   }
 
   /// Set a signal's value and trigger updates
@@ -317,11 +315,7 @@ class GlobalReactiveSystem extends ReactiveSystem {
         }
       }
 
-      assert(() {
-        getJoltDebugFn(signal)?.call(DebugNodeOperationType.set, signal);
-
-        return true;
-      }());
+      JoltDebug.set(signal);
     }
     return newValue;
   }
@@ -349,10 +343,7 @@ class GlobalReactiveSystem extends ReactiveSystem {
       sub = sub.subs?.sub;
     }
 
-    assert(() {
-      getJoltDebugFn(signal)?.call(DebugNodeOperationType.get, signal);
-      return true;
-    }());
+    JoltDebug.get(signal);
 
     return signal.cachedValue as T;
   }
@@ -376,18 +367,12 @@ class GlobalReactiveSystem extends ReactiveSystem {
       flush();
     }
 
-    assert(() {
-      getJoltDebugFn(signal)?.call(DebugNodeOperationType.notify, signal);
-      return true;
-    }());
+    JoltDebug.notify(signal);
   }
 
   /// Dispose an effect and clean up its dependencies
   void nodeDispose(ReactiveNode e) {
-    assert(() {
-      getJoltDebugFn(e)?.call(DebugNodeOperationType.dispose, e);
-      return true;
-    }());
+    JoltDebug.dispose(e);
 
     e.depsTail = null;
     e.flags = (ReactiveFlags.none);

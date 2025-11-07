@@ -46,13 +46,7 @@ class Computed<T> extends JReadonlyValue<T> implements ReadonlySignal<T> {
     T? initialValue,
     JoltDebugFn? onDebug,
   }) : super(flags: ReactiveFlags.none, pendingValue: initialValue) {
-    assert(() {
-      if (onDebug != null) {
-        setJoltDebugFn(this, onDebug);
-        onDebug(DebugNodeOperationType.create, this);
-      }
-      return true;
-    }());
+    JoltDebug.create(this, onDebug);
   }
 
   /// The function that computes the value of this computed.

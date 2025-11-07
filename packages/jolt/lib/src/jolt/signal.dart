@@ -38,13 +38,7 @@ class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
   Signal(T? value, {JoltDebugFn? onDebug})
       : cachedValue = value,
         super(flags: ReactiveFlags.mutable, pendingValue: value) {
-    assert(() {
-      if (onDebug != null) {
-        setJoltDebugFn(this, onDebug);
-        onDebug(DebugNodeOperationType.create, this);
-      }
-      return true;
-    }());
+    JoltDebug.create(this, onDebug);
   }
 
   dynamic cachedValue;

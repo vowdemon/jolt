@@ -2,6 +2,12 @@ import 'package:jolt/jolt.dart';
 import 'package:test/test.dart';
 import '../utils.dart';
 
+extension<T> on JReadonlyValue<T> {
+  bool testNoSubscribers() {
+    return subs == null && subsTail == null;
+  }
+}
+
 void main() {
   group('Effect', () {
     test('should run effect function immediately', () {

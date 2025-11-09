@@ -83,6 +83,9 @@ class Computed<T> extends JReadonlyValue<T> implements ReadonlySignal<T> {
   /// final computed = Computed(() => signal.value * 2);
   /// final effect = Effect(() => print(computed.value)); // Creates dependency
   /// ```
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
   @override
   T get value => get();
 
@@ -92,6 +95,9 @@ class Computed<T> extends JReadonlyValue<T> implements ReadonlySignal<T> {
   /// if any dependencies have changed since the last computation.
   ///
   /// Returns: The current computed value
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
   @override
   T get() {
     assert(!isDisposed);
@@ -103,9 +109,12 @@ class Computed<T> extends JReadonlyValue<T> implements ReadonlySignal<T> {
   ///
   /// This is typically called automatically by the reactive system when
   /// dependencies change, but can be called manually for custom scenarios.
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
   @override
   void notify() {
-    super.notify();
+    assert(!isDisposed);
     globalReactiveSystem.computedNotify(this);
   }
 
@@ -167,7 +176,7 @@ class WritableComputed<T> extends Computed<T> implements Signal<T> {
   final void Function(T) setter;
 
   @override
-  Object? cachedValue;
+  T? cachedValue;
 
   /// Sets a new value for this writable computed.
   ///
@@ -179,6 +188,9 @@ class WritableComputed<T> extends Computed<T> implements Signal<T> {
   /// final writableComputed = WritableComputed(getter, setter);
   /// writableComputed.value = newValue; // Calls setter(newValue)
   /// ```
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
   @override
   set value(T newValue) => set(newValue);
 

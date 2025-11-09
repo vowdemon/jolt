@@ -41,7 +41,7 @@ class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
     JoltDebug.create(this, onDebug);
   }
 
-  dynamic cachedValue;
+  T? cachedValue;
 
   /// Returns the current value without establishing a reactive dependency.
   ///
@@ -53,6 +53,9 @@ class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
   /// final counter = Signal(0);
   /// print(counter.peek); // Doesn't create dependency
   /// ```
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
   @override
   T get peek {
     assert(!isDisposed);
@@ -69,6 +72,9 @@ class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
   /// final counter = Signal(0);
   /// final doubled = Computed(() => counter.value * 2); // Creates dependency
   /// ```
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
   @override
   T get value => get();
 
@@ -77,6 +83,9 @@ class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
   /// This is equivalent to accessing the [value] getter.
   ///
   /// Returns: The current value of the signal
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
   @override
   T get() {
     assert(!isDisposed);
@@ -93,6 +102,9 @@ class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
   /// final counter = Signal(0);
   /// counter.value = 10; // Notifies subscribers
   /// ```
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
   @override
   set value(T value) => set(value);
 
@@ -108,6 +120,9 @@ class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
   /// final counter = Signal(0);
   /// counter.set(10); // Notifies subscribers
   /// ```
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
   @override
   void set(T value) {
     assert(!isDisposed);
@@ -118,9 +133,12 @@ class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
   ///
   /// This is typically called automatically when the value changes,
   /// but can be called manually for custom notification scenarios.
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
   @override
   void notify() {
-    super.notify();
+    assert(!isDisposed);
     globalReactiveSystem.signalNotify(this);
   }
 

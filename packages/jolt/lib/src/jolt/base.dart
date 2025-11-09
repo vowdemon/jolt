@@ -25,7 +25,7 @@ abstract class JReadonlyValue<T> extends ReactiveNode
   JReadonlyValue({required super.flags, this.pendingValue});
 
   /// Internal storage for the node's value.
-  Object? pendingValue;
+  T? pendingValue;
 
   /// Returns the current value without establishing a reactive dependency.
   T get peek;
@@ -54,20 +54,13 @@ abstract class JReadonlyValue<T> extends ReactiveNode
   }
 
   /// Notifies all subscribers that this value has changed.
-  @mustCallSuper
-  void notify() {
-    assert(!isDisposed);
-  }
+  void notify();
 
-  @visibleForTesting
-  bool testNoSubscribers() {
-    return subs == null && subsTail == null;
-  }
-
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
   @override
-  String toString() {
-    return value.toString();
-  }
+  String toString() => value.toString();
 }
 
 /// Interface for writable reactive values.

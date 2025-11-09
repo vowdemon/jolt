@@ -1,3 +1,8 @@
+## 1.0.3
+
+ - **REFACTOR**: inlined function consolidates assert and debug functions. ([1bd31e26](https://github.com/vowdemon/jolt/commit/1bd31e262002d30fec4d5d36653db10f08aa0b5f))
+ - **PERF**(jolt): optimize inlining of common short functions and type checks. ([54f4d6ed](https://github.com/vowdemon/jolt/commit/54f4d6ed6fb15830a1f0f5ffeac0959eb4f41a4f))
+
 ## 1.0.2
 
  - **FIX**(jolt): type annotation. ([475ef361](https://github.com/vowdemon/jolt/commit/475ef36117e0e3f24d204f6db9e57ef7f5be8d78))

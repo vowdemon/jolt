@@ -1,3 +1,7 @@
+## 1.0.2
+
+ - Update a dependency to the latest release.
+
 ## 1.0.1
 
  - **FIX**(jolt_surge): add example. ([4565580e](https://github.com/vowdemon/jolt/commit/4565580e90c4f21e0b7491f730e26448f4b25d2f))

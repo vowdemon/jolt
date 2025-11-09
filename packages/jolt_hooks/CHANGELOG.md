@@ -1,3 +1,7 @@
+## 1.0.1
+
+ - **REFACTOR**(jolt_hooks): optimize useJoltWidget dependency tracking and rebuild logic for better performance. ([af143da1](https://github.com/vowdemon/jolt/commit/af143da1cb2ae63e92cf6e5fee0313a50cd39088))
+
 ## 1.0.0
 
  - **REFACTOR**: simplify EffectScope API, add detach parameter. ([eed8cc1a](https://github.com/vowdemon/jolt/commit/eed8cc1a87a96a6b56aad9efae2ecf34b6ee1450))

@@ -3,6 +3,45 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-11-09
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`jolt` - `v1.0.3`](#jolt---v103)
+ - [`jolt_flutter` - `v1.1.1`](#jolt_flutter---v111)
+ - [`jolt_hooks` - `v1.0.1`](#jolt_hooks---v101)
+ - [`jolt_surge` - `v1.0.2`](#jolt_surge---v102)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `jolt_surge` - `v1.0.2`
+
+---
+
+#### `jolt` - `v1.0.3`
+
+ - **REFACTOR**: inlined function consolidates assert and debug functions. ([1bd31e26](https://github.com/vowdemon/jolt/commit/1bd31e262002d30fec4d5d36653db10f08aa0b5f))
+ - **PERF**(jolt): optimize inlining of common short functions and type checks. ([54f4d6ed](https://github.com/vowdemon/jolt/commit/54f4d6ed6fb15830a1f0f5ffeac0959eb4f41a4f))
+
+#### `jolt_flutter` - `v1.1.1`
+
+ - **REFACTOR**(jolt_flutter): optimize widgets dependency tracking and rebuild logic for better performance. ([52ebbeee](https://github.com/vowdemon/jolt/commit/52ebbeeecdc430dc8134227831f4fa63e6e23063))
+
+#### `jolt_hooks` - `v1.0.1`
+
+ - **REFACTOR**(jolt_hooks): optimize useJoltWidget dependency tracking and rebuild logic for better performance. ([af143da1](https://github.com/vowdemon/jolt/commit/af143da1cb2ae63e92cf6e5fee0313a50cd39088))
+
+
 ## 2025-11-06
 
 ### Changes

@@ -12,6 +12,7 @@ workspace:
   - packages/jolt_hooks
   - packages/jolt_surge
   - packages/jolt_hooks/example
+  - packages/jolt_surge/example
 
 dev_dependencies:
   melos: ^7.3.0

@@ -157,11 +157,11 @@ class JoltWidgetHookState<T extends Widget>
 
   @override
   T build(BuildContext context) {
-    final prevSub = globalReactiveSystem.setActiveSub(_effect);
+    final prevSub = setActiveSub(_effect);
     try {
       return hook.builder();
     } finally {
-      globalReactiveSystem.setActiveSub(prevSub);
+      setActiveSub(prevSub);
     }
   }
 

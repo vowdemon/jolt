@@ -1,6 +1,6 @@
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
-import 'package:jolt/core.dart';
+import 'package:jolt/core.dart' as reactive;
 import 'package:jolt/jolt.dart' as jolt;
 import 'package:shared_interfaces/shared_interfaces.dart';
 
@@ -273,11 +273,11 @@ class JoltProviderElement<T> extends ComponentElement {
     final store = _store as T;
     late Widget child;
 
-    final prevSub = globalReactiveSystem.setActiveSub(_effect);
+    final prevSub = reactive.setActiveSub(_effect);
     try {
       child = widget.builder(this, store);
     } finally {
-      globalReactiveSystem.setActiveSub(prevSub);
+      reactive.setActiveSub(prevSub);
     }
 
     return _JoltProviderData(

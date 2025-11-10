@@ -26,10 +26,10 @@ import '../core/reactive.dart';
 /// }); // Notification happens here: "Jane Smith"
 /// ```
 FutureOr<T> batch<T>(T Function() fn) async {
-  globalReactiveSystem.startBatch();
+  startBatch();
   try {
     return fn();
   } finally {
-    globalReactiveSystem.endBatch();
+    endBatch();
   }
 }

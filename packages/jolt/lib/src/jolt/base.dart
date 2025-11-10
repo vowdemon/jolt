@@ -1,7 +1,7 @@
 import 'package:shared_interfaces/shared_interfaces.dart';
 import 'package:meta/meta.dart';
 
-import '../core/system.dart';
+import '../core/reactive.dart';
 import 'shared.dart';
 
 /// Marker interface for mutable collection types.

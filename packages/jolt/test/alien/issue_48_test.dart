@@ -21,11 +21,11 @@ class ReactionOptions<T> {
 const defaultOptions = ReactionOptions();
 
 T untracked<T>(T Function() callback) {
-  final currentSub = setCurrentSub(null);
+  final currentSub = setActiveSub(null);
   try {
     return callback();
   } finally {
-    setCurrentSub(currentSub);
+    setActiveSub(currentSub);
   }
 }
 

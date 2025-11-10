@@ -27,10 +27,10 @@ import '../core/reactive.dart';
 /// name.value = 'Bob'; // Does NOT trigger recomputation
 /// ```
 T untracked<T>(T Function() fn) {
-  final prevSub = globalReactiveSystem.setActiveSub(null);
+  final prevSub = setActiveSub(null);
   try {
     return fn();
   } finally {
-    globalReactiveSystem.setActiveSub(prevSub);
+    setActiveSub(prevSub);
   }
 }

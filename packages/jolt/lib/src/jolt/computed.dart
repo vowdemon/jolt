@@ -3,7 +3,6 @@ import 'package:meta/meta.dart';
 import '../core/debug.dart';
 import '../core/reactive.dart';
 
-import '../core/system.dart' show ReactiveFlags;
 import 'base.dart';
 import 'signal.dart';
 import 'untracked.dart';
@@ -67,7 +66,7 @@ class Computed<T> extends JReadonlyValue<T> implements ReadonlySignal<T> {
     assert(!isDisposed);
 
     if (flags == ReactiveFlags.none) {
-      return untracked(() => globalReactiveSystem.computedGetter(this));
+      return untracked(() => getComputed(this));
     }
 
     return pendingValue as T;
@@ -102,7 +101,7 @@ class Computed<T> extends JReadonlyValue<T> implements ReadonlySignal<T> {
   T get() {
     assert(!isDisposed);
 
-    return globalReactiveSystem.computedGetter(this);
+    return getComputed(this);
   }
 
   /// Manually notifies all subscribers that this computed value has changed.
@@ -115,7 +114,7 @@ class Computed<T> extends JReadonlyValue<T> implements ReadonlySignal<T> {
   @override
   void notify() {
     assert(!isDisposed);
-    globalReactiveSystem.computedNotify(this);
+    notifyComputed(this);
   }
 
   /// Disposes the computed value and cleans up resources.
@@ -125,7 +124,7 @@ class Computed<T> extends JReadonlyValue<T> implements ReadonlySignal<T> {
   @mustCallSuper
   @protected
   void onDispose() {
-    globalReactiveSystem.nodeDispose(this);
+    disposeNode(this);
     pendingValue = null;
   }
 }
@@ -209,12 +208,12 @@ class WritableComputed<T> extends Computed<T> implements Signal<T> {
   @override
   void set(T newValue) {
     assert(!isDisposed);
-    globalReactiveSystem.startBatch();
+    startBatch();
     try {
       setter(newValue);
       cachedValue = newValue;
     } finally {
-      globalReactiveSystem.endBatch();
+      endBatch();
     }
   }
 }

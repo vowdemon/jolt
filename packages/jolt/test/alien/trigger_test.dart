@@ -6,7 +6,7 @@ import 'common.dart';
 void main() {
   group('trigger', () {
     test('should not throw when triggering with no dependencies', () {
-      globalReactiveSystem.trigger(() {});
+      trigger(() {});
     });
 
     test('should trigger updates for dependent computed signals', () {
@@ -15,7 +15,7 @@ void main() {
 
       expect(length(), 0);
       arr().add(1);
-      globalReactiveSystem.trigger(arr);
+      trigger(arr);
       expect(length(), 1);
     });
 
@@ -26,7 +26,7 @@ void main() {
 
       expect(length(), 0);
       src2().add(1);
-      globalReactiveSystem.trigger(() {
+      trigger(() {
         src1();
         src2();
       });
@@ -46,7 +46,7 @@ void main() {
       });
 
       expect(triggers, 1);
-      globalReactiveSystem.trigger(() {
+      trigger(() {
         src1();
         src2();
       });

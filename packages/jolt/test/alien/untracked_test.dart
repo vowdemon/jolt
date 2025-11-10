@@ -10,9 +10,9 @@ void main() {
       var computedTriggerTimes = 0;
       final c = computed(() {
         computedTriggerTimes++;
-        final currentSub = setCurrentSub(null);
+        final currentSub = setActiveSub(null);
         final value = src();
-        setCurrentSub(currentSub);
+        setActiveSub(currentSub);
         return value;
       });
 
@@ -34,9 +34,9 @@ void main() {
       effect(() {
         effectTriggerTimes++;
         if (kIs() != 0) {
-          final currentSub = setCurrentSub(null);
+          final currentSub = setActiveSub(null);
           src();
-          setCurrentSub(currentSub);
+          setActiveSub(currentSub);
         }
       });
 
@@ -74,9 +74,9 @@ void main() {
       effectScope(() {
         effect(() {
           effectTriggerTimes++;
-          final currentSub = setCurrentSub(null);
+          final currentSub = setActiveSub(null);
           src();
-          setCurrentSub(currentSub);
+          setActiveSub(currentSub);
         });
       });
 

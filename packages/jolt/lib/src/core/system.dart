@@ -1,4 +1,4 @@
-import 'debug.dart';
+part of './reactive.dart';
 
 /// Base class for all reactive nodes in the dependency graph.
 ///
@@ -137,312 +137,309 @@ abstract final class ReactiveFlags {
 ///
 /// ReactiveSystem defines the core interface for managing reactive dependencies,
 /// updates, and notifications in the reactive graph.
-abstract class ReactiveSystem {
-  /// Updates a reactive node and returns true if changed.
-  ///
-  /// Parameters:
-  /// - [sub]: The reactive node to update
-  ///
-  /// Returns: true if the node's value changed, false otherwise
-  bool update(ReactiveNode sub);
 
-  /// Notifies a subscriber that it needs to update.
-  ///
-  /// Parameters:
-  /// - [sub]: The subscriber node to notify
-  void notify(ReactiveNode sub);
+// /// Updates a reactive node and returns true if changed.
+// ///
+// /// Parameters:
+// /// - [sub]: The reactive node to update
+// ///
+// /// Returns: true if the node's value changed, false otherwise
+// bool update(ReactiveNode sub);
 
-  /// Handles when a node is no longer being watched.
-  ///
-  /// Parameters:
-  /// - [sub]: The node that is no longer being watched
-  void unwatched(ReactiveNode sub);
+// /// Notifies a subscriber that it needs to update.
+// ///
+// /// Parameters:
+// /// - [sub]: The subscriber node to notify
+// void notify(ReactiveNode sub);
 
-  /// Links a dependency to a subscriber in the reactive graph.
-  ///
-  /// Parameters:
-  /// - [dep]: The dependency node
-  /// - [sub]: The subscriber node
-  /// - [version]: Version number for the link
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
-  void link(ReactiveNode dep, ReactiveNode sub, int version) {
-    final prevDep = sub.depsTail;
-    if (prevDep != null && identical(prevDep.dep, dep)) {
-      return;
-    }
-    final nextDep = prevDep != null ? prevDep.nextDep : sub.deps;
-    if (nextDep != null && identical(nextDep.dep, dep)) {
-      nextDep.version = version;
-      sub.depsTail = nextDep;
-      return;
-    }
-    final prevSub = dep.subsTail;
-    if (prevSub != null &&
-        prevSub.version == version &&
-        identical(prevSub.sub, sub)) {
-      return;
-    }
-    final newLink = sub.depsTail = dep.subsTail = Link(
-      version: version,
-      dep: dep,
-      sub: sub,
-      prevDep: prevDep,
-      nextDep: nextDep,
-      prevSub: prevSub,
-      nextSub: null,
-    );
-    if (nextDep != null) {
-      nextDep.prevDep = newLink;
-    }
-    if (prevDep != null) {
-      prevDep.nextDep = newLink;
-    } else {
-      sub.deps = newLink;
-    }
-    if (prevSub != null) {
-      prevSub.nextSub = newLink;
-    } else {
-      dep.subs = newLink;
-    }
+// /// Handles when a node is no longer being watched.
+// ///
+// /// Parameters:
+// /// - [sub]: The node that is no longer being watched
+// void unwatched(ReactiveNode sub);
 
-    JoltDebug.linked(dep);
+/// Links a dependency to a subscriber in the reactive graph.
+///
+/// Parameters:
+/// - [dep]: The dependency node
+/// - [sub]: The subscriber node
+/// - [version]: Version number for the link
+@pragma('vm:prefer-inline')
+@pragma('wasm:prefer-inline')
+@pragma('dart2js:prefer-inline')
+void link(ReactiveNode dep, ReactiveNode sub, int version) {
+  final prevDep = sub.depsTail;
+  if (prevDep != null && identical(prevDep.dep, dep)) {
+    return;
+  }
+  final nextDep = prevDep != null ? prevDep.nextDep : sub.deps;
+  if (nextDep != null && identical(nextDep.dep, dep)) {
+    nextDep.version = version;
+    sub.depsTail = nextDep;
+    return;
+  }
+  final prevSub = dep.subsTail;
+  if (prevSub != null &&
+      prevSub.version == version &&
+      identical(prevSub.sub, sub)) {
+    return;
+  }
+  final newLink = sub.depsTail = dep.subsTail = Link(
+    version: version,
+    dep: dep,
+    sub: sub,
+    prevDep: prevDep,
+    nextDep: nextDep,
+    prevSub: prevSub,
+    nextSub: null,
+  );
+  if (nextDep != null) {
+    nextDep.prevDep = newLink;
+  }
+  if (prevDep != null) {
+    prevDep.nextDep = newLink;
+  } else {
+    sub.deps = newLink;
+  }
+  if (prevSub != null) {
+    prevSub.nextSub = newLink;
+  } else {
+    dep.subs = newLink;
   }
 
-  /// Unlinks a dependency from a subscriber.
-  ///
-  /// Parameters:
-  /// - [link]: The link to unlink
-  /// - [sub]: Optional subscriber node
-  ///
-  /// Returns: The next dependency link, or null if none
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
-  Link? unlink(Link link, [ReactiveNode? sub]) {
-    sub ??= link.sub;
+  JoltDebug.linked(dep);
+}
 
-    final dep = link.dep;
-    final prevDep = link.prevDep;
-    final nextDep = link.nextDep;
-    final nextSub = link.nextSub;
-    final prevSub = link.prevSub;
-    if (nextDep != null) {
-      nextDep.prevDep = prevDep;
-    } else {
-      sub.depsTail = prevDep;
-    }
-    if (prevDep != null) {
-      prevDep.nextDep = nextDep;
-    } else {
-      sub.deps = nextDep;
-    }
-    if (nextSub != null) {
-      nextSub.prevSub = prevSub;
-    } else {
-      dep.subsTail = prevSub;
-    }
-    if (prevSub != null) {
-      prevSub.nextSub = nextSub;
-    } else if ((dep.subs = nextSub) == null) {
-      unwatched(dep);
-    }
+/// Unlinks a dependency from a subscriber.
+///
+/// Parameters:
+/// - [link]: The link to unlink
+/// - [sub]: Optional subscriber node
+///
+/// Returns: The next dependency link, or null if none
+@pragma('vm:prefer-inline')
+@pragma('wasm:prefer-inline')
+@pragma('dart2js:prefer-inline')
+Link? unlink(Link link, [ReactiveNode? sub]) {
+  sub ??= link.sub;
 
-    JoltDebug.unlinked(dep);
-    return nextDep;
+  final dep = link.dep;
+  final prevDep = link.prevDep;
+  final nextDep = link.nextDep;
+  final nextSub = link.nextSub;
+  final prevSub = link.prevSub;
+  if (nextDep != null) {
+    nextDep.prevDep = prevDep;
+  } else {
+    sub.depsTail = prevDep;
+  }
+  if (prevDep != null) {
+    prevDep.nextDep = nextDep;
+  } else {
+    sub.deps = nextDep;
+  }
+  if (nextSub != null) {
+    nextSub.prevSub = prevSub;
+  } else {
+    dep.subsTail = prevSub;
+  }
+  if (prevSub != null) {
+    prevSub.nextSub = nextSub;
+  } else if ((dep.subs = nextSub) == null) {
+    unwatched(dep);
   }
 
-  /// Propagates changes through the reactive graph.
-  ///
-  /// Parameters:
-  /// - [theLink]: The link to start propagation from
-  void propagate(Link theLink) {
-    Link? link = theLink;
-    Link? next = link.nextSub;
-    Stack<Link?>? stack;
+  JoltDebug.unlinked(dep);
+  return nextDep;
+}
 
-    top:
-    do {
-      final sub = link!.sub;
-      int flags = sub.flags;
+/// Propagates changes through the reactive graph.
+///
+/// Parameters:
+/// - [theLink]: The link to start propagation from
+void propagate(Link theLink) {
+  Link? link = theLink;
+  Link? next = link.nextSub;
+  Stack<Link?>? stack;
 
-      if (flags &
-              (ReactiveFlags.recursedCheck |
-                  ReactiveFlags.recursed |
-                  ReactiveFlags.dirty |
-                  ReactiveFlags.pending) ==
-          0) {
-        sub.flags = flags | ReactiveFlags.pending;
-      } else if (flags &
-              (ReactiveFlags.recursedCheck | ReactiveFlags.recursed) ==
-          0) {
-        flags = (ReactiveFlags.none);
-      } else if (flags & (ReactiveFlags.recursedCheck) == 0) {
-        sub.flags =
-            (flags & ~(ReactiveFlags.recursed)) | (ReactiveFlags.pending);
-      } else if (flags & (ReactiveFlags.dirty | ReactiveFlags.pending) == 0 &&
-          isValidLink(link, sub)) {
-        sub.flags = flags | (ReactiveFlags.recursed | ReactiveFlags.pending);
-        flags &= (ReactiveFlags.mutable);
-      } else {
-        flags = (ReactiveFlags.none);
-      }
+  top:
+  do {
+    final sub = link!.sub;
+    int flags = sub.flags;
 
-      if (flags & (ReactiveFlags.watching) != 0) {
-        notify(sub);
-      }
+    if (flags &
+            (ReactiveFlags.recursedCheck |
+                ReactiveFlags.recursed |
+                ReactiveFlags.dirty |
+                ReactiveFlags.pending) ==
+        0) {
+      sub.flags = flags | ReactiveFlags.pending;
+    } else if (flags & (ReactiveFlags.recursedCheck | ReactiveFlags.recursed) ==
+        0) {
+      flags = (ReactiveFlags.none);
+    } else if (flags & (ReactiveFlags.recursedCheck) == 0) {
+      sub.flags = (flags & ~(ReactiveFlags.recursed)) | (ReactiveFlags.pending);
+    } else if (flags & (ReactiveFlags.dirty | ReactiveFlags.pending) == 0 &&
+        isValidLink(link, sub)) {
+      sub.flags = flags | (ReactiveFlags.recursed | ReactiveFlags.pending);
+      flags &= (ReactiveFlags.mutable);
+    } else {
+      flags = (ReactiveFlags.none);
+    }
 
-      if (flags & (ReactiveFlags.mutable) != 0) {
-        final subSubs = sub.subs;
-        if (subSubs != null) {
-          final nextSub = (link = subSubs).nextSub;
-          if (nextSub != null) {
-            stack = Stack(value: next, prev: stack);
-            next = nextSub;
-          }
-          continue;
+    if (flags & (ReactiveFlags.watching) != 0) {
+      notifyEffect(sub as JEffect);
+    }
+
+    if (flags & (ReactiveFlags.mutable) != 0) {
+      final subSubs = sub.subs;
+      if (subSubs != null) {
+        final nextSub = (link = subSubs).nextSub;
+        if (nextSub != null) {
+          stack = Stack(value: next, prev: stack);
+          next = nextSub;
         }
-      }
-
-      if ((link = next) != null) {
-        next = link!.nextSub;
         continue;
       }
+    }
 
-      while (stack != null) {
-        link = stack.value;
-        stack = stack.prev;
-        if (link != null) {
-          next = link.nextSub;
-          continue top;
-        }
+    if ((link = next) != null) {
+      next = link!.nextSub;
+      continue;
+    }
+
+    while (stack != null) {
+      link = stack.value;
+      stack = stack.prev;
+      if (link != null) {
+        next = link.nextSub;
+        continue top;
       }
+    }
 
-      break;
-    } while (true);
-  }
+    break;
+  } while (true);
+}
 
-  /// Checks if a node is dirty and needs updating.
-  ///
-  /// Parameters:
-  /// - [theLink]: The link to check
-  /// - [sub]: The subscriber node
-  ///
-  /// Returns: true if the node is dirty and needs updating
-  bool checkDirty(Link theLink, ReactiveNode sub) {
-    Link? link = theLink;
-    Stack<Link?>? stack;
-    int checkDepth = 0;
-    bool dirty = false;
+/// Checks if a node is dirty and needs updating.
+///
+/// Parameters:
+/// - [theLink]: The link to check
+/// - [sub]: The subscriber node
+///
+/// Returns: true if the node is dirty and needs updating
+bool checkDirty(Link theLink, ReactiveNode sub) {
+  Link? link = theLink;
+  Stack<Link?>? stack;
+  int checkDepth = 0;
+  bool dirty = false;
 
-    top:
-    do {
-      final dep = link!.dep;
-      final flags = dep.flags;
+  top:
+  do {
+    final dep = link!.dep;
+    final flags = dep.flags;
 
-      if (sub.flags & (ReactiveFlags.dirty) == (ReactiveFlags.dirty)) {
+    if (sub.flags & (ReactiveFlags.dirty) == (ReactiveFlags.dirty)) {
+      dirty = true;
+    } else if (flags & (ReactiveFlags.mutable | ReactiveFlags.dirty) ==
+        (ReactiveFlags.mutable | ReactiveFlags.dirty)) {
+      if (updateNode(dep)) {
+        final subs = dep.subs!;
+        if (subs.nextSub != null) {
+          shallowPropagate(subs);
+        }
         dirty = true;
-      } else if (flags & (ReactiveFlags.mutable | ReactiveFlags.dirty) ==
-          (ReactiveFlags.mutable | ReactiveFlags.dirty)) {
-        if (update(dep)) {
-          final subs = dep.subs!;
-          if (subs.nextSub != null) {
-            shallowPropagate(subs);
-          }
-          dirty = true;
-        }
-      } else if (flags & (ReactiveFlags.mutable | ReactiveFlags.pending) ==
-          (ReactiveFlags.mutable | ReactiveFlags.pending)) {
-        if (link.nextSub != null || link.prevSub != null) {
-          stack = Stack(value: link, prev: stack);
-        }
-        link = dep.deps!;
-        sub = dep;
-        ++checkDepth;
+      }
+    } else if (flags & (ReactiveFlags.mutable | ReactiveFlags.pending) ==
+        (ReactiveFlags.mutable | ReactiveFlags.pending)) {
+      if (link.nextSub != null || link.prevSub != null) {
+        stack = Stack(value: link, prev: stack);
+      }
+      link = dep.deps!;
+      sub = dep;
+      ++checkDepth;
+      continue;
+    }
+
+    if (!dirty) {
+      final nextDep = link.nextDep;
+      if (nextDep != null) {
+        link = nextDep;
         continue;
       }
+    }
 
-      if (!dirty) {
-        final nextDep = link.nextDep;
-        if (nextDep != null) {
-          link = nextDep;
+    while (checkDepth-- != 0) {
+      final firstSub = sub.subs!;
+      final hasMultipleSubs = firstSub.nextSub != null;
+      if (hasMultipleSubs) {
+        link = stack!.value;
+        stack = stack.prev;
+      } else {
+        link = firstSub;
+      }
+      if (dirty) {
+        if (updateNode(sub)) {
+          if (hasMultipleSubs) {
+            shallowPropagate(firstSub);
+          }
+          sub = link!.sub;
           continue;
         }
+        dirty = false;
+      } else {
+        sub.flags &= ~(ReactiveFlags.pending);
       }
-
-      while (checkDepth-- != 0) {
-        final firstSub = sub.subs!;
-        final hasMultipleSubs = firstSub.nextSub != null;
-        if (hasMultipleSubs) {
-          link = stack!.value;
-          stack = stack.prev;
-        } else {
-          link = firstSub;
-        }
-        if (dirty) {
-          if (update(sub)) {
-            if (hasMultipleSubs) {
-              shallowPropagate(firstSub);
-            }
-            sub = link!.sub;
-            continue;
-          }
-          dirty = false;
-        } else {
-          sub.flags &= ~(ReactiveFlags.pending);
-        }
-        sub = link!.sub;
-        final nextDep = link.nextDep;
-        if (nextDep != null) {
-          link = nextDep;
-          continue top;
-        }
+      sub = link!.sub;
+      final nextDep = link.nextDep;
+      if (nextDep != null) {
+        link = nextDep;
+        continue top;
       }
-
-      return dirty;
-    } while (true);
-  }
-
-  /// Shallow propagates changes without deep recursion.
-  ///
-  /// Parameters:
-  /// - [theLink]: The link to start shallow propagation from
-  void shallowPropagate(Link theLink) {
-    Link? link = theLink;
-    do {
-      final sub = link!.sub;
-      final flags = sub.flags;
-      if (flags & (ReactiveFlags.pending | ReactiveFlags.dirty) ==
-          (ReactiveFlags.pending)) {
-        sub.flags = flags | (ReactiveFlags.dirty);
-        if (flags & (ReactiveFlags.watching | ReactiveFlags.recursedCheck) ==
-            ReactiveFlags.watching) {
-          notify(sub);
-        }
-      }
-    } while ((link = link.nextSub) != null);
-  }
-
-  /// Checks if a link is still valid for a subscriber.
-  ///
-  /// Parameters:
-  /// - [checkLink]: The link to check
-  /// - [sub]: The subscriber node
-  ///
-  /// Returns: true if the link is still valid
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
-  bool isValidLink(Link checkLink, ReactiveNode sub) {
-    Link? link = sub.depsTail;
-
-    while (link != null) {
-      if (link == checkLink) {
-        return true;
-      }
-      link = link.prevDep;
     }
-    return false;
+
+    return dirty;
+  } while (true);
+}
+
+/// Shallow propagates changes without deep recursion.
+///
+/// Parameters:
+/// - [theLink]: The link to start shallow propagation from
+void shallowPropagate(Link theLink) {
+  Link? link = theLink;
+  do {
+    final sub = link!.sub;
+    final flags = sub.flags;
+    if (flags & (ReactiveFlags.pending | ReactiveFlags.dirty) ==
+        (ReactiveFlags.pending)) {
+      sub.flags = flags | (ReactiveFlags.dirty);
+      if (flags & (ReactiveFlags.watching | ReactiveFlags.recursedCheck) ==
+          ReactiveFlags.watching) {
+        notifyEffect(sub as JEffect);
+      }
+    }
+  } while ((link = link.nextSub) != null);
+}
+
+/// Checks if a link is still valid for a subscriber.
+///
+/// Parameters:
+/// - [checkLink]: The link to check
+/// - [sub]: The subscriber node
+///
+/// Returns: true if the link is still valid
+@pragma('vm:prefer-inline')
+@pragma('wasm:prefer-inline')
+@pragma('dart2js:prefer-inline')
+bool isValidLink(Link checkLink, ReactiveNode sub) {
+  Link? link = sub.depsTail;
+
+  while (link != null) {
+    if (link == checkLink) {
+      return true;
+    }
+    link = link.prevDep;
   }
+  return false;
 }

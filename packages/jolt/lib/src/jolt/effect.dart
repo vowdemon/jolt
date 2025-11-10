@@ -5,7 +5,7 @@ import 'package:shared_interfaces/shared_interfaces.dart';
 import 'package:meta/meta.dart';
 
 import '../core/reactive.dart';
-import '../core/system.dart';
+import '../core/reactive.dart' as reactive;
 import 'untracked.dart';
 
 /// Interface for reactive nodes that can execute effect functions.
@@ -13,7 +13,7 @@ abstract interface class EffectBase implements ReactiveNode {
   /// Executes the effect function.
   void effectFn();
 
-  void runEffect(GlobalReactiveSystem system);
+  void runEffect();
 }
 
 /// Base class for all effect nodes in the reactive system.
@@ -109,7 +109,7 @@ abstract class JEffect extends ReactiveNode implements ChainedDisposable {
   @mustCallSuper
   @protected
   void onDispose() {
-    globalReactiveSystem.nodeDispose(this);
+    disposeNode(this);
   }
 }
 
@@ -159,9 +159,9 @@ class EffectScope extends JEffect {
       : super(flags: ReactiveFlags.none) {
     JoltDebug.create(this, onDebug);
     if (!(detach ?? false)) {
-      final prevSub = globalReactiveSystem.getActiveSub();
+      final prevSub = getActiveSub();
       if (prevSub != null) {
-        globalReactiveSystem.link(this, prevSub, 0);
+        link(this, prevSub, 0);
       }
     }
   }
@@ -183,8 +183,8 @@ class EffectScope extends JEffect {
   /// });
   /// ```
   T run<T>(T Function() fn) {
-    final prevSub = globalReactiveSystem.setActiveSub(this);
-    final prevScope = globalReactiveSystem.setActiveScope(this);
+    final prevSub = setActiveSub(this);
+    final prevScope = setActiveScope(this);
     try {
       final result = fn();
 
@@ -192,8 +192,8 @@ class EffectScope extends JEffect {
 
       return result;
     } finally {
-      globalReactiveSystem.setActiveScope(prevScope);
-      globalReactiveSystem.setActiveSub(prevSub);
+      setActiveScope(prevScope);
+      setActiveSub(prevSub);
     }
   }
 }
@@ -242,17 +242,17 @@ class Effect extends JEffect implements EffectBase {
       : super(flags: ReactiveFlags.watching | ReactiveFlags.recursedCheck) {
     JoltDebug.create(this, onDebug);
 
-    final prevSub = globalReactiveSystem.getActiveSub();
+    final prevSub = getActiveSub();
     if (prevSub != null) {
-      globalReactiveSystem.link(this, prevSub, 0);
+      link(this, prevSub, 0);
     }
 
     if (immediately) {
-      final prevSub = globalReactiveSystem.setActiveSub(this);
+      final prevSub = setActiveSub(this);
       try {
         effectFn();
       } finally {
-        globalReactiveSystem.setActiveSub(prevSub);
+        setActiveSub(prevSub);
         flags &= ~(ReactiveFlags.recursedCheck);
       }
     } else {
@@ -276,8 +276,8 @@ class Effect extends JEffect implements EffectBase {
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
   @override
-  void runEffect(GlobalReactiveSystem system) {
-    system.runEffect(this);
+  void runEffect() {
+    reactive.runEffect(this);
   }
 
   @pragma('vm:prefer-inline')
@@ -302,7 +302,7 @@ class Effect extends JEffect implements EffectBase {
   /// ```
   void run() {
     flags |= ReactiveFlags.dirty;
-    globalReactiveSystem.run(this);
+    reactive.runEffect(this);
   }
 }
 
@@ -361,9 +361,9 @@ class Watcher<T> extends JEffect implements EffectBase {
       : super(flags: ReactiveFlags.watching) {
     JoltDebug.create(this, onDebug);
 
-    final prevSub = globalReactiveSystem.setActiveSub(this);
+    final prevSub = setActiveSub(this);
     if (prevSub != null) {
-      globalReactiveSystem.link(this, prevSub, 0);
+      link(this, prevSub, 0);
     }
     try {
       prevSources = sourcesFn();
@@ -382,7 +382,7 @@ class Watcher<T> extends JEffect implements EffectBase {
         }());
       }
     } finally {
-      globalReactiveSystem.setActiveSub(prevSub);
+      setActiveSub(prevSub);
     }
   }
 
@@ -440,8 +440,8 @@ class Watcher<T> extends JEffect implements EffectBase {
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
   @override
-  void runEffect(GlobalReactiveSystem system) {
-    system.runEffect(this);
+  void runEffect() {
+    reactive.runEffect(this);
   }
 
   @pragma('vm:prefer-inline')
@@ -475,14 +475,11 @@ class Watcher<T> extends JEffect implements EffectBase {
 void onEffectCleanup(Disposer fn, {JEffect? owner}) {
   assert(
       owner != null ||
-          globalReactiveSystem.getActiveSub() is JEffect ||
+          getActiveSub() is JEffect ||
           Watcher.activeWatcher != null,
       'onCleanup can only be used within an effect');
 
-  (owner ??
-          Watcher.activeWatcher ??
-          globalReactiveSystem.getActiveSub()! as JEffect)
-      .onCleanUp(fn);
+  (owner ?? Watcher.activeWatcher ?? getActiveSub()! as JEffect).onCleanUp(fn);
 }
 
 /// Registers a cleanup function to be executed when the current effect scope is disposed.
@@ -507,8 +504,8 @@ void onEffectCleanup(Disposer fn, {JEffect? owner}) {
 @pragma('wasm:prefer-inline')
 @pragma('dart2js:prefer-inline')
 void onScopeDispose(Disposer fn, {EffectScope? owner}) {
-  assert(owner != null || globalReactiveSystem.getActiveScope() != null,
+  assert(owner != null || getActiveScope() != null,
       'onScopeDispose can only be used within an effect scope');
 
-  (owner ?? globalReactiveSystem.getActiveScope()!).onCleanUp(fn);
+  (owner ?? getActiveScope()!).onCleanUp(fn);
 }

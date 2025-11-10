@@ -1,6 +1,6 @@
 import 'package:meta/meta.dart';
 
-import 'system.dart';
+import 'reactive.dart';
 
 /// Types of operations that can be debugged in the reactive system.
 ///

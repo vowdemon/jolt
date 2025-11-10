@@ -1,6 +1,7 @@
 import 'package:shared_interfaces/shared_interfaces.dart';
 import 'package:jolt/jolt.dart';
-import 'package:jolt/src/core/reactive.dart';
+import 'package:jolt/src/core/reactive.dart' as reactive;
+export 'package:jolt/src/core/reactive.dart';
 
 /// Create a reactive signal with initial value
 T Function([T? value, bool write]) signal<T>(T initialValue) {
@@ -9,9 +10,9 @@ T Function([T? value, bool write]) signal<T>(T initialValue) {
   );
   return ([T? value, bool write = false]) {
     if (write) {
-      return globalReactiveSystem.signalSetter(s, value as T);
+      return reactive.setSignal(s, value as T);
     } else {
-      return globalReactiveSystem.signalGetter(s);
+      return reactive.getSignal(s);
     }
   };
 }
@@ -22,7 +23,7 @@ T Function() computed<T>(T Function() getter) {
     getter,
   );
 
-  return () => globalReactiveSystem.computedGetter(c);
+  return () => reactive.getComputed(c);
 }
 
 /// Create a reactive effect that runs when dependencies change
@@ -38,8 +39,3 @@ Disposer effectScope(void Function() fn) {
 
   return e.dispose;
 }
-
-final startBatch = globalReactiveSystem.startBatch;
-final endBatch = globalReactiveSystem.endBatch;
-final setCurrentSub = globalReactiveSystem.setActiveSub;
-final getCurrentSub = globalReactiveSystem.getActiveSub;

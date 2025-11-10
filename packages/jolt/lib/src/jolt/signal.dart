@@ -1,7 +1,6 @@
 import 'package:jolt/src/core/debug.dart';
 import 'package:meta/meta.dart';
 
-import '../core/system.dart' show ReactiveFlags;
 import 'base.dart';
 import '../core/reactive.dart';
 
@@ -90,7 +89,7 @@ class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
   T get() {
     assert(!isDisposed);
 
-    return globalReactiveSystem.signalGetter(this);
+    return getSignal(this);
   }
 
   /// Sets a new value for the signal.
@@ -126,7 +125,7 @@ class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
   @override
   void set(T value) {
     assert(!isDisposed);
-    globalReactiveSystem.signalSetter(this, value);
+    setSignal(this, value);
   }
 
   /// Manually notifies all subscribers that this signal has changed.
@@ -139,7 +138,7 @@ class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
   @override
   void notify() {
     assert(!isDisposed);
-    globalReactiveSystem.signalNotify(this);
+    notifySignal(this);
   }
 
   /// Disposes the signal and cleans up resources.
@@ -149,7 +148,7 @@ class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
   @mustCallSuper
   @protected
   void onDispose() {
-    globalReactiveSystem.nodeDispose(this);
+    disposeNode(this);
     cachedValue = null;
     pendingValue = null;
   }

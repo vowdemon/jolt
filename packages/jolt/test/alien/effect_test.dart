@@ -190,9 +190,9 @@ void main() {
 
       effect(() {
         order.add('a');
-        final currentSub = setCurrentSub(null);
+        final currentSub = setActiveSub(null);
         final isOne = src2() == 1;
-        setCurrentSub(currentSub);
+        setActiveSub(currentSub);
         if (isOne) {
           src1();
         }
@@ -285,8 +285,7 @@ void main() {
     var triggers = 0;
 
     effect(() {
-      globalReactiveSystem.getActiveSub()!.flags &=
-          ~ReactiveFlags.recursedCheck;
+      getActiveSub()!.flags &= ~ReactiveFlags.recursedCheck;
       triggers++;
       src(min(src() + 1, 5), true);
     });

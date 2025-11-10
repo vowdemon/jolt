@@ -1,3 +1,7 @@
+## 1.0.3
+
+ - **FIX**(surge): dispose order. ([f3bc4e7c](https://github.com/vowdemon/jolt/commit/f3bc4e7c57a955a19ef863ce84f9adf83088b07c))
+
 ## 1.0.2
 
  - Update a dependency to the latest release.

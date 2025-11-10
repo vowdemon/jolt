@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-11-10
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`jolt_surge` - `v1.0.3`](#jolt_surge---v103)
+
+---
+
+#### `jolt_surge` - `v1.0.3`
+
+ - **FIX**(surge): dispose order. ([f3bc4e7c](https://github.com/vowdemon/jolt/commit/f3bc4e7c57a955a19ef863ce84f9adf83088b07c))
+
+
 ## 2025-11-09
 
 ### Changes

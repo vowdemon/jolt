@@ -15,6 +15,38 @@ Packages with breaking changes:
 
 Packages with other changes:
 
+ - [`jolt` - `v1.0.4`](#jolt---v104)
+ - [`jolt_flutter` - `v1.1.2`](#jolt_flutter---v112)
+ - [`jolt_hooks` - `v1.0.2`](#jolt_hooks---v102)
+ - [`jolt_surge` - `v1.0.4`](#jolt_surge---v104)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `jolt_flutter` - `v1.1.2`
+ - `jolt_hooks` - `v1.0.2`
+ - `jolt_surge` - `v1.0.4`
+
+---
+
+#### `jolt` - `v1.0.4`
+
+ - **REFACTOR**: flatten ReactiveSystem to library level, add upstream sync. ([1969693f](https://github.com/vowdemon/jolt/commit/1969693f4dd1a655711419937f43b2fdee6d4266))
+
+
+## 2025-11-10
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
  - [`jolt_surge` - `v1.0.3`](#jolt_surge---v103)
 
 ---

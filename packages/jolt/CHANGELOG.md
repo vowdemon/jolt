@@ -1,3 +1,7 @@
+## 1.0.4
+
+ - **REFACTOR**: flatten ReactiveSystem to library level, add upstream sync. ([1969693f](https://github.com/vowdemon/jolt/commit/1969693f4dd1a655711419937f43b2fdee6d4266))
+
 ## 1.0.3
 
  - **REFACTOR**: inlined function consolidates assert and debug functions. ([1bd31e26](https://github.com/vowdemon/jolt/commit/1bd31e262002d30fec4d5d36653db10f08aa0b5f))

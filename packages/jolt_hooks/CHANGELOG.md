@@ -1,3 +1,7 @@
+## 1.0.2
+
+ - Update a dependency to the latest release.
+
 ## 1.0.1
 
  - **REFACTOR**(jolt_hooks): optimize useJoltWidget dependency tracking and rebuild logic for better performance. ([af143da1](https://github.com/vowdemon/jolt/commit/af143da1cb2ae63e92cf6e5fee0313a50cd39088))

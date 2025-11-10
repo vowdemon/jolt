@@ -416,7 +416,8 @@ abstract class ReactiveSystem {
       if (flags & (ReactiveFlags.pending | ReactiveFlags.dirty) ==
           (ReactiveFlags.pending)) {
         sub.flags = flags | (ReactiveFlags.dirty);
-        if (flags & (ReactiveFlags.watching) != 0) {
+        if (flags & (ReactiveFlags.watching | ReactiveFlags.recursedCheck) ==
+            ReactiveFlags.watching) {
           notify(sub);
         }
       }

@@ -106,7 +106,7 @@ class GlobalReactiveSystem extends ReactiveSystem {
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
-  ReactiveNode? setActiveSub(ReactiveNode? sub) {
+  ReactiveNode? setActiveSub([ReactiveNode? sub]) {
     final prevSub = activeSub;
     activeSub = sub;
     return prevSub;
@@ -121,7 +121,7 @@ class GlobalReactiveSystem extends ReactiveSystem {
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
-  EffectScope? setActiveScope(EffectScope? scope) {
+  EffectScope? setActiveScope([EffectScope? scope]) {
     final prevScope = activeScope;
     activeScope = scope;
     return prevScope;
@@ -257,12 +257,13 @@ class GlobalReactiveSystem extends ReactiveSystem {
         JoltDebug.set(computed);
       }
     } else if (flags == (ReactiveFlags.none)) {
-      computed.flags = (ReactiveFlags.mutable);
+      computed.flags = (ReactiveFlags.mutable | ReactiveFlags.recursedCheck);
       final prevSub = setActiveSub(computed);
       try {
         computed.pendingValue = computed.getter();
       } finally {
         activeSub = prevSub;
+        computed.flags &= ~(ReactiveFlags.recursedCheck);
       }
 
       JoltDebug.set(computed);
@@ -392,6 +393,32 @@ class GlobalReactiveSystem extends ReactiveSystem {
     var dep = depsTail != null ? depsTail.nextDep : sub.deps;
     while (dep != null) {
       dep = unlink(dep, sub);
+    }
+  }
+
+  /// Notify all dependencies about changes
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
+  void trigger(void Function() fn) {
+    final sub = ReactiveNode(flags: ReactiveFlags.watching);
+    final prevSub = setActiveSub(sub);
+    try {
+      fn();
+    } finally {
+      activeSub = prevSub;
+      while (sub.deps != null) {
+        final link = sub.deps!;
+        final dep = link.dep;
+        unlink(link, sub);
+        if (dep.subs != null) {
+          propagate(dep.subs!);
+          shallowPropagate(dep.subs!);
+        }
+      }
+      if (batchDepth == 0) {
+        flush();
+      }
     }
   }
 }

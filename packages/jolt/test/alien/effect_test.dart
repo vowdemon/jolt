@@ -1,3 +1,6 @@
+import 'dart:math';
+
+import 'package:jolt/core.dart';
 import 'package:test/test.dart';
 
 import 'common.dart';
@@ -253,5 +256,41 @@ void main() {
       a(true, true);
       expect(triggers, 2);
     });
+  });
+
+  test('should handle effect recursion for the first execution', () {
+    final src1 = signal(0);
+    final src2 = signal(0);
+
+    var triggers1 = 0;
+    var triggers2 = 0;
+
+    effect(() {
+      triggers1++;
+      src1(min(src1() + 1, 5), true);
+    });
+    effect(() {
+      triggers2++;
+      src2(min(src2() + 1, 5), true);
+      src2();
+    });
+
+    expect(triggers1, 1);
+    expect(triggers2, 1);
+  });
+
+  test('should support custom recurse effect', () {
+    final src = signal(0);
+
+    var triggers = 0;
+
+    effect(() {
+      globalReactiveSystem.getActiveSub()!.flags &=
+          ~ReactiveFlags.recursedCheck;
+      triggers++;
+      src(min(src() + 1, 5), true);
+    });
+
+    expect(triggers, 6);
   });
 }

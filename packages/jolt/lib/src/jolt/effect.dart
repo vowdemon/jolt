@@ -239,7 +239,7 @@ class Effect extends JEffect implements EffectBase {
   /// effect.run(); // Manually run the effect
   /// ```
   Effect(this.fn, {bool immediately = true, JoltDebugFn? onDebug})
-      : super(flags: ReactiveFlags.watching) {
+      : super(flags: ReactiveFlags.watching | ReactiveFlags.recursedCheck) {
     JoltDebug.create(this, onDebug);
 
     final prevSub = globalReactiveSystem.getActiveSub();
@@ -248,7 +248,15 @@ class Effect extends JEffect implements EffectBase {
     }
 
     if (immediately) {
-      run();
+      final prevSub = globalReactiveSystem.setActiveSub(this);
+      try {
+        effectFn();
+      } finally {
+        globalReactiveSystem.setActiveSub(prevSub);
+        flags &= ~(ReactiveFlags.recursedCheck);
+      }
+    } else {
+      flags &= ~(ReactiveFlags.recursedCheck);
     }
   }
 

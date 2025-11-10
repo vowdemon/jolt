@@ -144,9 +144,8 @@ abstract class Surge<State> implements ChainedDisposable {
   @override
   void dispose() {
     if (_isDisposed) return;
-    _isDisposed = true;
-
     onDispose();
+    _isDisposed = true;
   }
 
   /// Emits a new state value and triggers change notifications.
@@ -172,6 +171,7 @@ abstract class Surge<State> implements ChainedDisposable {
   /// ```
   void emit(State state) {
     assert(!_isDisposed, 'JoltSurge is disposed');
+    if (_isDisposed) return;
 
     if (state == _state.peek) return;
     onChange(Change(currentState: _state.peek, nextState: state));

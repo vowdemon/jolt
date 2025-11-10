@@ -52,5 +52,5 @@ melos:
 
     coverage:combine:
       run: |
-        chmod +x ./.github/scripts/merge_converage.sh
-        ./.github/scripts/merge_converage.sh
+        chmod +x ./.github/scripts/merge_coverage.sh
+        ./.github/scripts/merge_coverage.sh

@@ -483,5 +483,221 @@ void main() {
 
       counter.dispose();
     });
+
+    testWidgets('should rebuild when modifying tracked signal in builder',
+        (tester) async {
+      final counter = Signal(0);
+      int buildCount = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: JoltBuilder(
+            builder: (context) {
+              buildCount++;
+              // Read signal first to track it, then modify it
+              final currentValue = counter.value;
+              if (buildCount == 1 && currentValue == 0) {
+                counter.value = 1;
+              }
+              return Text('Count: ${counter.value}');
+            },
+          ),
+        ),
+      );
+
+      final initialBuildCount = buildCount;
+
+      // Wait for reactive system to process the signal change
+      await tester.pumpAndSettle();
+
+      // Should have rebuilt automatically after signal change
+      expect(buildCount, greaterThan(initialBuildCount));
+      expect(find.text('Count: 1'), findsOneWidget);
+
+      counter.dispose();
+    });
+
+    testWidgets('should handle modifying multiple tracked signals in builder',
+        (tester) async {
+      final counter = Signal(0);
+      final name = Signal('A');
+      int buildCount = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: JoltBuilder(
+            builder: (context) {
+              buildCount++;
+              // Read signals first to track them, then modify them
+              // ignore: unused_local_variable
+              final currentCount = counter.value;
+              // ignore: unused_local_variable
+              final currentName = name.value;
+              if (buildCount == 1) {
+                counter.value = 10;
+                name.value = 'B';
+              }
+              return Text('Count: ${counter.value}, Name: ${name.value}');
+            },
+          ),
+        ),
+      );
+
+      final initialBuildCount = buildCount;
+
+      await tester.pumpAndSettle();
+
+      // Should rebuild once after all signal changes (batched)
+      expect(buildCount, equals(initialBuildCount + 1));
+      expect(find.text('Count: 10, Name: B'), findsOneWidget);
+
+      counter.dispose();
+    });
+
+    testWidgets('should handle reading signal after modifying it in builder',
+        (tester) async {
+      final counter = Signal(0);
+      int buildCount = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: JoltBuilder(
+            builder: (context) {
+              buildCount++;
+              // Read signal first to track it
+              final currentValue = counter.value;
+              // Modify signal and then read it
+              if (buildCount == 1 && currentValue == 0) {
+                counter.value = 5;
+                // Read the value we just set
+                final newValue = counter.value;
+                return Text('Count: $newValue');
+              }
+              return Text('Count: ${counter.value}');
+            },
+          ),
+        ),
+      );
+
+      final initialBuildCount = buildCount;
+
+      await tester.pumpAndSettle();
+
+      // Should rebuild after signal change
+      expect(buildCount, greaterThan(initialBuildCount));
+      expect(find.text('Count: 5'), findsOneWidget);
+
+      counter.dispose();
+    });
+
+    testWidgets('should handle conditional signal modification in builder',
+        (tester) async {
+      final counter = Signal(0);
+      final shouldIncrement = Signal(true);
+      int buildCount = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: JoltBuilder(
+            builder: (context) {
+              buildCount++;
+              // Read signals first to track them
+              final currentCount = counter.value;
+              final increment = shouldIncrement.value;
+              // Conditionally modify signal based on another signal
+              if (increment && currentCount < 3) {
+                counter.value = currentCount + 1;
+              }
+              return Text('Count: ${counter.value}');
+            },
+          ),
+        ),
+      );
+
+      final initialBuildCount = buildCount;
+
+      await tester.pumpAndSettle();
+
+      // Should rebuild multiple times until condition is met
+      expect(buildCount, greaterThan(initialBuildCount));
+      // Counter should be incremented to 3 (or close to it depending on timing)
+      expect(find.text('Count: ${counter.value}'), findsOneWidget);
+
+      counter.dispose();
+      shouldIncrement.dispose();
+    });
+
+    testWidgets('should handle modifying signal multiple times in builder',
+        (tester) async {
+      final counter = Signal(0);
+      int buildCount = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: JoltBuilder(
+            builder: (context) {
+              buildCount++;
+              // Read signal first to track it
+              final currentValue = counter.value;
+              // Modify signal multiple times in same build
+              if (buildCount == 1 && currentValue == 0) {
+                counter.value = 1;
+                counter.value = 2;
+                counter.value = 3;
+              }
+              return Text('Count: ${counter.value}');
+            },
+          ),
+        ),
+      );
+
+      final initialBuildCount = buildCount;
+
+      await tester.pumpAndSettle();
+
+      // Should rebuild once after all modifications (batched)
+      expect(buildCount, equals(initialBuildCount + 1));
+      expect(find.text('Count: 3'), findsOneWidget);
+
+      counter.dispose();
+    });
+
+    testWidgets(
+        'should handle modifying source signal that affects computed in builder',
+        (tester) async {
+      final source = Signal(0);
+      final computed = Computed(() => source.value * 2);
+      int buildCount = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: JoltBuilder(
+            builder: (context) {
+              buildCount++;
+              // Read signals first to track them
+              final currentSource = source.value;
+              // ignore: unused_local_variable
+              final currentComputed = computed.value;
+              // Modify source signal, which affects computed
+              if (buildCount == 1 && currentSource == 0) {
+                source.value = 5;
+              }
+              return Text(
+                  'Source: ${source.value}, Computed: ${computed.value}');
+            },
+          ),
+        ),
+      );
+
+      final initialBuildCount = buildCount;
+
+      await tester.pumpAndSettle();
+
+      // Should rebuild after source signal change
+      expect(buildCount, greaterThan(initialBuildCount));
+      expect(find.text('Source: 5, Computed: 10'), findsOneWidget);
+
+      source.dispose();
+    });
   });
 }

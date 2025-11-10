@@ -927,6 +927,77 @@ void main() {
       expect(find.text('Nested: 50'), findsOneWidget);
     });
 
+    testWidgets('should rebuild when modifying tracked signal in builder',
+        (tester) async {
+      final counter = Signal(0);
+      int buildCount = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HookBuilder(
+            builder: (context) => useJoltWidget(() {
+              buildCount++;
+              // Read signal first to track it, then modify it
+              final currentValue = counter.value;
+              if (buildCount == 1 && currentValue == 0) {
+                counter.value = 1;
+              }
+              return Text('Count: ${counter.value}',
+                  textDirection: TextDirection.ltr);
+            }),
+          ),
+        ),
+      );
+
+      final initialBuildCount = buildCount;
+
+      await tester.pumpAndSettle();
+
+      // Should have rebuilt automatically after signal change
+      expect(buildCount, greaterThan(initialBuildCount));
+      expect(find.text('Count: 1'), findsOneWidget);
+
+      counter.dispose();
+    });
+
+    testWidgets('should handle modifying multiple signals in builder',
+        (tester) async {
+      final counter = Signal(0);
+      final name = Signal('A');
+      int buildCount = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HookBuilder(
+            builder: (context) => useJoltWidget(() {
+              buildCount++;
+              // Read signals first to track them, then modify them
+              // ignore: unused_local_variable
+              final currentCount = counter.value;
+              // ignore: unused_local_variable
+              final currentName = name.value;
+              if (buildCount == 1) {
+                counter.value = 10;
+                name.value = 'B';
+              }
+              return Text('Count: ${counter.value}, Name: ${name.value}',
+                  textDirection: TextDirection.ltr);
+            }),
+          ),
+        ),
+      );
+
+      final initialBuildCount = buildCount;
+
+      await tester.pumpAndSettle();
+
+      // Should rebuild once after all signal changes (batched)
+      expect(buildCount, equals(initialBuildCount + 1));
+      expect(find.text('Count: 10, Name: B'), findsOneWidget);
+
+      counter.dispose();
+    });
+
     testWidgets('should work with ListSignal', (tester) async {
       final listSignal = Signal(ListSignal<int>([1, 2, 3]));
 

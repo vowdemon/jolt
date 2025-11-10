@@ -226,7 +226,7 @@ void flushEffects() {
   while (notifyIndex < queuedLength) {
     final effect = queued[notifyIndex]!;
     queued[notifyIndex++] = null;
-    runEffect(effect);
+    effect.runEffect();
   }
   notifyIndex = 0;
   queuedLength = 0;

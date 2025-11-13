@@ -1,9 +1,7 @@
-name: CI/CD
+name: test
 
 on:
-  workflow_dispatch:
-  push:
-    branches: ["main"]
+  pull_request:
     paths:
       - "packages/**"
 
@@ -29,22 +27,9 @@ jobs:
       - name: Upload coverage report to Codecov
         uses: codecov/codecov-action@v5
         with:
+          dry_run: true
           fail_ci_if_error: true
           files: ./coverage/combined.info
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
-  release-trigger:
-    name: Trigger release workflow
-    runs-on: ubuntu-latest
-    needs: ci
-    if: ${{ needs.ci.result == 'success' && contains(github.event.head_commit.message, 'chore(release)') }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Trigger release workflow
-        run: |
-          gh workflow run publish-tag.yml \
-          --ref main
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Dry publish packages
+        run: melos publish --dry-run
+        shell: bash

@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-11-14
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`jolt_hooks` - `v1.0.3`](#jolt_hooks---v103)
+
+---
+
+#### `jolt_hooks` - `v1.0.3`
+
+ - **FIX**(jolt_hooks): delay instance creation to avoid recreating on rebuild. ([b2121cf9](https://github.com/vowdemon/jolt/commit/b2121cf9d87ff45597efd9884c649f3ecb5303af))
+
+
 ## 2025-11-10
 
 ### Changes

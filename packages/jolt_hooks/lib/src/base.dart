@@ -21,7 +21,7 @@ class JoltHook<T, S extends JReadonlyValue<T>> extends Hook<S> {
   const JoltHook(this.jolt, {super.keys});
 
   /// The reactive value wrapped by this hook.
-  final S jolt;
+  final S Function() jolt;
 
   @override
   JoltHookState<T, S> createState() => JoltHookState();
@@ -33,7 +33,7 @@ class JoltHook<T, S extends JReadonlyValue<T>> extends Hook<S> {
 /// disposal when the hook is removed from the widget tree.
 class JoltHookState<T, S extends JReadonlyValue<T>>
     extends HookState<S, JoltHook<T, S>> {
-  late final _instance = hook.jolt;
+  late final _instance = hook.jolt();
 
   @override
   void dispose() {
@@ -70,7 +70,7 @@ class JoltEffectHook<S extends JEffect> extends Hook<S> {
   const JoltEffectHook(this.joltEffect, {super.keys});
 
   /// The effect node wrapped by this hook.
-  final S joltEffect;
+  final S Function() joltEffect;
 
   @override
   JoltEffectHookState<S> createState() => JoltEffectHookState();
@@ -82,7 +82,7 @@ class JoltEffectHook<S extends JEffect> extends Hook<S> {
 /// disposal when the hook is removed from the widget tree.
 class JoltEffectHookState<S extends JEffect>
     extends HookState<S, JoltEffectHook<S>> {
-  late final _instance = hook.joltEffect;
+  late final _instance = hook.joltEffect();
 
   @override
   void dispose() {

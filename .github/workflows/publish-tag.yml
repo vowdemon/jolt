@@ -12,39 +12,59 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/prepare
-      - uses: bluefireteam/melos-action@v3
-        with:
-          run-bootstrap: false
       - run: |
-          echo "" > .new-tags
+          : > .new-tags
 
-          melos exec -c 1 ${{ (inputs.include-private == 'true' && '--private') || '--no-private' }} -- \
+          melos exec -c 1 --no-private -- \
           bash -c '
+            set -e
+
             TAG="$MELOS_PACKAGE_NAME-v$MELOS_PACKAGE_VERSION"
+            ROOT="$MELOS_ROOT_PATH"
+
+            echo "Checking tag: $TAG"
+
+            if git ls-remote --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+              echo "Remote tag $TAG already exists — skipping"
+              exit 0
+            fi
+
 
             if git rev-parse --verify "$TAG" >/dev/null 2>&1; then
-              echo "Tag $TAG already exists — skipping tag creation"
-            else
-              echo "Creating tag $TAG"
-              git tag "$TAG"
-              echo "$TAG" >> ../../.new-tags
+              echo "Local tag $TAG already exists — skipping"
+              exit 0
             fi
+
+            echo "Creating tag $TAG"
+            git tag "$TAG"
+
+            echo "$TAG" >> "$ROOT/.new-tags"
           '
 
-          # 逐个 push 新标签
-          while IFS= read -r TAG; do
-            if [ -n "$TAG" ]; then
-              echo "Pushing new tag: $TAG"
-              git push origin "$TAG"
-            fi
-          done < .new-tags
+
+          if [ -s .new-tags ]; then
+            echo "Pushing new tags:"
+            cat .new-tags
+            while IFS= read -r TAG; do
+              [ -z "$TAG" ] && continue
+              echo "Pushing tag: $TAG"
+              git push origin "refs/tags/$TAG"
+            done < .new-tags
+          else
+            echo "No new tags to push"
+          fi
 
       - run: |
+          if [ ! -s .new-tags ]; then
+            echo "No new tags, skipping publish-release workflows"
+            exit 0
+          fi
+
           while IFS= read -r TAG; do
-            if [ -n "$TAG" ]; then
-              echo "Triggering publish-release workflow for $TAG"
-              gh workflow run publish-release.yml --ref "$TAG"
-            fi
+            [ -z "$TAG" ] && continue
+            echo "Triggering publish-release.yml for tag: $TAG"
+            gh workflow run publish-release.yml --ref "$TAG" \
+              -f tag="$TAG"
           done < .new-tags
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

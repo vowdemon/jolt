@@ -29,4 +29,4 @@ dev_dependencies:
     sdk: flutter
   jolt_flutter: ^1.1.2
 
-  flutter_lints: ^5.0.0
+  flutter_lints: any

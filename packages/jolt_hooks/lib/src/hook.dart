@@ -429,7 +429,7 @@ EffectScope useJoltEffectScope({
 ///   );
 /// }
 /// ```
-Stream<T> useJoltStream<T>(JReadonlyValue<T> value, {List<Object?>? keys}) {
+Stream<T> useJoltStream<T>(ReadonlyNode<T> value, {List<Object?>? keys}) {
   final stream = useMemoized(() => value.stream, keys ?? []);
 
   return stream;

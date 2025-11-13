@@ -1,8 +1,7 @@
-import 'package:jolt/src/core/debug.dart';
 import 'package:meta/meta.dart';
+import 'package:jolt/core.dart';
 
 import 'base.dart';
-import '../core/reactive.dart';
 
 /// A reactive signal that holds a value and notifies subscribers when it changes.
 ///
@@ -22,7 +21,9 @@ import '../core/reactive.dart';
 /// // Use in computed values
 /// final doubled = Computed(() => counter.value * 2);
 /// ```
-class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
+class SignalImpl<T> extends SignalReactiveNode<T>
+    with ReadonlyNodeMixin<T>
+    implements Signal<T> {
   /// Creates a new signal with the given initial value.
   ///
   /// Parameters:
@@ -34,13 +35,10 @@ class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
   /// final name = Signal('Alice');
   /// final counter = Signal(0);
   /// ```
-  Signal(T? value, {JoltDebugFn? onDebug})
-      : cachedValue = value,
-        super(flags: ReactiveFlags.mutable, pendingValue: value) {
+  SignalImpl(T? value, {JoltDebugFn? onDebug})
+      : super(flags: ReactiveFlags.mutable, pendingValue: value) {
     JoltDebug.create(this, onDebug);
   }
-
-  T? cachedValue;
 
   /// Returns the current value without establishing a reactive dependency.
   ///
@@ -123,9 +121,9 @@ class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
   @override
-  void set(T value) {
+  T set(T value) {
     assert(!isDisposed);
-    setSignal(this, value);
+    return setSignal(this, value);
   }
 
   /// Manually notifies all subscribers that this signal has changed.
@@ -149,8 +147,6 @@ class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
   @protected
   void onDispose() {
     disposeNode(this);
-    cachedValue = null;
-    pendingValue = null;
   }
 }
 
@@ -169,14 +165,21 @@ class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
 ///   void increment() => _count.value++;
 /// }
 /// ```
-abstract interface class ReadonlySignal<T> implements JReadonlyValue<T> {}
+abstract interface class ReadonlySignal<T>
+    implements Readonly<T>, ReadonlyNode<T> {}
 
 /// A writable interface for signals that allows modification.
 ///
 /// This interface extends ReadonlySignal to provide write access
 /// to the signal's value.
-abstract interface class WritableSignal<T>
-    implements JWritableValue<T>, ReadonlySignal<T> {}
+abstract interface class Signal<T>
+    implements
+        Writable<T>,
+        WritableNode<T>,
+        ReadonlyNode<T>,
+        ReadonlySignal<T> {
+  factory Signal(T value, {JoltDebugFn? onDebug}) = SignalImpl;
+}
 
 /// Extension methods for Signal to provide additional functionality.
 extension JoltSignalExtension<T> on Signal<T> {

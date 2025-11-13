@@ -1,4 +1,4 @@
-import '../core/reactive.dart';
+import 'package:jolt/core.dart';
 
 /// Executes a function without tracking reactive dependencies.
 ///
@@ -26,6 +26,9 @@ import '../core/reactive.dart';
 /// count.value = 1; // Triggers recomputation
 /// name.value = 'Bob'; // Does NOT trigger recomputation
 /// ```
+@pragma('vm:prefer-inline')
+@pragma('wasm:prefer-inline')
+@pragma('dart2js:prefer-inline')
 T untracked<T>(T Function() fn) {
   final prevSub = setActiveSub(null);
   try {
@@ -33,4 +36,23 @@ T untracked<T>(T Function() fn) {
   } finally {
     setActiveSub(prevSub);
   }
+}
+
+@pragma('vm:prefer-inline')
+@pragma('wasm:prefer-inline')
+@pragma('dart2js:prefer-inline')
+T trackWith<T>(T Function() fn, ReactiveNode sub) {
+  final prevSub = setActiveSub(sub);
+  try {
+    return fn();
+  } finally {
+    setActiveSub(prevSub);
+  }
+}
+
+@pragma('vm:prefer-inline')
+@pragma('wasm:prefer-inline')
+@pragma('dart2js:prefer-inline')
+T notifyAll<T>(T Function() fn) {
+  return trigger(fn);
 }

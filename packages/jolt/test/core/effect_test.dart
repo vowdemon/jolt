@@ -1,8 +1,9 @@
 import 'package:jolt/jolt.dart';
+import 'package:jolt/src/core/reactive.dart';
 import 'package:test/test.dart';
 import '../utils.dart';
 
-extension<T> on JReadonlyValue<T> {
+extension<T> on ReactiveNode {
   bool testNoSubscribers() {
     return subs == null && subsTail == null;
   }
@@ -611,8 +612,8 @@ void main() {
       scope.dispose();
 
       expect(scope.isDisposed, isTrue);
-      expect(signal.testNoSubscribers(), isTrue);
-      expect(computed.testNoSubscribers(), isTrue);
+      expect((signal as ReactiveNode).testNoSubscribers(), isTrue);
+      expect((computed as ReactiveNode).testNoSubscribers(), isTrue);
       expect(effect.isDisposed, isTrue);
       expect(values, equals([1]));
     });
@@ -1087,8 +1088,8 @@ void main() {
 
     innerScope.dispose();
     expect(innerScope.isDisposed, isTrue);
-    expect(innerSignal.testNoSubscribers(), isTrue);
-    expect(innerComputed.testNoSubscribers(), isTrue);
+    expect((innerSignal as ReactiveNode).testNoSubscribers(), isTrue);
+    expect((innerComputed as ReactiveNode).testNoSubscribers(), isTrue);
     expect(innerEffect1.isDisposed, isTrue);
     expect(innerEffect2.isDisposed, isTrue);
 
@@ -1107,8 +1108,8 @@ void main() {
 
     midScope.dispose();
     expect(midScope.isDisposed, isTrue);
-    expect(midSignal.testNoSubscribers(), isTrue);
-    expect(midComputed.testNoSubscribers(), isTrue);
+    expect((midSignal as ReactiveNode).testNoSubscribers(), isTrue);
+    expect((midComputed as ReactiveNode).testNoSubscribers(), isTrue);
     expect(midEffect.isDisposed, isTrue);
 
     expect(globalEffectValues, equals([20, 40]));
@@ -1126,8 +1127,8 @@ void main() {
 
     outerScope.dispose();
     expect(outerScope.isDisposed, isTrue);
-    expect(outerSignal.testNoSubscribers(), isTrue);
-    expect(outerComputed.testNoSubscribers(), isTrue);
+    expect((outerSignal as ReactiveNode).testNoSubscribers(), isTrue);
+    expect((outerComputed as ReactiveNode).testNoSubscribers(), isTrue);
     expect(outerEffect.isDisposed, isTrue);
 
     expect(globalEffectValues, equals([20, 40]));

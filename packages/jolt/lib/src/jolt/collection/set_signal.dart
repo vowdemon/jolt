@@ -1,5 +1,7 @@
 import 'dart:collection';
 
+import 'package:jolt/core.dart';
+
 import '../base.dart';
 import '../signal.dart';
 
@@ -9,7 +11,7 @@ import '../signal.dart';
 /// Any modification to the set will automatically notify subscribers.
 /// All mutating operations trigger change notifications.
 mixin SetSignalMixin<E>
-    implements SetBase<E>, JReadonlyValue<Set<E>>, IMutableCollection {
+    implements SetBase<E>, Readonly<Set<E>>, IMutableCollection {
   /// Returns true if the set contains the given element.
   ///
   /// This is a non-mutating query operation.
@@ -374,7 +376,9 @@ mixin SetSignalMixin<E>
 /// tags.clear();
 /// // Prints: "Tags:  (0 total)"
 /// ```
-class SetSignal<E> extends Signal<Set<E>> with SetSignalMixin<E> {
+class SetSignalImpl<E> extends SignalImpl<Set<E>>
+    with SetSignalMixin<E>
+    implements SetSignal<E> {
   /// Creates a reactive set signal with the given initial set.
   ///
   /// Parameters:
@@ -387,5 +391,10 @@ class SetSignal<E> extends Signal<Set<E>> with SetSignalMixin<E> {
   /// final tags = SetSignal({'dart', 'flutter'});
   /// final autoSet = SetSignal({'tag1', 'tag2'});
   /// ```
-  SetSignal(Set<E>? value, {super.onDebug}) : super(value ?? {});
+  SetSignalImpl(Set<E>? value, {super.onDebug}) : super(value ?? {});
+}
+
+abstract interface class SetSignal<E>
+    implements Signal<Set<E>>, SetSignalMixin<E> {
+  factory SetSignal(Set<E>? value, {JoltDebugFn? onDebug}) = SetSignalImpl<E>;
 }

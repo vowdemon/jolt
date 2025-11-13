@@ -1,11 +1,10 @@
 import 'package:meta/meta.dart';
 
-import '../core/debug.dart';
-import '../core/reactive.dart';
+import 'package:jolt/core.dart';
 
 import 'base.dart';
 import 'signal.dart';
-import 'untracked.dart';
+import 'track.dart';
 
 /// A computed value that automatically updates when its dependencies change.
 ///
@@ -23,7 +22,9 @@ import 'untracked.dart';
 /// firstName.value = 'Jane';
 /// print(fullName.value); // "Jane Doe" - automatically updated
 /// ```
-class Computed<T> extends JReadonlyValue<T> implements ReadonlySignal<T> {
+class ComputedImpl<T> extends ComputedReactiveNode<T>
+    with ReadonlyNodeMixin<T>
+    implements Computed<T> {
   /// Creates a new computed value with the given getter function.
   ///
   /// Parameters:
@@ -40,16 +41,13 @@ class Computed<T> extends JReadonlyValue<T> implements ReadonlySignal<T> {
   ///   initialValue: 0, // Avoid first computation
   /// );
   /// ```
-  Computed(
-    this.getter, {
+  ComputedImpl(
+    super.getter, {
     T? initialValue,
     JoltDebugFn? onDebug,
   }) : super(flags: ReactiveFlags.none, pendingValue: initialValue) {
     JoltDebug.create(this, onDebug);
   }
-
-  /// The function that computes the value of this computed.
-  final T Function() getter;
 
   /// Returns the current computed value without establishing a reactive dependency.
   ///
@@ -125,8 +123,11 @@ class Computed<T> extends JReadonlyValue<T> implements ReadonlySignal<T> {
   @protected
   void onDispose() {
     disposeNode(this);
-    pendingValue = null;
   }
+}
+
+abstract interface class Computed<T> implements Readonly<T>, ReadonlyNode<T> {
+  factory Computed(T Function() getter, {JoltDebugFn? onDebug}) = ComputedImpl;
 }
 
 /// A writable computed value that can be both read and written.
@@ -152,7 +153,8 @@ class Computed<T> extends JReadonlyValue<T> implements ReadonlySignal<T> {
 /// print(fullName.value); // "John Doe"
 /// fullName.value = 'Jane Smith'; // Updates firstName and lastName
 /// ```
-class WritableComputed<T> extends Computed<T> implements Signal<T> {
+class WritableComputedImpl<T> extends ComputedImpl<T>
+    implements WritableComputed<T> {
   /// Creates a new writable computed value.
   ///
   /// Parameters:
@@ -168,14 +170,11 @@ class WritableComputed<T> extends Computed<T> implements Signal<T> {
   ///   (value) => count.value = value ~/ 2,
   /// );
   /// ```
-  WritableComputed(super.getter, this.setter,
+  WritableComputedImpl(super.getter, this.setter,
       {super.initialValue, super.onDebug});
 
   /// The function called when this computed value is set.
   final void Function(T) setter;
-
-  @override
-  T? cachedValue;
 
   /// Sets a new value for this writable computed.
   ///
@@ -206,16 +205,22 @@ class WritableComputed<T> extends Computed<T> implements Signal<T> {
   /// writableComputed.set(newValue); // Calls setter(newValue)
   /// ```
   @override
-  void set(T newValue) {
+  T set(T newValue) {
     assert(!isDisposed);
     startBatch();
     try {
       setter(newValue);
-      cachedValue = newValue;
+
+      return newValue;
     } finally {
       endBatch();
     }
   }
+}
+
+abstract interface class WritableComputed<T> implements Computed<T>, Signal<T> {
+  factory WritableComputed(T Function() getter, void Function(T) setter,
+      {JoltDebugFn? onDebug}) = WritableComputedImpl<T>;
 }
 
 /// Extension methods for WritableComputed to provide additional functionality.

@@ -12,7 +12,7 @@ import 'package:jolt/jolt.dart';
 /// Type parameters:
 /// - [T]: The type of the reactive value
 /// - [S]: The specific reactive value type (extends [JReadonlyValue<T>])
-class JoltHook<T, S extends JReadonlyValue<T>> extends Hook<S> {
+class JoltHook<T, S extends ReadonlyNode<T>> extends Hook<S> {
   /// Creates a Jolt hook with the given reactive value.
   ///
   /// Parameters:
@@ -31,7 +31,7 @@ class JoltHook<T, S extends JReadonlyValue<T>> extends Hook<S> {
 ///
 /// Manages the lifecycle of the wrapped reactive value, ensuring proper
 /// disposal when the hook is removed from the widget tree.
-class JoltHookState<T, S extends JReadonlyValue<T>>
+class JoltHookState<T, S extends ReadonlyNode<T>>
     extends HookState<S, JoltHook<T, S>> {
   late final _instance = hook.jolt;
 
@@ -61,7 +61,7 @@ class JoltHookState<T, S extends JReadonlyValue<T>>
 /// Type parameters:
 /// - [T]: The type parameter for the effect
 /// - [S]: The specific effect node type (extends [JEffect])
-class JoltEffectHook<S extends JEffect> extends Hook<S> {
+class JoltEffectHook<S extends EffectBase> extends Hook<S> {
   /// Creates a Jolt effect hook with the given effect node.
   ///
   /// Parameters:
@@ -80,7 +80,7 @@ class JoltEffectHook<S extends JEffect> extends Hook<S> {
 ///
 /// Manages the lifecycle of the wrapped effect node, ensuring proper
 /// disposal when the hook is removed from the widget tree.
-class JoltEffectHookState<S extends JEffect>
+class JoltEffectHookState<S extends EffectBase>
     extends HookState<S, JoltEffectHook<S>> {
   late final _instance = hook.joltEffect;
 
@@ -157,7 +157,7 @@ class JoltWidgetHookState<T extends Widget>
 
   @override
   T build(BuildContext context) {
-    final prevSub = setActiveSub(_effect);
+    final prevSub = setActiveSub(_effect as ReactiveNode);
     try {
       return hook.builder();
     } finally {

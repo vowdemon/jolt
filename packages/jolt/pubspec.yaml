@@ -20,5 +20,5 @@ dependencies:
   shared_interfaces: ^0.0.2
 
 dev_dependencies:
-  lints: ^5.0.0
+  lints: any
   test: any

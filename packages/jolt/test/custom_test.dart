@@ -5,7 +5,7 @@ import 'package:test/test.dart';
 
 import 'utils.dart';
 
-class DebouncedSignal<T> extends Signal<T> {
+class DebouncedSignal<T> extends SignalImpl<T> {
   final Duration delay;
   Timer? _timer;
 
@@ -16,11 +16,12 @@ class DebouncedSignal<T> extends Signal<T> {
   });
 
   @override
-  void set(T value) {
+  T set(T value) {
     _timer?.cancel();
     _timer = Timer(delay, () {
       super.set(value);
     });
+    return value;
   }
 
   @override

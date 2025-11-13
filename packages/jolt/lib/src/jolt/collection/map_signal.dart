@@ -1,5 +1,7 @@
 import 'dart:collection';
 
+import 'package:jolt/core.dart';
+
 import '../base.dart';
 import '../signal.dart';
 
@@ -9,7 +11,7 @@ import '../signal.dart';
 /// Any modification to the map will automatically notify subscribers.
 /// All mutating operations trigger change notifications.
 mixin MapSignalMixin<K, V>
-    implements MapBase<K, V>, JReadonlyValue<Map<K, V>>, IMutableCollection {
+    implements MapBase<K, V>, Readonly<Map<K, V>>, IMutableCollection {
   /// Gets the value associated with the given key.
   ///
   /// Returns the value for the given key, or null if the key is not present.
@@ -210,7 +212,9 @@ mixin MapSignalMixin<K, V>
 /// userMap.clear();
 /// // Prints: "User: null, Age: null"
 /// ```
-class MapSignal<K, V> extends Signal<Map<K, V>> with MapSignalMixin<K, V> {
+class MapSignalImpl<K, V> extends SignalImpl<Map<K, V>>
+    with MapSignalMixin<K, V>
+    implements MapSignal<K, V> {
   /// Creates a reactive map signal with the given initial map.
   ///
   /// Parameters:
@@ -223,5 +227,11 @@ class MapSignal<K, V> extends Signal<Map<K, V>> with MapSignalMixin<K, V> {
   /// final userMap = MapSignal({'name': 'Alice', 'age': 30});
   /// final autoMap = MapSignal({'key': 'value'});
   /// ```
-  MapSignal(Map<K, V>? value, {super.onDebug}) : super(value ?? {});
+  MapSignalImpl(Map<K, V>? value, {super.onDebug}) : super(value ?? {});
+}
+
+abstract interface class MapSignal<K, V>
+    implements Signal<Map<K, V>>, MapSignalMixin<K, V> {
+  factory MapSignal(Map<K, V>? value, {JoltDebugFn? onDebug}) =
+      MapSignalImpl<K, V>;
 }

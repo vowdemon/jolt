@@ -1,6 +1,8 @@
 import 'dart:collection';
 import 'dart:math' show Random;
 
+import 'package:jolt/core.dart';
+
 import '../base.dart';
 import '../signal.dart';
 
@@ -9,7 +11,7 @@ import '../signal.dart';
 /// This mixin implements all List operations while maintaining reactivity.
 /// Any modification to the list will automatically notify subscribers.
 mixin ListSignalMixin<E>
-    implements ListBase<E>, JReadonlyValue<List<E>>, IMutableCollection {
+    implements ListBase<E>, Readonly<List<E>>, IMutableCollection {
   @override
   int get length => value.length;
 
@@ -344,7 +346,9 @@ mixin ListSignalMixin<E>
 /// items.removeAt(1);
 /// // Prints: "Items: orange, cherry"
 /// ```
-class ListSignal<E> extends Signal<List<E>> with ListSignalMixin<E> {
+class ListSignalImpl<E> extends SignalImpl<List<E>>
+    with ListSignalMixin<E>
+    implements ListSignal<E> {
   /// Creates a reactive list signal with the given initial list.
   ///
   /// Parameters:
@@ -357,5 +361,23 @@ class ListSignal<E> extends Signal<List<E>> with ListSignalMixin<E> {
   /// final numbers = ListSignal([1, 2, 3]);
   /// final autoList = ListSignal(['a', 'b']);
   /// ```
-  ListSignal(List<E>? value, {super.onDebug}) : super(value ?? []);
+  ListSignalImpl(List<E>? value, {super.onDebug}) : super(value ?? []);
+}
+
+abstract interface class ListSignal<E>
+    implements Signal<List<E>>, ListSignalMixin<E> {
+  /// Creates a reactive list signal with the given initial list.
+  ///
+  /// Parameters:
+  /// - [value]: Initial list content, defaults to empty list if null
+  /// - [onDebug]: Optional debug callback for reactive system debugging
+  ///
+  /// Example:
+  /// ```dart
+  /// final emptyList = ListSignal<String>(null); // Creates empty list
+  /// final numbers = ListSignal([1, 2, 3]);
+  /// final autoList = ListSignal(['a', 'b']);
+  /// ```
+  factory ListSignal(List<E>? value, {JoltDebugFn? onDebug}) =
+      ListSignalImpl<E>;
 }

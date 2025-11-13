@@ -1,66 +1,20 @@
 import 'dart:async';
 
-import 'package:jolt/src/core/debug.dart';
+import 'package:jolt/core.dart';
 import 'package:shared_interfaces/shared_interfaces.dart';
 import 'package:meta/meta.dart';
 
-import '../core/reactive.dart';
-import '../core/reactive.dart' as reactive;
-import 'untracked.dart';
-
-/// Interface for reactive nodes that can execute effect functions.
-abstract interface class EffectBase implements ReactiveNode {
-  /// Executes the effect function.
-  void effectFn();
-
-  void runEffect();
-}
+import 'base.dart';
+import 'track.dart';
 
 /// Base class for all effect nodes in the reactive system.
-abstract class JEffect extends ReactiveNode implements ChainedDisposable {
-  /// Create an effect base node.
-  ///
-  /// Parameters:
-  /// - [flags]: Reactive flags for this node
-  /// - [subs]: Subscribers list
-  /// - [subsTail]: Tail of subscribers list
-  /// - [deps]: Dependencies list
-  /// - [depsTail]: Tail of dependencies list
-  JEffect({
-    required super.flags,
-    super.subs,
-    super.subsTail,
-    super.deps,
-    super.depsTail,
-  });
 
-  /// Whether this effect has been disposed.
-  bool _isDisposed = false;
+abstract interface class EffectBase implements Disposable {}
 
-  /// List of cleanup functions to be executed when this effect is disposed or re-run.
+@protected
+mixin EffectCleanupMixin {
+  @protected
   late final List<Disposer> _cleanups = [];
-
-  /// Whether this effect has been disposed.
-  ///
-  /// Returns true if the effect has been disposed, false otherwise.
-  /// Once disposed, the effect will no longer track dependencies or execute.
-  bool get isDisposed => _isDisposed;
-
-  /// Disposes this effect and cleans up all resources.
-  ///
-  /// This method executes all registered cleanup functions and removes
-  /// the effect from the reactive system. After disposal, the effect
-  /// will no longer track dependencies or execute.
-  ///
-  /// This method is idempotent - calling it multiple times has no effect.
-  @override
-  @mustCallSuper
-  void dispose() {
-    if (_isDisposed) return;
-    _isDisposed = true;
-    doCleanup();
-    onDispose();
-  }
 
   /// Registers a cleanup function to be called when this effect is disposed or re-run.
   ///
@@ -89,27 +43,13 @@ abstract class JEffect extends ReactiveNode implements ChainedDisposable {
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
+  @protected
   void doCleanup() {
     if (_cleanups.isEmpty) return;
     for (final cleanup in _cleanups) {
       cleanup();
     }
     _cleanups.clear();
-  }
-
-  /// Called when this effect is being disposed.
-  ///
-  /// This method is called by [dispose] to perform cleanup operations.
-  /// Subclasses can override this method to add custom disposal logic,
-  /// but must call `super.onDispose()`.
-  ///
-  /// This method removes the effect from the reactive system and cleans
-  /// up its dependencies.
-  @override
-  @mustCallSuper
-  @protected
-  void onDispose() {
-    disposeNode(this);
   }
 }
 
@@ -132,7 +72,9 @@ abstract class JEffect extends ReactiveNode implements ChainedDisposable {
 /// // Later, dispose all effects in the scope
 /// scope.dispose();
 /// ```
-class EffectScope extends JEffect {
+class EffectScopeImpl extends EffectScopeReactiveNode
+    with EffectNode, EffectCleanupMixin
+    implements EffectScope {
   /// Creates a new effect scope.
   ///
   /// Parameters:
@@ -155,7 +97,7 @@ class EffectScope extends JEffect {
   ///     onScopeDispose(() => print('Scope disposed'));
   ///   });
   /// ```
-  EffectScope({bool? detach, JoltDebugFn? onDebug})
+  EffectScopeImpl({bool? detach, JoltDebugFn? onDebug})
       : super(flags: ReactiveFlags.none) {
     JoltDebug.create(this, onDebug);
     if (!(detach ?? false)) {
@@ -182,6 +124,7 @@ class EffectScope extends JEffect {
   ///   return signal.value;
   /// });
   /// ```
+  @override
   T run<T>(T Function() fn) {
     final prevSub = setActiveSub(this);
     final prevScope = setActiveScope(this);
@@ -196,6 +139,21 @@ class EffectScope extends JEffect {
       setActiveSub(prevSub);
     }
   }
+
+  @override
+  @protected
+  FutureOr<void> onDispose() {
+    doCleanup();
+    disposeNode(this);
+  }
+}
+
+abstract class EffectScope implements EffectNode, EffectBase {
+  T run<T>(T Function() fn);
+
+  void onCleanUp(Disposer fn);
+
+  factory EffectScope({bool? detach, JoltDebugFn? onDebug}) = EffectScopeImpl;
 }
 
 /// A reactive effect that automatically runs when its dependencies change.
@@ -218,7 +176,9 @@ class EffectScope extends JEffect {
 ///
 /// effect.dispose(); // Stop the effect
 /// ```
-class Effect extends JEffect implements EffectBase {
+class EffectImpl extends EffectReactiveNode
+    with EffectNode, EffectCleanupMixin
+    implements Effect {
   /// Creates a new effect with the given function.
   ///
   /// Parameters:
@@ -238,7 +198,7 @@ class Effect extends JEffect implements EffectBase {
   ///
   /// effect.run(); // Manually run the effect
   /// ```
-  Effect(this.fn, {bool immediately = true, JoltDebugFn? onDebug})
+  EffectImpl(this.fn, {bool immediately = true, JoltDebugFn? onDebug})
       : super(flags: ReactiveFlags.watching | ReactiveFlags.recursedCheck) {
     JoltDebug.create(this, onDebug);
 
@@ -275,14 +235,6 @@ class Effect extends JEffect implements EffectBase {
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
-  @override
-  void runEffect() {
-    reactive.runEffect(this);
-  }
-
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
   @protected
   void wrappedFn() => fn();
 
@@ -300,10 +252,26 @@ class Effect extends JEffect implements EffectBase {
   /// final effect = Effect(() => print('Hello'), immediately: false);
   /// effect.run(); // Prints: "Hello"
   /// ```
+  @override
   void run() {
     flags |= ReactiveFlags.dirty;
-    reactive.runEffect(this);
+    runEffect(this);
   }
+
+  @override
+  @protected
+  FutureOr<void> onDispose() {
+    doCleanup();
+    disposeNode(this);
+  }
+}
+
+abstract class Effect implements EffectNode, EffectBase {
+  factory Effect(void Function() fn, {bool immediately, JoltDebugFn? onDebug}) =
+      EffectImpl;
+
+  void run();
+  void onCleanUp(Disposer fn);
 }
 
 /// Function type for providing source values to a watcher.
@@ -336,7 +304,9 @@ typedef WhenFn<T> = bool Function(T newValue, T oldValue);
 /// count.value = 1; // Triggers watcher
 /// name.value = 'Bob'; // Triggers watcher
 /// ```
-class Watcher<T> extends JEffect implements EffectBase {
+class WatcherImpl<T> extends EffectReactiveNode
+    with EffectNode, EffectCleanupMixin
+    implements Watcher<T> {
   /// Creates a new watcher with the given sources and callback.
   ///
   /// Parameters:
@@ -356,7 +326,7 @@ class Watcher<T> extends JEffect implements EffectBase {
   ///   when: (newValue, oldValue) => newValue > oldValue, // Only when increasing
   /// );
   /// ```
-  Watcher(this.sourcesFn, this.fn,
+  WatcherImpl(this.sourcesFn, this.fn,
       {bool immediately = false, this.when, JoltDebugFn? onDebug})
       : super(flags: ReactiveFlags.watching) {
     JoltDebug.create(this, onDebug);
@@ -369,32 +339,17 @@ class Watcher<T> extends JEffect implements EffectBase {
       prevSources = sourcesFn();
       if (immediately) {
         untracked(() {
-          final prevWatcher = activeWatcher;
-          activeWatcher = this;
+          final prevWatcher = Watcher.activeWatcher;
+          Watcher.activeWatcher = this;
           fn(prevSources, null);
-          activeWatcher = prevWatcher;
+          Watcher.activeWatcher = prevWatcher;
         });
-        assert(() {
-          untracked(() {
-            getJoltDebugFn(this)?.call(DebugNodeOperationType.effect, this);
-          });
-          return true;
-        }());
+        JoltDebug.effect(this);
       }
     } finally {
       setActiveSub(prevSub);
     }
   }
-
-  /// The currently active watcher instance.
-  ///
-  /// This static field tracks the active watcher when its callback is executed
-  /// within an untracked context. This allows [onEffectCleanup] to automatically
-  /// detect the active watcher even when called within [untracked] blocks.
-  ///
-  /// This field is set before calling the watcher's callback function and
-  /// restored afterwards to maintain the previous watcher context.
-  static Watcher? activeWatcher;
 
   /// Function that provides the source values to watch.
   @protected
@@ -424,10 +379,10 @@ class Watcher<T> extends JEffect implements EffectBase {
 
     if (shouldTrigger) {
       untracked(() {
-        final prevWatcher = activeWatcher;
-        activeWatcher = this;
+        final prevWatcher = Watcher.activeWatcher;
+        Watcher.activeWatcher = this;
         fn(sources, prevSources);
-        activeWatcher = prevWatcher;
+        Watcher.activeWatcher = prevWatcher;
       });
     }
 
@@ -440,16 +395,36 @@ class Watcher<T> extends JEffect implements EffectBase {
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
   @override
-  void runEffect() {
-    reactive.runEffect(this);
-  }
-
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
   void run() {
     effectFn();
   }
+
+  @override
+  @protected
+  FutureOr<void> onDispose() {
+    doCleanup();
+    disposeNode(this);
+  }
+}
+
+abstract class Watcher<T> implements EffectNode, EffectBase {
+  factory Watcher(SourcesFn<T> sourcesFn, WatcherFn<T> fn,
+      {bool immediately,
+      WhenFn<T>? when,
+      JoltDebugFn? onDebug}) = WatcherImpl<T>;
+
+  /// The currently active watcher instance.
+  ///
+  /// This static field tracks the active watcher when its callback is executed
+  /// within an untracked context. This allows [onEffectCleanup] to automatically
+  /// detect the active watcher even when called within [untracked] blocks.
+  ///
+  /// This field is set before calling the watcher's callback function and
+  /// restored afterwards to maintain the previous watcher context.
+  static Watcher? activeWatcher;
+
+  void run();
+  void onCleanUp(Disposer fn);
 }
 
 /// Registers a cleanup function to be executed when the current effect is disposed or re-run.
@@ -472,14 +447,15 @@ class Watcher<T> extends JEffect implements EffectBase {
 @pragma('vm:prefer-inline')
 @pragma('wasm:prefer-inline')
 @pragma('dart2js:prefer-inline')
-void onEffectCleanup(Disposer fn, {JEffect? owner}) {
+void onEffectCleanup(Disposer fn, {EffectCleanupMixin? owner}) {
   assert(
       owner != null ||
-          getActiveSub() is JEffect ||
+          getActiveSub() is EffectCleanupMixin ||
           Watcher.activeWatcher != null,
       'onCleanup can only be used within an effect');
 
-  (owner ?? Watcher.activeWatcher ?? getActiveSub()! as JEffect).onCleanUp(fn);
+  ((owner ?? Watcher.activeWatcher ?? getActiveSub()!) as EffectCleanupMixin)
+      .onCleanUp(fn);
 }
 
 /// Registers a cleanup function to be executed when the current effect scope is disposed.
@@ -507,5 +483,5 @@ void onScopeDispose(Disposer fn, {EffectScope? owner}) {
   assert(owner != null || getActiveScope() != null,
       'onScopeDispose can only be used within an effect scope');
 
-  (owner ?? getActiveScope()!).onCleanUp(fn);
+  ((owner ?? getActiveScope()!) as EffectCleanupMixin).onCleanUp(fn);
 }

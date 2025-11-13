@@ -1,6 +1,6 @@
 part of 'value_notifier.dart';
 
-extension JoltValueListenableExtension<T> on jolt.JReadonlyValue<T> {
+extension JoltValueListenableExtension<T> on Readonly<T> {
   /// Converts this Jolt value to a Flutter ValueListenable.
   ///
   /// Returns a cached instance that stays synchronized with this Jolt value.
@@ -56,7 +56,7 @@ extension JoltFlutterListenableExtension<T> on ValueListenable<T> {
   }
 }
 
-class _ValueListenableSignal<T> extends jolt.Signal<T> {
+class _ValueListenableSignal<T> extends SignalImpl<T> {
   _ValueListenableSignal(ValueListenable<T> listenable, {super.onDebug})
       : super(listenable.value) {
     _listener = () {
@@ -76,7 +76,7 @@ class _ValueListenableSignal<T> extends jolt.Signal<T> {
   late VoidCallback _listener;
 
   @override
-  void set(T value) {
+  T set(T value) {
     throw UnimplementedError();
   }
 }

@@ -55,7 +55,7 @@ abstract final class JFinalizer {
   /// ```
   static Disposer attachToJoltAttachments(Object target, Disposer disposer) {
     assert(
-        (target is JReadonlyValue || target is JEffect)
+        (target is ReadonlyNode || target is EffectNode)
             ? !((target as dynamic).isDisposed)
             : true,
         'Jolt value is disposed');
@@ -244,6 +244,6 @@ class StreamHolder<T> implements Disposable {
 /// ```
 @internal
 @visibleForTesting
-StreamHolder<T>? getStreamHolder<T>(JReadonlyValue<T> value) {
+StreamHolder<T>? getStreamHolder<T>(ReadonlyNode<T> value) {
   return streamHolders[value] as StreamHolder<T>?;
 }

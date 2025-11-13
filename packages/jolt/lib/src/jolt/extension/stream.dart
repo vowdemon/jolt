@@ -1,10 +1,12 @@
 import 'dart:async';
 
-import 'package:jolt/jolt.dart';
-import 'package:jolt/src/jolt/shared.dart';
+import '../base.dart';
+import '../effect.dart';
+import '../shared.dart';
+import '../track.dart';
 
 /// Extension methods for converting reactive values to streams.
-extension JoltStreamValueExtension<T> on JReadonlyValue<T> {
+extension JoltStreamValueExtension<T> on ReadonlyNode<T> {
   /// Converts this reactive value to a broadcast stream.
   ///
   /// The stream emits the current value whenever the reactive value changes.

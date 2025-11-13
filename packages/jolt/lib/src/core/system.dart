@@ -257,6 +257,7 @@ Link? unlink(Link link, [ReactiveNode? sub]) {
 ///
 /// Parameters:
 /// - [theLink]: The link to start propagation from
+
 void propagate(Link theLink) {
   Link? link = theLink;
   Link? next = link.nextSub;
@@ -288,7 +289,7 @@ void propagate(Link theLink) {
     }
 
     if (flags & (ReactiveFlags.watching) != 0) {
-      notifyEffect(sub as JEffect);
+      notifyEffect(sub);
     }
 
     if (flags & (ReactiveFlags.mutable) != 0) {
@@ -328,6 +329,7 @@ void propagate(Link theLink) {
 /// - [sub]: The subscriber node
 ///
 /// Returns: true if the node is dirty and needs updating
+
 bool checkDirty(Link theLink, ReactiveNode sub) {
   Link? link = theLink;
   Stack<Link?>? stack;
@@ -406,6 +408,7 @@ bool checkDirty(Link theLink, ReactiveNode sub) {
 ///
 /// Parameters:
 /// - [theLink]: The link to start shallow propagation from
+
 void shallowPropagate(Link theLink) {
   Link? link = theLink;
   do {
@@ -416,7 +419,7 @@ void shallowPropagate(Link theLink) {
       sub.flags = flags | (ReactiveFlags.dirty);
       if (flags & (ReactiveFlags.watching | ReactiveFlags.recursedCheck) ==
           ReactiveFlags.watching) {
-        notifyEffect(sub as JEffect);
+        notifyEffect(sub);
       }
     }
   } while ((link = link.nextSub) != null);

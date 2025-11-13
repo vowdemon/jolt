@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import '../core/reactive.dart';
+import 'package:jolt/core.dart';
 
 /// Batches multiple reactive updates into a single notification cycle.
 ///

@@ -273,7 +273,7 @@ class JoltProviderElement<T> extends ComponentElement {
     final store = _store as T;
     late Widget child;
 
-    final prevSub = reactive.setActiveSub(_effect);
+    final prevSub = reactive.setActiveSub(_effect as reactive.ReactiveNode);
     try {
       child = widget.builder(this, store);
     } finally {

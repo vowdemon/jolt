@@ -14,7 +14,7 @@ import 'shared.dart';
 /// SurgeStateCreator<int> creator = (state) => Signal(state);
 /// final value = creator(42); // Creates a Signal(42)
 /// ```
-typedef SurgeStateCreator<T> = JWritableValue<T> Function(T state);
+typedef SurgeStateCreator<T> = WritableNode<T> Function(T state);
 
 Signal<T> _defaultSignalCreator<T>(T state) => Signal(state);
 
@@ -67,7 +67,7 @@ abstract class Surge<State> implements ChainedDisposable {
   }
 
   /// The internal reactive value that manages the state.
-  final JWritableValue<State> _state;
+  final WritableNode<State> _state;
 
   /// Whether this surge has been disposed.
   bool _isDisposed = false;
@@ -103,7 +103,7 @@ abstract class Surge<State> implements ChainedDisposable {
   /// final rawValue = surge.raw;
   /// rawValue.value = 43; // Directly set the value
   /// ```
-  JWritableValue<State> get raw => _state;
+  WritableNode<State> get raw => _state;
 
   /// Gets a stream that emits state changes.
   ///

@@ -1,3 +1,4 @@
+import 'package:jolt/src/core/reactive.dart';
 import 'package:shared_interfaces/shared_interfaces.dart';
 import 'package:jolt/jolt.dart';
 import 'package:jolt/src/core/reactive.dart' as reactive;
@@ -10,9 +11,9 @@ T Function([T? value, bool write]) signal<T>(T initialValue) {
   );
   return ([T? value, bool write = false]) {
     if (write) {
-      return reactive.setSignal(s, value as T);
+      return reactive.setSignal(s as SignalReactiveNode<T>, value as T);
     } else {
-      return reactive.getSignal(s);
+      return reactive.getSignal(s as SignalReactiveNode<T>);
     }
   };
 }
@@ -23,7 +24,7 @@ T Function() computed<T>(T Function() getter) {
     getter,
   );
 
-  return () => reactive.getComputed(c);
+  return () => reactive.getComputed(c as ComputedReactiveNode<T>);
 }
 
 /// Create a reactive effect that runs when dependencies change

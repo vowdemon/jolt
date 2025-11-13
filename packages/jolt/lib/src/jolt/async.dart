@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:jolt/core.dart';
 import 'package:shared_interfaces/shared_interfaces.dart';
 
 import 'signal.dart';
@@ -251,13 +252,14 @@ class StreamSource<T> extends AsyncSource<T> {
 ///   if (state.isError) print('Error: ${state.error}');
 /// });
 /// ```
-class AsyncSignal<T> extends Signal<AsyncState<T>> {
+class AsyncSignalImpl<T> extends SignalImpl<AsyncState<T>>
+    implements AsyncSignal<T> {
   /// Creates an async signal with the given source.
   ///
   /// Parameters:
   /// - [source]: The async source to manage
   /// - [initialValue]: Optional initial async state
-  AsyncSignal({
+  AsyncSignalImpl({
     AsyncSource<T>? source,
     AsyncState<T>? initialValue,
     super.onDebug,
@@ -267,6 +269,7 @@ class AsyncSignal<T> extends Signal<AsyncState<T>> {
     }
   }
 
+  @override
   T? get data => value.data;
 
   Disposer? _sourceDisposer;
@@ -292,6 +295,16 @@ class AsyncSignal<T> extends Signal<AsyncState<T>> {
       }
     }
   }
+}
+
+abstract interface class AsyncSignal<T> implements Signal<AsyncState<T>> {
+  factory AsyncSignal({
+    AsyncSource<T>? source,
+    AsyncState<T>? initialValue,
+    JoltDebugFn? onDebug,
+  }) = AsyncSignalImpl<T>;
+
+  T? get data;
 
   /// Creates an async signal from a Future.
   ///
@@ -306,8 +319,8 @@ class AsyncSignal<T> extends Signal<AsyncState<T>> {
   ///   Future.delayed(Duration(seconds: 1), () => 'Hello')
   /// );
   /// ```
-  factory AsyncSignal.fromFuture(Future<T> future) {
-    return AsyncSignal(source: FutureSource(future));
+  factory AsyncSignal.fromFuture(Future<T> future, {JoltDebugFn? onDebug}) {
+    return AsyncSignalImpl(source: FutureSource(future), onDebug: onDebug);
   }
 
   /// Creates an async signal from a Stream.
@@ -323,7 +336,7 @@ class AsyncSignal<T> extends Signal<AsyncState<T>> {
   ///   Stream.periodic(Duration(seconds: 1), (i) => i)
   /// );
   /// ```
-  factory AsyncSignal.fromStream(Stream<T> stream) {
-    return AsyncSignal(source: StreamSource(stream));
+  factory AsyncSignal.fromStream(Stream<T> stream, {JoltDebugFn? onDebug}) {
+    return AsyncSignalImpl(source: StreamSource(stream), onDebug: onDebug);
   }
 }

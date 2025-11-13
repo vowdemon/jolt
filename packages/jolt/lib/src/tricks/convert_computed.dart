@@ -19,7 +19,8 @@ import 'package:jolt/jolt.dart';
 /// print(textCount.value); // "0"
 /// textCount.value = "42"; // Updates count to 42
 /// ```
-class ConvertComputed<T, U> extends WritableComputed<T> {
+class ConvertComputedImpl<T, U> extends WritableComputedImpl<T>
+    implements ConvertComputed<T, U> {
   /// Creates a type-converting computed signal.
   ///
   /// Parameters:
@@ -28,7 +29,7 @@ class ConvertComputed<T, U> extends WritableComputed<T> {
   /// - [encode]: Function to convert from target type to source type
   /// - [initialValue]: Optional initial value for the computed
   /// - [onDebug]: Optional debug callback
-  ConvertComputed(this.source,
+  ConvertComputedImpl(this.source,
       {required this.decode,
       required this.encode,
       super.initialValue,
@@ -46,4 +47,11 @@ class ConvertComputed<T, U> extends WritableComputed<T> {
 
   /// Function to convert from target type to source type.
   final U Function(T value) encode;
+}
+
+abstract interface class ConvertComputed<T, U> implements WritableComputed<T> {
+  factory ConvertComputed(Signal<U> source,
+      {required T Function(U value) decode,
+      required U Function(T value) encode,
+      JoltDebugFn? onDebug}) = ConvertComputedImpl<T, U>;
 }

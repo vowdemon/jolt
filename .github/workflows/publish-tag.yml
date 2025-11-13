@@ -31,7 +31,14 @@ jobs:
             fi
           '
 
-          git push --tags
+          # 逐个 push 新标签
+          while IFS= read -r TAG; do
+            if [ -n "$TAG" ]; then
+              echo "Pushing new tag: $TAG"
+              git push origin "$TAG"
+            fi
+          done < .new-tags
+
       - run: |
           while IFS= read -r TAG; do
             if [ -n "$TAG" ]; then

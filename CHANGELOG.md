@@ -15,6 +15,27 @@ Packages with breaking changes:
 
 Packages with other changes:
 
+ - [`jolt_flutter` - `v1.1.3`](#jolt_flutter---v113)
+
+---
+
+#### `jolt_flutter` - `v1.1.3`
+
+ - **FIX**: prevent rebuild on disposed widgets, extract shared effect builder. ([6cc45681](https://github.com/vowdemon/jolt/commit/6cc456818593360581201f45fe912d8302e0eaf3))
+
+
+## 2025-11-14
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
  - [`jolt_hooks` - `v1.0.3`](#jolt_hooks---v103)
 
 ---

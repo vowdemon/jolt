@@ -1,3 +1,7 @@
+## 1.1.3
+
+ - **FIX**: prevent rebuild on disposed widgets, extract shared effect builder. ([6cc45681](https://github.com/vowdemon/jolt/commit/6cc456818593360581201f45fe912d8302e0eaf3))
+
 ## 1.1.2
 
  - Update a dependency to the latest release.

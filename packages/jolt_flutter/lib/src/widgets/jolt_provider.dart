@@ -1,9 +1,9 @@
-import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:jolt/core.dart' as reactive;
 import 'package:jolt/jolt.dart' as jolt;
 import 'package:shared_interfaces/shared_interfaces.dart';
 
+import '../shared.dart';
 import 'jolt_state.dart';
 
 /// A widget that provides reactive resource management with lifecycle callbacks.
@@ -197,7 +197,8 @@ class JoltProvider<T> extends Widget {
 ///
 /// This element handles resource creation, lifecycle callbacks, and provides
 /// the resource to descendant widgets via [InheritedWidget].
-class JoltProviderElement<T> extends ComponentElement {
+class JoltProviderElement<T> extends ComponentElement
+    with JoltCommonEffectBuilder {
   JoltProviderElement(JoltProvider<T> super.widget);
 
   @override
@@ -214,27 +215,26 @@ class JoltProviderElement<T> extends ComponentElement {
       ..run(() {
         // Use create function if provided, otherwise use value
         _store = widget.create?.call(this) ?? widget.value;
-        _effect = jolt.Effect(() {
-          if (SchedulerBinding.instance.schedulerPhase != SchedulerPhase.idle) {
-            SchedulerBinding.instance.endOfFrame.then((_) {
-              if (dirty) return;
-              markNeedsBuild();
-            });
-          } else {
-            if (dirty) return;
-            markNeedsBuild();
-          }
-        });
+        _effect = jolt.Effect(joltBuildTriggerEffect, immediately: false);
       });
 
     super.mount(parent, newSlot);
+  }
 
-    // Only call onMount for resources created via create function
-    if (_store is JoltState && widget.create != null) {
-      _scope!.run(() {
-        (_store as JoltState).onMount(this);
-      });
+  bool _isFirstBuild = true;
+
+  @override
+  void performRebuild() {
+    if (_isFirstBuild) {
+      _isFirstBuild = false;
+      if (_store is JoltState && widget.create != null) {
+        _scope!.run(() {
+          (_store as JoltState).onMount(this);
+        });
+      }
     }
+
+    super.performRebuild();
   }
 
   @override

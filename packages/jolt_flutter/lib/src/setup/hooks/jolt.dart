@@ -5,61 +5,60 @@ import 'package:jolt/tricks.dart';
 import 'package:jolt_flutter/src/setup/widget.dart';
 
 Signal<T> useSignal<T>(T value, {JoltDebugFn? onDebug}) {
-  return HookUtils.use(() => Signal(value, onDebug: onDebug));
+  return useHook(() => Signal(value, onDebug: onDebug));
 }
 
 Computed<T> useComputed<T>(T Function() getter, {JoltDebugFn? onDebug}) {
-  return HookUtils.use(() => Computed(getter, onDebug: onDebug));
+  return useHook(() => Computed(getter, onDebug: onDebug));
 }
 
 WritableComputed<T> useWritableComputed<T>(
     T Function() getter, void Function(T) setter,
     {JoltDebugFn? onDebug}) {
-  return HookUtils.use(
-      () => WritableComputed(getter, setter, onDebug: onDebug));
+  return useHook(() => WritableComputed(getter, setter, onDebug: onDebug));
 }
 
 Effect useJoltEffect(void Function() effect,
     {bool immediately = true, JoltDebugFn? onDebug}) {
-  return HookUtils.use(
+  return useHook(
       () => Effect(effect, immediately: immediately, onDebug: onDebug));
 }
 
 Watcher useJoltWatcher<T>(SourcesFn<T> sourcesFn, WatcherFn<T> fn,
     {WhenFn<T>? when, bool immediately = false, JoltDebugFn? onDebug}) {
-  return HookUtils.use(() => Watcher<T>(sourcesFn, fn,
+  return useHook(() => Watcher<T>(sourcesFn, fn,
       when: when, immediately: immediately, onDebug: onDebug));
 }
 
 EffectScope useJoltEffectScope({bool? detach, JoltDebugFn? onDebug}) {
-  return HookUtils.use(() => EffectScope(detach: detach, onDebug: onDebug));
+  return useHook(() => EffectScope(detach: detach, onDebug: onDebug));
 }
 
 ListSignal<T> useListSignal<T>(List<T>? value, {JoltDebugFn? onDebug}) {
-  return HookUtils.use(() => ListSignal(value, onDebug: onDebug));
+  return useHook(() => ListSignal(value, onDebug: onDebug));
 }
 
 MapSignal<K, V> useMapSignal<K, V>(Map<K, V>? value, {JoltDebugFn? onDebug}) {
-  return HookUtils.use(() => MapSignal(value, onDebug: onDebug));
+  return useHook(() => MapSignal(value, onDebug: onDebug));
 }
 
 SetSignal<T> useSetSignal<T>(Set<T>? value, {JoltDebugFn? onDebug}) {
-  return HookUtils.use(() => SetSignal(value, onDebug: onDebug));
+  return useHook(() => SetSignal(value, onDebug: onDebug));
 }
 
 IterableSignal<T> useIterableSignal<T>(Iterable<T> Function() getter,
     {JoltDebugFn? onDebug}) {
-  return HookUtils.use(() => IterableSignal<T>(getter, onDebug: onDebug));
+  return useHook(() => IterableSignal<T>(getter, onDebug: onDebug));
 }
 
 Stream<T> useJoltStream<T>(ReadonlyNode<T> node, {JoltDebugFn? onDebug}) {
-  return HookUtils.use(() => node.stream);
+  return useHook(() => node.stream);
 }
 
 ConvertComputed<T, U> useConvertComputed<T, U>(
     Signal<U> source, T Function(U value) decode, U Function(T value) encode,
     {JoltDebugFn? onDebug}) {
-  return HookUtils.use(() => ConvertComputed<T, U>(source,
+  return useHook(() => ConvertComputed<T, U>(source,
       decode: decode, encode: encode, onDebug: onDebug));
 }
 
@@ -68,7 +67,7 @@ PersistSignal<T> usePersistSignal<T>(T Function() initialValue,
     {bool lazy = false,
     Duration writeDelay = Duration.zero,
     JoltDebugFn? onDebug}) {
-  return HookUtils.use(() => PersistSignal(
+  return useHook(() => PersistSignal(
       initialValue: initialValue,
       read: read,
       write: write,

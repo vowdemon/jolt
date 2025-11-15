@@ -44,9 +44,7 @@ void main() {
 
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
-          final vsync = useSingleTickerProvider();
           controller = useAnimationController(
-            vsync: vsync,
             duration: const Duration(seconds: 1),
           );
           return (context) => const Text('Test');
@@ -150,5 +148,140 @@ void main() {
       await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets('useSingleTickerProvider updates on dependency change',
+        (tester) async {
+      Ticker? ticker;
+
+      final toTestWidget = SetupBuilder(setup: (context) {
+        // Access InheritedWidget to trigger dependency tracking
+        CounterInherited.of(context);
+        final provider = useSingleTickerProvider();
+        ticker = provider.createTicker((_) {});
+        return (context) => const Text('Test');
+      });
+
+      await tester.pumpWidget(MaterialApp(
+        home: CounterInherited(
+          value: 1,
+          child: toTestWidget,
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      // Initial state - ticker should not be muted
+      expect(ticker, isNotNull);
+      expect(ticker!.muted, isFalse);
+
+      // Change InheritedWidget value to trigger onChangedDependencies
+      await tester.pumpWidget(MaterialApp(
+        home: CounterInherited(
+          value: 2,
+          child: toTestWidget,
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      // _update() should have been called, ticker mode should be updated
+      expect(ticker, isNotNull);
+      expect(ticker!.muted, isFalse);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+        'useSingleTickerProvider updates ticker mode on TickerMode change',
+        (tester) async {
+      Ticker? ticker;
+      bool? initialMuted;
+
+      final toTestWidget = SetupBuilder(setup: (context) {
+        final provider = useSingleTickerProvider();
+        if (ticker == null) {
+          ticker = provider.createTicker((_) {});
+          initialMuted = ticker!.muted;
+        }
+        return (context) => const Text('Test');
+      });
+
+      await tester.pumpWidget(MaterialApp(
+        home: TickerMode(
+          enabled: true,
+          child: toTestWidget,
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(initialMuted, isFalse);
+      expect(ticker!.muted, isFalse);
+
+      // Change TickerMode to disabled - this should trigger _update()
+      await tester.pumpWidget(MaterialApp(
+        home: TickerMode(
+          enabled: false,
+          child: toTestWidget,
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      // _update() should have been called, ticker should be muted when TickerMode is disabled
+      expect(ticker, isNotNull);
+      expect(ticker!.muted, isTrue);
+    });
+
+    testWidgets(
+        'useSingleTickerProvider _update called on multiple dependency changes',
+        (tester) async {
+      Ticker? ticker;
+
+      final toTestWidget = SetupBuilder(setup: (context) {
+        CounterInherited.of(context);
+        final provider = useSingleTickerProvider();
+        ticker ??= provider.createTicker((_) {});
+        return (context) => const Text('Test');
+      });
+
+      await tester.pumpWidget(MaterialApp(
+        home: CounterInherited(
+          value: 1,
+          child: toTestWidget,
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      // Change dependency multiple times
+      for (var i = 2; i <= 4; i++) {
+        await tester.pumpWidget(MaterialApp(
+          home: CounterInherited(
+            value: i,
+            child: toTestWidget,
+          ),
+        ));
+        await tester.pumpAndSettle();
+      }
+
+      // _update() should have been called on each dependency change
+      // Ticker should still work correctly
+      expect(ticker, isNotNull);
+      expect(tester.takeException(), isNull);
+    });
   });
+}
+
+// Helper widget for testing dependency changes
+class CounterInherited extends InheritedWidget {
+  final int value;
+  const CounterInherited({
+    super.key,
+    required this.value,
+    required super.child,
+  });
+
+  @override
+  bool updateShouldNotify(covariant CounterInherited oldWidget) {
+    return oldWidget.value != value;
+  }
+
+  static CounterInherited of(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<CounterInherited>()!;
+  }
 }

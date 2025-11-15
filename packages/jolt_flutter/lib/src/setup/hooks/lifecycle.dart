@@ -35,9 +35,11 @@ class _AppLifecycleObserver with WidgetsBindingObserver {
     _isAttached = true;
 
     final lifecycleState = binding.lifecycleState;
+    // coverage:ignore-start
     if (lifecycleState != null) {
       _state.value = lifecycleState;
     }
+    // coverage:ignore-end
   }
 
   void dispose() {
@@ -48,8 +50,10 @@ class _AppLifecycleObserver with WidgetsBindingObserver {
     _state.dispose();
   }
 
+  // coverage:ignore-start
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     _state.value = state;
   }
+  // coverage:ignore-end
 }

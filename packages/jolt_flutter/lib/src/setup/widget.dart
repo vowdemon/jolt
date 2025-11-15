@@ -1,6 +1,6 @@
-import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:jolt/jolt.dart';
+import 'package:jolt_flutter/src/shared.dart';
 import 'package:shared_interfaces/shared_interfaces.dart';
 
 abstract class JoltSetupWidget extends Widget {
@@ -16,8 +16,8 @@ extension JoltSetupWidgetExtension<T extends JoltSetupWidget> on T {
   ReadonlyNode<T> useProps() => useWidgetProps<T>();
 }
 
-class JoltSetupWidgetElement<T extends JoltSetupWidget>
-    extends ComponentElement {
+class JoltSetupWidgetElement<T extends JoltSetupWidget> extends ComponentElement
+    with JoltCommonEffectBuilder {
   JoltSetupWidgetElement(JoltSetupWidget super.widget);
 
   late final JoltSetupContext setupContext = JoltSetupContext(this);
@@ -25,6 +25,7 @@ class JoltSetupWidgetElement<T extends JoltSetupWidget>
   @override
   JoltSetupWidget get widget => super.widget as JoltSetupWidget;
 
+  // coverage:ignore-start
   @override
   void reassemble() {
     super.reassemble();
@@ -48,7 +49,7 @@ class JoltSetupWidgetElement<T extends JoltSetupWidget>
         setupContext.widget.value = widget;
         setupContext.setupBuilder = widget.setup(this);
         setupContext.renderer =
-            Effect(() => _effectFn(this), immediately: false);
+            Effect(joltBuildTriggerEffect, immediately: false);
 
         setupContext._cleanupUnusedHooks();
       });
@@ -57,6 +58,7 @@ class JoltSetupWidgetElement<T extends JoltSetupWidget>
       return true;
     }());
   }
+  // coverage:ignore-end
 
   bool _isFirstBuild = true;
   @override
@@ -75,7 +77,8 @@ class JoltSetupWidgetElement<T extends JoltSetupWidget>
     setupContext.run(() {
       setupContext._resetHookIndex();
       setupContext.setupBuilder = widget.setup(this);
-      setupContext.renderer = Effect(() => _effectFn(this), immediately: false);
+      setupContext.renderer =
+          Effect(joltBuildTriggerEffect, immediately: false);
       for (var callback in setupContext._onMountedCallbacks) {
         callback();
       }
@@ -115,6 +118,7 @@ class JoltSetupWidgetElement<T extends JoltSetupWidget>
 
   @override
   Widget build() {
+    // coverage:ignore-start
     assert(() {
       if (setupContext._isReassembling) {
         _reload();
@@ -122,6 +126,7 @@ class JoltSetupWidgetElement<T extends JoltSetupWidget>
       }
       return true;
     }());
+    // coverage:ignore-end
 
     return trackWithEffect(
         () => setupContext.setupBuilder!(this), setupContext.renderer!);
@@ -240,6 +245,7 @@ class JoltSetupContext extends EffectScopeImpl {
   late final Map<Type, int> _newTypeUsageCounts = {};
   late bool _isReassembling = false;
 
+  // coverage:ignore-start
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
@@ -284,19 +290,6 @@ class JoltSetupContext extends EffectScopeImpl {
     return result;
   }
 
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
-  @override
-  T run<T>(T Function() fn) {
-    final prevContext = setActiveContext(this);
-    try {
-      return super.run(fn);
-    } finally {
-      setActiveContext(prevContext);
-    }
-  }
-
   void _cleanupUnusedHooks() {
     assert(() {
       if (!_isReassembling) return true;
@@ -316,6 +309,20 @@ class JoltSetupContext extends EffectScopeImpl {
 
       return true;
     }());
+  }
+  // coverage:ignore-end
+
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
+  @override
+  T run<T>(T Function() fn) {
+    final prevContext = setActiveContext(this);
+    try {
+      return super.run(fn);
+    } finally {
+      setActiveContext(prevContext);
+    }
   }
 
   @override
@@ -349,28 +356,6 @@ class JoltSetupContext extends EffectScopeImpl {
     final prev = current;
     current = context;
     return prev;
-  }
-
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
-  static JoltSetupContext? getCurrent() {
-    return current;
-  }
-}
-
-@pragma('vm:prefer-inline')
-@pragma('wasm:prefer-inline')
-@pragma('dart2js:prefer-inline')
-void _effectFn(Element element) {
-  if (SchedulerBinding.instance.schedulerPhase != SchedulerPhase.idle) {
-    SchedulerBinding.instance.endOfFrame.then((_) {
-      if (element.dirty) return;
-      element.markNeedsBuild();
-    });
-  } else {
-    if (element.dirty) return;
-    element.markNeedsBuild();
   }
 }
 

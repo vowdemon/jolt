@@ -92,6 +92,37 @@ void main() {
         expect(count, equals(0));
         expect(JFinalizer.getJoltAttachments(signal), isEmpty);
       });
+
+      test("should work with effect nodes", () {
+        final effectNode = _TestEffectNode();
+        var count = 0;
+
+        JFinalizer.attachToJoltAttachments(effectNode, () {
+          count++;
+        });
+
+        expect(count, equals(0));
+        expect(effectNode.isDisposed, isFalse);
+
+        effectNode.dispose();
+
+        expect(count, equals(1));
+        expect(effectNode.isDisposed, isTrue);
+      });
     });
   });
+}
+
+class _TestEffectNode with EffectNode {
+  _TestEffectNode() : super();
+
+  @override
+  bool get isDisposed => _disposed;
+
+  bool _disposed = false;
+
+  @override
+  void onDispose() {
+    _disposed = true;
+  }
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/widgets.dart';
-import 'package:jolt/jolt.dart';
-
-import '../widget.dart';
+import 'package:jolt_flutter/jolt_flutter.dart';
+import 'package:jolt_flutter/setup.dart';
 
 /// Listens to application lifecycle state changes
 ///

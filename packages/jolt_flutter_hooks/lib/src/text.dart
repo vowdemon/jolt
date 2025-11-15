@@ -1,6 +1,5 @@
 import 'package:flutter/widgets.dart';
-
-import '../widget.dart';
+import 'package:jolt_flutter/setup.dart';
 
 /// Creates a text editing controller
 ///

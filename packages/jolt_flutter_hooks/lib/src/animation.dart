@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
-import '../widget.dart';
+import 'package:jolt_flutter/setup.dart';
 
 /// Creates a single ticker provider
 ///

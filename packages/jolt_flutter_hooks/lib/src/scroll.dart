@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../widget.dart';
+import 'package:jolt_flutter/setup.dart';
 import 'animation.dart';
 
 /// Creates a scroll controller

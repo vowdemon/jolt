@@ -11,6 +11,7 @@ workspace:
   - packages/jolt_flutter
   - packages/jolt_hooks
   - packages/jolt_surge
+  - packages/jolt_flutter_hooks
   - packages/jolt_hooks/example
   - packages/jolt_surge/example
 
@@ -56,3 +57,5 @@ melos:
         melos run test:select --no-select
         melos run coverage:combine
       description: Run all Flutter tests in this project.
+    update:version:
+      run: melos version --no-published --no-private --no-git-commit-version

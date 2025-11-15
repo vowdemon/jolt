@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jolt_flutter/setup.dart';
+import 'package:jolt_flutter_hooks/jolt_flutter_hooks.dart';
 
 void main() {
   group('Scroll Hooks', () {
@@ -247,7 +248,8 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('useFixedExtentScrollController creates controller', (tester) async {
+    testWidgets('useFixedExtentScrollController creates controller',
+        (tester) async {
       FixedExtentScrollController? controller;
 
       await tester.pumpWidget(MaterialApp(
@@ -271,7 +273,8 @@ void main() {
       expect(controller!.initialItem, 0);
     });
 
-    testWidgets('useFixedExtentScrollController with initial item', (tester) async {
+    testWidgets('useFixedExtentScrollController with initial item',
+        (tester) async {
       FixedExtentScrollController? controller;
 
       await tester.pumpWidget(MaterialApp(
@@ -295,7 +298,8 @@ void main() {
       expect(controller!.initialItem, 3);
     });
 
-    testWidgets('useFixedExtentScrollController can jump to item', (tester) async {
+    testWidgets('useFixedExtentScrollController can jump to item',
+        (tester) async {
       FixedExtentScrollController? controller;
 
       await tester.pumpWidget(MaterialApp(

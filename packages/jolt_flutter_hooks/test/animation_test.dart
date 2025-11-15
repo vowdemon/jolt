@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jolt_flutter/setup.dart';
+import 'package:jolt_flutter_hooks/jolt_flutter_hooks.dart';
 
 void main() {
   group('Animation Hooks', () {

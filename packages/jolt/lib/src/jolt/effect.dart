@@ -9,8 +9,6 @@ import 'track.dart';
 
 /// Base class for all effect nodes in the reactive system.
 
-abstract interface class EffectBase implements Disposable {}
-
 @protected
 mixin EffectCleanupMixin {
   @protected
@@ -148,7 +146,7 @@ class EffectScopeImpl extends EffectScopeReactiveNode
   }
 }
 
-abstract class EffectScope implements EffectNode, EffectBase {
+abstract class EffectScope implements EffectNode {
   T run<T>(T Function() fn);
 
   void onCleanUp(Disposer fn);
@@ -266,7 +264,7 @@ class EffectImpl extends EffectReactiveNode
   }
 }
 
-abstract class Effect implements EffectNode, EffectBase {
+abstract class Effect implements EffectNode {
   factory Effect(void Function() fn, {bool immediately, JoltDebugFn? onDebug}) =
       EffectImpl;
 
@@ -407,7 +405,7 @@ class WatcherImpl<T> extends EffectReactiveNode
   }
 }
 
-abstract class Watcher<T> implements EffectNode, EffectBase {
+abstract class Watcher<T> implements EffectNode {
   factory Watcher(SourcesFn<T> sourcesFn, WatcherFn<T> fn,
       {bool immediately,
       WhenFn<T>? when,

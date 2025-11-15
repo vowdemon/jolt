@@ -1,4 +1,5 @@
 import 'package:jolt/core.dart';
+import 'package:jolt/jolt.dart';
 
 /// Executes a function without tracking reactive dependencies.
 ///
@@ -41,12 +42,21 @@ T untracked<T>(T Function() fn) {
 @pragma('vm:prefer-inline')
 @pragma('wasm:prefer-inline')
 @pragma('dart2js:prefer-inline')
-T trackWith<T>(T Function() fn, ReactiveNode sub) {
-  final prevSub = setActiveSub(sub);
+T trackWithEffect<T>(T Function() fn, EffectNode sub, [bool purge = true]) {
+  final effectNode = sub as ReactiveNode;
+  if (purge) {
+    ++cycle;
+    effectNode.depsTail = null;
+  }
+  final prevSub = setActiveSub(effectNode);
   try {
     return fn();
   } finally {
     setActiveSub(prevSub);
+    if (purge) {
+      effectNode.flags = ReactiveFlags.watching;
+      purgeDeps(effectNode);
+    }
   }
 }
 

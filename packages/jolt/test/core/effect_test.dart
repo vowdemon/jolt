@@ -987,6 +987,422 @@ void main() {
             (2, 4, 6),
           ]));
     });
+
+    test("Watcher.once should dispose after first execution", () {
+      final signal = Signal(1);
+      final values = <int>[];
+      final watcher = Watcher.once(
+        () => signal.value,
+        (newValue, _) {
+          values.add(newValue);
+        },
+      );
+
+      expect(values, isEmpty);
+      expect(watcher.isDisposed, isFalse);
+
+      // First change triggers and disposes
+      signal.value = 2;
+      expect(values, equals([2]));
+      expect(watcher.isDisposed, isTrue);
+
+      // Second change should not trigger (already disposed)
+      signal.value = 3;
+      expect(values, equals([2]));
+    });
+
+    test("Watcher.immediately should execute callback immediately", () {
+      final signal = Signal(10);
+      final values = <int>[];
+
+      Watcher.immediately(
+        () => signal.value,
+        (newValue, oldValue) {
+          values.add(newValue);
+        },
+      );
+
+      // Should execute immediately with current value
+      expect(values, equals([10]));
+
+      // Subsequent changes should also trigger
+      signal.value = 20;
+      expect(values, equals([10, 20]));
+
+      signal.value = 30;
+      expect(values, equals([10, 20, 30]));
+    });
+
+    group("pausable", () {
+      test("pause should stop watcher from responding to changes", () {
+        final signal = Signal(1);
+        final values = <int>[];
+        final watcher = Watcher(
+          () => signal.value,
+          (newValue, _) {
+            values.add(newValue);
+          },
+        );
+
+        expect(watcher.isPaused, isFalse);
+
+        // Trigger watcher
+        signal.value = 2;
+        expect(values, equals([2]));
+
+        // Pause watcher
+        watcher.pause();
+        expect(watcher.isPaused, isTrue);
+
+        // Changes should not trigger callback
+        signal.value = 3;
+        expect(values, equals([2]));
+
+        signal.value = 4;
+        expect(values, equals([2]));
+
+        // Resume watcher
+        watcher.resume();
+        expect(watcher.isPaused, isFalse);
+
+        // Should respond to changes again
+        signal.value = 5;
+        expect(values, equals([2, 5]));
+      });
+
+      test("pause should clear dependencies", () {
+        final signal1 = Signal(1);
+        final signal2 = Signal(2);
+        final values = <int>[];
+        final watcher = Watcher(
+          () => signal1.value + signal2.value,
+          (newValue, _) {
+            values.add(newValue);
+          },
+        );
+
+        // Initial trigger
+        batch(() {
+          signal1.value = 3;
+          signal2.value = 4;
+        });
+        expect(values, equals([7]));
+
+        // Pause - should clear dependencies
+        watcher.pause();
+
+        // Changes should not trigger
+        signal1.value = 5;
+        signal2.value = 6;
+        expect(values, equals([7]));
+
+        // Resume - should re-collect dependencies
+        watcher.resume();
+
+        // Now should respond again
+        batch(() {
+          signal1.value = 7;
+          signal2.value = 8;
+        });
+        expect(values, equals([7, 15]));
+      });
+
+      test("resume should re-collect dependencies", () {
+        final signal1 = Signal(1);
+        final signal2 = Signal(2);
+        final values = <int>[];
+        final watcher = Watcher(
+          () => signal1.value,
+          (newValue, _) {
+            values.add(newValue);
+          },
+        );
+
+        // Initial state
+        expect(watcher.isPaused, isFalse);
+
+        // Pause and change signal1
+        watcher.pause();
+        signal1.value = 10;
+        expect(values, isEmpty);
+
+        // Change signal2 (not tracked while paused)
+        signal2.value = 20;
+
+        // Resume - should re-collect dependencies (only signal1)
+        watcher.resume();
+
+        // signal1 change should trigger
+        signal1.value = 11;
+        expect(values, equals([11]));
+
+        // signal2 change should not trigger (not in sources)
+        signal2.value = 21;
+        expect(values, equals([11]));
+      });
+
+      test("pause and resume multiple times", () {
+        final signal = Signal(1);
+        final values = <int>[];
+        final watcher = Watcher(
+          () => signal.value,
+          (newValue, _) {
+            values.add(newValue);
+          },
+        );
+
+        // Normal operation
+        signal.value = 2;
+        expect(values, equals([2]));
+
+        // Pause
+        watcher.pause();
+        signal.value = 3;
+        expect(values, equals([2]));
+
+        // Resume
+        watcher.resume();
+        signal.value = 4;
+        expect(values, equals([2, 4]));
+
+        // Pause again
+        watcher.pause();
+        signal.value = 5;
+        expect(values, equals([2, 4]));
+
+        // Resume again
+        watcher.resume();
+        signal.value = 6;
+        expect(values, equals([2, 4, 6]));
+      });
+
+      test("pause should not prevent callback execution even with manual run",
+          () {
+        final signal = Signal(1);
+        final values = <int>[];
+        final watcher = Watcher(
+          () => signal.value,
+          (newValue, _) {
+            values.add(newValue);
+          },
+        );
+
+        // Trigger with value change
+        signal.value = 2;
+        expect(values, equals([2]));
+
+        // Pause
+        watcher.pause();
+        expect(watcher.isPaused, isTrue);
+
+        // Change value - should not execute callback when paused
+        signal.value = 3;
+        expect(values, equals([2]));
+
+        // Manual run should also not execute callback when paused
+        signal.value = 4;
+        watcher.run();
+        expect(values, equals([2, 4]));
+
+        // Resume
+        watcher.resume();
+        signal.value = 5;
+        expect(values, equals([2, 4, 5]));
+      });
+
+      test("resume with immediately watcher should work correctly", () {
+        final signal = Signal(10);
+        final values = <int>[];
+        final watcher = Watcher.immediately(
+          () => signal.value,
+          (newValue, _) {
+            values.add(newValue);
+          },
+        );
+
+        expect(values, equals([10]));
+
+        // Pause
+        watcher.pause();
+        signal.value = 20;
+        expect(values, equals([10]));
+
+        // Resume
+        watcher.resume();
+        // Resume re-collects dependencies, but doesn't execute immediately
+        signal.value = 30;
+        expect(values, equals([10, 30]));
+      });
+
+      test("resume with tryRun should execute callback if sources changed", () {
+        final signal = Signal(1);
+        final values = <int>[];
+        final watcher = Watcher(
+          () => signal.value,
+          (newValue, _) {
+            values.add(newValue);
+          },
+        );
+
+        // Initial state
+        signal.value = 2;
+        expect(values, equals([2]));
+
+        // Pause and change value
+        watcher.pause();
+        signal.value = 10;
+        expect(values, equals([2])); // No callback while paused
+
+        // Resume with tryRun: true - should execute callback if sources changed
+        watcher.resume(true);
+        // Since signal changed from 2 to 10, callback should be executed
+        expect(values, equals([2, 10]));
+
+        // Future changes should still trigger
+        signal.value = 20;
+        expect(values, equals([2, 10, 20]));
+      });
+    });
+
+    group("ignoreUpdates", () {
+      test("should prevent callback execution", () {
+        final signal = Signal(1);
+        final values = <int>[];
+        final watcher = Watcher(
+          () => signal.value,
+          (newValue, _) {
+            values.add(newValue);
+          },
+        );
+
+        signal.value = 2;
+        expect(values, equals([2]));
+
+        watcher.ignoreUpdates(() {
+          signal.value = 3;
+        });
+        expect((watcher as WatcherImpl).testCachedSources, equals(2));
+        expect(values, equals([2])); // Should not trigger
+
+        signal.value = 4;
+        expect(values, equals([2, 4]));
+      });
+
+      test("should work when called inside single batch", () {
+        final signal = Signal(1);
+        final values = <int>[];
+        final watcher = Watcher(
+          () => signal.value,
+          (newValue, _) {
+            values.add(newValue);
+          },
+        );
+
+        signal.value = 2;
+        expect(values, equals([2]));
+
+        batch(() {
+          signal.value = 3;
+          watcher.ignoreUpdates(() {
+            signal.value = 4;
+          });
+          signal.value = 5;
+        });
+        expect(values, equals([2, 5])); // Only triggered once for batch
+
+        signal.value = 6;
+        expect(values, equals([2, 5, 6]));
+      });
+
+      test("should work when called inside nested batch", () {
+        final signal1 = Signal(1);
+        final signal2 = Signal(2);
+        final values = <int>[];
+        final watcher = Watcher(
+          () => signal1.value + signal2.value,
+          (newValue, _) {
+            values.add(newValue);
+          },
+        );
+
+        batch(() {
+          signal1.value = 3;
+          signal2.value = 4;
+        });
+        expect(values, equals([7]));
+
+        batch(() {
+          signal1.value = 5;
+          batch(() {
+            watcher.ignoreUpdates(() {
+              signal2.value = 6;
+              signal1.value = 7;
+            });
+            signal2.value = 8;
+          });
+        });
+        expect(values, equals([7, 15])); // 7 + 8
+
+        batch(() {
+          signal1.value = 9;
+          signal2.value = 10;
+        });
+        expect(values, equals([7, 15, 19]));
+      });
+
+      test("should work with nested ignoreUpdates in batch", () {
+        final signal = Signal(1);
+        final values = <int>[];
+        final watcher = Watcher(
+          () => signal.value,
+          (newValue, _) {
+            values.add(newValue);
+          },
+        );
+
+        batch(() {
+          signal.value = 2;
+          watcher.ignoreUpdates(() {
+            signal.value = 3;
+            watcher.ignoreUpdates(() {
+              signal.value = 4;
+            });
+          });
+          signal.value = 5;
+        });
+        expect(values, equals([5])); // Only final value from batch
+
+        signal.value = 6;
+        expect(values, equals([5, 6]));
+      });
+
+      test("should restore state even if exception occurs", () {
+        final signal = Signal(1);
+        final values = <int>[];
+        final watcher = Watcher(
+          () => signal.value,
+          (newValue, _) {
+            values.add(newValue);
+          },
+        );
+
+        expect(() {
+          batch(() {
+            signal.value = 2;
+            watcher.ignoreUpdates(() {
+              signal.value = 3;
+              throw Exception("Test exception");
+            });
+          });
+        }, throwsException);
+
+        expect(values, equals([3]));
+        expect(signal.value, equals(3));
+
+        signal.value = 4;
+        expect(values, equals([3, 4]));
+      });
+    });
   });
 
   test(

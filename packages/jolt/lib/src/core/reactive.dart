@@ -1,4 +1,5 @@
 import "package:jolt/src/core/debug.dart";
+import "package:meta/meta.dart";
 import "package:shared_interfaces/shared_interfaces.dart";
 
 part "system.dart";
@@ -384,20 +385,33 @@ bool _removePending(ReactiveNode e, int flags) {
 
 /// Executes an [EffectReactiveNode] when it is dirty or pending.
 ///
+/// This function checks if the effect node's flags indicate that it needs to
+/// be executed (has `dirty` flag or `pending` flag with dirty dependencies).
+/// If so, it executes the provided function [fn] in the proper reactive context.
+///
 /// Parameters:
 /// - [e]: Effect node to evaluate
+/// - [fn]: The function to execute when the effect needs to run
 ///
 /// Example:
 /// ```dart
-/// final effect = CustomEffectNode();
-/// if (effect.flags & ReactiveFlags.pending != 0) {
-///   runEffect(effect);
+/// class CustomEffectNode extends EffectReactiveNode {
+///   CustomEffectNode() : super(flags: ReactiveFlags.watching);
+///
+///   @override
+///   void runEffect() {
+///     defaultRunEffect(this, _effectFn);
+///   }
+///
+///   void _effectFn() {
+///     // Effect logic here
+///   }
 /// }
 /// ```
 @pragma("vm:prefer-inline")
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
-void runEffect(EffectReactiveNode e) {
+void defaultRunEffect(EffectReactiveNode e, void Function() fn) {
   final flags = e.flags;
   if (flags & (ReactiveFlags.dirty) != 0 ||
       (flags & (ReactiveFlags.pending) != 0 && checkDirty(e.deps!, e))) {
@@ -409,7 +423,7 @@ void runEffect(EffectReactiveNode e) {
     // only effect and watcher;
     final prevSub = setActiveSub(e);
     try {
-      e.effectFn();
+      fn();
     } finally {
       activeSub = prevSub;
       e.flags &= ~ReactiveFlags.recursedCheck;
@@ -449,7 +463,7 @@ void flushEffects() {
   while (notifyIndex < queuedLength) {
     final effect = queued[notifyIndex]!;
     queued[notifyIndex++] = null;
-    runEffect(effect);
+    effect.runEffect();
   }
   notifyIndex = 0;
   queuedLength = 0;
@@ -883,14 +897,36 @@ abstract interface class EffectBaseReactiveNode
 ///   CustomEffectNode() : super(flags: ReactiveFlags.watching);
 ///
 ///   @override
-///   void effectFn() {}
+///   @protected
+///   void runEffect() {
+///     defaultRunEffect(this, _effectFn);
+///   }
+///
+///   void _effectFn() {
+///     // Effect logic here
+///   }
 /// }
 /// ```
 abstract class EffectReactiveNode extends ReactiveNode
     implements Disposable, EffectBaseReactiveNode {
   EffectReactiveNode({required super.flags});
 
-  void effectFn();
+  /// Executes the effect when it is dirty or pending.
+  ///
+  /// This method is called by the reactive system to run the effect when its
+  /// dependencies change. Implementations should use [defaultRunEffect] to
+  /// perform the execution in the proper reactive context.
+  ///
+  /// Example:
+  /// ```dart
+  /// @override
+  /// @protected
+  /// void runEffect() {
+  ///   defaultRunEffect(this, _effectFn);
+  /// }
+  /// ```
+  @protected
+  void runEffect();
 }
 
 /// Reactive node that groups multiple effects for scoped disposal.

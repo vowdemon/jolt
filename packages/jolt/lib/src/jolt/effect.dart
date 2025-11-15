@@ -1,15 +1,15 @@
-import "dart:async";
-
-import "package:jolt/core.dart";
-import "package:jolt/src/jolt/base.dart";
-import "package:jolt/src/jolt/track.dart";
 import "package:meta/meta.dart";
 import "package:shared_interfaces/shared_interfaces.dart";
+
+import "package:jolt/core.dart";
+import "package:jolt/jolt.dart";
 
 /// Base class for all effect nodes in the reactive system.
 
 @protected
 mixin EffectCleanupMixin {
+  bool get isDisposed;
+
   @protected
   late final List<Disposer> _cleanups = [];
 
@@ -29,6 +29,8 @@ mixin EffectCleanupMixin {
   /// });
   /// ```
   void onCleanUp(Disposer fn) {
+    assert(!isDisposed, "$runtimeType is disposed");
+
     _cleanups.add(fn);
   }
 
@@ -142,7 +144,7 @@ class EffectScopeImpl extends EffectScopeReactiveNode
 
   @override
   @protected
-  FutureOr<void> onDispose() {
+  void onDispose() {
     doCleanup();
     disposeNode(this);
   }
@@ -256,7 +258,7 @@ class EffectImpl extends EffectReactiveNode
     if (immediately) {
       final prevSub = setActiveSub(this);
       try {
-        effectFn();
+        _effectFn();
       } finally {
         setActiveSub(prevSub);
         flags &= ~ReactiveFlags.recursedCheck;
@@ -269,10 +271,7 @@ class EffectImpl extends EffectReactiveNode
   @pragma("vm:prefer-inline")
   @pragma("wasm:prefer-inline")
   @pragma("dart2js:prefer-inline")
-  @override
-
-  /// Do not call this method directly
-  void effectFn() {
+  void _effectFn() {
     doCleanup();
     wrappedFn();
     JoltDebug.effect(this);
@@ -300,15 +299,25 @@ class EffectImpl extends EffectReactiveNode
   /// ```
   @override
   void run() {
+    assert(!isDisposed, "Watcher is disposed");
     flags |= ReactiveFlags.dirty;
-    runEffect(this);
+    runEffect();
   }
 
   @override
   @protected
-  FutureOr<void> onDispose() {
+  void onDispose() {
     doCleanup();
     disposeNode(this);
+  }
+
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
+  @override
+  @protected
+  void runEffect() {
+    defaultRunEffect(this, _effectFn);
   }
 }
 
@@ -434,8 +443,11 @@ class WatcherImpl<T> extends EffectReactiveNode
         untracked(() {
           final prevWatcher = Watcher.activeWatcher;
           Watcher.activeWatcher = this;
-          fn(prevSources, null);
-          Watcher.activeWatcher = prevWatcher;
+          try {
+            fn(prevSources, null);
+          } finally {
+            Watcher.activeWatcher = prevWatcher;
+          }
         });
         JoltDebug.effect(this);
       }
@@ -460,43 +472,110 @@ class WatcherImpl<T> extends EffectReactiveNode
   @protected
   late T prevSources;
 
-  @pragma("vm:prefer-inline")
-  @pragma("wasm:prefer-inline")
-  @pragma("dart2js:prefer-inline")
-  @override
-  void effectFn() {
+  @visibleForTesting
+  T get testCachedSources => prevSources;
+
+  void _effectFn() {
+    if (_isPaused) {
+      return;
+    }
+
     doCleanup();
     final sources = sourcesFn();
     final shouldTrigger =
         when == null ? sources != prevSources : when!(sources, prevSources);
 
     if (shouldTrigger) {
-      untracked(() {
-        final prevWatcher = Watcher.activeWatcher;
-        Watcher.activeWatcher = this;
-        fn(sources, prevSources);
-        Watcher.activeWatcher = prevWatcher;
-      });
+      trigger(sources: sources);
+    } else {
+      prevSources = sources;
+      JoltDebug.effect(this);
+    }
+  }
+
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
+  @protected
+  void trigger({required T? sources}) {
+    if (sources == null) {
+      doCleanup();
     }
 
-    prevSources = sources;
-
+    untracked(() {
+      final current = sources ?? sourcesFn();
+      final prevWatcher = Watcher.activeWatcher;
+      Watcher.activeWatcher = this;
+      try {
+        fn(current, prevSources);
+      } finally {
+        Watcher.activeWatcher = prevWatcher;
+        prevSources = current;
+      }
+    });
     JoltDebug.effect(this);
+  }
+
+  @override
+  void run() {
+    assert(!isDisposed, "Watcher is disposed");
+    trigger(sources: null);
+  }
+
+  @override
+  @protected
+  void onDispose() {
+    doCleanup();
+    disposeNode(this);
   }
 
   @pragma("vm:prefer-inline")
   @pragma("wasm:prefer-inline")
   @pragma("dart2js:prefer-inline")
   @override
-  void run() {
-    effectFn();
+  @protected
+  void runEffect() {
+    defaultRunEffect(this, _effectFn);
+  }
+
+  bool _isPaused = false;
+  @override
+  bool get isPaused => _isPaused;
+
+  @override
+  void pause() {
+    assert(!isDisposed, "Watcher is disposed");
+    _isPaused = true;
+    cycle++;
+    depsTail = null;
+    purgeDeps(this);
+    flags = ReactiveFlags.watching;
   }
 
   @override
-  @protected
-  FutureOr<void> onDispose() {
-    doCleanup();
-    disposeNode(this);
+  void resume([bool tryRun = false]) {
+    assert(!isDisposed, "Watcher is disposed");
+    _isPaused = false;
+
+    if (!tryRun) {
+      trackWithEffect(sourcesFn, this);
+    } else {
+      trackWithEffect(_effectFn, this);
+    }
+  }
+
+  @override
+  U ignoreUpdates<U>(U Function() fn) {
+    assert(!isDisposed, "Watcher is disposed");
+
+    return batch(() {
+      int prevFlags = flags;
+      try {
+        return fn();
+      } finally {
+        flags = prevFlags;
+      }
+    });
   }
 }
 
@@ -536,6 +615,93 @@ abstract class Watcher<T> implements EffectNode {
       WhenFn<T>? when,
       JoltDebugFn? onDebug}) = WatcherImpl<T>;
 
+  /// Creates a watcher that executes the callback immediately upon creation.
+  ///
+  /// This factory method is a convenience constructor for creating a watcher
+  /// with [immediately] set to `true`. The callback will be executed once
+  /// immediately with the current source values, and then whenever the sources
+  /// change and the condition (if provided) is met.
+  ///
+  /// Parameters:
+  /// - [sourcesFn]: Function that returns the values to watch
+  /// - [fn]: Callback function executed when sources change
+  /// - [when]: Optional condition function for custom trigger logic
+  /// - [onDebug]: Optional debug callback for reactive system debugging
+  ///
+  /// Returns: A new [Watcher] instance that executes immediately
+  ///
+  /// Example:
+  /// ```dart
+  /// final signal = Signal(10);
+  /// final values = <int>[];
+  ///
+  /// Watcher.immediately(
+  ///   () => signal.value,
+  ///   (newValue, oldValue) {
+  ///     values.add(newValue);
+  ///   },
+  /// );
+  ///
+  /// // Callback executed immediately with value 10
+  /// expect(values, equals([10]));
+  ///
+  /// signal.value = 20; // Triggers callback again
+  /// expect(values, equals([10, 20]));
+  /// ```
+  factory Watcher.immediately(SourcesFn<T> sourcesFn, WatcherFn<T> fn,
+          {WhenFn<T>? when, JoltDebugFn? onDebug}) =>
+      WatcherImpl<T>(sourcesFn, fn,
+          immediately: true, when: when, onDebug: onDebug);
+
+  /// Creates a watcher that executes once and then automatically disposes itself.
+  ///
+  /// This factory method creates a watcher that will execute its callback
+  /// on the first change after creation, and then automatically dispose itself.
+  /// The watcher will not respond to changes before the first trigger, and
+  /// will not respond to any changes after disposal.
+  ///
+  /// Parameters:
+  /// - [sourcesFn]: Function that returns the values to watch
+  /// - [fn]: Callback function executed on first change
+  /// - [when]: Optional condition function for custom trigger logic
+  /// - [onDebug]: Optional debug callback for reactive system debugging
+  ///
+  /// Returns: A new [Watcher] instance that auto-disposes after first execution
+  ///
+  /// Example:
+  /// ```dart
+  /// final signal = Signal(1);
+  /// final values = <int>[];
+  ///
+  /// final watcher = Watcher.once(
+  ///   () => signal.value,
+  ///   (newValue, _) {
+  ///     values.add(newValue);
+  ///   },
+  /// );
+  ///
+  /// expect(values, isEmpty);
+  /// expect(watcher.isDisposed, isFalse);
+  ///
+  /// signal.value = 2; // Triggers and disposes
+  /// expect(values, equals([2]));
+  /// expect(watcher.isDisposed, isTrue);
+  ///
+  /// signal.value = 3; // No longer responds
+  /// expect(values, equals([2]));
+  /// ```
+  factory Watcher.once(SourcesFn<T> sourcesFn, WatcherFn<T> fn,
+      {WhenFn<T>? when, JoltDebugFn? onDebug}) {
+    late Watcher<T> watcher;
+
+    watcher = Watcher(sourcesFn, (newValue, oldValue) {
+      fn(newValue, oldValue);
+      watcher.dispose();
+    }, when: when, immediately: false, onDebug: onDebug);
+
+    return watcher;
+  }
+
   /// The currently active watcher instance.
   ///
   /// This static field tracks the active watcher when its callback is executed
@@ -566,6 +732,145 @@ abstract class Watcher<T> implements EffectNode {
   /// watcher.onCleanUp(() => subscription.cancel());
   /// ```
   void onCleanUp(Disposer fn);
+
+  /// Whether this watcher is currently paused.
+  ///
+  /// When a watcher is paused, it will not respond to changes in its watched
+  /// sources. The watcher's dependencies are cleared when paused, and will be
+  /// re-collected when resumed.
+  ///
+  /// Returns: `true` if the watcher is paused, `false` otherwise
+  ///
+  /// Example:
+  /// ```dart
+  /// final watcher = Watcher(...);
+  /// expect(watcher.isPaused, isFalse);
+  ///
+  /// watcher.pause();
+  /// expect(watcher.isPaused, isTrue);
+  ///
+  /// watcher.resume();
+  /// expect(watcher.isPaused, isFalse);
+  /// ```
+  bool get isPaused;
+
+  /// Pauses the watcher, preventing it from responding to changes.
+  ///
+  /// When paused, the watcher will:
+  /// - Stop responding to changes in watched sources
+  /// - Clear its dependencies
+  /// - Maintain its paused state until [resume] is called
+  ///
+  /// You can call [pause] multiple times; it is idempotent. After pausing,
+  /// use [resume] to re-enable the watcher and re-collect dependencies.
+  ///
+  /// Example:
+  /// ```dart
+  /// final signal = Signal(1);
+  /// final values = <int>[];
+  /// final watcher = Watcher(
+  ///   () => signal.value,
+  ///   (newValue, _) => values.add(newValue),
+  /// );
+  ///
+  /// signal.value = 2; // Triggers
+  /// expect(values, equals([2]));
+  ///
+  /// watcher.pause();
+  /// signal.value = 3; // Does not trigger
+  /// expect(values, equals([2]));
+  ///
+  /// watcher.resume();
+  /// signal.value = 4; // Triggers again
+  /// expect(values, equals([2, 4]));
+  /// ```
+  void pause();
+
+  /// Resumes the watcher, re-enabling it to respond to changes.
+  ///
+  /// When resumed, the watcher will:
+  /// - Re-collect dependencies by tracking the watched sources
+  /// - Start responding to changes in watched sources again
+  ///
+  /// Parameters:
+  /// - [tryRun]: If `true`, attempts to run the watcher immediately after
+  ///   re-collecting dependencies. If `false`, only re-collects dependencies
+  ///   without executing the callback.
+  ///
+  /// Example:
+  /// ```dart
+  /// final watcher = Watcher(...);
+  /// watcher.pause();
+  ///
+  /// // Resume without executing
+  /// watcher.resume();
+  ///
+  /// // Resume and try to run immediately
+  /// watcher.resume(tryRun: true);
+  /// ```
+  void resume([bool tryRun = false]);
+
+  /// Temporarily ignores updates from the reactive sources during function execution.
+  ///
+  /// This method executes the given function while preventing the watcher's
+  /// callback from being triggered by any changes that occur during execution.
+  /// The reactive sources will still update normally, but the watcher's callback
+  /// will not be executed for changes during the ignored period.
+  ///
+  /// **Behavior:**
+  /// - Only prevents callback execution; ref changes and listener updates still occur
+  /// - Does not update `prevValue` during the ignored period
+  /// - Changes during ignore are treated as "never happened" for `oldValue` purposes,
+  ///   but `newValue` will always reflect the latest state
+  /// - Works correctly even when nested inside batches
+  ///
+  /// **Implementation note:** This method uses [batch] to delay side effects
+  /// and restores flags to prevent new changes during ignore from triggering
+  /// callbacks. If the previous flags required execution (e.g., had `dirty`),
+  /// it will still execute after restore (preserves existing pending tasks).
+  ///
+  /// Parameters:
+  /// - [fn]: The function to execute while ignoring updates
+  ///
+  /// Returns: The result of executing [fn]
+  ///
+  /// Type parameter:
+  /// - [U]: The return type of [fn]
+  ///
+  /// Example:
+  /// ```dart
+  /// final signal = Signal(1);
+  /// final values = <int>[];
+  /// final watcher = Watcher(
+  ///   () => signal.value,
+  ///   (newValue, _) => values.add(newValue),
+  /// );
+  ///
+  /// signal.value = 2; // Triggers
+  /// expect(values, equals([2]));
+  ///
+  /// watcher.ignoreUpdates(() {
+  ///   signal.value = 3; // Does not trigger callback
+  /// });
+  /// expect(values, equals([2]));
+  /// expect(signal.value, equals(3)); // Value still updated
+  ///
+  /// signal.value = 4; // Triggers again
+  /// expect(values, equals([2, 4]));
+  /// ```
+  ///
+  /// Example with nested batch:
+  /// ```dart
+  /// batch(() {
+  ///   signal.value = 5;
+  ///   watcher.ignoreUpdates(() {
+  ///     signal.value = 6;
+  ///   });
+  ///   signal.value = 7;
+  /// });
+  /// // Only the final value (7) triggers the callback
+  /// ```
+  U ignoreUpdates<U>(U Function() fn);
 }
 
 /// Registers a cleanup function to be executed when the current effect is disposed or re-run.

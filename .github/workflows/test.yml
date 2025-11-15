@@ -27,5 +27,5 @@ jobs:
           fail_ci_if_error: true
           files: ./coverage/combined.info
       - name: Dry publish packages
-        run: melos publish --dry-run
+        run: melos publish --dry-run -y
         shell: bash

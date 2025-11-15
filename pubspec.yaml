@@ -11,6 +11,7 @@ workspace:
   - packages/jolt_flutter
   - packages/jolt_hooks
   - packages/jolt_surge
+  - packages/jolt_flutter_hooks
   - packages/jolt_hooks/example
   - packages/jolt_surge/example
 
@@ -28,8 +29,6 @@ melos:
 
       dependencies:
         meta: ^1.0.0
-      dev_dependencies:
-        test: any
 
     version:
       branch: main
@@ -38,19 +37,25 @@ melos:
       linkToCommits: true
 
   scripts:
-    analyze:
-      run: melos exec -c 3 -- flutter analyze
     test:select:
       run: melos exec -c 1 -- flutter test --coverage
       packageFilters:
         dirExists: test
       description: Run `flutter test` for selected packages.
-
-    test:
-      run: melos run test:select --no-select
-      description: Run all Flutter tests in this project.
-
     coverage:combine:
       run: |
         chmod +x ./.github/scripts/merge_coverage.sh
         ./.github/scripts/merge_coverage.sh
+    coverage:
+      run: |
+        melos run test
+        genhtml coverage/combined.info -o coverage/html
+    analyze:
+      run: melos exec -c 1 -- flutter analyze
+    test:
+      run: |
+        melos run test:select --no-select
+        melos run coverage:combine
+      description: Run all Flutter tests in this project.
+    update:version:
+      run: melos version --no-published --no-private --no-git-commit-version

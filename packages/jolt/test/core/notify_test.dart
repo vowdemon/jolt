@@ -1,12 +1,12 @@
-import 'package:jolt/jolt.dart';
-import 'package:test/test.dart';
+import "package:jolt/jolt.dart";
+import "package:test/test.dart";
 
 void main() {
-  group('Notify', () {
-    test('signal notify', () {
+  group("Notify", () {
+    test("signal notify", () {
       final s1 = Signal(0);
-      int e1 = 0;
-      int e2 = 0;
+      var e1 = 0;
+      var e2 = 0;
       Effect(() {
         s1.value;
         e1++;
@@ -24,11 +24,11 @@ void main() {
       expect(e2, equals(2));
     });
 
-    test('computed notify', () {
+    test("computed notify", () {
       final s1 = Signal(0);
       final c1 = Computed(() => s1.value * 2);
-      int e1 = 0;
-      int e2 = 0;
+      var e1 = 0;
+      var e2 = 0;
       Effect(() {
         c1.value;
         e1++;
@@ -46,10 +46,10 @@ void main() {
       expect(e2, equals(2));
     });
 
-    test('setSignal notify', () {
+    test("setSignal notify", () {
       final s1 = SetSignal<int>({});
-      int e1 = 0;
-      int e2 = 0;
+      var e1 = 0;
+      var e2 = 0;
       Effect(() {
         s1.value;
         e1++;

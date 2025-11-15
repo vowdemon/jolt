@@ -1,13 +1,14 @@
-import 'package:jolt/jolt.dart';
-import 'package:test/test.dart';
+import "package:jolt/jolt.dart";
+import "package:meta/meta.dart";
+import "package:test/test.dart";
 
-import '../utils.dart';
+import "../utils.dart";
 
+@immutable
 class _TestPerson {
+  _TestPerson(this.name, this.age);
   final String name;
   final int age;
-
-  _TestPerson(this.name, this.age);
 
   @override
   bool operator ==(Object other) =>
@@ -19,8 +20,8 @@ class _TestPerson {
 }
 
 void main() {
-  group('Signal', () {
-    test('should create signal with initial value', () {
+  group("Signal", () {
+    test("should create signal with initial value", () {
       final counter = DebugCounter();
       final signal = Signal(42, onDebug: counter.onDebug);
 
@@ -29,11 +30,13 @@ void main() {
 
       expect(counter.getCount, equals(1));
       signal.value;
+      // test code
+      // ignore: cascade_invocations
       signal.peek;
       expect(counter.getCount, equals(2));
     });
 
-    test('should update signal value by set and value', () {
+    test("should update signal value by set and value", () {
       final counter = DebugCounter();
       final signal = Signal(1, onDebug: counter.onDebug);
       expect(signal.value, equals(1));
@@ -49,15 +52,15 @@ void main() {
       expect(counter.setCount, equals(2));
     });
 
-    test('should use get value by get and value', () {
+    test("should use get value by get and value", () {
       final signal = Signal(42);
       expect(signal.get(), equals(42));
       expect(signal.value, equals(42));
     });
 
-    test('should force update signal', () {
+    test("should force update signal", () {
       final signal = Signal(1);
-      final List<int> values = [];
+      final values = <int>[];
 
       Effect(() {
         values.add(signal.value);
@@ -69,7 +72,7 @@ void main() {
       expect(values, equals([1, 1]));
     });
 
-    test('should track signal in computed', () {
+    test("should track signal in computed", () {
       final signal = Signal(5);
       final computed = Computed<int>(() => signal.value * 2);
 
@@ -79,9 +82,9 @@ void main() {
       expect(computed.value, equals(20));
     });
 
-    test('should track signal in effect', () {
+    test("should track signal in effect", () {
       final signal = Signal(1);
-      final List<int> values = [];
+      final values = <int>[];
 
       Effect(() {
         values.add(signal.value);
@@ -96,13 +99,11 @@ void main() {
       expect(values, equals([1, 2, 3]));
     });
 
-    test('should emit stream events', () async {
+    test("should emit stream events", () async {
       final signal = Signal(1);
-      final List<int> values = [];
+      final values = <int>[];
 
-      signal.stream.listen((value) {
-        values.add(value);
-      });
+      signal.stream.listen(values.add);
 
       await Future.delayed(const Duration(milliseconds: 1));
       expect(values, equals([]));
@@ -116,13 +117,13 @@ void main() {
       expect(values, equals([2, 3]));
     });
 
-    test('should support multiple stream listeners', () async {
+    test("should support multiple stream listeners", () async {
       final signal = Signal(1);
-      final List<int> values1 = [];
-      final List<int> values2 = [];
+      final values1 = <int>[];
+      final values2 = <int>[];
 
-      signal.stream.listen((value) => values1.add(value));
-      signal.stream.listen((value) => values2.add(value));
+      signal.stream.listen(values1.add);
+      signal.stream.listen(values2.add);
 
       signal.value = 2;
       await Future.delayed(const Duration(milliseconds: 1));
@@ -131,21 +132,20 @@ void main() {
       expect(values2, equals([2]));
     });
 
-    test('should throw AssertionError when accessing disposed signal', () {
-      final signal = Signal(42);
-      signal.dispose();
+    test("should throw AssertionError when accessing disposed signal", () {
+      final signal = Signal(42)..dispose();
 
       expect(() => signal.value, throwsA(isA<AssertionError>()));
       expect(() => signal.value = 1, throwsA(isA<AssertionError>()));
-      expect(() => signal.notify(), throwsA(isA<AssertionError>()));
+      expect(signal.notify, throwsA(isA<AssertionError>()));
     });
 
-    test('should work with different data types', () {
+    test("should work with different data types", () {
       // String signal
-      final stringSignal = Signal('hello');
-      expect(stringSignal.value, equals('hello'));
-      stringSignal.value = 'world';
-      expect(stringSignal.value, equals('world'));
+      final stringSignal = Signal("hello");
+      expect(stringSignal.value, equals("hello"));
+      stringSignal.value = "world";
+      expect(stringSignal.value, equals("world"));
 
       // List signal
       final listSignal = Signal<List<int>>([1, 2, 3]);
@@ -154,10 +154,10 @@ void main() {
       expect(listSignal.value, equals([4, 5, 6]));
 
       // Map signal
-      final mapSignal = Signal<Map<String, int>>({'a': 1});
-      expect(mapSignal.value, equals({'a': 1}));
-      mapSignal.value = {'b': 2};
-      expect(mapSignal.value, equals({'b': 2}));
+      final mapSignal = Signal<Map<String, int>>({"a": 1});
+      expect(mapSignal.value, equals({"a": 1}));
+      mapSignal.value = {"b": 2};
+      expect(mapSignal.value, equals({"b": 2}));
 
       // Nullable signal
       final nullableSignal = Signal<int?>(null);
@@ -165,24 +165,24 @@ void main() {
       nullableSignal.value = 42;
       expect(nullableSignal.value, equals(42));
 
-      final personSignal = Signal(_TestPerson('Alice', 30));
-      expect(personSignal.value.name, equals('Alice'));
+      final personSignal = Signal(_TestPerson("Alice", 30));
+      expect(personSignal.value.name, equals("Alice"));
       expect(personSignal.value.age, equals(30));
 
-      personSignal.value = _TestPerson('Bob', 25);
-      expect(personSignal.value.name, equals('Bob'));
+      personSignal.value = _TestPerson("Bob", 25);
+      expect(personSignal.value.name, equals("Bob"));
       expect(personSignal.value.age, equals(25));
     });
 
-    test('should handle rapid value changes', () {
+    test("should handle rapid value changes", () {
       final signal = Signal(0);
-      final List<int> values = [];
+      final values = <int>[];
 
       Effect(() {
         values.add(signal.value);
       });
 
-      for (int i = 1; i <= 100; i++) {
+      for (var i = 1; i <= 100; i++) {
         signal.value = i;
       }
 
@@ -190,9 +190,9 @@ void main() {
       expect(values.last, equals(100));
     });
 
-    test('should work with batch updates', () {
+    test("should work with batch updates", () {
       final signal = Signal(1);
-      final List<int> values = [];
+      final values = <int>[];
 
       Effect(() {
         values.add(signal.value);
@@ -201,20 +201,21 @@ void main() {
       expect(values, equals([1]));
 
       batch(() {
-        signal.value = 2;
-        signal.value = 3;
-        signal.value = 4;
+        signal
+          ..value = 2
+          ..value = 3
+          ..value = 4;
       });
 
       expect(values, equals([1, 4]));
     });
 
-    test('should return ReadonlySignal type after readonly', () {
+    test("should return ReadonlySignal type after readonly", () {
       final signal = Signal(5);
 
       expect(signal.value, equals(5));
 
-      final ReadonlySignal<int> readonlySignal = signal.readonly();
+      final readonlySignal = signal.readonly();
 
       expect(readonlySignal, isA<ReadonlySignal<int>>());
       expect(readonlySignal.value, equals(5));
@@ -223,22 +224,22 @@ void main() {
       expect(readonlySignal.value, equals(6));
     });
 
-    test('should return value.toString() in toString', () {
+    test("should return value.toString() in toString", () {
       final signal = Signal(42);
-      expect(signal.toString(), equals('42'));
+      expect(signal.toString(), equals("42"));
       expect(signal.toString(), equals(signal.value.toString()));
 
       signal.value = 100;
-      expect(signal.toString(), equals('100'));
+      expect(signal.toString(), equals("100"));
       expect(signal.toString(), equals(signal.value.toString()));
 
-      final stringSignal = Signal('hello');
-      expect(stringSignal.toString(), equals('hello'));
-      expect(stringSignal.toString(), equals(stringSignal.value.toString()));
+      final stringSignal = Signal("hello");
+      expect(stringSignal.toString(), equals("hello"));
+      expect(stringSignal.toString(), equals(stringSignal.value));
 
-      stringSignal.value = 'world';
-      expect(stringSignal.toString(), equals('world'));
-      expect(stringSignal.toString(), equals(stringSignal.value.toString()));
+      stringSignal.value = "world";
+      expect(stringSignal.toString(), equals("world"));
+      expect(stringSignal.toString(), equals(stringSignal.value));
     });
   });
 }

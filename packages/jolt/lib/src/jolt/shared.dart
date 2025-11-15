@@ -1,10 +1,9 @@
-import 'dart:async';
+import "dart:async";
 
-import 'package:meta/meta.dart';
-import 'package:shared_interfaces/shared_interfaces.dart';
-
-import 'base.dart';
-import 'effect.dart';
+import "package:jolt/src/jolt/base.dart";
+import "package:jolt/src/jolt/effect.dart";
+import "package:meta/meta.dart";
+import "package:shared_interfaces/shared_interfaces.dart";
 
 /// A finalizer utility for managing disposers attached to Jolt objects.
 ///
@@ -25,7 +24,14 @@ abstract final class JFinalizer {
   // coverage:ignore-start
   static final joltFinalizer = Finalizer<Set<Disposer>>((disposers) {
     for (final disposer in disposers) {
-      disposer();
+      try {
+        final result = disposer();
+        if (result is Future) {
+          result.ignore();
+        }
+      } catch (_) {
+        // ignore dispose error
+      }
     }
   });
   // coverage:ignore-end
@@ -54,13 +60,17 @@ abstract final class JFinalizer {
   /// cancel(); // Manually remove the disposer
   /// ```
   static Disposer attachToJoltAttachments(Object target, Disposer disposer) {
-    assert(
-        (target is JReadonlyValue || target is JEffect)
-            ? !((target as dynamic).isDisposed)
-            : true,
-        'Jolt value is disposed');
+    assert(() {
+      if (target is ReadonlyNode) {
+        return !target.isDisposed;
+      }
+      if (target is EffectNode) {
+        return !target.isDisposed;
+      }
+      return true;
+    }(), "Jolt value is disposed");
 
-    Set<Disposer>? disposers = joltAttachments[target];
+    var disposers = joltAttachments[target];
     if (disposers == null) {
       joltAttachments[target] = disposers = {};
       joltFinalizer.attach(target, disposers);
@@ -111,9 +121,8 @@ abstract final class JFinalizer {
   /// expect(disposers.length, equals(1));
   /// ```
   @visibleForTesting
-  static Set<Disposer> getJoltAttachments(Object target) {
-    return joltAttachments[target] ?? {};
-  }
+  static Set<Disposer> getJoltAttachments(Object target) =>
+      joltAttachments[target] ?? {};
 
   /// Disposes an object and executes all attached disposers.
   ///
@@ -220,7 +229,7 @@ class StreamHolder<T> implements Disposable {
   @override
   void dispose() {
     clearWatcher();
-    sc.close();
+    sc.close().ignore();
   }
 }
 
@@ -244,6 +253,5 @@ class StreamHolder<T> implements Disposable {
 /// ```
 @internal
 @visibleForTesting
-StreamHolder<T>? getStreamHolder<T>(JReadonlyValue<T> value) {
-  return streamHolders[value] as StreamHolder<T>?;
-}
+StreamHolder<T>? getStreamHolder<T>(ReadonlyNode<T> value) =>
+    streamHolders[value] as StreamHolder<T>?;

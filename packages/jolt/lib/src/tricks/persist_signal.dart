@@ -1,12 +1,15 @@
-import 'dart:async';
+import "dart:async";
 
-import 'package:jolt/jolt.dart';
+import "package:jolt/jolt.dart";
 
-/// A signal that persists its value to external storage.
+/// Implementation of [PersistSignal] that persists its value to external storage.
 ///
+/// This is the concrete implementation of the [PersistSignal] interface.
 /// PersistSignal automatically saves its value to external storage whenever
 /// it changes and loads the initial value from storage when created. It
 /// supports both synchronous and asynchronous read/write operations.
+///
+/// See [PersistSignal] for the public interface and usage examples.
 ///
 /// Example:
 /// ```dart
@@ -20,7 +23,7 @@ import 'package:jolt/jolt.dart';
 ///
 /// theme.value = 'dark'; // Automatically saved to storage
 /// ```
-class PersistSignal<T> extends Signal<T> {
+class PersistSignalImpl<T> extends SignalImpl<T> implements PersistSignal<T> {
   /// Creates a persistent signal with the given configuration.
   ///
   /// Parameters:
@@ -33,16 +36,16 @@ class PersistSignal<T> extends Signal<T> {
   ///
   /// If [lazy] is false, the value will be loaded from storage immediately.
   /// If [lazy] is true, the value will be loaded on first access via [value] or [get].
-  PersistSignal(
-      {T Function()? initialValue,
-      required this.read,
+  PersistSignalImpl(
+      {required this.read,
       required this.write,
+      T Function()? initialValue,
       bool lazy = false,
       this.writeDelay = Duration.zero,
       super.onDebug})
       : super(initialValue != null ? initialValue() : null) {
     if (!lazy) {
-      _load();
+      unawaited(_load());
     }
   }
 
@@ -53,6 +56,7 @@ class PersistSignal<T> extends Signal<T> {
   final Duration writeDelay;
 
   /// Whether the signal has been initialized from storage.
+  @override
   bool hasInitialized = false;
 
   /// Future for the initial value loading operation.
@@ -63,26 +67,6 @@ class PersistSignal<T> extends Signal<T> {
 
   /// Completer for waiting until all writes complete.
   Completer<void>? _writeComplete;
-
-  /// Creates a lazy persistent signal that loads its value on first access.
-  ///
-  /// Parameters:
-  /// - [initialValue]: Optional initial value if storage is empty
-  /// - [read]: Function to read the value from storage
-  /// - [write]: Function to write the value to storage
-  ///
-  /// Returns: A lazy PersistSignal that loads on first access
-  factory PersistSignal.lazy({
-    T Function()? initialValue,
-    required FutureOr<T> Function() read,
-    required FutureOr<void> Function(T value) write,
-  }) =>
-      PersistSignal<T>(
-        initialValue: initialValue,
-        read: read,
-        write: write,
-        lazy: true,
-      );
 
   /// Waits for all ongoing write operations to complete.
   Future<void> _waitForWrites() async {
@@ -110,24 +94,20 @@ class PersistSignal<T> extends Signal<T> {
   }
 
   /// Loads the value from storage asynchronously.
-  Future<void> _load() async {
-    _initialValueFuture ??= Future(() async {
-      // Wait for all ongoing write operations to complete
-      await _waitForWrites();
+  Future<void> _load() => _initialValueFuture ??= Future(() async {
+        // Wait for all ongoing write operations to complete
+        await _waitForWrites();
 
-      final version = ++_version;
-      final result = await read();
-      if (_version == version && !hasInitialized) super.set(result);
-      hasInitialized = true;
-      return;
-    });
-
-    return _initialValueFuture;
-  }
+        final version = ++_version;
+        final result = await read();
+        if (_version == version && !hasInitialized) super.set(result);
+        hasInitialized = true;
+        return;
+      });
 
   @override
   T get() {
-    if (!hasInitialized) _load();
+    if (!hasInitialized) unawaited(_load());
 
     return super.get();
   }
@@ -135,6 +115,7 @@ class PersistSignal<T> extends Signal<T> {
   /// Gets the value and ensures it's loaded from storage.
   ///
   /// Returns: A Future that completes with the current value
+  @override
   Future<T> getEnsured() async {
     if (!hasInitialized) await _load();
 
@@ -145,7 +126,7 @@ class PersistSignal<T> extends Signal<T> {
   Timer? _timer;
 
   @override
-  void set(T value) {
+  T set(T value) {
     super.set(value);
     hasInitialized = true;
     _version++;
@@ -171,11 +152,12 @@ class PersistSignal<T> extends Signal<T> {
       final result = write(value);
       if (result is Future) {
         // ignore write error
-        result.catchError((_) {}).whenComplete(() => _finishWrite());
+        result.whenComplete(_finishWrite).ignore();
       } else {
         _finishWrite();
       }
     }
+    return value;
   }
 
   /// Sets a value and ensures it's written to storage before completing.
@@ -188,6 +170,7 @@ class PersistSignal<T> extends Signal<T> {
   ///   on success (safer but user must wait). Defaults to false.
   ///
   /// Returns: A Future that completes with true if write succeeded, false otherwise
+  @override
   Future<bool> setEnsured(T value, {bool optimistic = false}) async {
     // Wait for all ongoing write operations to complete
     await _waitForWrites();
@@ -262,9 +245,86 @@ class PersistSignal<T> extends Signal<T> {
   /// - [fn]: Optional function to run after ensuring initialization
   ///
   /// Returns: A Future that completes when the operation is done
+  @override
   Future<void> ensure(FutureOr<void> Function()? fn) async {
     if (!hasInitialized) await _load();
 
     await fn?.call();
   }
+}
+
+/// Interface for signals that persist their value to external storage.
+///
+/// PersistSignal automatically saves its value to external storage whenever
+/// it changes and loads the initial value from storage when created. It
+/// supports both synchronous and asynchronous read/write operations.
+///
+/// Example:
+/// ```dart
+/// PersistSignal<String> theme = PersistSignal(
+///   initialValue: () => 'light',
+///   read: () => SharedPreferences.getInstance()
+///     .then((prefs) => prefs.getString('theme') ?? 'light'),
+///   write: (value) => SharedPreferences.getInstance()
+///     .then((prefs) => prefs.setString('theme', value)),
+/// );
+///
+/// theme.value = 'dark'; // Automatically saved to storage
+/// ```
+abstract interface class PersistSignal<T> implements Signal<T> {
+  /// Creates a persistent signal with the given configuration.
+  ///
+  /// Parameters:
+  /// - [read]: Function to read the value from storage
+  /// - [write]: Function to write the value to storage
+  /// - [initialValue]: Optional function that returns the initial value if storage is empty
+  /// - [lazy]: Whether to load the value lazily (on first access)
+  /// - [writeDelay]: Delay before writing to storage (for debouncing)
+  /// - [onDebug]: Optional debug callback for reactive system debugging
+  ///
+  /// Example:
+  /// ```dart
+  /// final persistSignal = PersistSignal(
+  ///   read: () => storage.read(),
+  ///   write: (value) => storage.write(value),
+  ///   lazy: false,
+  /// );
+  /// ```
+  factory PersistSignal({
+    required FutureOr<T> Function() read,
+    required FutureOr<void> Function(T value) write,
+    T Function()? initialValue,
+    bool lazy,
+    Duration writeDelay,
+    JoltDebugFn? onDebug,
+  }) = PersistSignalImpl;
+
+  /// Creates a lazy persistent signal that loads its value on first access.
+  ///
+  /// Parameters:
+  /// - [initialValue]: Optional initial value if storage is empty
+  /// - [read]: Function to read the value from storage
+  /// - [write]: Function to write the value to storage
+  ///
+  /// Returns: A lazy PersistSignal that loads on first access
+  factory PersistSignal.lazy({
+    required FutureOr<T> Function() read,
+    required FutureOr<void> Function(T value) write,
+    T Function()? initialValue,
+    Duration writeDelay = Duration.zero,
+    JoltDebugFn? onDebug,
+  }) =>
+      PersistSignalImpl<T>(
+        initialValue: initialValue,
+        read: read,
+        write: write,
+        lazy: true,
+        writeDelay: writeDelay,
+        onDebug: onDebug,
+      );
+
+  Future<void> ensure(FutureOr<void> Function()? fn);
+  Future<bool> setEnsured(T value, {bool optimistic = false});
+  Future<T> getEnsured();
+  bool get hasInitialized;
 }

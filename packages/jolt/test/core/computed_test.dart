@@ -1,38 +1,129 @@
-import 'package:jolt/jolt.dart';
-import 'package:test/test.dart';
+import "package:jolt/jolt.dart";
+import "package:test/test.dart";
 
 void main() {
-  group('Computed', () {
-    group('initial value', () {
-      test('should only affect peek when initialValue is provided', () {
-        final computed = Computed<int>(() => 10, initialValue: 5);
-        expect(computed.peek, equals(10));
-        expect(computed.value, equals(10));
-      });
-
-      test('should have peek initialize value when initialValue is null', () {
+  group("Computed", () {
+    group("initial value", () {
+      test("should have peek initialize value when initialValue is null", () {
         final computed = Computed<int>(() => 10);
         expect(computed.peek, equals(10));
         expect(computed.value, equals(10));
       });
 
-      test('should treat peek as untracked', () {
+      test("should treat peek as untracked", () {
         final signal = Signal(1);
         final computed = Computed<int>(() => signal.value * 2);
         Effect(() {
-          computed.peek;
+          computed.peekCached;
         });
 
-        expect(computed.peek, equals(2));
+        expect(computed.peekCached, equals(2));
         expect(computed.value, equals(2));
 
         signal.value = 2;
-        expect(computed.peek, equals(2));
+        expect(computed.peekCached, equals(2));
         expect(computed.value, equals(4));
+      });
+
+      test("peekCached should return cached value when available", () {
+        final signal = Signal(1);
+        var computeCount = 0;
+        final computed = Computed<int>(() {
+          computeCount++;
+          return signal.value * 2;
+        });
+
+        // First access - no cache, should compute
+        expect(computed.peekCached, equals(2));
+        expect(computeCount, equals(1));
+
+        // Second access with cached value - should return cache without recomputing
+        expect(computed.peekCached, equals(2));
+        expect(computeCount, equals(1)); // Count should not increase
+
+        // Accessing value will update it and invalidate cache
+        signal.value = 2;
+        expect(computed.value, equals(4));
+        expect(computeCount, equals(2));
+
+        // peekCached should now return the cached value (4)
+        expect(computed.peekCached, equals(4));
+        expect(computeCount, equals(2)); // Still no recompute
+      });
+
+      test("peekCached should compute only when no cache exists", () {
+        final computed = Computed<int>(() => 10);
+
+        // First access - no cache, computes
+        expect(computed.peekCached, equals(10));
+
+        // Subsequent accesses return cache without computing
+        expect(computed.peekCached, equals(10));
+        expect(computed.peekCached, equals(10));
+      });
+
+      test("peekCached should not establish reactive dependency", () {
+        final signal = Signal(1);
+        final computed = Computed<int>(() => signal.value * 2);
+        final values = <int>[];
+
+        Effect(() {
+          values.add(computed.peekCached);
+        });
+
+        expect(values, equals([2]));
+
+        // Changing signal should not trigger effect because peekCached doesn't track
+        signal.value = 3;
+        expect(values, equals([2])); // Effect not triggered
+
+        // peekCached still returns old cached value
+        expect(computed.peekCached, equals(2));
+      });
+
+      test("peek vs peekCached difference", () {
+        final signal = Signal(1);
+        var computeCount = 0;
+        final computed = Computed<int>(() {
+          computeCount++;
+          return signal.value * 2;
+        });
+
+        // Initial state - both should compute
+        expect(computed.peek, equals(2));
+        expect(computeCount, equals(1));
+        expect(computed.peekCached, equals(2));
+        expect(computeCount, equals(1)); // peekCached uses cache from peek
+
+        // Change signal
+        signal.value = 3;
+
+        // peek always recomputes (if needed), so it gets fresh value
+        expect(computed.peek, equals(6));
+        expect(computeCount, equals(2)); // Recomputed
+
+        // peekCached returns cached value (from previous peek call)
+        expect(computed.peekCached, equals(6));
+        expect(computeCount, equals(2)); // No recompute, uses cache
+
+        // Change signal again
+        signal.value = 4;
+
+        // peekCached still returns stale cached value
+        expect(computed.peekCached, equals(6));
+        expect(computeCount, equals(2)); // Still no recompute
+
+        // peek recomputes and gets fresh value
+        expect(computed.peek, equals(8));
+        expect(computeCount, equals(3)); // Recomputed
+
+        // Now peekCached gets fresh cache
+        expect(computed.peekCached, equals(8));
+        expect(computeCount, equals(3)); // No recompute
       });
     });
 
-    test('should create computed with getter function', () {
+    test("should create computed with getter function", () {
       final signal = Signal(5);
       final computed = Computed<int>(() => signal.value * 2);
 
@@ -40,7 +131,7 @@ void main() {
       expect(computed.peek, equals(10));
     });
 
-    test('should update when dependencies change', () {
+    test("should update when dependencies change", () {
       final signal = Signal(1);
       final computed = Computed<int>(() => signal.value + 1);
 
@@ -50,7 +141,7 @@ void main() {
       expect(computed.value, equals(6));
     });
 
-    test('should work with multiple dependencies', () {
+    test("should work with multiple dependencies", () {
       final signal1 = Signal(2);
       final signal2 = Signal(3);
       final computed = Computed<int>(() => signal1.value * signal2.value);
@@ -64,10 +155,10 @@ void main() {
       expect(computed.value, equals(20));
     });
 
-    test('should track computed in effect', () {
+    test("should track computed in effect", () {
       final signal = Signal(1);
       final computed = Computed<int>(() => signal.value * 2);
-      final List<int> values = [];
+      final values = <int>[];
 
       Effect(() {
         values.add(computed.value);
@@ -79,14 +170,12 @@ void main() {
       expect(values, equals([2, 6]));
     });
 
-    test('should emit stream events', () async {
+    test("should emit stream events", () async {
       final signal = Signal(1);
       final computed = Computed<int>(() => signal.value * 2);
-      final List<int> values = [];
+      final values = <int>[];
 
-      computed.stream.listen((value) {
-        values.add(value);
-      });
+      computed.stream.listen(values.add);
 
       await Future.delayed(const Duration(milliseconds: 1));
       expect(values, equals([]));
@@ -96,31 +185,31 @@ void main() {
       expect(values, equals([4]));
     });
 
-    test('should work with different data types', () {
-      final stringSignal = Signal('hello');
+    test("should work with different data types", () {
+      final stringSignal = Signal("hello");
       final computed = Computed<String>(
         () => stringSignal.value.toUpperCase(),
       );
 
-      expect(computed.value, equals('HELLO'));
+      expect(computed.value, equals("HELLO"));
 
-      stringSignal.value = 'world';
-      expect(computed.value, equals('WORLD'));
+      stringSignal.value = "world";
+      expect(computed.value, equals("WORLD"));
     });
 
-    test('should work with nullable values', () {
+    test("should work with nullable values", () {
       final signal = Signal<int?>(null);
       final computed = Computed<String>(
-        () => signal.value?.toString() ?? 'null',
+        () => signal.value?.toString() ?? "null",
       );
 
-      expect(computed.value, equals('null'));
+      expect(computed.value, equals("null"));
 
       signal.value = 42;
-      expect(computed.value, equals('42'));
+      expect(computed.value, equals("42"));
     });
 
-    test('should handle complex computations', () {
+    test("should handle complex computations", () {
       final listSignal = Signal<List<int>>([1, 2, 3]);
       final computed = Computed<int>(
         () => listSignal.value.fold(0, (sum, item) => sum + item),
@@ -132,7 +221,7 @@ void main() {
       expect(computed.value, equals(22));
     });
 
-    test('should work with nested computed', () {
+    test("should work with nested computed", () {
       final signal = Signal(2);
       final computed1 = Computed<int>(() => signal.value * 2);
       final computed2 = Computed<int>(() => computed1.value + 1);
@@ -146,7 +235,7 @@ void main() {
     });
 
     test(
-      'should throw ComputedAssertionError when accessing disposed computed',
+      "should throw ComputedAssertionError when accessing disposed computed",
       () async {
         final signal = Signal(1);
         final computed = Computed<int>(() => signal.value * 2);
@@ -158,11 +247,11 @@ void main() {
       },
     );
 
-    test('should work with batch updates', () {
+    test("should work with batch updates", () {
       final signal1 = Signal(1);
       final signal2 = Signal(2);
       final computed = Computed<int>(() => signal1.value + signal2.value);
-      final List<int> values = [];
+      final values = <int>[];
 
       Effect(() {
         values.add(computed.value);
@@ -178,7 +267,7 @@ void main() {
       expect(values, equals([3, 30]));
     });
 
-    test('should handle conditional dependencies', () {
+    test("should handle conditional dependencies", () {
       final conditionSignal = Signal(true);
       final valueSignal = Signal(42);
       final computed = Computed<int>(() {
@@ -202,8 +291,8 @@ void main() {
     });
   });
 
-  group('DualComputed', () {
-    test('should create dual computed with getter and setter', () {
+  group("DualComputed", () {
+    test("should create dual computed with getter and setter", () {
       final signal = Signal(5);
       final dualComputed = WritableComputed<int>(
         () => signal.value * 2,
@@ -213,7 +302,7 @@ void main() {
       expect(dualComputed.value, equals(10));
     });
 
-    test('should update value through setter', () {
+    test("should update value through setter", () {
       final signal = Signal(5);
       final dualComputed = WritableComputed<int>(
         () => signal.value,
@@ -228,7 +317,7 @@ void main() {
       expect(signal.value, equals(20));
     });
 
-    test('should use set method to update value', () {
+    test("should use set method to update value", () {
       final signal = Signal(3);
       final dualComputed = WritableComputed<int>(
         () => signal.value,
@@ -238,18 +327,18 @@ void main() {
       expect(dualComputed.value, equals(3));
 
       dualComputed.set(15);
-      expect(dualComputed.peek, equals(3));
+      expect(dualComputed.peekCached, equals(3));
       expect(dualComputed.value, equals(45));
       expect(signal.value, equals(45));
     });
 
-    test('should track dual computed in effect', () {
+    test("should track dual computed in effect", () {
       final signal = Signal(2);
       final dualComputed = WritableComputed<int>(
         () => signal.value * 2,
         (value) => signal.value = value ~/ 2,
       );
-      final List<int> values = [];
+      final values = <int>[];
 
       Effect(() {
         values.add(dualComputed.value);
@@ -261,17 +350,15 @@ void main() {
       expect(values, equals([4, 12]));
     });
 
-    test('should emit stream events', () async {
+    test("should emit stream events", () async {
       final signal = Signal(1);
       final dualComputed = WritableComputed<int>(
         () => signal.value * 2,
         (value) => signal.value = value ~/ 2,
       );
-      final List<int> values = [];
+      final values = <int>[];
 
-      dualComputed.stream.listen((value) {
-        values.add(value);
-      });
+      dualComputed.stream.listen(values.add);
 
       await Future.delayed(const Duration(milliseconds: 1));
       expect(values, equals([]));
@@ -281,21 +368,21 @@ void main() {
       expect(values, equals([6]));
     });
 
-    test('should work with string transformations', () {
-      final signal = Signal('hello');
+    test("should work with string transformations", () {
+      final signal = Signal("hello");
       final dualComputed = WritableComputed<String>(
         () => signal.value.toUpperCase(),
         (value) => signal.value = value.toLowerCase(),
       );
 
-      expect(dualComputed.value, equals('HELLO'));
+      expect(dualComputed.value, equals("HELLO"));
 
-      dualComputed.value = 'WORLD';
-      expect(dualComputed.value, equals('WORLD'));
-      expect(signal.value, equals('world'));
+      dualComputed.value = "WORLD";
+      expect(dualComputed.value, equals("WORLD"));
+      expect(signal.value, equals("world"));
     });
 
-    test('should handle complex transformations', () {
+    test("should handle complex transformations", () {
       final signal = Signal<List<int>>([1, 2, 3]);
       final dualComputed = WritableComputed<int>(
         () => signal.value.length,
@@ -310,7 +397,7 @@ void main() {
     });
 
     test(
-      'should throw ComputedAssertionError when accessing disposed dual computed',
+      "should throw ComputedAssertionError when accessing disposed dual computed",
       () {
         final signal = Signal(1);
         final dualComputed = WritableComputed<int>(
@@ -329,13 +416,13 @@ void main() {
       },
     );
 
-    test('should work with batch updates', () {
+    test("should work with batch updates", () {
       final signal = Signal(1);
       final dualComputed = WritableComputed<int>(
         () => signal.value * 2,
         (value) => signal.value = value ~/ 2,
       );
-      final List<int> values = [];
+      final values = <int>[];
 
       Effect(() {
         values.add(dualComputed.value);
@@ -344,20 +431,21 @@ void main() {
       expect(values, equals([2]));
 
       batch(() {
-        dualComputed.value = 8;
-        dualComputed.value = 12;
+        dualComputed
+          ..value = 8
+          ..value = 12;
       });
 
       expect(values, equals([2, 12]));
       expect(signal.value, equals(6));
     });
 
-    test('should handle setter errors gracefully', () {
+    test("should handle setter errors gracefully", () {
       final signal = Signal(1);
       final dualComputed =
           WritableComputed<int>(() => signal.value * 2, (value) {
         if (value < 0) {
-          throw ArgumentError('Value cannot be negative');
+          throw ArgumentError("Value cannot be negative");
         }
         signal.value = value ~/ 2;
       });
@@ -368,34 +456,34 @@ void main() {
       expect(signal.value, equals(1));
     });
 
-    test('computed notify times', () {
-      final firstName = Signal('John');
-      final lastName = Signal('Doe');
+    test("computed notify times", () {
+      final firstName = Signal("John");
+      final lastName = Signal("Doe");
       final fullName = WritableComputed(
-        () => '${firstName.value} ${lastName.value}',
+        () => "${firstName.value} ${lastName.value}",
         (value) {
-          final parts = value.split(' ');
+          final parts = value.split(" ");
           if (parts.length >= 2) {
             firstName.value = parts[0];
-            lastName.value = parts.sublist(1).join(' ');
+            lastName.value = parts.sublist(1).join(" ");
           }
         },
       );
-      int count = 0;
+      var count = 0;
       Effect(() {
         fullName.value;
         count++;
       });
       expect(count, equals(1));
-      firstName.value = 'Jane';
+      firstName.value = "Jane";
       expect(count, equals(2));
-      lastName.value = 'Smith';
+      lastName.value = "Smith";
       expect(count, equals(3));
-      fullName.value = 'Jane1 Smith2';
+      fullName.value = "Jane1 Smith2";
       expect(count, equals(4));
     });
 
-    test('should return Computed type after readonly', () {
+    test("should return Computed type after readonly", () {
       final signal = Signal(5);
       final writableComputed = WritableComputed<int>(
         () => signal.value * 2,
@@ -404,7 +492,7 @@ void main() {
 
       expect(writableComputed.value, equals(10));
 
-      final Computed<int> readonlyComputed = writableComputed.readonly();
+      final readonlyComputed = writableComputed.readonly();
 
       expect(readonlyComputed, isA<Computed<int>>());
       expect(readonlyComputed.value, equals(10));
@@ -414,50 +502,48 @@ void main() {
     });
   });
 
-  group('toString', () {
-    test('should return value.toString() in toString', () {
+  group("toString", () {
+    test("should return value.toString() in toString", () {
       final signal = Signal(5);
       final computed = Computed<int>(() => signal.value * 2);
 
-      expect(computed.toString(), equals('10'));
+      expect(computed.toString(), equals("10"));
       expect(computed.toString(), equals(computed.value.toString()));
 
       signal.value = 6;
-      expect(computed.toString(), equals('12'));
+      expect(computed.toString(), equals("12"));
       expect(computed.toString(), equals(computed.value.toString()));
 
-      final stringSignal = Signal('hello');
+      final stringSignal = Signal("hello");
       final stringComputed =
           Computed<String>(() => stringSignal.value.toUpperCase());
 
-      expect(stringComputed.toString(), equals('HELLO'));
-      expect(
-          stringComputed.toString(), equals(stringComputed.value.toString()));
+      expect(stringComputed.toString(), equals("HELLO"));
+      expect(stringComputed.toString(), equals(stringComputed.value));
 
-      stringSignal.value = 'world';
-      expect(stringComputed.toString(), equals('WORLD'));
-      expect(
-          stringComputed.toString(), equals(stringComputed.value.toString()));
+      stringSignal.value = "world";
+      expect(stringComputed.toString(), equals("WORLD"));
+      expect(stringComputed.toString(), equals(stringComputed.value));
     });
 
-    test('should return value.toString() in toString for WritableComputed', () {
+    test("should return value.toString() in toString for WritableComputed", () {
       final signal = Signal(5);
       final writableComputed = WritableComputed<int>(
         () => signal.value * 2,
         (value) => signal.value = value ~/ 2,
       );
 
-      expect(writableComputed.toString(), equals('10'));
+      expect(writableComputed.toString(), equals("10"));
       expect(writableComputed.toString(),
           equals(writableComputed.value.toString()));
 
       signal.value = 6;
-      expect(writableComputed.toString(), equals('12'));
+      expect(writableComputed.toString(), equals("12"));
       expect(writableComputed.toString(),
           equals(writableComputed.value.toString()));
 
       writableComputed.value = 20;
-      expect(writableComputed.toString(), equals('20'));
+      expect(writableComputed.toString(), equals("20"));
       expect(writableComputed.toString(),
           equals(writableComputed.value.toString()));
     });

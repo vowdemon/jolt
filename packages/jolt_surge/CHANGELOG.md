@@ -1,3 +1,17 @@
+## 2.0.0-beta.1
+
+**BREAKING CHANGES:**
+
+- **Type replacements:**
+  - `SurgeStateCreator<T>` (returns `JWritableValue<T>`) → `SurgeStateCreator<T>` (returns `WritableNode<T>`)
+  - `Surge.raw` (returns `JWritableValue<T>`) → `Surge.raw` (returns `WritableNode<T>`)
+  
+  **Migration guide:**
+  - Type annotations: `JWritableValue<T>` → `WritableNode<T>`
+
+ - **REFACTOR**(core): optimize reactive system core and improve code quality. ([444957b6](https://github.com/vowdemon/jolt/commit/444957b6f5e382d689e91db0159fc81d604dfecf))
+ - **REFACTOR**: restructure core interfaces and implementation classes. ([e552ab33](https://github.com/vowdemon/jolt/commit/e552ab336b5a3a759bf55b7c77b29bdabf5fd780))
+
 ## 1.0.4
 
  - Update a dependency to the latest release.

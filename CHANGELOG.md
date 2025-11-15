@@ -3,6 +3,133 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-11-16
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - [`jolt` - `v2.0.0-beta.1`](#jolt---v200-beta1)
+ - [`jolt_hooks` - `v2.0.0-beta.1`](#jolt_hooks---v200-beta1)
+ - [`jolt_surge` - `v2.0.0-beta.1`](#jolt_surge---v200-beta1)
+
+Packages with other changes:
+
+ - [`jolt` - `v2.0.0-beta.1`](#jolt---v200-beta1)
+ - [`jolt_flutter` - `v2.0.0-beta.1`](#jolt_flutter---v200-beta1)
+ - [`jolt_hooks` - `v2.0.0-beta.1`](#jolt_hooks---v200-beta1)
+ - [`jolt_surge` - `v2.0.0-beta.1`](#jolt_surge---v200-beta1)
+ - [`jolt_flutter_hooks` - `v1.0.0-beta.1`](#jolt_flutter_hooks---v100-beta1)
+
+---
+
+#### `jolt` - `v2.0.0-beta.1`
+
+**BREAKING CHANGES:**
+
+- **Type replacements:**
+  - `JReadonlyValue<T>` → `ReadonlyNode<T>`
+  - `JWritableValue<T>` → `WritableNode<T>`
+  - `JEffect` → `EffectNode` (mixin)
+  
+  **Migration guide:**
+  - Type annotations and generic constraints: `JReadonlyValue<T>` → `ReadonlyNode<T>`
+  - Custom class inheritance: `extends JReadonlyValue<T>` → `with ReadonlyNodeMixin<T> implements ReadonlyNode<T>`
+  - Effect classes: `extends JEffect` → `with EffectNode implements ChainedDisposable`
+
+- **Property replacement:**
+  - `Computed.pendingValue` → `Computed.peekCached`
+
+- **Computed API changes:**
+  - `Computed` constructor no longer exposes `initialValue` parameter
+  - `Computed.peek()` method behavior changed: previously used to view cached value, now behaves the same as `untracked`, used to read value without tracking
+  - Added `Computed.peekCached()` method: used to view cached value (replaces the original `peek()` functionality)
+  
+  **Migration guide:**
+  - If you previously used `computed.peek()` to view cached value, change to `computed.peekCached()`
+  - If you need to read value without tracking, use `computed.peek()` or `untracked(() => computed.value)`
+
+**Other changes:**
+
+- **Reactive system refactoring:**
+  - Refactored reactive system abstract classes, separating implementation from interfaces for better extensibility and hiding node details
+
+- **New methods:**
+  - Added `trackWithEffect()` method: used to append dependencies to side effects
+  - Added `notifyAll()` method: used to collect subscribers and notify them
+
+- **Watcher enhancements:**
+  - Added `Watcher.immediately()` factory method: creates a Watcher that executes immediately
+  - Added `Watcher.once()` factory method: creates a Watcher that executes only once
+  - Added pause/resume functionality: `pause()` and `resume()` methods
+  - Added `ignoreUpdates()` method: used to ignore updates
+
+- **Extension methods:**
+  - Added `update()` extension method: facilitates functional updates from old value to new value
+  - Added `until()` extension method: returns a Future for one-time listening to signal value changes
+
+ - **REFACTOR**(jolt): remove EffectBase and add trackWithEffect". ([a00420e3](https://github.com/vowdemon/jolt/commit/a00420e358acc2fed4a3967e04be8ac1aff22a62))
+ - **REFACTOR**(core): optimize reactive system core and improve code quality. ([444957b6](https://github.com/vowdemon/jolt/commit/444957b6f5e382d689e91db0159fc81d604dfecf))
+ - **REFACTOR**: restructure core interfaces and implementation classes. ([e552ab33](https://github.com/vowdemon/jolt/commit/e552ab336b5a3a759bf55b7c77b29bdabf5fd780))
+ - **FEAT**(jolt): add until/update methods and improve APIs. ([44eb0c7b](https://github.com/vowdemon/jolt/commit/44eb0c7b58bc8a7cc07ab6cc4dbcd25d9e5083cf))
+ - **FEAT**(watcher): add pause/resume and ignoreUpdates functionality. ([c882bf72](https://github.com/vowdemon/jolt/commit/c882bf72d04af4e639b29300bf0a5ec3e25bc9aa))
+ - **FEAT**: implement Setup Widget with type-based hook hot reload. ([e71cf18c](https://github.com/vowdemon/jolt/commit/e71cf18c67d2dbf1c011309ef5e45cba219d8299))
+
+#### `jolt_flutter` - `v2.0.0-beta.1`
+
+**New features:**
+
+- **New library:**
+  - Added `setup.dart` library, exporting `SetupWidget`, `SetupBuilder`, and corresponding hooks
+
+ - **REFACTOR**: rename setup widget. ([c7f5fb71](https://github.com/vowdemon/jolt/commit/c7f5fb71a9bf64ef9732c131b7e0d7676443d2fb))
+ - **REFACTOR**: extract hooks into separate jolt_flutter_hooks package. ([e12adb35](https://github.com/vowdemon/jolt/commit/e12adb35c1de431d5032745f5bf44ceea4960b67))
+ - **REFACTOR**(setup): add onChangedDependencies and improve reactive tracking. ([70bffa24](https://github.com/vowdemon/jolt/commit/70bffa24742c80d1388d227541a4182c8b69dbb7))
+ - **REFACTOR**(setup): consolidate hooks exports. ([4f4dcf70](https://github.com/vowdemon/jolt/commit/4f4dcf70d8d7dfbef8fab7f6ddc12bc73979323d))
+ - **REFACTOR**(core): optimize reactive system core and improve code quality. ([444957b6](https://github.com/vowdemon/jolt/commit/444957b6f5e382d689e91db0159fc81d604dfecf))
+ - **REFACTOR**: restructure core interfaces and implementation classes. ([e552ab33](https://github.com/vowdemon/jolt/commit/e552ab336b5a3a759bf55b7c77b29bdabf5fd780))
+ - **FEAT**: implement Setup Widget with type-based hook hot reload. ([e71cf18c](https://github.com/vowdemon/jolt/commit/e71cf18c67d2dbf1c011309ef5e45cba219d8299))
+ - **FEAT**: add onChangedDependencies() hook. ([00a540bf](https://github.com/vowdemon/jolt/commit/00a540bf20b7300fd59ac5e88f23f299f3b5df45))
+ - **DOCS**(jolt_flutter): update api documents. ([48b51351](https://github.com/vowdemon/jolt/commit/48b513518fd5e346817a5fb807d9e265af1fa971))
+
+#### `jolt_hooks` - `v2.0.0-beta.1`
+
+**BREAKING CHANGES:**
+
+- **API signature changes:**
+  - `JoltHook(signal)` (passing instance) → `JoltHook(() => signal)` (passing factory function)
+  - `JoltEffectHook(effect)` (passing instance) → `JoltEffectHook(() => effect)` (passing factory function)
+  
+  **Migration guide:**
+  - Custom hooks need to change parameters from instances to factory functions
+  - Official hooks (`useSignal`, `useComputed`, etc.) require no changes
+
+ - **REFACTOR**(setup): add onChangedDependencies and improve reactive tracking. ([70bffa24](https://github.com/vowdemon/jolt/commit/70bffa24742c80d1388d227541a4182c8b69dbb7))
+ - **REFACTOR**(core): optimize reactive system core and improve code quality. ([444957b6](https://github.com/vowdemon/jolt/commit/444957b6f5e382d689e91db0159fc81d604dfecf))
+ - **REFACTOR**: restructure core interfaces and implementation classes. ([e552ab33](https://github.com/vowdemon/jolt/commit/e552ab336b5a3a759bf55b7c77b29bdabf5fd780))
+ - **FEAT**: implement Setup Widget with type-based hook hot reload. ([e71cf18c](https://github.com/vowdemon/jolt/commit/e71cf18c67d2dbf1c011309ef5e45cba219d8299))
+
+#### `jolt_surge` - `v2.0.0-beta.1`
+
+**BREAKING CHANGES:**
+
+- **Type replacements:**
+  - `SurgeStateCreator<T>` (returns `JWritableValue<T>`) → `SurgeStateCreator<T>` (returns `WritableNode<T>`)
+  - `Surge.raw` (returns `JWritableValue<T>`) → `Surge.raw` (returns `WritableNode<T>`)
+  
+  **Migration guide:**
+  - Type annotations: `JWritableValue<T>` → `WritableNode<T>`
+
+ - **REFACTOR**(core): optimize reactive system core and improve code quality. ([444957b6](https://github.com/vowdemon/jolt/commit/444957b6f5e382d689e91db0159fc81d604dfecf))
+ - **REFACTOR**: restructure core interfaces and implementation classes. ([e552ab33](https://github.com/vowdemon/jolt/commit/e552ab336b5a3a759bf55b7c77b29bdabf5fd780))
+
+#### `jolt_flutter_hooks` - `v1.0.0-beta.1`
+
+ - **REFACTOR**: extract hooks into separate jolt_flutter_hooks package. ([e12adb35](https://github.com/vowdemon/jolt/commit/e12adb35c1de431d5032745f5bf44ceea4960b67))
+
+
 ## 2025-11-14
 
 ### Changes

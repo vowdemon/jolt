@@ -1,13 +1,14 @@
-import 'package:jolt/src/core/debug.dart';
-import 'package:meta/meta.dart';
+import "package:jolt/core.dart";
+import "package:jolt/src/jolt/base.dart";
+import "package:meta/meta.dart";
 
-import 'base.dart';
-import '../core/reactive.dart';
-
-/// A reactive signal that holds a value and notifies subscribers when it changes.
+/// Implementation of [Signal] that holds a value and notifies subscribers when it changes.
 ///
-/// Signals are the foundation of the reactive system. They store state and
-/// automatically track dependencies when accessed within reactive contexts.
+/// This is the concrete implementation of the [Signal] interface. Signals are the
+/// foundation of the reactive system. They store state and automatically track
+/// dependencies when accessed within reactive contexts.
+///
+/// See [Signal] for the public interface and usage examples.
 ///
 /// Example:
 /// ```dart
@@ -22,7 +23,9 @@ import '../core/reactive.dart';
 /// // Use in computed values
 /// final doubled = Computed(() => counter.value * 2);
 /// ```
-class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
+class SignalImpl<T> extends SignalReactiveNode<T>
+    with ReadonlyNodeMixin<T>
+    implements Signal<T> {
   /// Creates a new signal with the given initial value.
   ///
   /// Parameters:
@@ -34,13 +37,10 @@ class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
   /// final name = Signal('Alice');
   /// final counter = Signal(0);
   /// ```
-  Signal(T? value, {JoltDebugFn? onDebug})
-      : cachedValue = value,
-        super(flags: ReactiveFlags.mutable, pendingValue: value) {
+  SignalImpl(T? value, {JoltDebugFn? onDebug})
+      : super(flags: ReactiveFlags.mutable, pendingValue: value) {
     JoltDebug.create(this, onDebug);
   }
-
-  T? cachedValue;
 
   /// Returns the current value without establishing a reactive dependency.
   ///
@@ -52,12 +52,12 @@ class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
   /// final counter = Signal(0);
   /// print(counter.peek); // Doesn't create dependency
   /// ```
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
   @override
   T get peek {
-    assert(!isDisposed);
+    assert(!isDisposed, "Signal is disposed");
     return pendingValue as T;
   }
 
@@ -71,9 +71,9 @@ class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
   /// final counter = Signal(0);
   /// final doubled = Computed(() => counter.value * 2); // Creates dependency
   /// ```
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
   @override
   T get value => get();
 
@@ -82,75 +82,83 @@ class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
   /// This is equivalent to accessing the [value] getter.
   ///
   /// Returns: The current value of the signal
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
+  ///
+  /// Example:
+  /// ```dart
+  /// final current = counter.get();
+  /// ```
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
   @override
   T get() {
-    assert(!isDisposed);
+    assert(!isDisposed, "Signal is disposed");
 
     return getSignal(this);
   }
 
-  /// Sets a new value for the signal.
-  ///
-  /// This will notify all subscribers if the value has changed.
-  ///
-  /// Example:
-  /// ```dart
-  /// final counter = Signal(0);
-  /// counter.value = 10; // Notifies subscribers
-  /// ```
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
-  @override
-  set value(T value) => set(value);
-
-  /// Sets a new value for the signal.
+  /// {@template jolt_signal_set}
+  /// Sets a new value for the signal and notifies subscribers when it changes.
   ///
   /// Parameters:
   /// - [value]: The new value to set
   ///
-  /// This will notify all subscribers if the value has changed.
-  ///
   /// Example:
   /// ```dart
   /// final counter = Signal(0);
-  /// counter.set(10); // Notifies subscribers
+  /// counter.value = 10;
+  /// counter.set(11);
   /// ```
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
+  /// {@endtemplate}
+  ///
+  /// {@macro jolt_signal_set}
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
   @override
-  void set(T value) {
-    assert(!isDisposed);
-    setSignal(this, value);
+  set value(T value) => set(value);
+
+  /// {@macro jolt_signal_set}
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
+  @override
+  T set(T value) {
+    assert(!isDisposed, "Signal is disposed");
+    return setSignal(this, value);
   }
 
   /// Manually notifies all subscribers that this signal has changed.
   ///
   /// This is typically called automatically when the value changes,
   /// but can be called manually for custom notification scenarios.
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
+  ///
+  /// Example:
+  /// ```dart
+  /// counter.notify(); // Force downstream effects to run
+  /// ```
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
   @override
   void notify() {
-    assert(!isDisposed);
+    assert(!isDisposed, "Signal is disposed");
     notifySignal(this);
   }
 
   /// Disposes the signal and cleans up resources.
   ///
   /// Removes the signal from the reactive system and clears stored values.
+  ///
+  /// Example:
+  /// ```dart
+  /// counter.dispose();
+  /// ```
   @override
   @mustCallSuper
   @protected
   void onDispose() {
     disposeNode(this);
-    cachedValue = null;
-    pendingValue = null;
   }
 }
 
@@ -169,14 +177,27 @@ class Signal<T> extends JReadonlyValue<T> implements WritableSignal<T> {
 ///   void increment() => _count.value++;
 /// }
 /// ```
-abstract interface class ReadonlySignal<T> implements JReadonlyValue<T> {}
+abstract interface class ReadonlySignal<T>
+    implements Readonly<T>, ReadonlyNode<T> {}
 
 /// A writable interface for signals that allows modification.
 ///
 /// This interface extends ReadonlySignal to provide write access
 /// to the signal's value.
-abstract interface class WritableSignal<T>
-    implements JWritableValue<T>, ReadonlySignal<T> {}
+///
+/// Example:
+/// ```dart
+/// Signal<int> counter = Signal(0);
+/// counter.value++;
+/// ```
+abstract interface class Signal<T>
+    implements
+        Writable<T>,
+        WritableNode<T>,
+        ReadonlyNode<T>,
+        ReadonlySignal<T> {
+  factory Signal(T value, {JoltDebugFn? onDebug}) = SignalImpl;
+}
 
 /// Extension methods for Signal to provide additional functionality.
 extension JoltSignalExtension<T> on Signal<T> {

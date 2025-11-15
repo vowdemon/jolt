@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:jolt/core.dart' as reactive;
 import 'package:jolt/jolt.dart' as jolt;
+import 'package:jolt_flutter/core.dart';
 
 import '../shared.dart';
 
@@ -97,7 +98,7 @@ class JoltBuilderElement extends StatelessElement with JoltCommonEffectBuilder {
 
   @override
   Widget build() {
-    final prevSub = reactive.setActiveSub(_effect);
+    final prevSub = reactive.setActiveSub(_effect as ReactiveNode);
     try {
       return widget.build(this);
     } finally {

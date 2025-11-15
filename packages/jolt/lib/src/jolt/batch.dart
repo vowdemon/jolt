@@ -1,6 +1,4 @@
-import 'dart:async';
-
-import '../core/reactive.dart';
+import "package:jolt/core.dart";
 
 /// Batches multiple reactive updates into a single notification cycle.
 ///
@@ -25,7 +23,7 @@ import '../core/reactive.dart';
 ///   lastName.value = 'Smith';  // No immediate notification
 /// }); // Notification happens here: "Jane Smith"
 /// ```
-FutureOr<T> batch<T>(T Function() fn) async {
+T batch<T>(T Function() fn) {
   startBatch();
   try {
     return fn();

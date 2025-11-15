@@ -1,10 +1,10 @@
-import 'package:test/test.dart';
+import "package:test/test.dart";
 
-import 'common.dart';
+import "common.dart";
 
 void main() {
-  group('untracked', () {
-    test('should pause tracking in computed', () {
+  group("untracked", () {
+    test("should pause tracking in computed", () {
       final src = signal(0);
 
       var computedTriggerTimes = 0;
@@ -26,7 +26,7 @@ void main() {
       expect(computedTriggerTimes, 1);
     });
 
-    test('should pause tracking in effect', () {
+    test("should pause tracking in effect", () {
       final src = signal(0);
       final kIs = signal(0);
 
@@ -67,7 +67,7 @@ void main() {
       expect(effectTriggerTimes, 4);
     });
 
-    test('should pause tracking in effect scope', () {
+    test("should pause tracking in effect scope", () {
       final src = signal(0);
 
       var effectTriggerTimes = 0;

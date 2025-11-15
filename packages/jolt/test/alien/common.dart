@@ -1,18 +1,21 @@
-import 'package:shared_interfaces/shared_interfaces.dart';
-import 'package:jolt/jolt.dart';
-import 'package:jolt/src/core/reactive.dart' as reactive;
-export 'package:jolt/src/core/reactive.dart';
+import "package:jolt/jolt.dart";
+import "package:jolt/src/core/reactive.dart" as reactive;
+import "package:jolt/src/core/reactive.dart";
+
+export "package:jolt/src/core/reactive.dart";
 
 /// Create a reactive signal with initial value
+// alien_signals function
+// ignore: avoid_positional_boolean_parameters
 T Function([T? value, bool write]) signal<T>(T initialValue) {
   final s = Signal<T>(
     initialValue,
   );
   return ([T? value, bool write = false]) {
     if (write) {
-      return reactive.setSignal(s, value as T);
+      return reactive.setSignal(s as SignalReactiveNode<T>, value as T);
     } else {
-      return reactive.getSignal(s);
+      return reactive.getSignal(s as SignalReactiveNode<T>);
     }
   };
 }
@@ -23,19 +26,19 @@ T Function() computed<T>(T Function() getter) {
     getter,
   );
 
-  return () => reactive.getComputed(c);
+  return () => reactive.getComputed(c as ComputedReactiveNode<T>);
 }
 
 /// Create a reactive effect that runs when dependencies change
-Disposer effect(void Function() fn) {
-  final Effect e = Effect(fn);
+void Function() effect(void Function() fn) {
+  final e = Effect(fn);
 
   return e.dispose;
 }
 
 /// Create an effect scope for managing multiple effects
-Disposer effectScope(void Function() fn) {
-  final EffectScope e = EffectScope()..run(() => fn());
+void Function() effectScope(void Function() fn) {
+  final e = EffectScope()..run(() => fn());
 
   return e.dispose;
 }

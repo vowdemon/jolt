@@ -1,10 +1,10 @@
-import 'dart:async';
+import "dart:async";
 
-import 'package:jolt/jolt.dart';
-import 'package:jolt/src/jolt/shared.dart';
+import "package:jolt/jolt.dart";
+import "package:jolt/src/jolt/shared.dart";
 
-/// Extension methods for converting reactive values to streams.
-extension JoltStreamValueExtension<T> on JReadonlyValue<T> {
+/// Extension methods for readonly reactive values.
+extension JoltReadonlyExtension<T> on ReadonlyNode<T> {
   /// Converts this reactive value to a broadcast stream.
   ///
   /// The stream emits the current value whenever the reactive value changes.
@@ -24,7 +24,7 @@ extension JoltStreamValueExtension<T> on JReadonlyValue<T> {
   /// counter.value = 2; // Prints: "Counter: 2"
   /// ```
   Stream<T> get stream {
-    assert(!isDisposed);
+    assert(!isDisposed, "$runtimeType is disposed");
     var s = streamHolders[this] as StreamHolder<T>?;
     if (s == null) {
       streamHolders[this] = s = StreamHolder<T>(
@@ -81,9 +81,62 @@ extension JoltStreamValueExtension<T> on JReadonlyValue<T> {
     bool? cancelOnError,
     bool immediately = false,
   }) {
-    assert(!isDisposed);
+    assert(!isDisposed, "$runtimeType is disposed");
     if (immediately) onData?.call(value);
     return stream.listen(onData,
         onError: onError, onDone: onDone, cancelOnError: cancelOnError);
+  }
+
+  /// Waits until the reactive value satisfies a predicate condition.
+  ///
+  /// This method creates an effect that monitors the reactive value and
+  /// completes the returned future when the predicate returns `true` for
+  /// the current value. The effect is automatically disposed when the
+  /// future completes or is cancelled.
+  ///
+  /// **Behavior:**
+  /// - The effect runs immediately and whenever the value changes
+  /// - The future completes with the value that satisfied the predicate
+  /// - The effect is automatically cleaned up when the future completes
+  ///
+  /// Parameters:
+  /// - [predicate]: A function that returns `true` when the condition is met
+  ///
+  /// Returns: A Future that completes with the value when the predicate is satisfied
+  ///
+  /// Example:
+  /// ```dart
+  /// final count = Signal(0);
+  ///
+  /// // Wait until count reaches 5
+  /// final future = count.until((value) => value >= 5);
+  ///
+  /// count.value = 1; // Still waiting
+  /// count.value = 3; // Still waiting
+  /// count.value = 5; // Future completes with value 5
+  ///
+  /// final result = await future; // result is 5
+  /// ```
+  ///
+  /// Example with async/await:
+  /// ```dart
+  /// final isLoading = Signal(true);
+  ///
+  /// // Wait until loading completes
+  /// final data = await isLoading.until((value) => !value);
+  /// print('Loading finished');
+  /// ```
+  Future<T> until(bool Function(T value) predicate) {
+    final completer = Completer<T>();
+
+    final effect = Effect(() {
+      if (predicate(value)) {
+        completer.complete(value);
+      }
+    });
+
+    completer.future.whenComplete(effect.dispose);
+
+    return completer.future;
   }
 }

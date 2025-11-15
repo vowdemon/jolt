@@ -1,14 +1,14 @@
-import 'package:test/test.dart';
+import "package:test/test.dart";
 
-import 'common.dart';
+import "common.dart";
 
 void main() {
-  group('computed', () {
-    test('should correctly propagate changes through computed signals', () {
+  group("computed", () {
+    test("should correctly propagate changes through computed signals", () {
       final src = signal(0);
       final c1 = computed(() => src() % 2);
-      final c2 = computed(() => c1());
-      final c3 = computed(() => c2());
+      final c2 = computed(c1);
+      final c3 = computed(c2);
 
       c3();
       src(1, true);
@@ -19,12 +19,12 @@ void main() {
     });
 
     test(
-      'should propagate updated source value through chained computations',
+      "should propagate updated source value through chained computations",
       () {
         final src = signal(0);
-        final a = computed(() => src());
+        final a = computed(src);
         final b = computed(() => a() % 2);
-        final c = computed(() => src());
+        final c = computed(src);
         final d = computed(() => b() + c());
 
         expect(d(), 0);
@@ -33,9 +33,9 @@ void main() {
       },
     );
 
-    test('should handle flags are indirectly updated during checkDirty', () {
+    test("should handle flags are indirectly updated during checkDirty", () {
       final a = signal(false);
-      final b = computed(() => a());
+      final b = computed(a);
       final c = computed(() {
         b();
         return 0;
@@ -50,8 +50,8 @@ void main() {
       expect(d(), true);
     });
 
-    test('should not update if the signal value is reverted', () {
-      int times = 0;
+    test("should not update if the signal value is reverted", () {
+      var times = 0;
 
       final src = signal(0);
       final c1 = computed(() {

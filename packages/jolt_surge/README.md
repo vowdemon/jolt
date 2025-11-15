@@ -1,22 +1,66 @@
 # Jolt Surge
 
-A lightweight, signal-driven state management library for Flutter built on top of [Jolt Signals](https://pub.dev/packages/jolt). Jolt Surge provides a predictable state container pattern inspired by [BLoC's Cubit](https://bloclibrary.dev/#/coreconcepts?id=cubit), with fine-grained rebuild control, composable listeners, and selector-based rendering.
+[![CI/CD](https://github.com/vowdemon/jolt/actions/workflows/cicd.yml/badge.svg)](https://github.com/vowdemon/jolt/actions/workflows/cicd.yml)
+[![codecov](https://codecov.io/gh/vowdemon/jolt/graph/badge.svg?token=CBL7C4ZRZD)](https://codecov.io/gh/vowdemon/jolt)
+[![jolt_surge](https://img.shields.io/pub/v/jolt_surge?label=jolt_surge)](https://pub.dev/packages/jolt_surge)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/vowdemon/jolt/blob/main/LICENSE)
 
-## Documentation
+A lightweight, signal-driven state management library for Flutter built on top of [Jolt Signals](https://pub.dev/packages/jolt). Jolt Surge provides a predictable state container pattern inspired by [BLoC's Cubit](https://bloclibrary.dev/#/coreconcepts?id=cubit), with fine-grained rebuild control, composable listeners, and selector-based rendering. Surge combines the simplicity and predictability of the Cubit pattern with the reactive capabilities of Jolt Signals, leveraging automatic dependency tracking to build highly efficient Flutter applications with minimal boilerplate.
 
-[Official Documentation](https://jolt.vowdemon.com)
 
-## Overview
 
-Jolt Surge combines the simplicity and predictability of the Cubit pattern with the reactive capabilities of Jolt Signals. Unlike traditional state management solutions, Surge leverages Jolt's automatic dependency tracking system, enabling you to build highly efficient Flutter applications with minimal boilerplate.
+## Quick Start
 
-**Key Features:**
-- 🎯 **Predictable State Management**: Simple API with `emit()` and `state` properties
-- 🔄 **Reactive State Container**: Built on Jolt Signals with automatic dependency tracking
-- ⚡ **Fine-Grained Rebuild Control**: Conditional rebuilding and listening with `buildWhen` and `listenWhen`
-- 🎨 **Composable Listeners**: Separate side effects from UI rendering
-- 📊 **Selector-Based Rendering**: Optimize rebuilds with selector functions
-- 🧹 **Automatic Lifecycle Management**: Optional automatic disposal with `SurgeProvider`
+### Define a Surge
+
+```dart
+import 'package:jolt_surge/jolt_surge.dart';
+
+class CounterSurge extends Surge<int> {
+  CounterSurge() : super(0);
+
+  void increment() => emit(state + 1);
+  void decrement() => emit(state - 1);
+
+  @override
+  void onChange(Change<int> change) {
+    // optional: observe transitions
+  }
+}
+```
+
+### Provide and consume
+
+```dart
+SurgeProvider<CounterSurge>(
+  create: (_) => CounterSurge(), // auto-disposed on unmount
+  child: SurgeBuilder<CounterSurge, int>(
+    builder: (context, state, surge) => Text('count: $state'),
+  ),
+);
+```
+
+Using `.value` (you manage lifecycle):
+
+```dart
+final surge = CounterSurge();
+
+SurgeProvider<CounterSurge>.value(
+  value: surge, // not auto-disposed
+  child: SurgeBuilder<CounterSurge, int>(
+    builder: (context, state, s) => Text('count: $state'),
+  ),
+);
+```
+
+### Actions (emit state)
+
+```dart
+ElevatedButton(
+  onPressed: () => context.read<CounterSurge>().increment(),
+  child: const Text('Increment'),
+);
+```
 
 ## Core Concepts
 
@@ -80,6 +124,77 @@ Jolt Surge's API is ~90% similar to BLoC's Cubit, making it easy to migrate betw
    - **Cubit**: Relies on Stream-based updates
    - **Surge**: Leverages Jolt's fine-grained dependency tracking for optimal rebuilds
 
+5. **Widget Callback APIs: Surge Instance Access**
+   - **Cubit**: Widget callbacks (builder, listener, selector) only receive `(context, state)` - only state is accessible
+   - **Surge**: Widget callbacks receive `(context, state, surge)` or `(state, surge)` - both state and Surge instance are accessible
+
+   **Note:** If you prefer the Cubit-style API and don't need the Surge instance, you can simply ignore it by using `_` as the parameter name: `(context, state, _)` or `(state, _)`.
+
+   This difference is crucial for derived values. In Cubit, when you need computed values based on state, you have two options:
+   - Cache the value manually
+   - Write a getter function that recalculates on every access
+
+   With Surge, since it's built on Jolt Signals, you can define `Computed` properties directly in your Surge class. These computed values are automatically cached and only recompute when their dependencies change. By passing the Surge instance to callbacks, you can access these computed properties directly:
+
+   ```dart
+   // Cubit approach - manual caching or getter
+   class CounterCubit extends Cubit<int> {
+     CounterCubit() : super(0);
+     void increment() => emit(state + 1);
+     
+     // Option 1: Manual cache
+     int? _doubledCache;
+     int get doubled {
+       _doubledCache ??= state * 2;
+       return _doubledCache!;
+     }
+     
+     // Option 2: Getter (recalculates every time)
+     int get doubled => state * 2;
+   }
+   
+   BlocBuilder<CounterCubit, int>(
+     builder: (context, state) {
+       // Can only access state, not the cubit instance
+       // Must use context.read<CounterCubit>() to access getters
+       final cubit = context.read<CounterCubit>();
+       return Text('Doubled: ${cubit.doubled}');
+     },
+   )
+   
+   // Surge approach - reactive computed
+   class CounterSurge extends Surge<int> {
+     CounterSurge() : super(0);
+     void increment() => emit(state + 1);
+     
+     // Computed automatically caches and only recomputes when state changes
+     late final doubled = Computed(() => state * 2);
+   }
+   
+   // All Surge widgets pass the surge instance
+   SurgeBuilder<CounterSurge, int>(
+     builder: (context, state, surge) {
+       // Direct access to computed properties via surge instance
+       return Text('Doubled: ${surge.doubled.value}');
+     },
+   )
+   
+   SurgeSelector<CounterSurge, int, String>(
+     selector: (state, surge) => surge.doubled.value.toString(),
+     builder: (context, selected, surge) => Text(selected),
+   )
+   
+   // If you prefer Cubit-style API, simply ignore the surge parameter
+   SurgeBuilder<CounterSurge, int>(
+     builder: (context, state, _) {
+       // Works just like BlocBuilder - only using state
+       return Text('Count: $state');
+     },
+   )
+   ```
+
+   This design allows you to encapsulate derived state logic within the Surge class, making it more maintainable and leveraging Jolt's reactive system for optimal performance. The Surge instance in callbacks provides a clean, type-safe way to access these computed values without needing to look up the instance from context. If you don't need computed properties, you can simply ignore the surge parameter with `_` to maintain the familiar Cubit-style API.
+
 ### Code Example
 
 The API is nearly identical, making it easy to switch between Cubit and Surge:
@@ -99,55 +214,6 @@ class CounterSurge extends Surge<int> {
 ```
 
 The main difference is the underlying reactive system: Cubit uses Streams, while Surge uses Jolt Signals, providing automatic dependency tracking and better performance optimizations. You can easily migrate between them and experience the benefits of signal-based state management.
-
-## Quick Start
-
-### Define a Surge
-```dart
-import 'package:jolt_surge/jolt_surge.dart';
-
-class CounterSurge extends Surge<int> {
-  CounterSurge() : super(0);
-
-  void increment() => emit(state + 1);
-  void decrement() => emit(state - 1);
-
-  @override
-  void onChange(Change<int> change) {
-    // optional: observe transitions
-  }
-}
-```
-
-### Provide and consume
-```dart
-SurgeProvider<CounterSurge>(
-  create: (_) => CounterSurge(), // auto-disposed on unmount
-  child: SurgeBuilder<CounterSurge, int>(
-    builder: (context, state, surge) => Text('count: $state'),
-  ),
-);
-```
-
-Using `.value` (you manage lifecycle):
-```dart
-final surge = CounterSurge();
-
-SurgeProvider<CounterSurge>.value(
-  value: surge, // not auto-disposed
-  child: SurgeBuilder<CounterSurge, int>(
-    builder: (context, state, s) => Text('count: $state'),
-  ),
-);
-```
-
-### Actions (emit state)
-```dart
-ElevatedButton(
-  onPressed: () => context.read<CounterSurge>().increment(),
-  child: const Text('Increment'),
-);
-```
 
 ## Widgets
 

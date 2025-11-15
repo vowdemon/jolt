@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
-import 'package:jolt/core.dart' as reactive;
-import 'package:jolt/jolt.dart' as jolt;
+import 'package:jolt/core.dart';
+import 'package:jolt/jolt.dart';
 import 'package:shared_interfaces/shared_interfaces.dart';
 
 import '../shared.dart';
@@ -204,18 +204,18 @@ class JoltProviderElement<T> extends ComponentElement
   @override
   JoltProvider<T> get widget => super.widget as JoltProvider<T>;
 
-  jolt.EffectScope? _scope;
-  jolt.Effect? _effect;
+  EffectScope? _scope;
+  Effect? _effect;
 
   T? _store;
 
   @override
   void mount(Element? parent, Object? newSlot) {
-    _scope = jolt.EffectScope()
+    _scope = EffectScope()
       ..run(() {
         // Use create function if provided, otherwise use value
         _store = widget.create?.call(this) ?? widget.value;
-        _effect = jolt.Effect(joltBuildTriggerEffect, immediately: false);
+        _effect = Effect(joltBuildTriggerEffect, immediately: false);
       });
 
     super.mount(parent, newSlot);
@@ -273,11 +273,11 @@ class JoltProviderElement<T> extends ComponentElement
     final store = _store as T;
     late Widget child;
 
-    final prevSub = reactive.setActiveSub(_effect);
+    final prevSub = setActiveSub(_effect as ReactiveNode);
     try {
       child = widget.builder(this, store);
     } finally {
-      reactive.setActiveSub(prevSub);
+      setActiveSub(prevSub);
     }
 
     return _JoltProviderData(

@@ -1,13 +1,13 @@
-import 'package:jolt/jolt.dart';
-import 'package:jolt/src/jolt/shared.dart';
-import 'package:test/test.dart';
+import "package:jolt/jolt.dart";
+import "package:jolt/src/jolt/shared.dart";
+import "package:test/test.dart";
 
 void main() {
-  group('shared', () {
-    group('JoltAttachments', () {
-      test('should trigger disposal on signal dispose', () {
+  group("shared", () {
+    group("JoltAttachments", () {
+      test("should trigger disposal on signal dispose", () {
         final signal = Signal(0);
-        int count = 0;
+        var count = 0;
 
         JFinalizer.attachToJoltAttachments(signal, () {
           count++;
@@ -21,9 +21,9 @@ void main() {
         expect(JFinalizer.getJoltAttachments(signal), isEmpty);
       });
 
-      test('should be idempotent when manually disposing attachments', () {
+      test("should be idempotent when manually disposing attachments", () {
         final signal = Signal(0);
-        int count = 0;
+        var count = 0;
 
         JFinalizer.attachToJoltAttachments(signal, () {
           count++;
@@ -47,9 +47,9 @@ void main() {
         expect(JFinalizer.getJoltAttachments(signal), isEmpty);
       });
 
-      test('should allow manual detachment by calling returned disposer', () {
+      test("should allow manual detachment by calling returned disposer", () {
         final signal = Signal(0);
-        int count = 0;
+        var count = 0;
 
         final disposer = JFinalizer.attachToJoltAttachments(signal, () {
           count++;
@@ -69,9 +69,9 @@ void main() {
         expect(JFinalizer.getJoltAttachments(signal), isEmpty);
       });
 
-      test('should detach using detachFromJoltAttachments', () {
+      test("should detach using detachFromJoltAttachments", () {
         final signal = Signal(0);
-        int count = 0;
+        var count = 0;
 
         void originalDisposer() {
           count++;
@@ -92,6 +92,37 @@ void main() {
         expect(count, equals(0));
         expect(JFinalizer.getJoltAttachments(signal), isEmpty);
       });
+
+      test("should work with effect nodes", () {
+        final effectNode = _TestEffectNode();
+        var count = 0;
+
+        JFinalizer.attachToJoltAttachments(effectNode, () {
+          count++;
+        });
+
+        expect(count, equals(0));
+        expect(effectNode.isDisposed, isFalse);
+
+        effectNode.dispose();
+
+        expect(count, equals(1));
+        expect(effectNode.isDisposed, isTrue);
+      });
     });
   });
+}
+
+class _TestEffectNode with EffectNode {
+  _TestEffectNode() : super();
+
+  @override
+  bool get isDisposed => _disposed;
+
+  bool _disposed = false;
+
+  @override
+  void onDispose() {
+    _disposed = true;
+  }
 }

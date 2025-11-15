@@ -1,8 +1,8 @@
-import 'dart:async';
+import "dart:async";
 
-import 'package:shared_interfaces/shared_interfaces.dart';
-
-import 'signal.dart';
+import "package:jolt/core.dart";
+import "package:jolt/src/jolt/signal.dart";
+import "package:shared_interfaces/shared_interfaces.dart";
 
 /// Represents the state of an asynchronous operation.
 ///
@@ -149,10 +149,56 @@ final class AsyncError<T> extends AsyncState<T> {
 /// Abstract interface for async data sources.
 ///
 /// AsyncSource defines how to start and manage an asynchronous operation
-/// that emits values to an AsyncSignal.
+/// that emits values to an AsyncSignal. Implement this interface to create
+/// custom async sources for AsyncSignal.
+///
+/// Example:
+/// ```dart
+/// class MyAsyncSource<T> extends AsyncSource<T> {
+///   @override
+///   FutureOr<void> subscribe(void Function(AsyncState<T> state) emit) async {
+///     emit(AsyncLoading());
+///     try {
+///       final data = await fetchData();
+///       emit(AsyncSuccess(data));
+///     } catch (e, st) {
+///       emit(AsyncError(e, st));
+///     }
+///   }
+/// }
+/// ```
 abstract class AsyncSource<T> implements Disposable {
+  /// Subscribes to the async source and emits states.
+  ///
+  /// Parameters:
+  /// - [emit]: Function to call with async states (loading, success, error)
+  ///
+  /// This method should emit [AsyncLoading] initially, then either
+  /// [AsyncSuccess] on success or [AsyncError] on failure.
+  ///
+  /// Example:
+  /// ```dart
+  /// @override
+  /// FutureOr<void> subscribe(void Function(AsyncState<T> state) emit) async {
+  ///   emit(AsyncLoading());
+  ///   final data = await fetchData();
+  ///   emit(AsyncSuccess(data));
+  /// }
+  /// ```
   FutureOr<void> subscribe(void Function(AsyncState<T> state) emit);
 
+  /// Disposes this async source and cleans up resources.
+  ///
+  /// Override this method to provide custom cleanup logic, such as
+  /// canceling ongoing operations or closing connections.
+  ///
+  /// Example:
+  /// ```dart
+  /// @override
+  /// void dispose() {
+  ///   _subscription?.cancel();
+  /// }
+  /// ```
   @override
   FutureOr<void> dispose() {}
 }
@@ -182,8 +228,8 @@ class FutureSource<T> extends AsyncSource<T> {
   /// Emits [AsyncLoading] initially, then either [AsyncSuccess] on success
   /// or [AsyncError] on failure.
   @override
-  FutureOr<void> subscribe(emit) {
-    _future
+  FutureOr<void> subscribe(void Function(AsyncState<T> state) emit) async {
+    await _future
         .then((data) => emit(AsyncSuccess(data)))
         .catchError((e, st) => emit(AsyncError(e, st)));
   }
@@ -215,8 +261,8 @@ class StreamSource<T> extends AsyncSource<T> {
   /// Emits [AsyncLoading] initially, then [AsyncSuccess] for each stream value
   /// or [AsyncError] for stream errors.
   @override
-  FutureOr<void> subscribe(emit) async {
-    final Completer<void> completer = Completer<void>();
+  FutureOr<void> subscribe(void Function(AsyncState<T> state) emit) async {
+    final completer = Completer<void>();
     _sub = _stream.listen(
       (data) => emit(AsyncSuccess(data)),
       onError: (e, st) => emit(AsyncError(e, st)),
@@ -227,16 +273,19 @@ class StreamSource<T> extends AsyncSource<T> {
 
   @override
   void dispose() {
-    _sub?.cancel();
+    _sub?.cancel().ignore();
     _sub = null;
   }
 }
 
-/// A reactive signal that manages async state transitions.
+/// Implementation of [AsyncSignal] that manages async state transitions.
 ///
-/// AsyncSignal wraps an AsyncSource and provides a reactive interface
-/// to async operations, automatically managing state transitions and
-/// providing convenient access to the current async state.
+/// This is the concrete implementation of the [AsyncSignal] interface. AsyncSignal
+/// wraps an AsyncSource and provides a reactive interface to async operations,
+/// automatically managing state transitions and providing convenient access to
+/// the current async state.
+///
+/// See [AsyncSignal] for the public interface and usage examples.
 ///
 /// Example:
 /// ```dart
@@ -251,22 +300,24 @@ class StreamSource<T> extends AsyncSource<T> {
 ///   if (state.isError) print('Error: ${state.error}');
 /// });
 /// ```
-class AsyncSignal<T> extends Signal<AsyncState<T>> {
+class AsyncSignalImpl<T> extends SignalImpl<AsyncState<T>>
+    implements AsyncSignal<T> {
   /// Creates an async signal with the given source.
   ///
   /// Parameters:
   /// - [source]: The async source to manage
   /// - [initialValue]: Optional initial async state
-  AsyncSignal({
+  AsyncSignalImpl({
     AsyncSource<T>? source,
     AsyncState<T>? initialValue,
     super.onDebug,
   }) : super(initialValue ?? AsyncLoading<T>()) {
     if (source != null) {
-      fetch(source);
+      unawaited(fetch(source));
     }
   }
 
+  @override
   T? get data => value.data;
 
   Disposer? _sourceDisposer;
@@ -292,6 +343,46 @@ class AsyncSignal<T> extends Signal<AsyncState<T>> {
       }
     }
   }
+}
+
+/// Interface for reactive signals that manage async state transitions.
+///
+/// AsyncSignal wraps an AsyncSource and provides a reactive interface
+/// to async operations, automatically managing state transitions and
+/// providing convenient access to the current async state.
+///
+/// Example:
+/// ```dart
+/// AsyncSignal<String> signal = AsyncSignal.fromFuture(
+///   Future.delayed(Duration(seconds: 1), () => 'Hello')
+/// );
+///
+/// Effect(() {
+///   if (signal.value.isSuccess) {
+///     print('Data: ${signal.data}');
+///   }
+/// });
+/// ```
+abstract interface class AsyncSignal<T> implements Signal<AsyncState<T>> {
+  /// Creates an async signal with the given source.
+  ///
+  /// Parameters:
+  /// - [source]: The async source to manage
+  /// - [initialValue]: Optional initial async state
+  /// - [onDebug]: Optional debug callback for reactive system debugging
+  ///
+  /// Example:
+  /// ```dart
+  /// final signal = AsyncSignal(
+  ///   source: FutureSource(future),
+  ///   initialValue: AsyncLoading(),
+  /// );
+  /// ```
+  factory AsyncSignal({
+    AsyncSource<T>? source,
+    AsyncState<T>? initialValue,
+    JoltDebugFn? onDebug,
+  }) = AsyncSignalImpl<T>;
 
   /// Creates an async signal from a Future.
   ///
@@ -306,9 +397,8 @@ class AsyncSignal<T> extends Signal<AsyncState<T>> {
   ///   Future.delayed(Duration(seconds: 1), () => 'Hello')
   /// );
   /// ```
-  factory AsyncSignal.fromFuture(Future<T> future) {
-    return AsyncSignal(source: FutureSource(future));
-  }
+  factory AsyncSignal.fromFuture(Future<T> future, {JoltDebugFn? onDebug}) =>
+      AsyncSignalImpl(source: FutureSource(future), onDebug: onDebug);
 
   /// Creates an async signal from a Stream.
   ///
@@ -323,7 +413,17 @@ class AsyncSignal<T> extends Signal<AsyncState<T>> {
   ///   Stream.periodic(Duration(seconds: 1), (i) => i)
   /// );
   /// ```
-  factory AsyncSignal.fromStream(Stream<T> stream) {
-    return AsyncSignal(source: StreamSource(stream));
-  }
+  factory AsyncSignal.fromStream(Stream<T> stream, {JoltDebugFn? onDebug}) =>
+      AsyncSignalImpl(source: StreamSource(stream), onDebug: onDebug);
+
+  /// Gets the data from the current async state.
+  ///
+  /// Returns the data for [AsyncSuccess] state, null for [AsyncLoading]
+  /// and [AsyncError] states.
+  ///
+  /// Example:
+  /// ```dart
+  /// final data = signal.data; // null if loading or error
+  /// ```
+  T? get data;
 }

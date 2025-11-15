@@ -1,76 +1,161 @@
-import 'package:shared_interfaces/shared_interfaces.dart';
-import 'package:meta/meta.dart';
-
-import '../core/reactive.dart';
-import 'shared.dart';
+import "package:jolt/src/core/reactive.dart";
+import "package:jolt/src/jolt/shared.dart";
+import "package:meta/meta.dart";
+import "package:shared_interfaces/shared_interfaces.dart";
 
 /// Marker interface for mutable collection types.
 ///
 /// This interface is used internally to identify reactive collections
 /// that can be modified and need special handling for change detection.
+///
+/// Example:
+/// ```dart
+/// class MutableListSignal<T> extends ListSignal<T>
+///     implements IMutableCollection<T> {}
+/// ```
 abstract interface class IMutableCollection<T> {}
 
-/// Base class for all readable reactive values.
+/// Mixin that provides base functionality for readonly reactive nodes.
 ///
-/// JReadonlyValue provides the foundation for reactive values that can
-/// be read and tracked as dependencies. It handles disposal, dependency
-/// tracking, and notification of subscribers.
-abstract class JReadonlyValue<T> extends ReactiveNode
-    implements ChainedDisposable {
-  /// Creates a readable reactive value.
-  ///
-  /// Parameters:
-  /// - [flags]: Reactive flags for this node
-  /// - [pendingValue]: Initial internal value storage
-  JReadonlyValue({required super.flags, this.pendingValue});
-
-  /// Internal storage for the node's value.
-  T? pendingValue;
-
-  /// Returns the current value without establishing a reactive dependency.
-  T get peek;
-
-  /// Returns the current value and establishes a reactive dependency.
-  T get value;
-
-  /// Returns the current value and establishes a reactive dependency.
-  T get();
-
-  /// Whether this reactive value has been disposed.
+/// This mixin implements common disposal logic and state management for
+/// reactive nodes that can only be read, not modified.
+///
+/// Example:
+/// ```dart
+/// class MyReadonlyNode<T> with ReadonlyNodeMixin<T> implements ReadonlyNode<T> {
+///   @override
+///   T get value => throw UnimplementedError();
+///
+///   @override
+///   FutureOr<void> onDispose() async {
+///     // Custom cleanup logic
+///   }
+/// }
+/// ```
+mixin ReadonlyNodeMixin<T> implements ReadonlyNode<T> {
+  /// Whether this node has been disposed.
+  @override
   bool get isDisposed => _isDisposed;
-
   @protected
   bool _isDisposed = false;
 
-  /// Disposes this reactive value and cleans up resources.
+  /// {@template jolt_dispose_node}
+  /// Disposes this node and cleans up resources.
+  ///
+  /// This method marks the node as disposed, invokes [onDispose] for custom
+  /// cleanup, and notifies the finalizer system so chained disposers can run.
+  ///
+  /// Example:
+  /// ```dart
+  /// final disposable = MyDisposableNode();
+  /// disposable.dispose(); // Cleanup happens automatically
+  /// ```
+  /// {@endtemplate}
+  ///
+  /// {@macro jolt_dispose_node}
   @override
   @mustCallSuper
   void dispose() {
     if (_isDisposed) return;
     _isDisposed = true;
+    // allow unawaited futures
+    // ignore: discarded_futures
     onDispose();
+
     JFinalizer.disposeObject(this);
-    pendingValue = null;
   }
 
-  /// Notifies all subscribers that this value has changed.
-  void notify();
-
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
   @override
   String toString() => value.toString();
 }
 
-/// Interface for writable reactive values.
+/// Interface for readonly reactive nodes.
 ///
-/// JWritableValue extends JReadonlyValue to provide write access,
-/// allowing values to be both read and modified reactively.
-abstract interface class JWritableValue<T> implements JReadonlyValue<T> {
-  /// Sets a new value for this reactive value.
-  set value(T value);
+/// ReadonlyNode represents a reactive value that can be read and tracked
+/// as a dependency, but cannot be modified. It provides lifecycle management
+/// through disposal.
+///
+/// Example:
+/// ```dart
+/// final count = Signal(0);
+/// ReadonlyNode<int> doubled = Computed(() => count.value * 2);
+/// print(doubled.value); // OK
+/// // doubled.value = 6; // Compile error
+/// ```
+abstract interface class ReadonlyNode<T>
+    implements Readonly<T>, ChainedDisposable {
+  /// Whether this node has been disposed.
+  bool get isDisposed;
 
-  /// Sets a new value for this reactive value.
-  void set(T value);
+  /// Called when the node is being disposed.
+  ///
+  /// Override this method to provide custom cleanup logic. This method
+  /// is called automatically by [dispose].
+  ///
+  /// Example:
+  /// ```dart
+  /// class MyNode<T> extends ReadonlyNode<T> {
+  ///   @override
+  ///   FutureOr<void> onDispose() {
+  ///     // Clean up resources
+  ///   }
+  /// }
+  /// ```
+  @override
+  @protected
+  void onDispose();
+}
+
+/// Interface for writable reactive nodes.
+///
+/// WritableNode extends ReadonlyNode to provide write access, allowing
+/// values to be both read and modified reactively.
+///
+/// Example:
+/// ```dart
+/// WritableNode<int> count = Signal(0);
+/// count.value = 42; // Can modify
+/// print(count.value); // Can read
+/// ```
+abstract interface class WritableNode<T>
+    implements ReadonlyNode<T>, Writable<T> {}
+
+/// Mixin that provides base functionality for effect nodes.
+///
+/// This mixin implements common disposal logic for effect-related nodes
+/// such as Effect, Watcher, and EffectScope.
+///
+/// Example:
+/// ```dart
+/// class CustomEffectNode with EffectNode implements ChainedDisposable {
+///   @override
+///   FutureOr<void> onDispose() async {
+///     // Custom cleanup logic
+///   }
+/// }
+/// ```
+mixin EffectNode implements ChainedDisposable {
+  /// Whether this node has been disposed.
+  bool get isDisposed => _isDisposed;
+  @protected
+  bool _isDisposed = false;
+
+  /// {@macro jolt_dispose_node}
+  @override
+  @mustCallSuper
+  void dispose() {
+    if (_isDisposed) return;
+    _isDisposed = true;
+
+    onDispose();
+
+    JFinalizer.disposeObject(this);
+  }
+
+  @override
+  @protected
+  void onDispose();
 }

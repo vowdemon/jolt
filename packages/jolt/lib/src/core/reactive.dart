@@ -1,61 +1,145 @@
-import '../jolt/computed.dart';
-import '../jolt/effect.dart';
-import '../jolt/signal.dart';
-import 'debug.dart';
+import "package:jolt/src/core/debug.dart";
+import "package:meta/meta.dart";
+import "package:shared_interfaces/shared_interfaces.dart";
 
-part 'system.dart';
+part "system.dart";
 
-/// The global reactive system
-
-/// The current cycle number
+/// Monotonically increasing counter used to stamp dependency links during
+/// recomputation cycles.
+///
+/// Example:
+/// ```dart
+/// final startCycle = cycle;
+/// flushEffects();
+/// assert(cycle >= startCycle);
+/// ```
 int cycle = 0;
 
-/// The current batch depth
+/// Current nesting depth of [`startBatch`]/[`endBatch`] calls.
+///
+/// Example:
+/// ```dart
+/// startBatch();
+/// assert(batchDepth > 0);
+/// endBatch();
+/// ```
 int batchDepth = 0;
 
-/// The effect index in queue
+/// Index of the next effect to flush from [queued].
+///
+/// Example:
+/// ```dart
+/// while (notifyIndex < queuedLength) {
+///   final effect = queued[notifyIndex++]!;
+///   runEffect(effect);
+/// }
+/// ```
 int notifyIndex = 0;
 
-/// The length of the queue of effects to be executed
+/// Number of scheduled effects stored inside [queued].
+///
+/// Example:
+/// ```dart
+/// final effect = CustomEffectNode(); // Implements EffectReactiveNode
+/// queued[queuedLength++] = effect;
+/// if (batchDepth == 0) {
+///   flushEffects();
+/// }
+/// ```
 int queuedLength = 0;
 
-/// The queue of effects to be executed
-final List<EffectBase?> queued = List.filled(64, null, growable: true);
+/// Ring buffer that stores pending [EffectReactiveNode] instances.
+///
+/// Example:
+/// ```dart
+/// final effect = CustomEffectNode();
+/// final slot = queuedLength++;
+/// queued[slot] = effect;
+/// flushEffects();
+/// ```
+final List<EffectReactiveNode?> queued = List.filled(64, null, growable: true);
 
-/// The currently active effect or scope
+/// Effect or computed that is currently collecting dependencies.
+///
+/// Example:
+/// ```dart
+/// final customEffect = CustomEffectNode();
+/// final prev = setActiveSub(customEffect);
+/// try {
+///   customEffect.effectFn();
+/// } finally {
+///   setActiveSub(prev);
+/// }
+/// ```
 ReactiveNode? activeSub;
 
-EffectScope? activeScope;
+/// Effect scope that is currently being configured.
+///
+/// Example:
+/// ```dart
+/// final scope = getActiveScope();
+/// scope?.dispose();
+/// ```
+EffectScopeReactiveNode? activeScope;
 
-/// Update a signal or computed value
-@pragma('vm:prefer-inline')
-@pragma('wasm:prefer-inline')
-@pragma('dart2js:prefer-inline')
+/// Updates either a [ComputedReactiveNode] or [SignalReactiveNode] and returns
+/// whether its cached value changed.
+///
+/// Parameters:
+/// - [node]: Reactive node to bring up to date
+///
+/// Example:
+/// ```dart
+/// final signalNode = CustomSignalNode<int>(0);
+/// final changed = updateNode(signalNode);
+/// if (changed && signalNode.subs != null) {
+///   shallowPropagate(signalNode.subs!);
+/// }
+/// ```
+@pragma("vm:prefer-inline")
+@pragma("wasm:prefer-inline")
+@pragma("dart2js:prefer-inline")
 @override
 bool updateNode(ReactiveNode node) {
-  if (node is Computed) {
+  if (node is ComputedReactiveNode) {
     return updateComputed(node);
   } else {
-    return updateSignal(node as Signal);
+    return updateSignal(node as SignalReactiveNode);
   }
 }
 
-/// Notify a subscriber about changes
+/// Enqueues an [EffectReactiveNode] chain for execution.
+///
+/// Parameters:
+/// - [e]: Effect node whose dependencies changed
+///
+/// Example:
+/// ```dart
+/// final effectNode = CustomEffectNode();
+/// notifyEffect(effectNode);
+/// if (batchDepth == 0) {
+///   flushEffects();
+/// }
+/// ```
 @override
-@pragma('vm:prefer-inline')
-@pragma('wasm:prefer-inline')
-@pragma('dart2js:prefer-inline')
-void notifyEffect(JEffect e) {
-  JEffect? effect = e;
-  int insertIndex = queuedLength;
-  int firstInsertedIndex = insertIndex;
+@pragma("vm:prefer-inline")
+@pragma("wasm:prefer-inline")
+@pragma("dart2js:prefer-inline")
+@pragma("vm:align-loops")
+@pragma('vm:unsafe:no-bounds-checks')
+void notifyEffect(ReactiveNode e) {
+  EffectBaseReactiveNode? effect = e as EffectBaseReactiveNode;
+  var insertIndex = queuedLength;
+  var firstInsertedIndex = insertIndex;
 
+  // allow do-while loop
+  // ignore: literal_only_boolean_expressions
   do {
-    effect!.flags &= ~(ReactiveFlags.watching);
+    effect!.flags &= ~ReactiveFlags.watching;
 
     // queued[insertIndex++] = effect;
-    _queueSet(insertIndex++, effect as EffectBase?);
-    effect = effect.subs?.sub as JEffect?;
+    _queueSet(insertIndex++, effect as EffectReactiveNode?);
+    effect = effect.subs?.sub as EffectBaseReactiveNode?;
     if (effect == null || effect.flags & (ReactiveFlags.watching) == 0) {
       break;
     }
@@ -71,26 +155,39 @@ void notifyEffect(JEffect e) {
   }
 }
 
-/// Handle cleanup when a node is no longer watched
-@pragma('vm:prefer-inline')
-@pragma('wasm:prefer-inline')
-@pragma('dart2js:prefer-inline')
+/// Cleans up dependency links when a node no longer has subscribers.
+///
+/// Parameters:
+/// - [node]: Node that lost its last subscriber
+///
+/// Example:
+/// ```dart
+/// final link = dep.subs!; // Link between dep and subscriber
+/// if (link.dep.subs == null) {
+///   unwatched(link.dep);
+/// }
+/// ```
+@pragma("vm:prefer-inline")
+@pragma("wasm:prefer-inline")
+@pragma("dart2js:prefer-inline")
 @override
-void unwatched(node) {
-  if (node is JEffect) {
+void unwatched(ReactiveNode node) {
+  if (node is EffectBaseReactiveNode) {
     // if (!node.flags.hasAny(ReactiveFlags.mutable)) {
+    // ignore: discarded_futures
     node.dispose();
   } else if (node.depsTail != null) {
-    node.depsTail = null;
-    node.flags = (ReactiveFlags.mutable | ReactiveFlags.dirty);
+    node
+      ..depsTail = null
+      ..flags = (ReactiveFlags.mutable | ReactiveFlags.dirty);
     purgeDeps(node);
   }
 }
 
-@pragma('vm:prefer-inline')
-@pragma('wasm:prefer-inline')
-@pragma('dart2js:prefer-inline')
-void _queueSet(int index, EffectBase? e) {
+@pragma("vm:prefer-inline")
+@pragma("wasm:prefer-inline")
+@pragma("dart2js:prefer-inline")
+void _queueSet(int index, EffectReactiveNode? e) {
   if (index < queued.length) {
     queued[index] = e;
   } else {
@@ -98,68 +195,149 @@ void _queueSet(int index, EffectBase? e) {
   }
 }
 
-@pragma('vm:prefer-inline')
-@pragma('wasm:prefer-inline')
-@pragma('dart2js:prefer-inline')
+@pragma("vm:prefer-inline")
+@pragma("wasm:prefer-inline")
+@pragma("dart2js:prefer-inline")
+
+/// Returns the effect or computed currently being tracked.
+///
+/// Example:
+/// ```dart
+/// final currentlyTracking = getActiveSub();
+/// if (currentlyTracking != null) {
+///   // mutate diagnostics
+/// }
+/// ```
 ReactiveNode? getActiveSub() => activeSub;
 
-/// Set the currently active subscriber
-@pragma('vm:prefer-inline')
-@pragma('wasm:prefer-inline')
-@pragma('dart2js:prefer-inline')
+/// Sets the currently active effect or computed and returns the previous one.
+///
+/// Parameters:
+/// - [sub]: Node that should collect dependencies
+///
+/// Example:
+/// ```dart
+/// final myEffect = CustomEffectNode();
+/// final prev = setActiveSub(myEffect);
+/// try {
+///   myEffect.effectFn();
+/// } finally {
+///   setActiveSub(prev);
+/// }
+/// ```
+@pragma("vm:prefer-inline")
+@pragma("wasm:prefer-inline")
+@pragma("dart2js:prefer-inline")
 ReactiveNode? setActiveSub([ReactiveNode? sub]) {
   final prevSub = activeSub;
   activeSub = sub;
   return prevSub;
 }
 
-@pragma('vm:prefer-inline')
-@pragma('wasm:prefer-inline')
-@pragma('dart2js:prefer-inline')
-EffectScope? getActiveScope() => activeScope;
+@pragma("vm:prefer-inline")
+@pragma("wasm:prefer-inline")
+@pragma("dart2js:prefer-inline")
 
-/// Set the currently active subscriber
-@pragma('vm:prefer-inline')
-@pragma('wasm:prefer-inline')
-@pragma('dart2js:prefer-inline')
-EffectScope? setActiveScope([EffectScope? scope]) {
+/// Returns the [EffectScopeReactiveNode] that is currently open.
+///
+/// Example:
+/// ```dart
+/// final scope = getActiveScope();
+/// scope?.dispose();
+/// ```
+EffectScopeReactiveNode? getActiveScope() => activeScope;
+
+/// Sets the ambient [EffectScopeReactiveNode] and returns the previous scope.
+///
+/// Parameters:
+/// - [scope]: Scope that should own subsequently created effects
+///
+/// Example:
+/// ```dart
+/// final rootScope = CustomEffectScope();
+/// final prevScope = setActiveScope(rootScope);
+/// try {
+///   rootScope.flags |= ReactiveFlags.watching;
+/// } finally {
+///   setActiveScope(prevScope);
+/// }
+/// ```
+@pragma("vm:prefer-inline")
+@pragma("wasm:prefer-inline")
+@pragma("dart2js:prefer-inline")
+EffectScopeReactiveNode? setActiveScope([EffectScopeReactiveNode? scope]) {
   final prevScope = activeScope;
   activeScope = scope;
   return prevScope;
 }
 
-/// Start a batch update to defer effect execution
-@pragma('vm:prefer-inline')
-@pragma('wasm:prefer-inline')
-@pragma('dart2js:prefer-inline')
+/// Begins a batch so multiple writes can be coalesced before effects run.
+///
+/// Example:
+/// ```dart
+/// final signalNode = CustomSignalNode<int>(0);
+/// startBatch();
+/// setSignal(signalNode, 1);
+/// setSignal(signalNode, 2);
+/// endBatch(); // Effects run once.
+/// ```
+@pragma("vm:prefer-inline")
+@pragma("wasm:prefer-inline")
+@pragma("dart2js:prefer-inline")
 void startBatch() {
   ++batchDepth;
 }
 
-/// End a batch update and flush pending effects
-@pragma('vm:prefer-inline')
-@pragma('wasm:prefer-inline')
-@pragma('dart2js:prefer-inline')
+/// Ends the current batch and flushes pending effects when depth reaches zero.
+///
+/// Example:
+/// ```dart
+/// final signalNode = CustomSignalNode<int>(0);
+/// startBatch();
+/// setSignal(signalNode, 1);
+/// endBatch(); // Runs queued effects when this is the outer batch.
+/// ```
+@pragma("vm:prefer-inline")
+@pragma("wasm:prefer-inline")
+@pragma("dart2js:prefer-inline")
 void endBatch() {
   if (!((--batchDepth) != 0)) {
     flushEffects();
   }
 }
 
-/// Get the current batch depth
-@pragma('vm:prefer-inline')
-@pragma('wasm:prefer-inline')
-@pragma('dart2js:prefer-inline')
+/// Returns the current batch depth, where zero means no batching.
+///
+/// Example:
+/// ```dart
+/// assert(getBatchDepth() >= 0);
+/// ```
+@pragma("vm:prefer-inline")
+@pragma("wasm:prefer-inline")
+@pragma("dart2js:prefer-inline")
 int getBatchDepth() => batchDepth;
 
-/// Update the computed value and return true if changed
-@pragma('vm:prefer-inline')
-@pragma('wasm:prefer-inline')
-@pragma('dart2js:prefer-inline')
-bool updateComputed<T>(Computed<T> computed) {
+/// Recomputes a [ComputedReactiveNode] and reports whether the pending value
+/// changed.
+///
+/// Parameters:
+/// - [computed]: Computed node whose getter should be invoked
+///
+/// Example:
+/// ```dart
+/// final computedNode = CustomComputedNode<int>(() => 0);
+/// if (updateComputed(computedNode) && computedNode.subs != null) {
+///   shallowPropagate(computedNode.subs!);
+/// }
+/// ```
+@pragma("vm:prefer-inline")
+@pragma("wasm:prefer-inline")
+@pragma("dart2js:prefer-inline")
+bool updateComputed<T>(ComputedReactiveNode<T> computed) {
   ++cycle;
-  computed.depsTail = null;
-  computed.flags = (ReactiveFlags.mutable | ReactiveFlags.recursedCheck);
+  computed
+    ..depsTail = null
+    ..flags = ReactiveFlags.mutable | ReactiveFlags.recursedCheck;
   final prevSub = setActiveSub(computed);
 
   try {
@@ -168,60 +346,119 @@ bool updateComputed<T>(Computed<T> computed) {
     return (oldValue != (computed.pendingValue = computed.getter()));
   } finally {
     activeSub = prevSub;
-    computed.flags &= ~(ReactiveFlags.recursedCheck);
+    computed.flags &= ~ReactiveFlags.recursedCheck;
     purgeDeps(computed);
   }
 }
 
-/// Update a signal's value and return true if changed
-@pragma('vm:prefer-inline')
-@pragma('wasm:prefer-inline')
-@pragma('dart2js:prefer-inline')
-bool updateSignal<T>(Signal<T> signal) {
-  signal.flags = (ReactiveFlags.mutable);
+/// Updates a [SignalReactiveNode]'s cached value from its pending value.
+///
+/// Parameters:
+/// - [signal]: Signal that should commit its pending value
+///
+/// Returns true when the cached value actually changed.
+///
+/// Example:
+/// ```dart
+/// final signalNode = CustomSignalNode<int>(0);
+/// if (updateSignal(signalNode) && signalNode.subs != null) {
+///   shallowPropagate(signalNode.subs!);
+/// }
+/// ```
+@pragma("vm:prefer-inline")
+@pragma("wasm:prefer-inline")
+@pragma("dart2js:prefer-inline")
+bool updateSignal<T>(SignalReactiveNode<T> signal) {
+  signal.flags = ReactiveFlags.mutable;
 
   return signal.cachedValue != (signal.cachedValue = signal.pendingValue);
 }
 
 /// Remove the pending flag from a reactive node
-@pragma('vm:prefer-inline')
-@pragma('wasm:prefer-inline')
-@pragma('dart2js:prefer-inline')
+@pragma("vm:prefer-inline")
+@pragma("wasm:prefer-inline")
+@pragma("dart2js:prefer-inline")
 bool _removePending(ReactiveNode e, int flags) {
-  e.flags = flags & ~(ReactiveFlags.pending);
+  e.flags = flags & ~ReactiveFlags.pending;
   return false;
 }
 
-/// Run an effect with the given flags
-@pragma('vm:prefer-inline')
-@pragma('wasm:prefer-inline')
-@pragma('dart2js:prefer-inline')
-void runEffect(EffectBase e) {
+/// Executes an [EffectReactiveNode] when it is dirty or pending.
+///
+/// This function checks if the effect node's flags indicate that it needs to
+/// be executed (has `dirty` flag or `pending` flag with dirty dependencies).
+/// If so, it executes the provided function [fn] in the proper reactive context.
+///
+/// Parameters:
+/// - [e]: Effect node to evaluate
+/// - [fn]: The function to execute when the effect needs to run
+///
+/// Example:
+/// ```dart
+/// class CustomEffectNode extends EffectReactiveNode {
+///   CustomEffectNode() : super(flags: ReactiveFlags.watching);
+///
+///   @override
+///   void runEffect() {
+///     defaultRunEffect(this, _effectFn);
+///   }
+///
+///   void _effectFn() {
+///     // Effect logic here
+///   }
+/// }
+/// ```
+@pragma("vm:prefer-inline")
+@pragma("wasm:prefer-inline")
+@pragma("dart2js:prefer-inline")
+void defaultRunEffect(EffectReactiveNode e, void Function() fn) {
   final flags = e.flags;
   if (flags & (ReactiveFlags.dirty) != 0 ||
       (flags & (ReactiveFlags.pending) != 0 && checkDirty(e.deps!, e))) {
     ++cycle;
-    e.depsTail = null;
-    e.flags = (ReactiveFlags.watching | ReactiveFlags.recursedCheck);
+    e
+      ..depsTail = null
+      ..flags = ReactiveFlags.watching | ReactiveFlags.recursedCheck;
 
     // only effect and watcher;
     final prevSub = setActiveSub(e);
     try {
-      e.effectFn();
+      fn();
     } finally {
       activeSub = prevSub;
-      e.flags &= ~(ReactiveFlags.recursedCheck);
+      e.flags &= ~ReactiveFlags.recursedCheck;
       purgeDeps(e);
     }
   } else {
-    e.flags = (ReactiveFlags.watching);
+    e.flags = ReactiveFlags.watching;
   }
 }
 
-/// Flush all queued effects
-@pragma('vm:prefer-inline')
-@pragma('wasm:prefer-inline')
-@pragma('dart2js:prefer-inline')
+/// Flushes all queued effects and executes them.
+///
+/// This function processes all effects that have been queued for execution
+/// and runs them in order. It's typically called automatically by the reactive
+/// system, but can be called manually to force immediate execution of queued effects.
+///
+/// Example:
+/// ```dart
+/// final signal1 = Signal(0);
+/// final signal2 = Signal(0);
+/// final signal3 = Signal(0);
+///
+/// // Multiple signal updates
+/// signal1.value = 1;
+/// signal2.value = 2;
+/// signal3.value = 3;
+///
+/// // Force immediate execution of all queued effects
+/// flushEffects();
+/// ```
+@pragma("vm:prefer-inline")
+@pragma("wasm:prefer-inline")
+@pragma("dart2js:prefer-inline")
+@pragma("vm:align-loops")
+@pragma('vm:unsafe:no-bounds-checks')
 void flushEffects() {
   while (notifyIndex < queuedLength) {
     final effect = queued[notifyIndex]!;
@@ -232,11 +469,21 @@ void flushEffects() {
   queuedLength = 0;
 }
 
-/// Get the current value of a computed, updating if necessary
-@pragma('vm:prefer-inline')
-@pragma('wasm:prefer-inline')
-@pragma('dart2js:prefer-inline')
-T getComputed<T>(Computed<T> computed) {
+/// Returns the current value of a computed node, recomputing it when dirty and
+/// linking it to the active subscriber.
+///
+/// Parameters:
+/// - [computed]: Node to read and potentially recompute
+///
+/// Example:
+/// ```dart
+/// final myComputedNode = CustomComputedNode<int>(() => 0);
+/// final value = getComputed(myComputedNode);
+/// ```
+@pragma("vm:prefer-inline")
+@pragma("wasm:prefer-inline")
+@pragma("dart2js:prefer-inline")
+T getComputed<T>(ComputedReactiveNode<T> computed) {
   final flags = computed.flags;
   if (flags & (ReactiveFlags.dirty) != 0 ||
       (flags & (ReactiveFlags.pending) != 0 &&
@@ -251,13 +498,13 @@ T getComputed<T>(Computed<T> computed) {
       JoltDebug.set(computed);
     }
   } else if (flags == (ReactiveFlags.none)) {
-    computed.flags = (ReactiveFlags.mutable | ReactiveFlags.recursedCheck);
+    computed.flags = ReactiveFlags.mutable | ReactiveFlags.recursedCheck;
     final prevSub = setActiveSub(computed);
     try {
       computed.pendingValue = computed.getter();
     } finally {
       activeSub = prevSub;
-      computed.flags &= ~(ReactiveFlags.recursedCheck);
+      computed.flags &= ~ReactiveFlags.recursedCheck;
     }
 
     JoltDebug.set(computed);
@@ -272,17 +519,27 @@ T getComputed<T>(Computed<T> computed) {
   return computed.pendingValue as T;
 }
 
-/// Force update a computed without changing its value
-@pragma('vm:prefer-inline')
-@pragma('wasm:prefer-inline')
-@pragma('dart2js:prefer-inline')
-void notifyComputed<T>(Computed<T> computed) {
+/// Invalidates a computed node and notifies its subscribers without assigning
+/// a new value.
+///
+/// Parameters:
+/// - [computed]: Node to invalidate
+///
+/// Example:
+/// ```dart
+/// final cacheBustingComputed = CustomComputedNode<int>(() => 0);
+/// notifyComputed(cacheBustingComputed);
+/// ```
+@pragma("vm:prefer-inline")
+@pragma("wasm:prefer-inline")
+@pragma("dart2js:prefer-inline")
+void notifyComputed<T>(ComputedReactiveNode<T> computed) {
   updateComputed(computed);
 
-  Link? subs = computed.subs;
+  var subs = computed.subs;
 
   while (subs != null) {
-    subs.sub.flags |= (ReactiveFlags.pending);
+    subs.sub.flags |= ReactiveFlags.pending;
     shallowPropagate(subs);
     subs = subs.nextSub;
   }
@@ -294,13 +551,23 @@ void notifyComputed<T>(Computed<T> computed) {
   JoltDebug.notify(computed);
 }
 
-/// Set a signal's value and trigger updates
-@pragma('vm:prefer-inline')
-@pragma('wasm:prefer-inline')
-@pragma('dart2js:prefer-inline')
-T setSignal<T>(Signal<T> signal, T newValue) {
+/// Assigns a new pending value to a signal and schedules subscribers.
+///
+/// Parameters:
+/// - [signal]: Signal whose value should change
+/// - [newValue]: Value to assign
+///
+/// Example:
+/// ```dart
+/// final countNode = CustomSignalNode<int>(0);
+/// setSignal(countNode, 42);
+/// ```
+@pragma("vm:prefer-inline")
+@pragma("wasm:prefer-inline")
+@pragma("dart2js:prefer-inline")
+T setSignal<T>(SignalReactiveNode<T> signal, T newValue) {
   if (signal.pendingValue != (signal.pendingValue = newValue)) {
-    signal.flags = (ReactiveFlags.mutable | ReactiveFlags.dirty);
+    signal.flags = ReactiveFlags.mutable | ReactiveFlags.dirty;
 
     final subs = signal.subs;
     if (subs != null) {
@@ -315,11 +582,21 @@ T setSignal<T>(Signal<T> signal, T newValue) {
   return newValue;
 }
 
-/// Get a signal's value and track dependencies
-@pragma('vm:prefer-inline')
-@pragma('wasm:prefer-inline')
-@pragma('dart2js:prefer-inline')
-T getSignal<T>(Signal<T> signal) {
+/// Returns the current cached value of a signal and links it to the active
+/// subscriber.
+///
+/// Parameters:
+/// - [signal]: Signal to read
+///
+/// Example:
+/// ```dart
+/// final countNode = CustomSignalNode<int>(0);
+/// final value = getSignal(countNode);
+/// ```
+@pragma("vm:prefer-inline")
+@pragma("wasm:prefer-inline")
+@pragma("dart2js:prefer-inline")
+T getSignal<T>(SignalReactiveNode<T> signal) {
   if (signal.flags & (ReactiveFlags.dirty) != 0) {
     if (updateSignal<T>(signal)) {
       final subs = signal.subs;
@@ -343,17 +620,27 @@ T getSignal<T>(Signal<T> signal) {
   return signal.cachedValue as T;
 }
 
-/// Force update a signal without changing its value
-@pragma('vm:prefer-inline')
-@pragma('wasm:prefer-inline')
-@pragma('dart2js:prefer-inline')
-void notifySignal<T>(ReadonlySignal<T> signal) {
-  signal.flags = (ReactiveFlags.mutable | ReactiveFlags.dirty);
+/// Invalidates a signal so that subscribers re-evaluate without changing the
+/// stored value.
+///
+/// Parameters:
+/// - [signal]: Signal to invalidate
+///
+/// Example:
+/// ```dart
+/// final cacheAwareSignal = CustomSignalNode<int>(0);
+/// notifySignal(cacheAwareSignal);
+/// ```
+@pragma("vm:prefer-inline")
+@pragma("wasm:prefer-inline")
+@pragma("dart2js:prefer-inline")
+void notifySignal<T>(SignalReactiveNode<T> signal) {
+  signal.flags = ReactiveFlags.mutable | ReactiveFlags.dirty;
 
-  Link? subs = signal.subs;
+  var subs = signal.subs;
 
   while (subs != null) {
-    subs.sub.flags |= (ReactiveFlags.pending);
+    subs.sub.flags |= ReactiveFlags.pending;
     shallowPropagate(subs);
     subs = subs.nextSub;
   }
@@ -365,12 +652,22 @@ void notifySignal<T>(ReadonlySignal<T> signal) {
   JoltDebug.notify(signal);
 }
 
-/// Dispose an effect and clean up its dependencies
+/// Disposes any reactive node and detaches all dependencies/subscribers.
+///
+/// Parameters:
+/// - [e]: Node to dispose
+///
+/// Example:
+/// ```dart
+/// final effectNode = CustomEffectNode();
+/// disposeNode(effectNode);
+/// ```
 void disposeNode(ReactiveNode e) {
   JoltDebug.dispose(e);
 
-  e.depsTail = null;
-  e.flags = (ReactiveFlags.none);
+  e
+    ..depsTail = null
+    ..flags = ReactiveFlags.none;
   purgeDeps(e);
   final sub = e.subs;
   if (sub != null) {
@@ -378,10 +675,20 @@ void disposeNode(ReactiveNode e) {
   }
 }
 
-/// Purge the dependencies of a reactive node
-@pragma('vm:prefer-inline')
-@pragma('wasm:prefer-inline')
-@pragma('dart2js:prefer-inline')
+/// Removes all dependency links from a subscriber so future tracking starts
+/// from a clean slate.
+///
+/// Parameters:
+/// - [sub]: Subscriber node whose dependencies should be detached
+///
+/// Example:
+/// ```dart
+/// final effectNode = CustomEffectNode();
+/// purgeDeps(effectNode);
+/// ```
+@pragma("vm:prefer-inline")
+@pragma("wasm:prefer-inline")
+@pragma("dart2js:prefer-inline")
 void purgeDeps(ReactiveNode sub) {
   final depsTail = sub.depsTail;
   var dep = depsTail != null ? depsTail.nextDep : sub.deps;
@@ -390,15 +697,29 @@ void purgeDeps(ReactiveNode sub) {
   }
 }
 
-/// Notify all dependencies about changes
-@pragma('vm:prefer-inline')
-@pragma('wasm:prefer-inline')
-@pragma('dart2js:prefer-inline')
-void trigger(void Function() fn) {
+/// Executes [fn] inside a temporary subscriber and propagates any triggered
+/// signals once the callback finishes.
+///
+/// Parameters:
+/// - [fn]: Callback that performs reactive writes
+///
+/// Example:
+/// ```dart
+/// final list = <int>[];
+/// final signal = Signal(list);
+/// list.add(1);
+/// trigger(() {
+///   signal.value;
+/// });
+/// ```
+@pragma("vm:prefer-inline")
+@pragma("wasm:prefer-inline")
+@pragma("dart2js:prefer-inline")
+T trigger<T>(T Function() fn) {
   final sub = ReactiveNode(flags: ReactiveFlags.watching);
   final prevSub = setActiveSub(sub);
   try {
-    fn();
+    return fn();
   } finally {
     activeSub = prevSub;
     while (sub.deps != null) {
@@ -414,4 +735,209 @@ void trigger(void Function() fn) {
       flushEffects();
     }
   }
+}
+
+/// Interface for readonly reactive values.
+///
+/// Readonly provides a read-only interface to reactive values, allowing
+/// access to the current value without modification. It supports both
+/// tracked and untracked access patterns.
+///
+/// Example:
+/// ```dart
+/// Readonly<int> count = Signal(0).readonly();
+/// print(count.value); // Tracked access
+/// print(count.peek); // Untracked access
+/// ```
+abstract interface class Readonly<T> {
+  /// Gets the current value and establishes a reactive dependency.
+  ///
+  /// When accessed within a reactive context, the context will be
+  /// notified when this value changes.
+  ///
+  /// Example:
+  /// ```dart
+  /// final Readonly<int> readonly = Signal(0).readonly();
+  /// final computed = Computed(() => readonly.value * 2);
+  /// ```
+  T get value;
+
+  /// Gets the current value and establishes a reactive dependency.
+  ///
+  /// This is equivalent to accessing the [value] getter.
+  ///
+  /// Returns: The current value
+  ///
+  /// Example:
+  /// ```dart
+  /// final Readonly<int> readonly = Signal(0).readonly();
+  /// final value = readonly.get();
+  /// ```
+  T get();
+
+  /// Gets the current value without establishing a reactive dependency.
+  ///
+  /// Use this when you need to read the value without triggering reactivity.
+  ///
+  /// Returns: The current value
+  ///
+  /// Example:
+  /// ```dart
+  /// final Readonly<int> readonly = Signal(0).readonly();
+  /// final value = readonly.peek; // Doesn't create dependency
+  /// ```
+  T get peek;
+
+  /// Manually notifies all subscribers that this value has changed.
+  ///
+  /// This is typically called automatically when the value changes,
+  /// but can be called manually for custom notification scenarios.
+  ///
+  /// Example:
+  /// ```dart
+  /// final Readonly<int> readonly = Signal(0).readonly();
+  /// readonly.notify(); // Trigger subscribers manually
+  /// ```
+  void notify();
+}
+
+/// Interface for writable reactive values.
+///
+/// Writable extends Readonly to provide write access, allowing values
+/// to be both read and modified reactively.
+///
+/// Example:
+/// ```dart
+/// Writable<int> count = Signal(0);
+/// count.value = 42; // Can modify
+/// print(count.value); // Can read
+/// ```
+abstract interface class Writable<T> implements Readonly<T> {
+  /// Sets a new value for this reactive value.
+  ///
+  /// This will notify all subscribers if the value has changed.
+  ///
+  /// Example:
+  /// ```dart
+  /// final Writable<int> writable = Signal(0);
+  /// writable.value = newValue; // Notifies subscribers
+  /// ```
+  set value(T value);
+
+  /// Sets a new value for this reactive value.
+  ///
+  /// Parameters:
+  /// - [value]: The new value to set
+  ///
+  /// Returns: The value that was set
+  ///
+  /// This will notify all subscribers if the value has changed.
+  ///
+  /// Example:
+  /// ```dart
+  /// final Writable<int> writable = Signal(0);
+  /// writable.set(newValue); // Notifies subscribers
+  /// ```
+  T set(T value);
+}
+
+/// Base reactive node for computed values.
+///
+/// Stores the getter used to produce the value along with the pending result
+/// collected during recomputation.
+///
+/// Example:
+/// ```dart
+/// class CustomComputedNode<T> extends ComputedReactiveNode<T> {
+///   CustomComputedNode(super.getter) : super(flags: ReactiveFlags.none);
+/// }
+/// ```
+abstract class ComputedReactiveNode<T> extends ReactiveNode {
+  ComputedReactiveNode(
+    this.getter, {
+    required super.flags,
+    this.pendingValue,
+  });
+  T? pendingValue;
+  final T Function() getter;
+}
+
+/// Base reactive node for writable signals.
+///
+/// Keeps both the pending value (what was recently assigned) and the cached
+/// value (what subscribers currently observe).
+///
+/// Example:
+/// ```dart
+/// class CustomSignalNode<T> extends SignalReactiveNode<T> {
+///   CustomSignalNode(super.initial) : super(flags: ReactiveFlags.mutable);
+/// }
+/// ```
+abstract class SignalReactiveNode<T> extends ReactiveNode {
+  SignalReactiveNode({required super.flags, this.pendingValue});
+
+  T? pendingValue;
+  late T? cachedValue = pendingValue;
+}
+
+/// Shared contract for effect-like nodes that can be disposed.
+///
+/// Example:
+/// ```dart
+/// void disposeEffect(EffectBaseReactiveNode node) => node.dispose();
+/// ```
+abstract interface class EffectBaseReactiveNode
+    implements ReactiveNode, Disposable {}
+
+/// Reactive node that runs a side-effect callback when triggered.
+///
+/// Example:
+/// ```dart
+/// class CustomEffectNode extends EffectReactiveNode {
+///   CustomEffectNode() : super(flags: ReactiveFlags.watching);
+///
+///   @override
+///   @protected
+///   void runEffect() {
+///     defaultRunEffect(this, _effectFn);
+///   }
+///
+///   void _effectFn() {
+///     // Effect logic here
+///   }
+/// }
+/// ```
+abstract class EffectReactiveNode extends ReactiveNode
+    implements Disposable, EffectBaseReactiveNode {
+  EffectReactiveNode({required super.flags});
+
+  /// Executes the effect when it is dirty or pending.
+  ///
+  /// This method is called by the reactive system to run the effect when its
+  /// dependencies change. Implementations should use [defaultRunEffect] to
+  /// perform the execution in the proper reactive context.
+  ///
+  /// Example:
+  /// ```dart
+  /// @override
+  /// @protected
+  /// void runEffect() {
+  ///   defaultRunEffect(this, _effectFn);
+  /// }
+  /// ```
+  @protected
+  void runEffect();
+}
+
+/// Reactive node that groups multiple effects for scoped disposal.
+///
+/// Example:
+/// ```dart
+/// class CustomEffectScope extends EffectScopeReactiveNode {
+///   CustomEffectScope() : super(flags: ReactiveFlags.mutable);
+/// }
+/// ```
+abstract class EffectScopeReactiveNode extends ReactiveNode
+    implements Disposable, EffectBaseReactiveNode {
+  EffectScopeReactiveNode({required super.flags});
 }

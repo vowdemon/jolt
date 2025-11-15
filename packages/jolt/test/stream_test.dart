@@ -1,18 +1,16 @@
-import 'package:jolt/jolt.dart';
-import 'package:jolt/src/jolt/shared.dart';
-import 'package:test/test.dart';
-import 'utils.dart';
+import "package:jolt/jolt.dart";
+import "package:jolt/src/jolt/shared.dart";
+import "package:test/test.dart";
+import "utils.dart";
 
 void main() {
-  group('Stream Extension Tests', () {
-    group('Basic Stream Operations', () {
-      test('Signal stream - basic listening', () async {
+  group("Stream Extension Tests", () {
+    group("Basic Stream Operations", () {
+      test("Signal stream - basic listening", () async {
         final signal = Signal(1);
         final values = <int>[];
 
-        signal.stream.listen((value) {
-          values.add(value);
-        });
+        signal.stream.listen(values.add);
 
         // Initial value should not be emitted
         await Future.delayed(const Duration(milliseconds: 1));
@@ -28,14 +26,12 @@ void main() {
         expect(values, equals([2, 3]));
       });
 
-      test('Computed stream - reactive listening', () async {
+      test("Computed stream - reactive listening", () async {
         final signal = Signal(1);
         final computed = Computed<int>(() => signal.value * 2);
         final values = <int>[];
 
-        computed.stream.listen((value) {
-          values.add(value);
-        });
+        computed.stream.listen(values.add);
 
         // Initial value should not be emitted
         await Future.delayed(const Duration(milliseconds: 1));
@@ -51,13 +47,13 @@ void main() {
         expect(values, equals([4, 6]));
       });
 
-      test('Multiple listeners on same stream', () async {
+      test("Multiple listeners on same stream", () async {
         final signal = Signal(1);
         final values1 = <int>[];
         final values2 = <int>[];
 
-        signal.stream.listen((value) => values1.add(value));
-        signal.stream.listen((value) => values2.add(value));
+        signal.stream.listen(values1.add);
+        signal.stream.listen(values2.add);
 
         signal.value = 2;
         await Future.delayed(const Duration(milliseconds: 1));
@@ -66,7 +62,7 @@ void main() {
         expect(values2, equals([2]));
       });
 
-      test('Stream reuse - same instance', () async {
+      test("Stream reuse - same instance", () {
         final signal = Signal(1);
         final stream1 = signal.stream;
         final stream2 = signal.stream;
@@ -75,14 +71,12 @@ void main() {
       });
     });
 
-    group('Listen Method', () {
-      test('Listen with immediately false', () async {
+    group("Listen Method", () {
+      test("Listen with immediately false", () async {
         final signal = Signal(1);
         final values = <int>[];
 
-        final subscription = signal.listen((value) {
-          values.add(value);
-        }, immediately: false);
+        final subscription = signal.listen(values.add, immediately: false);
 
         // Should not emit initial value
         await Future.delayed(const Duration(milliseconds: 1));
@@ -96,13 +90,11 @@ void main() {
         subscription.cancel();
       });
 
-      test('Listen with immediately true', () async {
+      test("Listen with immediately true", () async {
         final signal = Signal(1);
         final values = <int>[];
 
-        final subscription = signal.listen((value) {
-          values.add(value);
-        }, immediately: true);
+        final subscription = signal.listen(values.add, immediately: true);
 
         // Should emit initial value immediately
         expect(values, equals([1]));
@@ -116,14 +108,12 @@ void main() {
       });
     });
 
-    group('Subscription Management', () {
-      test('Cancel subscription', () async {
+    group("Subscription Management", () {
+      test("Cancel subscription", () async {
         final signal = Signal(1);
         final values = <int>[];
 
-        final subscription = signal.stream.listen((value) {
-          values.add(value);
-        });
+        final subscription = signal.stream.listen(values.add);
 
         signal.value = 2;
         await Future.delayed(const Duration(milliseconds: 1));
@@ -136,13 +126,11 @@ void main() {
         expect(values, equals([2])); // Should not receive new values
       });
 
-      test('Subscription state management', () async {
+      test("Subscription state management", () async {
         final signal = Signal(1);
         final values = <int>[];
 
-        final subscription = signal.stream.listen((value) {
-          values.add(value);
-        });
+        final subscription = signal.stream.listen(values.add);
 
         expect(subscription.isPaused, isFalse);
 
@@ -165,8 +153,8 @@ void main() {
       });
     });
 
-    group('Collection Signals', () {
-      test('ListSignal stream', () async {
+    group("Collection Signals", () {
+      test("ListSignal stream", () async {
         final listSignal = ListSignal<int>([1, 2, 3]);
         final values = <List<int>>[];
 
@@ -197,7 +185,7 @@ void main() {
             ]));
       });
 
-      test('MapSignal stream', () async {
+      test("MapSignal stream", () async {
         final mapSignal = MapSignal<String, int>({});
         final values = <Map<String, int>>[];
 
@@ -210,25 +198,25 @@ void main() {
         expect(values, isEmpty);
 
         // Should emit on mutation
-        mapSignal['a'] = 1;
+        mapSignal["a"] = 1;
         await Future.delayed(const Duration(milliseconds: 1));
         expect(
             values,
             equals([
-              {'a': 1}
+              {"a": 1}
             ]));
 
-        mapSignal['b'] = 2;
+        mapSignal["b"] = 2;
         await Future.delayed(const Duration(milliseconds: 1));
         expect(
             values,
             equals([
-              {'a': 1},
-              {'a': 1, 'b': 2}
+              {"a": 1},
+              {"a": 1, "b": 2}
             ]));
       });
 
-      test('SetSignal stream', () async {
+      test("SetSignal stream", () async {
         final setSignal = SetSignal<int>({});
         final values = <Set<int>>[];
 
@@ -260,19 +248,18 @@ void main() {
       });
     });
 
-    group('Batch Updates', () {
-      test('Batch updates emit only final value', () async {
+    group("Batch Updates", () {
+      test("Batch updates emit only final value", () async {
         final signal = Signal(1);
         final values = <int>[];
 
-        signal.stream.listen((value) {
-          values.add(value);
-        });
+        signal.stream.listen(values.add);
 
         batch(() {
-          signal.value = 2;
-          signal.value = 3;
-          signal.value = 4;
+          signal
+            ..value = 2
+            ..value = 3
+            ..value = 4;
         });
 
         await Future.delayed(const Duration(milliseconds: 1));
@@ -280,23 +267,23 @@ void main() {
       });
     });
 
-    group('Data Types', () {
-      test('String values', () async {
-        final signal = Signal('hello');
+    group("Data Types", () {
+      test("String values", () async {
+        final signal = Signal("hello");
         final values = <String>[];
 
-        signal.stream.listen((value) => values.add(value));
+        signal.stream.listen(values.add);
 
-        signal.value = 'world';
+        signal.value = "world";
         await Future.delayed(const Duration(milliseconds: 1));
-        expect(values, equals(['world']));
+        expect(values, equals(["world"]));
       });
 
-      test('Nullable values', () async {
+      test("Nullable values", () async {
         final signal = Signal<int?>(null);
         final values = <int?>[];
 
-        signal.stream.listen((value) => values.add(value));
+        signal.stream.listen(values.add);
 
         signal.value = 42;
         await Future.delayed(const Duration(milliseconds: 1));
@@ -307,20 +294,20 @@ void main() {
         expect(values, equals([42, null]));
       });
 
-      test('Custom objects', () async {
-        final signal = Signal(TestPerson('Alice', 30));
+      test("Custom objects", () async {
+        final signal = Signal(TestPerson("Alice", 30));
         final values = <TestPerson>[];
 
-        signal.stream.listen((value) => values.add(value));
+        signal.stream.listen(values.add);
 
-        signal.value = TestPerson('Bob', 25);
+        signal.value = TestPerson("Bob", 25);
         await Future.delayed(const Duration(milliseconds: 1));
-        expect(values, equals([TestPerson('Bob', 25)]));
+        expect(values, equals([TestPerson("Bob", 25)]));
       });
     });
 
-    group('Error Handling', () {
-      test('Disposed signal throws assertion error', () async {
+    group("Error Handling", () {
+      test("Disposed signal throws assertion error", () {
         final signal = Signal(1);
         final _ = signal.stream; // Create stream first
 
@@ -330,17 +317,15 @@ void main() {
       });
     });
 
-    group('Rapid Changes', () {
-      test('Handle rapid value changes', () async {
+    group("Rapid Changes", () {
+      test("Handle rapid value changes", () async {
         final signal = Signal(0);
         final values = <int>[];
 
-        signal.stream.listen((value) {
-          values.add(value);
-        });
+        signal.stream.listen(values.add);
 
         // Rapid consecutive changes
-        for (int i = 1; i <= 5; i++) {
+        for (var i = 1; i <= 5; i++) {
           signal.value = i;
         }
 
@@ -349,8 +334,8 @@ void main() {
       });
     });
 
-    group('Watcher Management', () {
-      test('StreamHolder creation and reuse', () {
+    group("Watcher Management", () {
+      test("StreamHolder creation and reuse", () {
         final signal = Signal(1);
 
         // Initially no StreamHolder should exist
@@ -369,7 +354,7 @@ void main() {
         expect(stream, equals(stream2));
       });
 
-      test('Watcher creation and lifecycle', () async {
+      test("Watcher creation and lifecycle", () {
         final signal = Signal(1);
 
         // Access stream to create StreamHolder
@@ -396,7 +381,7 @@ void main() {
         expect(holder.watcher, isNull);
       });
 
-      test('Watcher recreation after cleanup', () async {
+      test("Watcher recreation after cleanup", () {
         final signal = Signal(1);
 
         // Access stream to create StreamHolder
@@ -422,23 +407,19 @@ void main() {
         subscription2.cancel();
       });
 
-      test('Watcher creation on first listener', () async {
+      test("Watcher creation on first listener", () async {
         final signal = Signal(1);
         final values = <int>[];
 
         // First listener should create watcher
-        final subscription1 = signal.stream.listen((value) {
-          values.add(value);
-        });
+        final subscription1 = signal.stream.listen(values.add);
 
         signal.value = 2;
         await Future.delayed(const Duration(milliseconds: 1));
         expect(values, equals([2]));
 
         // Second listener should reuse existing watcher
-        final subscription2 = signal.stream.listen((value) {
-          values.add(value);
-        });
+        final subscription2 = signal.stream.listen(values.add);
 
         signal.value = 3;
         await Future.delayed(const Duration(milliseconds: 1));
@@ -448,17 +429,13 @@ void main() {
         subscription2.cancel();
       });
 
-      test('Watcher cleanup when all listeners cancel', () async {
+      test("Watcher cleanup when all listeners cancel", () async {
         final signal = Signal(1);
         final values = <int>[];
 
-        final subscription1 = signal.stream.listen((value) {
-          values.add(value);
-        });
+        final subscription1 = signal.stream.listen(values.add);
 
-        final subscription2 = signal.stream.listen((value) {
-          values.add(value);
-        });
+        final subscription2 = signal.stream.listen(values.add);
 
         signal.value = 2;
         await Future.delayed(const Duration(milliseconds: 1));
@@ -474,14 +451,12 @@ void main() {
         expect(values, equals([2, 2])); // Should not receive new values
       });
 
-      test('Watcher recreation after cleanup', () async {
+      test("Watcher recreation after cleanup", () async {
         final signal = Signal(1);
         final values = <int>[];
 
         // First round of listeners
-        final subscription1 = signal.stream.listen((value) {
-          values.add(value);
-        });
+        final subscription1 = signal.stream.listen(values.add);
 
         signal.value = 2;
         await Future.delayed(const Duration(milliseconds: 1));
@@ -490,16 +465,14 @@ void main() {
         subscription1.cancel();
 
         // Second round of listeners should recreate watcher
-        signal.stream.listen((value) {
-          values.add(value);
-        });
+        signal.stream.listen(values.add);
 
         signal.value = 3;
         await Future.delayed(const Duration(milliseconds: 1));
         expect(values, equals([2, 3])); // Should receive new values
       });
 
-      test('Watcher lifecycle with collection signals', () async {
+      test("Watcher lifecycle with collection signals", () async {
         final listSignal = ListSignal<int>([1, 2, 3]);
         final values = <List<int>>[];
 
@@ -533,13 +506,11 @@ void main() {
             ]));
       });
 
-      test('Watcher cleanup on signal disposal', () async {
+      test("Watcher cleanup on signal disposal", () async {
         final signal = Signal(1);
         final values = <int>[];
 
-        signal.stream.listen((value) {
-          values.add(value);
-        });
+        signal.stream.listen(values.add);
 
         signal.value = 2;
         await Future.delayed(const Duration(milliseconds: 1));
@@ -552,7 +523,7 @@ void main() {
         expect(() => signal.stream, throwsA(isA<AssertionError>()));
       });
 
-      test('StreamController state management', () async {
+      test("StreamController state management", () {
         final signal = Signal(1);
 
         // Access stream to create StreamHolder
@@ -575,7 +546,7 @@ void main() {
         expect(holder.sc.isClosed, isTrue);
       });
 
-      test('Watcher disposal on signal disposal', () {
+      test("Watcher disposal on signal disposal", () {
         final signal = Signal(1);
 
         // Access stream to create StreamHolder
@@ -592,7 +563,7 @@ void main() {
         expect(holder.watcher, isNull);
       });
 
-      test('StreamHolder lifecycle with collection signals', () {
+      test("StreamHolder lifecycle with collection signals", () {
         final listSignal = ListSignal<int>([1, 2, 3]);
 
         // Access stream to create StreamHolder
@@ -611,7 +582,7 @@ void main() {
         expect(holder.watcher, isNull);
       });
 
-      test('Stream holder reuse across multiple accesses', () async {
+      test("Stream holder reuse across multiple accesses", () {
         final signal = Signal(1);
 
         // Multiple accesses to stream should return same instance
@@ -622,6 +593,8 @@ void main() {
 
         // Even after listeners are added and removed
         final subscription = signal.stream.listen((_) {});
+        // test code
+        // ignore: cascade_invocations
         subscription.cancel();
 
         final stream3 = signal.stream;

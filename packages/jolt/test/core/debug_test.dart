@@ -1,11 +1,11 @@
-import 'package:jolt/jolt.dart';
-import 'package:test/test.dart';
+import "package:jolt/jolt.dart";
+import "package:test/test.dart";
 
-import '../utils.dart';
+import "../utils.dart";
 
 void main() {
-  group('Debug', () {
-    test('debug signal', () {
+  group("Debug", () {
+    test("debug signal", () {
       final counter = DebugCounter();
 
       final s = Signal(0, onDebug: counter.onDebug);
@@ -30,7 +30,7 @@ void main() {
       expect(counter.count, equals(5));
     });
 
-    test('debug computed', () {
+    test("debug computed", () {
       final counter = DebugCounter();
 
       final c = Computed(() => 1, onDebug: counter.onDebug);
@@ -54,7 +54,7 @@ void main() {
       expect(counter.count, equals(6));
     });
 
-    test('debug effect', () {
+    test("debug effect", () {
       final counter = DebugCounter();
 
       final e = Effect(() => 1, immediately: false, onDebug: counter.onDebug);
@@ -72,7 +72,7 @@ void main() {
       expect(counter.count, equals(3));
     });
 
-    test('debug watcher', () {
+    test("debug watcher", () {
       final counter = DebugCounter();
 
       final w = Watcher(() => 1, (value, _) => 1, onDebug: counter.onDebug);
@@ -89,7 +89,7 @@ void main() {
       expect(counter.count, equals(3));
     });
 
-    test('debug effect scope', () {
+    test("debug effect scope", () {
       final counter = DebugCounter();
 
       final e = EffectScope(onDebug: counter.onDebug)..run(() => 1);
@@ -107,7 +107,7 @@ void main() {
       expect(counter.count, equals(4));
     });
 
-    test('debug reactive', () {
+    test("debug reactive", () {
       final sCounter = DebugCounter();
       final cCounter = DebugCounter();
       final eCounter = DebugCounter();

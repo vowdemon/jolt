@@ -1,7 +1,9 @@
-import 'dart:collection';
+import "dart:collection";
 
-import '../base.dart';
-import '../signal.dart';
+import "package:jolt/core.dart";
+
+import "package:jolt/src/jolt/base.dart";
+import "package:jolt/src/jolt/signal.dart";
 
 /// A mixin that provides reactive set functionality.
 ///
@@ -9,14 +11,12 @@ import '../signal.dart';
 /// Any modification to the set will automatically notify subscribers.
 /// All mutating operations trigger change notifications.
 mixin SetSignalMixin<E>
-    implements SetBase<E>, JReadonlyValue<Set<E>>, IMutableCollection {
+    implements SetBase<E>, Readonly<Set<E>>, IMutableCollection {
   /// Returns true if the set contains the given element.
   ///
   /// This is a non-mutating query operation.
   @override
-  bool contains(Object? element) {
-    return value.contains(element);
-  }
+  bool contains(Object? element) => value.contains(element);
 
   /// Adds all elements from the given iterable to this set.
   ///
@@ -32,9 +32,7 @@ mixin SetSignalMixin<E>
   ///
   /// This is a non-mutating operation that returns a new view of the set.
   @override
-  Set<R> cast<R>() {
-    return value.cast<R>();
-  }
+  Set<R> cast<R>() => value.cast<R>();
 
   /// Removes all elements from the set.
   ///
@@ -104,113 +102,88 @@ mixin SetSignalMixin<E>
   ///
   /// This is a non-mutating operation that creates a new set.
   @override
-  Set<E> union(Set<E> other) {
-    return value.union(other);
-  }
+  Set<E> union(Set<E> other) => value.union(other);
 
   /// Returns a new set containing elements present in both this set and [other].
   ///
   /// This is a non-mutating operation that creates a new set.
   @override
-  Set<E> intersection(Set<Object?> other) {
-    return value.intersection(other);
-  }
+  Set<E> intersection(Set<Object?> other) => value.intersection(other);
 
   /// Returns true if any element satisfies the given test.
   ///
   /// This is a non-mutating query operation.
   @override
-  bool any(bool Function(E element) test) {
-    return value.any(test);
-  }
+  bool any(bool Function(E element) test) => value.any(test);
 
   /// Returns true if this set contains all elements in [other].
   ///
   /// This is a non-mutating query operation.
   @override
-  bool containsAll(Iterable<Object?> other) {
-    return value.containsAll(other);
-  }
+  bool containsAll(Iterable<Object?> other) => value.containsAll(other);
 
   /// Returns a new set with elements in this set that are not in [other].
   ///
   /// This is a non-mutating operation that creates a new set.
   @override
-  Set<E> difference(Set<Object?> other) {
-    return value.difference(other);
-  }
+  Set<E> difference(Set<Object?> other) => value.difference(other);
 
   /// Returns the element at the given index.
   ///
   /// Since sets are unordered, the index is based on iteration order.
   @override
-  E elementAt(int index) {
-    return value.elementAt(index);
-  }
+  E elementAt(int index) => value.elementAt(index);
 
   /// Expands each element into zero or more elements.
   ///
   /// This is a non-mutating operation that returns an iterable.
   @override
-  Iterable<R> expand<R>(Iterable<R> Function(E element) f) {
-    return value.expand(f);
-  }
+  Iterable<R> expand<R>(Iterable<R> Function(E element) f) => value.expand(f);
 
   /// Returns true if every element satisfies the given test.
   ///
   /// This is a non-mutating query operation.
   @override
-  bool every(bool Function(E element) test) {
-    return value.every(test);
-  }
+  bool every(bool Function(E element) test) => value.every(test);
 
   /// Returns the first element that satisfies the given test.
   ///
   /// This is a non-mutating query operation.
   @override
-  E firstWhere(bool Function(E element) test, {E Function()? orElse}) {
-    return value.firstWhere(test, orElse: orElse);
-  }
+  E firstWhere(bool Function(E element) test, {E Function()? orElse}) =>
+      value.firstWhere(test, orElse: orElse);
 
   /// Reduces the set to a single value by iteratively combining elements.
   ///
   /// This is a non-mutating operation.
   @override
-  T fold<T>(T initialValue, T Function(T previousValue, E element) combine) {
-    return value.fold(initialValue, combine);
-  }
+  T fold<T>(T initialValue, T Function(T previousValue, E element) combine) =>
+      value.fold(initialValue, combine);
 
   /// Returns an iterable of this set followed by [other].
   ///
   /// This is a non-mutating operation that returns an iterable.
   @override
-  Iterable<E> followedBy(Iterable<E> other) {
-    return value.followedBy(other);
-  }
+  Iterable<E> followedBy(Iterable<E> other) => value.followedBy(other);
 
   /// Joins all elements into a string separated by [separator].
   ///
   /// This is a non-mutating operation.
   @override
-  String join([String separator = ""]) {
-    return value.join(separator);
-  }
+  String join([String separator = ""]) => value.join(separator);
 
   /// Returns the last element that satisfies the given test.
   ///
   /// This is a non-mutating query operation.
   @override
-  E lastWhere(bool Function(E element) test, {E Function()? orElse}) {
-    return value.lastWhere(test, orElse: orElse);
-  }
+  E lastWhere(bool Function(E element) test, {E Function()? orElse}) =>
+      value.lastWhere(test, orElse: orElse);
 
   /// Returns the element equal to [element], if present.
   ///
   /// This is a non-mutating query operation specific to sets.
   @override
-  E? lookup(Object? element) {
-    return value.lookup(element);
-  }
+  E? lookup(Object? element) => value.lookup(element);
 
   /// The first element of the set.
   @override
@@ -234,9 +207,7 @@ mixin SetSignalMixin<E>
   ///
   /// This is a non-mutating operation that returns an iterable.
   @override
-  Iterable<T> map<T>(T Function(E element) f) {
-    return value.map(f);
-  }
+  Iterable<T> map<T>(T Function(E element) f) => value.map(f);
 
   /// Removes all elements in [other] from this set.
   ///
@@ -269,88 +240,72 @@ mixin SetSignalMixin<E>
   ///
   /// This is a non-mutating operation that creates a new set.
   @override
-  Set<E> toSet() {
-    return value.toSet();
-  }
+  Set<E> toSet() => value.toSet();
 
   /// Reduces the set to a single value using the given combine function.
   ///
   /// This is a non-mutating operation.
   @override
-  E reduce(E Function(E value, E element) combine) {
-    return value.reduce(combine);
-  }
+  E reduce(E Function(E value, E element) combine) => value.reduce(combine);
 
   /// Returns an iterable that skips the first [n] elements.
   ///
   /// This is a non-mutating operation that returns an iterable.
   @override
-  Iterable<E> skip(int n) {
-    return value.skip(n);
-  }
+  Iterable<E> skip(int n) => value.skip(n);
 
   /// Returns an iterable that skips elements while [test] returns true.
   ///
   /// This is a non-mutating operation that returns an iterable.
   @override
-  Iterable<E> skipWhile(bool Function(E element) test) {
-    return value.skipWhile(test);
-  }
+  Iterable<E> skipWhile(bool Function(E element) test) => value.skipWhile(test);
 
   /// Returns an iterable with at most [count] elements.
   ///
   /// This is a non-mutating operation that returns an iterable.
   @override
-  Iterable<E> take(int count) {
-    return value.take(count);
-  }
+  Iterable<E> take(int count) => value.take(count);
 
   /// Returns an iterable that takes elements while [test] returns true.
   ///
   /// This is a non-mutating operation that returns an iterable.
   @override
-  Iterable<E> takeWhile(bool Function(E element) test) {
-    return value.takeWhile(test);
-  }
+  Iterable<E> takeWhile(bool Function(E element) test) => value.takeWhile(test);
 
   /// Returns a list containing the elements of this set.
   ///
   /// This is a non-mutating operation that creates a new list.
   @override
-  List<E> toList({bool growable = true}) {
-    return value.toList(growable: growable);
-  }
+  List<E> toList({bool growable = true}) => value.toList(growable: growable);
 
   /// Returns an iterable containing only elements of type [T].
   ///
   /// This is a non-mutating operation that returns an iterable.
   @override
-  Iterable<T> whereType<T>() {
-    return value.whereType<T>();
-  }
+  Iterable<T> whereType<T>() => value.whereType<T>();
 
   /// Returns the single element that satisfies the given test.
   ///
   /// This is a non-mutating query operation.
   @override
-  E singleWhere(bool Function(E element) test, {E Function()? orElse}) {
-    return value.singleWhere(test, orElse: orElse);
-  }
+  E singleWhere(bool Function(E element) test, {E Function()? orElse}) =>
+      value.singleWhere(test, orElse: orElse);
 
   /// Returns an iterable containing elements that satisfy the given test.
   ///
   /// This is a non-mutating operation that returns an iterable.
   @override
-  Iterable<E> where(bool Function(E element) test) {
-    return value.where(test);
-  }
+  Iterable<E> where(bool Function(E element) test) => value.where(test);
 }
 
-/// A reactive set that automatically notifies subscribers when modified.
+/// Implementation of [SetSignal] that automatically notifies subscribers when modified.
 ///
-/// SetSignal extends Signal to provide full Set functionality while
-/// maintaining reactivity. All set operations (add, remove, clear, etc.)
-/// will trigger notifications to subscribers.
+/// This is the concrete implementation of the [SetSignal] interface. SetSignal
+/// extends Signal to provide full Set functionality while maintaining reactivity.
+/// All set operations (add, remove, clear, etc.) will trigger notifications
+/// to subscribers.
+///
+/// See [SetSignal] for the public interface and usage examples.
 ///
 /// Example:
 /// ```dart
@@ -374,7 +329,9 @@ mixin SetSignalMixin<E>
 /// tags.clear();
 /// // Prints: "Tags:  (0 total)"
 /// ```
-class SetSignal<E> extends Signal<Set<E>> with SetSignalMixin<E> {
+class SetSignalImpl<E> extends SignalImpl<Set<E>>
+    with SetSignalMixin<E>
+    implements SetSignal<E> {
   /// Creates a reactive set signal with the given initial set.
   ///
   /// Parameters:
@@ -387,5 +344,34 @@ class SetSignal<E> extends Signal<Set<E>> with SetSignalMixin<E> {
   /// final tags = SetSignal({'dart', 'flutter'});
   /// final autoSet = SetSignal({'tag1', 'tag2'});
   /// ```
-  SetSignal(Set<E>? value, {super.onDebug}) : super(value ?? {});
+  SetSignalImpl(Set<E>? value, {super.onDebug}) : super(value ?? {});
+}
+
+/// Interface for reactive set signals.
+///
+/// SetSignal extends Signal to provide full Set functionality while
+/// maintaining reactivity. All set operations (add, remove, clear, etc.)
+/// will trigger notifications to subscribers.
+///
+/// Example:
+/// ```dart
+/// SetSignal<String> tags = SetSignal({'dart', 'flutter'});
+///
+/// Effect(() => print('Tags: ${tags.join(', ')}'));
+/// tags.add('reactive'); // Triggers effect
+/// ```
+abstract interface class SetSignal<E>
+    implements Signal<Set<E>>, SetSignalMixin<E> {
+  /// Creates a reactive set signal with the given initial set.
+  ///
+  /// Parameters:
+  /// - [value]: Initial set content, defaults to empty set if null
+  /// - [onDebug]: Optional debug callback for reactive system debugging
+  ///
+  /// Example:
+  /// ```dart
+  /// final emptySet = SetSignal<String>(null); // Creates empty set
+  /// final tags = SetSignal({'dart', 'flutter'});
+  /// ```
+  factory SetSignal(Set<E>? value, {JoltDebugFn? onDebug}) = SetSignalImpl<E>;
 }

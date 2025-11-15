@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:jolt/core.dart' show JFinalizer;
+import 'package:jolt/core.dart' show JFinalizer, Readonly, Writable;
 import 'package:jolt/jolt.dart' as jolt;
 import 'package:jolt_flutter/jolt_flutter.dart';
 import 'package:shared_interfaces/shared_interfaces.dart';
@@ -9,7 +9,7 @@ part 'value_listenable.dart';
 final _notifiers = Expando<_JoltValueNotifierBase<Object?>>();
 
 /// Extension to convert Jolt values to Flutter ValueNotifiers.
-extension JoltValueNotifierExtension<T> on jolt.JReadonlyValue<T> {
+extension JoltValueNotifierExtension<T> on Readonly<T> {
   /// Converts this Jolt value to a Flutter ValueNotifier.
   ///
   /// Returns a cached instance that stays synchronized with this Jolt value.
@@ -82,7 +82,7 @@ class _JoltValueNotifierBase<T> {
   }
 
   /// The underlying Jolt value being wrapped.
-  final jolt.JReadonlyValue<T> joltValue;
+  final Readonly<T> joltValue;
 
   Disposer? _disposer;
   Disposer? _disposerJolt;
@@ -92,9 +92,9 @@ class _JoltValueNotifierBase<T> {
   T get value => _value;
 
   set value(T newValue) {
-    assert(joltValue is jolt.JWritableValue<T>);
+    assert(joltValue is Writable<T>);
 
-    (joltValue as jolt.JWritableValue<T>).set(newValue);
+    (joltValue as Writable<T>).set(newValue);
   }
 
   void dispose() {
@@ -149,7 +149,7 @@ extension JoltFlutterValueNotifierExtension<T> on ValueNotifier<T> {
   }
 }
 
-class _NotifierSignal<T> extends jolt.Signal<T> {
+class _NotifierSignal<T> extends SignalImpl<T> {
   _NotifierSignal(this._notifier, {super.onDebug}) : super(_notifier!.value) {
     _listener = () {
       final newValue = _notifier!.value;
@@ -170,8 +170,9 @@ class _NotifierSignal<T> extends jolt.Signal<T> {
   ValueNotifier<T>? _notifier;
 
   @override
-  void set(T value) {
-    if (isDisposed) return;
+  T set(T value) {
+    if (isDisposed) return value;
     _notifier?.value = value;
+    return value;
   }
 }

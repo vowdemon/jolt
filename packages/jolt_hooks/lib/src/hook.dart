@@ -38,7 +38,7 @@ import 'base.dart';
 /// }
 /// ```
 Signal<T> useSignal<T>(T value, {List<Object?>? keys, JoltDebugFn? onDebug}) {
-  return use(JoltHook(Signal(value, onDebug: onDebug), keys: keys));
+  return use(JoltHook(() => Signal(value, onDebug: onDebug), keys: keys));
 }
 
 /// Creates a computed signal hook that derives its value from other signals.
@@ -68,7 +68,7 @@ Computed<T> useComputed<T>(
   List<Object?>? keys,
   JoltDebugFn? onDebug,
 }) {
-  return use(JoltHook(Computed(value, onDebug: onDebug), keys: keys));
+  return use(JoltHook(() => Computed(value, onDebug: onDebug), keys: keys));
 }
 
 /// Creates a writable computed signal hook with custom getter and setter.
@@ -112,7 +112,8 @@ WritableComputed<T> useWritableComputed<T>(
   JoltDebugFn? onDebug,
 }) {
   return use(
-    JoltHook(WritableComputed(getter, setter, onDebug: onDebug), keys: keys),
+    JoltHook(() => WritableComputed(getter, setter, onDebug: onDebug),
+        keys: keys),
   );
 }
 
@@ -159,7 +160,8 @@ ConvertComputed<T, U> useConvertComputed<T, U>(
 }) {
   return use(
     JoltHook(
-      ConvertComputed(source, decode: decode, encode: encode, onDebug: onDebug),
+      () => ConvertComputed(source,
+          decode: decode, encode: encode, onDebug: onDebug),
       keys: keys,
     ),
   );
@@ -212,7 +214,7 @@ PersistSignal<T> usePersistSignal<T>(
 }) {
   return use(
     JoltHook(
-      PersistSignal(
+      () => PersistSignal(
         initialValue: initialValue,
         read: read,
         write: write,
@@ -263,7 +265,8 @@ AsyncSignal<T> useAsyncSignal<T>(
 }) {
   return use(
     JoltHook(
-      AsyncSignal(source: source, initialValue: initialValue, onDebug: onDebug),
+      () => AsyncSignal(
+          source: source, initialValue: initialValue, onDebug: onDebug),
       keys: keys,
     ),
   );
@@ -305,7 +308,7 @@ Effect useJoltEffect(
 }) {
   return use(
     JoltEffectHook(
-      Effect(fn, immediately: immediately, onDebug: onDebug),
+      () => Effect(fn, immediately: immediately, onDebug: onDebug),
       keys: keys,
     ),
   );
@@ -355,7 +358,7 @@ Watcher useJoltWatcher<T>(
 }) {
   return use(
     JoltEffectHook(
-      Watcher<T>(
+      () => Watcher<T>(
         sources,
         fn,
         immediately: immediately,
@@ -397,11 +400,13 @@ EffectScope useJoltEffectScope({
   List<Object?>? keys,
   JoltDebugFn? onDebug,
 }) {
-  final scope = EffectScope(onDebug: onDebug);
-  if (fn != null) {
-    scope.run(() => fn(scope));
-  }
-  return use(JoltEffectHook(scope, keys: keys));
+  return use(JoltEffectHook(() {
+    final scope = EffectScope(onDebug: onDebug);
+    if (fn != null) {
+      scope.run(() => fn(scope));
+    }
+    return scope;
+  }, keys: keys));
 }
 
 /// Creates a stream hook from a reactive value.
@@ -468,7 +473,7 @@ ListSignal<T> useListSignal<T>(
   List<Object?>? keys,
   JoltDebugFn? onDebug,
 }) {
-  return use(JoltHook(ListSignal(value, onDebug: onDebug), keys: keys));
+  return use(JoltHook(() => ListSignal(value, onDebug: onDebug), keys: keys));
 }
 
 /// Creates a reactive map signal hook.
@@ -505,7 +510,7 @@ MapSignal<K, V> useMapSignal<K, V>(
   List<Object?>? keys,
   JoltDebugFn? onDebug,
 }) {
-  return use(JoltHook(MapSignal(value, onDebug: onDebug), keys: keys));
+  return use(JoltHook(() => MapSignal(value, onDebug: onDebug), keys: keys));
 }
 
 /// Creates a reactive set signal hook.
@@ -541,7 +546,7 @@ SetSignal<T> useSetSignal<T>(
   List<Object?>? keys,
   JoltDebugFn? onDebug,
 }) {
-  return use(JoltHook(SetSignal(value, onDebug: onDebug), keys: keys));
+  return use(JoltHook(() => SetSignal(value, onDebug: onDebug), keys: keys));
 }
 
 /// Creates a reactive iterable signal hook.
@@ -581,7 +586,8 @@ IterableSignal<T> useIterableSignal<T>(
   List<Object?>? keys,
   JoltDebugFn? onDebug,
 }) {
-  return use(JoltHook(IterableSignal(getter, onDebug: onDebug), keys: keys));
+  return use(
+      JoltHook(() => IterableSignal(getter, onDebug: onDebug), keys: keys));
 }
 
 /// Creates a reactive widget hook that automatically rebuilds when dependencies change.

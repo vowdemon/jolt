@@ -1,3 +1,7 @@
+## 1.0.3
+
+ - **FIX**(jolt_hooks): delay instance creation to avoid recreating on rebuild. ([b2121cf9](https://github.com/vowdemon/jolt/commit/b2121cf9d87ff45597efd9884c649f3ecb5303af))
+
 ## 1.0.2
 
  - Update a dependency to the latest release.

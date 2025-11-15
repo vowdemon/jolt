@@ -4,7 +4,7 @@ import 'package:jolt_flutter/jolt_flutter.dart';
 import 'package:jolt_flutter/setup.dart';
 
 void main() {
-  group('JoltSetupWidget Basic Functionality', () {
+  group('SetupWidget Basic Functionality', () {
     testWidgets('create setup only once', (tester) async {
       int setupCount = 0;
       await tester.pumpWidget(MaterialApp(
@@ -238,7 +238,7 @@ void main() {
 }
 
 // Helper widget for testing useProps reactive behavior
-class _PropsWidget extends JoltSetupWidget {
+class _PropsWidget extends SetupWidget {
   final String title;
   final int count;
   const _PropsWidget({required this.title, required this.count});

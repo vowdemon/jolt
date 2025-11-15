@@ -3,27 +3,27 @@ import 'package:jolt/jolt.dart';
 import 'package:jolt_flutter/src/shared.dart';
 import 'package:shared_interfaces/shared_interfaces.dart';
 
-abstract class JoltSetupWidget extends Widget {
-  const JoltSetupWidget({super.key});
+abstract class SetupWidget extends Widget {
+  const SetupWidget({super.key});
 
   SetupFunction setup(BuildContext context);
 
   @override
-  JoltSetupWidgetElement createElement() => JoltSetupWidgetElement(this);
+  SetupWidgetElement createElement() => SetupWidgetElement(this);
 }
 
-extension JoltSetupWidgetExtension<T extends JoltSetupWidget> on T {
+extension SetupWidgetExtension<T extends SetupWidget> on T {
   ReadonlyNode<T> useProps() => useWidgetProps<T>();
 }
 
-class JoltSetupWidgetElement<T extends JoltSetupWidget> extends ComponentElement
+class SetupWidgetElement<T extends SetupWidget> extends ComponentElement
     with JoltCommonEffectBuilder {
-  JoltSetupWidgetElement(JoltSetupWidget super.widget);
+  SetupWidgetElement(SetupWidget super.widget);
 
   late final JoltSetupContext setupContext = JoltSetupContext(this);
 
   @override
-  JoltSetupWidget get widget => super.widget as JoltSetupWidget;
+  SetupWidget get widget => super.widget as SetupWidget;
 
   // coverage:ignore-start
   @override
@@ -97,7 +97,7 @@ class JoltSetupWidgetElement<T extends JoltSetupWidget> extends ComponentElement
   }
 
   @override
-  void update(JoltSetupWidget newWidget) {
+  void update(SetupWidget newWidget) {
     super.update(newWidget);
     assert(widget == newWidget);
     setupContext.widget.value = newWidget;
@@ -175,7 +175,7 @@ abstract final class HookUtils {
   @pragma('dart2js:prefer-inline')
   static BuildContext useContext() {
     final currentContext = JoltSetupContext.current?.context;
-    assert(currentContext != null, 'JoltSetupWidgetElement is not exsits');
+    assert(currentContext != null, 'SetupWidgetElement is not exsits');
 
     return currentContext!;
   }
@@ -185,7 +185,7 @@ abstract final class HookUtils {
   @pragma('dart2js:prefer-inline')
   static JoltSetupContext useSetupContext() {
     final currentContext = JoltSetupContext.current;
-    assert(currentContext != null, 'JoltSetupWidgetElement is not exsits');
+    assert(currentContext != null, 'SetupWidgetElement is not exsits');
 
     return currentContext!;
   }
@@ -193,7 +193,7 @@ abstract final class HookUtils {
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
-  static ReadonlyNode<T> useWidgetProps<T extends JoltSetupWidget>() {
+  static ReadonlyNode<T> useWidgetProps<T extends SetupWidget>() {
     final widget = useSetupContext().widget;
 
     return use(() => Computed(() => widget.value as T));
@@ -204,7 +204,7 @@ abstract final class HookUtils {
   @pragma('dart2js:prefer-inline')
   static T use<T>(T Function() hook) {
     assert(JoltSetupContext.current != null,
-        'Hook.use must be called within a JoltSetupWidget');
+        'Hook.use must be called within a SetupWidget');
 
     return JoltSetupContext.current!._useHook(hook);
   }
@@ -224,14 +224,14 @@ class JoltSetupContext extends EffectScopeImpl {
       : widget = Signal(element.widget),
         super(detach: true);
 
-  final JoltSetupWidgetElement element;
+  final SetupWidgetElement element;
 
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
   BuildContext get context => element as BuildContext;
 
-  final Signal<JoltSetupWidget> widget;
+  final Signal<SetupWidget> widget;
   WidgetBuilder? setupBuilder;
   Effect? renderer;
 
@@ -359,7 +359,7 @@ class JoltSetupContext extends EffectScopeImpl {
   }
 }
 
-class SetupBuilder extends JoltSetupWidget {
+class SetupBuilder extends SetupWidget {
   const SetupBuilder({
     super.key,
     required SetupFunctionBuilder setup,

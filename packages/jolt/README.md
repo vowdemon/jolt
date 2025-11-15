@@ -1,25 +1,15 @@
 # Jolt
 
-Jolt is a lightweight reactive state management library for Dart and Flutter.  
-It offers signals, computed values, effects, async states, and reactive collections.
+[![CI/CD](https://github.com/vowdemon/jolt/actions/workflows/cicd.yml/badge.svg)](https://github.com/vowdemon/jolt/actions/workflows/cicd.yml)
+[![codecov](https://codecov.io/gh/vowdemon/jolt/graph/badge.svg?token=CBL7C4ZRZD)](https://codecov.io/gh/vowdemon/jolt)
+[![jolt](https://img.shields.io/pub/v/jolt?label=jolt)](https://pub.dev/packages/jolt)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/vowdemon/jolt/blob/main/LICENSE)
+
+Jolt is a lightweight reactive state management library for Dart and Flutter. It provides signals, computed values, effects, async states, and reactive collections with automatic dependency tracking and efficient updates.
 
 ## Documentation
 
 [Official Documentation](https://jolt.vowdemon.com)
-
-## Features
-
-- **⚡ Fine-Grained Reactive Updates**: Precisely track every dependency and update only what actually changed, delivering smooth, responsive applications
-- **🎯 Clean and Elegant API**: Lightweight design with intuitive API, complete type safety, making your code more elegant and secure
-- **🚀 Exceptional Performance**: Deeply optimized for exceptional performance, maintaining smooth operation even in large, complex applications
-- **🧹 Intelligent Resource Management**: Automatic dependency tracking and smart resource cleanup. EffectScope provides unified lifecycle management, eliminating memory leaks
-- **📦 Complete Ecosystem**: Rich ecosystem with reactive collections (List, Map, Set, Iterable), async operations (Future & Stream), type conversion, and persistence helpers
-- **🔧 Zero-Cost Migration**: Comprehensive extension methods and utilities with clear API design, enabling smooth migration from other solutions
-
-Jolt provides a complete reactive programming solution with signals, computed values, effects, and reactive collections. It's designed for building responsive applications with automatic dependency tracking and efficient updates.
-
-> For full API reference and detailed usage examples, check the inline comments in the source code and the [Documentation](https://pub.dev/documentation/jolt/latest/).
-
 
 ## Quick Start
 
@@ -40,7 +30,7 @@ void main() {
 }
 ```
 
-## Core Features
+## Core Concepts
 
 ### Signals
 
@@ -55,6 +45,12 @@ final currentValue = counter.peek;
 
 // Force notification without changing value
 counter.notify();
+
+// Update using updater function
+counter.update((value) => value + 1);
+
+// Get read-only view
+final readonlyCounter = counter.readonly();
 ```
 
 ### Computed Values
@@ -70,6 +66,24 @@ final fullName = Computed(() => '${firstName.value} ${lastName.value}');
 print(fullName.value); // "John Doe"
 firstName.value = 'Jane';
 print(fullName.value); // "Jane Doe" - automatically updated
+
+// Access cached value without recomputing
+final cached = fullName.peekCached;
+```
+
+### WritableComputed
+
+Computed values that can be written to, converting the write to source updates:
+
+```dart
+final count = Signal(0);
+final doubled = WritableComputed(
+  () => count.value * 2,
+  (value) => count.value = value ~/ 2,
+);
+
+doubled.value = 10; // Automatically updates count to 5
+print(count.value); // 5
 ```
 
 ### Effects
@@ -87,9 +101,46 @@ Effect(() {
 count.value = 1; // Effect runs again
 count.value = 2; // Effect runs again
 // values = [0, 1, 2]
+
+// Effects run immediately by default
+// Use immediately: false to defer execution
+Effect(() {
+  print('Deferred effect');
+}, immediately: false);
 ```
 
-### Async Operations
+### Effect Scopes
+
+Manage effect lifecycles with automatic cleanup:
+
+```dart
+final scope = EffectScope((scope) {
+  Effect(() => print('Reactive effect'));
+  // Effects are automatically disposed when scope is disposed
+});
+
+scope.dispose(); // Cleans up all effects in scope
+```
+
+### Watchers
+
+Watch for changes without creating effects:
+
+```dart
+final signal = Signal(0);
+final List<int> changes = [];
+
+Watcher(
+  () => signal.value, // Source function
+  (value, previousValue) {
+    changes.add(value);
+    print('Changed from $previousValue to $value');
+  },
+  immediately: true, // Run immediately
+);
+```
+
+## Async Operations
 
 Handle asynchronous operations with built-in state management:
 
@@ -118,14 +169,15 @@ final displayText = Computed(() =>
 );
 ```
 
-### Reactive Collections
+## Reactive Collections
 
-Work with reactive lists, sets, and maps:
+Work with reactive lists, sets, maps, and iterables:
 
 ```dart
 final items = ListSignal(['apple', 'banana']);
 final tags = SetSignal({'dart', 'flutter'});
 final userMap = MapSignal({'name': 'Alice', 'age': 30});
+final range = IterableSignal(() => Iterable.generate(5));
 
 // All mutations trigger reactive updates automatically
 items.add('cherry');
@@ -142,6 +194,67 @@ userMap.remove('age');
 final list = items.value; // Get underlying List
 items.value = ['new', 'list']; // Replace entire collection
 ```
+
+## Extension Methods
+
+### Converting to Signals
+
+Convert existing types to reactive equivalents:
+
+```dart
+// Convert any value to Signal
+final nameSignal = 'Alice'.toSignal();
+final countSignal = 42.toSignal();
+
+// Convert collections
+final reactiveList = [1, 2, 3].toListSignal();
+final reactiveMap = {'key': 'value'}.toMapSignal();
+final reactiveSet = {1, 2, 3}.toSetSignal();
+final reactiveIterable = Iterable.generate(5).toIterableSignal();
+
+// Convert async sources
+final asyncSignal = someFuture.toAsyncSignal();
+final streamSignal = someStream.toStreamSignal();
+```
+
+### Stream Integration
+
+Convert reactive values to streams:
+
+```dart
+final counter = Signal(0);
+
+// Get stream
+final stream = counter.stream;
+stream.listen((value) => print('Counter: $value'));
+
+// Or use listen convenience method
+final subscription = counter.listen(
+  (value) => print('Counter: $value'),
+  immediately: true, // Call immediately with current value
+);
+
+subscription.cancel(); // Stop listening
+```
+
+### Conditional Waiting
+
+Wait until a reactive value satisfies a condition:
+
+```dart
+final count = Signal(0);
+
+// Wait until count reaches 5
+final future = count.until((value) => value >= 5);
+
+count.value = 1; // Still waiting
+count.value = 3; // Still waiting
+count.value = 5; // Future completes with value 5
+
+final result = await future; // result is 5
+```
+
+## Advanced Features
 
 ### Batching Updates
 
@@ -185,59 +298,13 @@ signal1.value = 10; // Effect runs
 signal2.value = 20; // Effect doesn't run
 ```
 
-### Effect Scopes
-
-Manage effect lifecycles with automatic cleanup:
-
-```dart
-final scope = EffectScope((scope) {
-  Effect(() => print('Reactive effect'));
-  // Effects are automatically disposed when scope is disposed
-});
-
-scope.dispose(); // Cleans up all effects in scope
-```
-
-### Watchers
-
-Watch for changes without creating effects:
-
-```dart
-final signal = Signal(0);
-final List<int> changes = [];
-
-Watcher(
-  () => signal.value, // Source function
-  (value, previousValue) {
-    changes.add(value);
-    print('Changed from $previousValue to $value');
-  },
-  immediately: true, // Run immediately
-);
-```
-
-### Extension Methods
-
-Convert existing types to reactive equivalents:
-
-```dart
-// Convert collections
-final reactiveList = [1, 2, 3].toListSignal();
-final reactiveMap = {'key': 'value'}.toMapSignal();
-final reactiveSet = {1, 2, 3}.toSetSignal();
-
-// Convert async sources
-final asyncSignal = someFuture.toAsyncSignal();
-final streamSignal = someStream.toStreamSignal();
-```
-
-## Advanced Features
-
 ### Type-Converting Signals
 
 Create signals that convert between different types:
 
 ```dart
+import 'package:jolt/tricks.dart';
+
 final count = Signal(0);
 final textCount = ConvertComputed(
   count,
@@ -254,6 +321,8 @@ print(count.value); // 42
 Signals that automatically persist to storage:
 
 ```dart
+import 'package:jolt/tricks.dart';
+
 final theme = PersistSignal(
   initialValue: () => 'light',
   read: () => SharedPreferences.getInstance()
@@ -277,17 +346,22 @@ theme.value = 'dark'; // Automatically saved to storage
 ### Async Signals
 - Use `AsyncSignal.fromFuture()` for single async operations
 - Use `AsyncSignal.fromStream()` for continuous data streams
-- Always handle all states: loading, success, error, refreshing
+- Always handle all states: loading, success, error
 
 ### Effect Dependencies
 - Effects only re-run when tracked dependencies change
 - Use `untracked()` to access values without creating dependencies
-- Effects run immediately when created
+- Effects run immediately when created (unless `immediately: false`)
 
 ### Memory Management
 - Always dispose signals and effects when no longer needed
 - Use `EffectScope` for automatic cleanup of multiple effects
 - Disposed signals throw `AssertionError` when accessed
+
+### Computed Values
+- Computed values are cached and only recompute when dependencies change
+- Use `peekCached` to access cached value without recomputing
+- Use `peek` to recompute without creating dependencies
 
 ## Related Packages
 
@@ -295,8 +369,9 @@ Jolt is part of the Jolt ecosystem. Explore these related packages:
 
 | Package | Description |
 |---------|-------------|
-| [jolt_flutter](https://pub.dev/packages/jolt_flutter) | Flutter widgets: JoltBuilder, JoltSelector, JoltProvider |
+| [jolt_flutter](https://pub.dev/packages/jolt_flutter) | Flutter widgets: JoltBuilder, JoltSelector, JoltProvider, SetupWidget |
 | [jolt_hooks](https://pub.dev/packages/jolt_hooks) | Hooks API: useSignal, useComputed, useJoltEffect, useJoltWidget |
+| [jolt_flutter_hooks](https://pub.dev/packages/jolt_flutter_hooks) | Declarative hooks for Flutter: useTextEditingController, useScrollController, useFocusNode, etc. |
 | [jolt_surge](https://pub.dev/packages/jolt_surge) | Signal-powered Cubit pattern: Surge, SurgeProvider, SurgeConsumer |
 
 ## License

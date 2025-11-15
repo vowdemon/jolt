@@ -1,22 +1,13 @@
 # Jolt Hooks
 
-A Flutter hooks integration package for [Jolt](https://pub.dev/packages/jolt) reactive state management. Jolt Hooks provides a comprehensive Hooks API built on [flutter_hooks](https://pub.dev/packages/flutter_hooks), enabling you to use Jolt's reactive primitives seamlessly within Flutter's hook system.
+[![CI/CD](https://github.com/vowdemon/jolt/actions/workflows/cicd.yml/badge.svg)](https://github.com/vowdemon/jolt/actions/workflows/cicd.yml)
+[![codecov](https://codecov.io/gh/vowdemon/jolt/graph/badge.svg?token=CBL7C4ZRZD)](https://codecov.io/gh/vowdemon/jolt)
+[![jolt_hooks](https://img.shields.io/pub/v/jolt_hooks?label=jolt_hooks)](https://pub.dev/packages/jolt_hooks)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/vowdemon/jolt/blob/main/LICENSE)
 
-## Documentation
+A Flutter hooks integration package for [Jolt](https://pub.dev/packages/jolt) reactive state management. Jolt Hooks provides a comprehensive Hooks API built on [flutter_hooks](https://pub.dev/packages/flutter_hooks), enabling you to use Jolt's reactive primitives seamlessly within Flutter's hook system. All hooks automatically dispose their resources when the widget is removed from the tree, ensuring memory safety and preventing leaks.
 
-[Official Documentation](https://jolt.vowdemon.com)
 
-## Overview
-
-Jolt Hooks bridges Jolt's reactive state management system with Flutter's hook architecture, providing automatic lifecycle management and seamless integration with other Flutter hooks. All hooks automatically dispose their resources when the widget is removed from the tree, ensuring memory safety and preventing leaks.
-
-**Key Features:**
-- 🎯 **Comprehensive Hooks API**: Full coverage of Jolt's reactive primitives
-- 🔄 **Automatic Lifecycle Management**: Resources are automatically disposed
-- ⚡ **Seamless Integration**: Works perfectly with other Flutter hooks
-- 🎨 **Type-Safe**: Full type safety with Dart's type system
-- 📦 **Reactive Collections**: Hooks for List, Map, Set, and Iterable signals
-- 🔧 **Advanced Features**: Async signals, persistent signals, and effect scopes
 
 ## Quick Start
 

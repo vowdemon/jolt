@@ -3,16 +3,76 @@ import 'package:jolt/jolt.dart';
 import 'package:jolt_flutter/src/shared.dart';
 import 'package:shared_interfaces/shared_interfaces.dart';
 
+/// A widget that uses a composition-based API similar to Vue's Composition API.
+///
+/// The [setup] function executes only once when the widget is first created,
+/// not on every rebuild. This provides better performance and a more predictable
+/// execution model compared to React-style hooks.
+///
+/// Example:
+/// ```dart
+/// class CounterWidget extends SetupWidget {
+///   const CounterWidget({super.key});
+///
+///   @override
+///   WidgetBuilder setup(BuildContext context) {
+///     final count = useSignal(0);
+///
+///     return (context) => Column(
+///       children: [
+///         Text('Count: ${count.value}'),
+///         ElevatedButton(
+///           onPressed: () => count.value++,
+///           child: Text('Increment'),
+///         ),
+///       ],
+///     );
+///   }
+/// }
+/// ```
 abstract class SetupWidget extends Widget {
+  /// Creates a SetupWidget.
   const SetupWidget({super.key});
 
+  /// The setup function that runs once when the widget is created.
+  ///
+  /// This function should return a [WidgetBuilder] that will be called on
+  /// each rebuild. Use hooks like [useSignal], [useComputed], etc. to manage
+  /// reactive state within this function.
+  ///
+  /// Parameters:
+  /// - [context]: The build context
+  ///
+  /// Returns: A widget builder function
   SetupFunction setup(BuildContext context);
 
   @override
   SetupWidgetElement createElement() => SetupWidgetElement(this);
 }
 
+/// Extension methods for SetupWidget.
 extension SetupWidgetExtension<T extends SetupWidget> on T {
+  /// Returns a reactive reference to the widget instance.
+  ///
+  /// This is the only way to watch for widget parameter changes in SetupWidget,
+  /// since the setup function executes only once.
+  ///
+  /// Returns: A [ReadonlyNode] that tracks widget changes
+  ///
+  /// Example:
+  /// ```dart
+  /// class UserCard extends SetupWidget {
+  ///   final String name;
+  ///
+  ///   const UserCard({super.key, required this.name});
+  ///
+  ///   @override
+  ///   WidgetBuilder setup(BuildContext context) {
+  ///     final props = useProps();
+  ///     return (context) => Text(props.value.name);
+  ///   }
+  /// }
+  /// ```
   ReadonlyNode<T> useProps() => useWidgetProps<T>();
 }
 
@@ -133,7 +193,24 @@ class SetupWidgetElement<T extends SetupWidget> extends ComponentElement
   }
 }
 
+/// Utility functions for SetupWidget hooks and lifecycle management.
 abstract final class HookUtils {
+  /// Registers a callback to be called when the widget is mounted.
+  ///
+  /// The callback is called once after the first build completes.
+  ///
+  /// Parameters:
+  /// - [callback]: The function to call when the widget is mounted
+  ///
+  /// Example:
+  /// ```dart
+  /// setup: (context) {
+  ///   onMounted(() {
+  ///     print('Widget mounted');
+  ///   });
+  ///   return (context) => Text('Hello');
+  /// }
+  /// ```
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
@@ -143,6 +220,29 @@ abstract final class HookUtils {
     context._onMountedCallbacks.add(callback);
   }
 
+  /// Registers a callback to be called when the widget is unmounted.
+  ///
+  /// The callback is called when the widget is removed from the widget tree.
+  ///
+  /// Parameters:
+  /// - [callback]: The function to call when the widget is unmounted
+  ///
+  /// Example:
+  /// ```dart
+  /// setup: (context) {
+  ///   final timer = useSignal<Timer?>(null);
+  ///
+  ///   onMounted(() {
+  ///     timer.value = Timer.periodic(Duration(seconds: 1), (_) {});
+  ///   });
+  ///
+  ///   onUnmounted(() {
+  ///     timer.value?.cancel();
+  ///   });
+  ///
+  ///   return (context) => Text('Timer');
+  /// }
+  /// ```
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
@@ -152,6 +252,23 @@ abstract final class HookUtils {
     currentContext._onUnmountedCallbacks.add(callback);
   }
 
+  /// Registers a callback to be called when the widget is updated.
+  ///
+  /// The callback is called when the widget receives a new configuration
+  /// (new widget instance with the same runtimeType).
+  ///
+  /// Parameters:
+  /// - [callback]: The function to call when the widget is updated
+  ///
+  /// Example:
+  /// ```dart
+  /// setup: (context) {
+  ///   onUpdated(() {
+  ///     print('Widget updated');
+  ///   });
+  ///   return (context) => Text('Hello');
+  /// }
+  /// ```
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
@@ -161,6 +278,22 @@ abstract final class HookUtils {
     currentContext._onUpdatedCallbacks.add(callback);
   }
 
+  /// Registers a callback to be called when widget dependencies change.
+  ///
+  /// The callback is called when [InheritedWidget] dependencies change.
+  ///
+  /// Parameters:
+  /// - [callback]: The function to call when dependencies change
+  ///
+  /// Example:
+  /// ```dart
+  /// setup: (context) {
+  ///   onChangedDependencies(() {
+  ///     print('Dependencies changed');
+  ///   });
+  ///   return (context) => Text('Hello');
+  /// }
+  /// ```
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
@@ -170,6 +303,19 @@ abstract final class HookUtils {
     currentContext._onChangedDependenciesCallbacks.add(callback);
   }
 
+  /// Gets the current BuildContext from the SetupWidget.
+  ///
+  /// Returns: The BuildContext of the current SetupWidget
+  ///
+  /// Throws: An assertion error if called outside of a SetupWidget
+  ///
+  /// Example:
+  /// ```dart
+  /// setup: (context) {
+  ///   final ctx = useContext();
+  ///   return (context) => Text('Context: $ctx');
+  /// }
+  /// ```
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
@@ -180,6 +326,13 @@ abstract final class HookUtils {
     return currentContext!;
   }
 
+  /// Gets the current JoltSetupContext.
+  ///
+  /// Returns: The JoltSetupContext of the current SetupWidget
+  ///
+  /// Throws: An assertion error if called outside of a SetupWidget
+  ///
+  /// This is typically used internally by other hooks and utilities.
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
@@ -190,6 +343,27 @@ abstract final class HookUtils {
     return currentContext!;
   }
 
+  /// Returns a reactive reference to the widget instance.
+  ///
+  /// This is the only way to watch for widget parameter changes in SetupWidget,
+  /// since the setup function executes only once.
+  ///
+  /// Returns: A [ReadonlyNode] that tracks widget changes
+  ///
+  /// Example:
+  /// ```dart
+  /// class UserCard extends SetupWidget {
+  ///   final String name;
+  ///
+  ///   const UserCard({super.key, required this.name});
+  ///
+  ///   @override
+  ///   WidgetBuilder setup(BuildContext context) {
+  ///     final props = useWidgetProps<UserCard>();
+  ///     return (context) => Text(props.value.name);
+  ///   }
+  /// }
+  /// ```
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
@@ -199,6 +373,19 @@ abstract final class HookUtils {
     return use(() => Computed(() => widget.value as T));
   }
 
+  /// Creates a hook that persists across rebuilds and hot reloads.
+  ///
+  /// Hooks are stored by type and position in the setup function. During hot
+  /// reload, hooks are matched by type and position to preserve state.
+  ///
+  /// Parameters:
+  /// - [hook]: A function that creates the hook value
+  ///
+  /// Returns: The hook value (reused if already exists)
+  ///
+  /// Throws: An assertion error if called outside of a SetupWidget
+  ///
+  /// This is the underlying mechanism used by all `use*` hooks.
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
@@ -210,13 +397,44 @@ abstract final class HookUtils {
   }
 }
 
+/// Registers a callback to be called when the widget is mounted.
+///
+/// See [HookUtils.onMounted] for details.
 final onMounted = HookUtils.onMounted;
+
+/// Registers a callback to be called when the widget is unmounted.
+///
+/// See [HookUtils.onUnmounted] for details.
 final onUnmounted = HookUtils.onUnmounted;
+
+/// Registers a callback to be called when the widget is updated.
+///
+/// See [HookUtils.onUpdated] for details.
 final onUpdated = HookUtils.onUpdated;
+
+/// Registers a callback to be called when widget dependencies change.
+///
+/// See [HookUtils.onChangedDependencies] for details.
 final onChangedDependencies = HookUtils.onChangedDependencies;
+
+/// Gets the current BuildContext from the SetupWidget.
+///
+/// See [HookUtils.useContext] for details.
 final useContext = HookUtils.useContext;
+
+/// Gets the current JoltSetupContext.
+///
+/// See [HookUtils.useSetupContext] for details.
 final useSetupContext = HookUtils.useSetupContext;
+
+/// Returns a reactive reference to the widget instance.
+///
+/// See [HookUtils.useWidgetProps] for details.
 final useWidgetProps = HookUtils.useWidgetProps;
+
+/// Creates a hook that persists across rebuilds and hot reloads.
+///
+/// See [HookUtils.use] for details.
 final useHook = HookUtils.use;
 
 class JoltSetupContext extends EffectScopeImpl {
@@ -359,7 +577,34 @@ class JoltSetupContext extends EffectScopeImpl {
   }
 }
 
+/// A convenience widget that uses a builder function for setup.
+///
+/// This is the simplest way to use SetupWidget without creating a custom class.
+///
+/// Example:
+/// ```dart
+/// SetupBuilder(
+///   setup: (context) {
+///     final count = useSignal(0);
+///
+///     return (context) => Column(
+///       children: [
+///         Text('Count: ${count.value}'),
+///         ElevatedButton(
+///           onPressed: () => count.value++,
+///           child: Text('Increment'),
+///         ),
+///       ],
+///     );
+///   },
+/// )
+/// ```
 class SetupBuilder extends SetupWidget {
+  /// Creates a SetupBuilder.
+  ///
+  /// Parameters:
+  /// - [key]: The widget key
+  /// - [setup]: The setup function that returns a widget builder
   const SetupBuilder({
     super.key,
     required SetupFunctionBuilder setup,
@@ -371,5 +616,14 @@ class SetupBuilder extends SetupWidget {
   SetupFunction setup(BuildContext context) => _setup(context);
 }
 
+/// A function type that creates a setup function from a BuildContext.
+///
+/// This is used by [SetupBuilder] to provide the setup function.
 typedef SetupFunctionBuilder = SetupFunction Function(BuildContext context);
+
+/// A function type that builds a widget from a BuildContext.
+///
+/// This is the return type of the [SetupWidget.setup] method. The returned
+/// builder function is called on each rebuild, while the setup function
+/// itself runs only once.
 typedef SetupFunction = WidgetBuilder;

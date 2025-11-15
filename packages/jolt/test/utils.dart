@@ -1,6 +1,7 @@
-import 'dart:async';
+import "dart:async";
 
-import 'package:jolt/jolt.dart';
+import "package:jolt/jolt.dart";
+import "package:meta/meta.dart";
 
 class DebugCounter {
   int createCount = 0;
@@ -29,47 +30,38 @@ class DebugCounter {
     switch (type) {
       case DebugNodeOperationType.create:
         createCount++;
-        break;
       case DebugNodeOperationType.dispose:
         disposeCount++;
-        break;
       case DebugNodeOperationType.notify:
         notifyCount++;
-        break;
       case DebugNodeOperationType.set:
         setCount++;
-        break;
       case DebugNodeOperationType.get:
         getCount++;
-        break;
       case DebugNodeOperationType.linked:
         linked++;
-        break;
       case DebugNodeOperationType.unlinked:
         unlinked++;
-        break;
       case DebugNodeOperationType.effect:
         effectCount++;
-        break;
     }
     count++;
   }
 
   @override
-  String toString() {
-    return 'DebugCounter(createCount: $createCount, disposeCount: $disposeCount, notifyCount: $notifyCount, setCount: $setCount, getCount: $getCount, linkedCount: $linked, unlinkedCount: $unlinked, effectCount: $effectCount, count: $count)';
-  }
+  String toString() =>
+      "DebugCounter(createCount: $createCount, disposeCount: $disposeCount, notifyCount: $notifyCount, setCount: $setCount, getCount: $getCount, linkedCount: $linked, unlinkedCount: $unlinked, effectCount: $effectCount, count: $count)";
 
   void onDebug(DebugNodeOperationType type, _) {
     increment(type);
   }
 }
 
+@immutable
 class TestPerson {
+  TestPerson(this.name, this.age);
   final String name;
   final int age;
-
-  TestPerson(this.name, this.age);
 
   @override
   bool operator ==(Object other) =>

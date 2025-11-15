@@ -1,9 +1,9 @@
-import 'dart:collection';
+import "dart:collection";
 
-import 'package:jolt/core.dart';
+import "package:jolt/core.dart";
 
-import '../base.dart';
-import '../computed.dart';
+import "package:jolt/src/jolt/base.dart";
+import "package:jolt/src/jolt/computed.dart";
 
 /// A mixin that provides reactive iterable functionality.
 ///
@@ -29,11 +29,14 @@ mixin IterableSignalMixin<E> implements IterableBase<E>, IMutableCollection {
   String toString() => value.toString();
 }
 
-/// A reactive iterable that computes its value from a getter function.
+/// Implementation of [IterableSignal] that computes its value from a getter function.
 ///
-/// IterableSignal extends Computed to provide reactive iterable functionality.
-/// The iterable is computed on-demand and cached until dependencies change,
-/// making it efficient for expensive iterable operations.
+/// This is the concrete implementation of the [IterableSignal] interface. IterableSignal
+/// extends Computed to provide reactive iterable functionality. The iterable is computed
+/// on-demand and cached until dependencies change, making it efficient for expensive
+/// iterable operations.
+///
+/// See [IterableSignal] for the public interface and usage examples.
 ///
 /// Example:
 /// ```dart
@@ -70,8 +73,34 @@ class IterableSignalImpl<E> extends ComputedImpl<Iterable<E>>
   IterableSignalImpl(super.getter, {super.onDebug});
 }
 
+/// Interface for reactive iterable signals.
+///
+/// IterableSignal extends Computed to provide reactive iterable functionality.
+/// The iterable is computed on-demand and cached until dependencies change,
+/// making it efficient for expensive iterable operations.
+///
+/// Example:
+/// ```dart
+/// final numbers = Signal([1, 2, 3, 4, 5]);
+/// IterableSignal<int> evenNumbers = IterableSignal(() =>
+///   numbers.value.where((n) => n.isEven)
+/// );
+///
+/// Effect(() => print('Even count: ${evenNumbers.length}'));
+/// ```
 abstract interface class IterableSignal<E>
     implements Computed<Iterable<E>>, IterableMixin<E>, IterableSignalMixin<E> {
+  /// Creates a reactive iterable with the given getter function.
+  ///
+  /// Parameters:
+  /// - [getter]: Function that computes the iterable value
+  /// - [onDebug]: Optional debug callback for reactive system debugging
+  ///
+  /// Example:
+  /// ```dart
+  /// final source = Signal([1, 2, 3]);
+  /// final doubled = IterableSignal(() => source.value.map((x) => x * 2));
+  /// ```
   factory IterableSignal(Iterable<E> Function() getter,
       {JoltDebugFn? onDebug}) = IterableSignalImpl<E>;
 
@@ -96,7 +125,6 @@ abstract interface class IterableSignal<E>
   ///   print('Items: ${reactiveIterable.toList()}');
   /// });
   /// ```
-  factory IterableSignal.value(Iterable<E> iterable, {JoltDebugFn? onDebug}) {
-    return IterableSignalImpl(() => iterable, onDebug: onDebug);
-  }
+  factory IterableSignal.value(Iterable<E> iterable, {JoltDebugFn? onDebug}) =>
+      IterableSignalImpl(() => iterable, onDebug: onDebug);
 }

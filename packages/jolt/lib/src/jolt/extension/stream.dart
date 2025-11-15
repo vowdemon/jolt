@@ -1,9 +1,9 @@
-import 'dart:async';
+import "dart:async";
 
-import '../base.dart';
-import '../effect.dart';
-import '../shared.dart';
-import '../track.dart';
+import "package:jolt/src/jolt/base.dart";
+import "package:jolt/src/jolt/effect.dart";
+import "package:jolt/src/jolt/shared.dart";
+import "package:jolt/src/jolt/track.dart";
 
 /// Extension methods for converting reactive values to streams.
 extension JoltStreamValueExtension<T> on ReadonlyNode<T> {
@@ -26,7 +26,7 @@ extension JoltStreamValueExtension<T> on ReadonlyNode<T> {
   /// counter.value = 2; // Prints: "Counter: 2"
   /// ```
   Stream<T> get stream {
-    assert(!isDisposed);
+    assert(!isDisposed, "$runtimeType is disposed");
     var s = streamHolders[this] as StreamHolder<T>?;
     if (s == null) {
       streamHolders[this] = s = StreamHolder<T>(
@@ -83,7 +83,7 @@ extension JoltStreamValueExtension<T> on ReadonlyNode<T> {
     bool? cancelOnError,
     bool immediately = false,
   }) {
-    assert(!isDisposed);
+    assert(!isDisposed, "$runtimeType is disposed");
     if (immediately) onData?.call(value);
     return stream.listen(onData,
         onError: onError, onDone: onDone, cancelOnError: cancelOnError);

@@ -1,14 +1,10 @@
-import 'package:test/test.dart';
+import "package:test/test.dart";
 
-import 'common.dart';
+import "common.dart";
 
 class ReactionOptions<T> {
-  final bool? fireImmediately;
-  final bool Function(T?, T?)? equals;
-  final void Function(Object error)? onError;
-  final void Function(void Function() fn)? scheduler;
-  final bool? once;
-
+  // alien test code
+  // ignore: unreachable_from_main
   const ReactionOptions({
     this.fireImmediately,
     this.equals,
@@ -16,8 +12,15 @@ class ReactionOptions<T> {
     this.scheduler,
     this.once,
   });
+  final bool? fireImmediately;
+  final bool Function(T?, T?)? equals;
+  final void Function(Object error)? onError;
+  final void Function(void Function() fn)? scheduler;
+  final bool? once;
 }
 
+// alien test code
+// ignore: unreachable_from_main
 const defaultOptions = ReactionOptions();
 
 T untracked<T>(T Function() callback) {
@@ -41,7 +44,7 @@ void Function() reaction<T>({
   final fireImmediately = options?.fireImmediately ?? false;
 
   T? prevValue;
-  int version = 0;
+  var version = 0;
 
   final tracked = computed<T?>(() {
     try {
@@ -53,7 +56,7 @@ void Function() reaction<T>({
   });
 
   void Function()? dispose;
-  dispose = effect(() {
+  return dispose = effect(() {
     final current = tracked();
     if (!fireImmediately && version == 0) {
       prevValue = current;
@@ -80,22 +83,20 @@ void Function() reaction<T>({
       }),
     );
   });
-
-  return dispose;
 }
 
 void main() {
-  group('issue48', () {
-    test('#48', () {
+  group("issue48", () {
+    test("#48", () {
       final source = signal(0);
       void Function()? disposeInner;
 
       reaction(
-        dataFn: () => source(),
+        dataFn: source,
         effectFn: (val, _) {
           if (val == 1) {
             disposeInner = reaction(
-              dataFn: () => source(),
+              dataFn: source,
               effectFn: (_, __) {},
             );
           } else if (val == 2) {

@@ -1,19 +1,17 @@
-import 'package:jolt/jolt.dart';
-import 'package:jolt/src/core/reactive.dart';
-import 'package:test/test.dart';
-import '../utils.dart';
+import "package:jolt/jolt.dart";
+import "package:jolt/src/core/reactive.dart";
+import "package:test/test.dart";
+import "../utils.dart";
 
 extension<T> on ReactiveNode {
-  bool testNoSubscribers() {
-    return subs == null && subsTail == null;
-  }
+  bool testNoSubscribers() => subs == null && subsTail == null;
 }
 
 void main() {
-  group('Effect', () {
-    test('should run effect function immediately', () {
+  group("Effect", () {
+    test("should run effect function immediately", () {
       final signal = Signal(1);
-      final List<int> values = [];
+      final values = <int>[];
 
       Effect(() {
         values.add(signal.value);
@@ -22,9 +20,9 @@ void main() {
       expect(values, equals([1]));
     });
 
-    test('should re-run effect when dependencies change', () {
+    test("should re-run effect when dependencies change", () {
       final signal = Signal(1);
-      final List<int> values = [];
+      final values = <int>[];
 
       Effect(() {
         values.add(signal.value);
@@ -39,10 +37,10 @@ void main() {
       expect(values, equals([1, 2, 3]));
     });
 
-    test('should track multiple dependencies', () {
+    test("should track multiple dependencies", () {
       final signal1 = Signal(1);
       final signal2 = Signal(2);
-      final List<int> values = [];
+      final values = <int>[];
 
       Effect(() {
         values.add(signal1.value + signal2.value);
@@ -57,10 +55,10 @@ void main() {
       expect(values, equals([3, 12, 30]));
     });
 
-    test('should track computed dependencies', () {
+    test("should track computed dependencies", () {
       final signal = Signal(1);
       final computed = Computed<int>(() => signal.value * 2);
-      final List<int> values = [];
+      final values = <int>[];
 
       Effect(() {
         values.add(computed.value);
@@ -72,10 +70,10 @@ void main() {
       expect(values, equals([2, 6]));
     });
 
-    test('should handle nested effects', () {
+    test("should handle nested effects", () {
       final signal = Signal(1);
-      final List<int> outerValues = [];
-      final List<int> innerValues = [];
+      final outerValues = <int>[];
+      final innerValues = <int>[];
 
       Effect(() {
         outerValues.add(signal.value);
@@ -93,14 +91,14 @@ void main() {
       expect(innerValues, equals([2, 6]));
     });
 
-    test('should handle dispose nested effects', () {
+    test("should handle dispose nested effects", () {
       final signal1 = Signal(1);
-      final List<int> outerValues = [];
-      final List<int> innerValues1 = [];
-      final List<int> innerValues2 = [];
+      final outerValues = <int>[];
+      final innerValues1 = <int>[];
+      final innerValues2 = <int>[];
       late Effect outerEffect;
-      final List<Effect> innerEffect1 = [];
-      final List<Effect> innerEffect2 = [];
+      final innerEffect1 = <Effect>[];
+      final innerEffect2 = <Effect>[];
       final signals = <Signal<int>>[];
       late Computed<int> computed;
 
@@ -109,6 +107,8 @@ void main() {
         signals.add(Signal(1));
         if (signals.isNotEmpty) {
           computed = Computed(() => signals[0].value * 2);
+          //
+          // ignore: cascade_invocations
           computed.value;
         }
 
@@ -127,7 +127,7 @@ void main() {
       // define in effect inner will call 2 times
       expect(signals.length, equals(6));
 
-      for (var e in innerEffect1) {
+      for (final e in innerEffect1) {
         e.dispose();
       }
       expect(innerEffect1.every((e) => e.isDisposed), isTrue);
@@ -155,9 +155,9 @@ void main() {
       expect(computed.value, 8);
     });
 
-    test('should dispose effect properly', () {
+    test("should dispose effect properly", () {
       final signal = Signal(1);
-      final List<int> values = [];
+      final values = <int>[];
 
       final effect = Effect(() {
         values.add(signal.value);
@@ -174,14 +174,14 @@ void main() {
       expect(values, equals([1]));
     });
 
-    test('should handle effect errors', () {
+    test("should handle effect errors", () {
       final signal = Signal(1);
-      final List<int> values = [];
+      final values = <int>[];
 
       Effect(() {
         values.add(signal.value);
         if (signal.value > 1) {
-          throw Exception('Test error');
+          throw Exception("Test error");
         }
       });
 
@@ -191,10 +191,10 @@ void main() {
       expect(values, equals([1, 2]));
     });
 
-    test('should work with batch updates', () {
+    test("should work with batch updates", () {
       final signal1 = Signal(1);
       final signal2 = Signal(2);
-      final List<int> values = [];
+      final values = <int>[];
 
       Effect(() {
         values.add(signal1.value + signal2.value);
@@ -210,11 +210,11 @@ void main() {
       expect(values, equals([3, 30]));
     });
 
-    test('should work with untracked', () {
+    test("should work with untracked", () {
       final signal1 = Signal(1);
       final signal2 = Signal(2);
-      final List<int> trackedValues = [];
-      final List<int> untrackedValues = [];
+      final trackedValues = <int>[];
+      final untrackedValues = <int>[];
 
       Effect(() {
         trackedValues.add(signal1.value);
@@ -233,10 +233,10 @@ void main() {
       expect(untrackedValues, equals([2, 2]));
     });
 
-    test('should handle conditional dependencies', () {
+    test("should handle conditional dependencies", () {
       final conditionSignal = Signal(true);
       final valueSignal = Signal(42);
-      final List<int> values = [];
+      final values = <int>[];
 
       Effect(() {
         if (conditionSignal.value) {
@@ -258,11 +258,11 @@ void main() {
       expect(values, equals([42, 100, 0]));
     });
 
-    test('should work with async operations', () async {
+    test("should work with async operations", () async {
       final signal = Signal(1);
-      final List<int> values = [];
+      final values = <int>[];
 
-      bool setted = false;
+      var setted = false;
       Effect(() {
         values.add(signal.value);
 
@@ -282,23 +282,23 @@ void main() {
       expect(values, equals([1, 2, 20]));
     });
 
-    test('should work with different data types', () {
-      final stringSignal = Signal('hello');
-      final List<String> values = [];
+    test("should work with different data types", () {
+      final stringSignal = Signal("hello");
+      final values = <String>[];
 
       Effect(() {
         values.add(stringSignal.value);
       });
 
-      expect(values, equals(['hello']));
+      expect(values, equals(["hello"]));
 
-      stringSignal.value = 'world';
-      expect(values, equals(['hello', 'world']));
+      stringSignal.value = "world";
+      expect(values, equals(["hello", "world"]));
     });
 
-    test('should work with nullable values', () {
+    test("should work with nullable values", () {
       final signal = Signal<int?>(null);
-      final List<int?> values = [];
+      final values = <int?>[];
 
       Effect(() {
         values.add(signal.value);
@@ -310,9 +310,9 @@ void main() {
       expect(values, equals([null, 42]));
     });
 
-    test('should handle rapid value changes', () {
+    test("should handle rapid value changes", () {
       final signal = Signal(0);
-      final List<int> values = [];
+      final values = <int>[];
 
       Effect(() {
         values.add(signal.value);
@@ -320,40 +320,40 @@ void main() {
 
       expect(values, equals([0]));
 
-      for (int i = 1; i <= 10; i++) {
+      for (var i = 1; i <= 10; i++) {
         signal.value = i;
       }
 
       expect(values, equals([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]));
     });
 
-    test('should work with custom objects', () {
-      final signal = Signal(TestPerson('Alice', 30));
-      final List<TestPerson> values = [];
+    test("should work with custom objects", () {
+      final signal = Signal(TestPerson("Alice", 30));
+      final values = <TestPerson>[];
 
       Effect(() {
         values.add(signal.value);
       });
 
-      expect(values, equals([TestPerson('Alice', 30)]));
+      expect(values, equals([TestPerson("Alice", 30)]));
 
-      signal.value = TestPerson('Bob', 25);
-      expect(values, equals([TestPerson('Alice', 30), TestPerson('Bob', 25)]));
+      signal.value = TestPerson("Bob", 25);
+      expect(values, equals([TestPerson("Alice", 30), TestPerson("Bob", 25)]));
     });
 
-    test('should support many effects', () {
+    test("should support many effects", () {
       // Create a signal that will trigger many effects at once
       final signal = Signal(0);
 
       // Create more than 64 effects to test queued.add expansion
       // (queue initial size is 64)
-      const int effectCount = 100;
-      final List<List<int>> allValues = List.generate(
+      const effectCount = 100;
+      final allValues = List<List<int>>.generate(
         effectCount,
         (_) => <int>[],
       );
 
-      for (int i = 0; i < effectCount; i++) {
+      for (var i = 0; i < effectCount; i++) {
         final index = i;
         Effect(() {
           allValues[index].add(signal.value);
@@ -361,7 +361,7 @@ void main() {
       }
 
       // Verify all effects ran initially
-      for (int i = 0; i < effectCount; i++) {
+      for (var i = 0; i < effectCount; i++) {
         expect(allValues[i], equals([0]));
       }
 
@@ -369,7 +369,7 @@ void main() {
       signal.value = 1;
 
       // Verify all effects were flushed correctly
-      for (int i = 0; i < effectCount; i++) {
+      for (var i = 0; i < effectCount; i++) {
         expect(allValues[i], equals([0, 1]));
       }
 
@@ -377,13 +377,13 @@ void main() {
       signal.value = 2;
 
       // Verify all effects were flushed again
-      for (int i = 0; i < effectCount; i++) {
+      for (var i = 0; i < effectCount; i++) {
         expect(allValues[i], equals([0, 1, 2]));
       }
     });
 
     test(
-        'should handle effect modifying values during recursedCheck propagation',
+        "should handle effect modifying values during recursedCheck propagation",
         () {
       // Create complex scenario where effect modifies values during execution
       // This triggers complex recursive propagation with recursedCheck state
@@ -472,7 +472,7 @@ void main() {
     });
 
     test(
-        'should trigger recursedCheck branch with effect modifying computed dependencies',
+        "should trigger recursedCheck branch with effect modifying computed dependencies",
         () {
       // Create scenario with multiple effects and computed values
       // where effects modify signals that other computed values depend on
@@ -559,10 +559,10 @@ void main() {
     });
   });
 
-  group('EffectScope', () {
-    test('should create effect scope', () {
+  group("EffectScope", () {
+    test("should create effect scope", () {
       final signal = Signal(1);
-      final List<int> values = [];
+      final values = <int>[];
 
       final _ = EffectScope()
         ..run(() {
@@ -573,9 +573,9 @@ void main() {
       // scope is disposed
     });
 
-    test('should not watching in effect scope', () {
+    test("should not watching in effect scope", () {
       final signal = Signal(1);
-      final List<int> values = [];
+      final values = <int>[];
 
       final _ = EffectScope()
         ..run(() {
@@ -589,7 +589,7 @@ void main() {
       expect(values, equals([1]));
     });
 
-    test('should dispose all node in effect scope', () async {
+    test("should dispose all node in effect scope", () {
       late Signal<int> signal;
       late Computed<int> computed;
       late Effect effect;
@@ -618,10 +618,10 @@ void main() {
       expect(values, equals([1]));
     });
 
-    test('should handle nested effect scopes', () {
+    test("should handle nested effect scopes", () {
       final signal = Signal(1);
-      final List<int> outerValues = [];
-      final List<int> innerValues = [];
+      final outerValues = <int>[];
+      final innerValues = <int>[];
       late EffectScope outerScope;
       late EffectScope innerScope;
 
@@ -653,10 +653,10 @@ void main() {
       expect(innerScope.isDisposed, isTrue);
     });
 
-    test('should work with multiple effect scopes', () {
+    test("should work with multiple effect scopes", () {
       final signal = Signal(1);
-      final List<int> scope1Values = [];
-      final List<int> scope2Values = [];
+      final scope1Values = <int>[];
+      final scope2Values = <int>[];
 
       final scope1 = EffectScope()
         ..run(() {
@@ -688,16 +688,16 @@ void main() {
       expect(scope2Values, equals([2, 6, 10]));
     });
 
-    test('should handle effect scope errors', () {
+    test("should handle effect scope errors", () {
       final signal = Signal(1);
-      final List<int> values = [];
+      final values = <int>[];
 
       final _ = EffectScope()
         ..run(() {
           Effect(() {
             values.add(signal.value);
             if (signal.value > 1) {
-              throw Exception('Test error');
+              throw Exception("Test error");
             }
           });
         });
@@ -708,10 +708,10 @@ void main() {
       expect(values, equals([1, 2]));
     });
 
-    test('should work with batch updates', () {
+    test("should work with batch updates", () {
       final signal1 = Signal(1);
       final signal2 = Signal(2);
-      final List<int> values = [];
+      final values = <int>[];
 
       final _ = EffectScope()
         ..run(() {
@@ -730,11 +730,11 @@ void main() {
       expect(values, equals([3, 30]));
     });
 
-    test('should work with untracked', () {
+    test("should work with untracked", () {
       final signal1 = Signal(1);
       final signal2 = Signal(2);
-      final List<int> trackedValues = [];
-      final List<int> untrackedValues = [];
+      final trackedValues = <int>[];
+      final untrackedValues = <int>[];
 
       final _ = EffectScope()
         ..run(() {
@@ -758,9 +758,9 @@ void main() {
       expect(untrackedValues, equals([2]));
     });
 
-    test('should work with async operations', () async {
+    test("should work with async operations", () async {
       final signal = Signal(1);
-      final List<int> values = [];
+      final values = <int>[];
 
       final _ = EffectScope()
         ..run(() {
@@ -781,9 +781,9 @@ void main() {
       expect(values, equals([1, 2, 20]));
     });
 
-    test('should work with different data types', () {
-      final stringSignal = Signal('hello');
-      final List<String> values = [];
+    test("should work with different data types", () {
+      final stringSignal = Signal("hello");
+      final values = <String>[];
 
       final _ = EffectScope()
         ..run(() {
@@ -792,15 +792,15 @@ void main() {
           });
         });
 
-      expect(values, equals(['hello']));
+      expect(values, equals(["hello"]));
 
-      stringSignal.value = 'world';
-      expect(values, equals(['hello', 'world']));
+      stringSignal.value = "world";
+      expect(values, equals(["hello", "world"]));
     });
 
-    test('should work with nullable values', () {
+    test("should work with nullable values", () {
       final signal = Signal<int?>(null);
-      final List<int?> values = [];
+      final values = <int?>[];
 
       final _ = EffectScope()
         ..run(() {
@@ -815,9 +815,9 @@ void main() {
       expect(values, equals([null, 42]));
     });
 
-    test('should handle rapid value changes', () {
+    test("should handle rapid value changes", () {
       final signal = Signal(0);
-      final List<int> values = [];
+      final values = <int>[];
 
       final _ = EffectScope()
         ..run(() {
@@ -829,7 +829,7 @@ void main() {
       expect(values, equals([0]));
 
       // 快速连续更改值
-      for (int i = 1; i <= 10; i++) {
+      for (var i = 1; i <= 10; i++) {
         signal.value = i;
       }
 
@@ -837,9 +837,9 @@ void main() {
       expect(values, equals([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]));
     });
 
-    test('should work with custom objects', () {
-      final signal = Signal(TestPerson('Alice', 30));
-      final List<TestPerson> values = [];
+    test("should work with custom objects", () {
+      final signal = Signal(TestPerson("Alice", 30));
+      final values = <TestPerson>[];
 
       final _ = EffectScope()
         ..run(() {
@@ -848,15 +848,15 @@ void main() {
           });
         });
 
-      expect(values, equals([TestPerson('Alice', 30)]));
+      expect(values, equals([TestPerson("Alice", 30)]));
 
-      signal.value = TestPerson('Bob', 25);
-      expect(values, equals([TestPerson('Alice', 30), TestPerson('Bob', 25)]));
+      signal.value = TestPerson("Bob", 25);
+      expect(values, equals([TestPerson("Alice", 30), TestPerson("Bob", 25)]));
     });
   });
 
-  group('Watcher', () {
-    test('should work with sources eventually', () {
+  group("Watcher", () {
+    test("should work with sources eventually", () {
       final signal1 = Signal(1);
       final signal2 = Signal(2);
       final computed1 = Computed(() => signal1.value + signal2.value);
@@ -879,7 +879,7 @@ void main() {
       expect(values, equals([(2, 4, 6), (4, 4, 8)]));
     });
 
-    test('should work with sources immediately', () {
+    test("should work with sources immediately", () {
       final signal1 = Signal(1);
       final signal2 = Signal(2);
       final computed1 = Computed(() => signal1.value + signal2.value);
@@ -899,7 +899,7 @@ void main() {
       expect(values, equals([(1, 2, 3), (2, 4, 6)]));
     });
 
-    test('should work with sources builtin comparator', () {
+    test("should work with sources builtin comparator", () {
       final signal1 = Signal(1);
       final signal2 = Signal(2);
       final computed1 = Computed(() => signal1.value + signal2.value);
@@ -921,7 +921,7 @@ void main() {
       expect(values, equals([(2, 4, 6)]));
     });
 
-    test('should work with sources custom comparator', () {
+    test("should work with sources custom comparator", () {
       final signal1 = Signal(1);
       final signal2 = Signal(2);
       final computed1 = Computed(() => signal1.value + signal2.value);
@@ -959,7 +959,7 @@ void main() {
           ]));
     });
 
-    test('should handle watcher dispose', () {
+    test("should handle watcher dispose", () {
       final signal1 = Signal(1);
       final signal2 = Signal(2);
       final computed1 = Computed(() => signal1.value + signal2.value);
@@ -990,7 +990,7 @@ void main() {
   });
 
   test(
-      'should handle deeply nested effect scopes with cross-scope signals/computed/effects',
+      "should handle deeply nested effect scopes with cross-scope signals/computed/effects",
       () {
     final globalSignal = Signal(10);
     final globalComputed = Computed(() => globalSignal.value * 2);
@@ -1145,8 +1145,8 @@ void main() {
     expect(crossValues, equals([100, 200]));
   });
 
-  group('onEffectCleanup', () {
-    test('should call cleanup when effect is disposed', () {
+  group("onEffectCleanup", () {
+    test("should call cleanup when effect is disposed", () {
       final cleanupCalled = <bool>[false];
 
       final effect = Effect(() {
@@ -1162,7 +1162,7 @@ void main() {
       expect(cleanupCalled[0], isTrue);
     });
 
-    test('should call all cleanups when effect runs again', () {
+    test("should call all cleanups when effect runs again", () {
       final signal = Signal(1);
       final cleanup1Called = <bool>[false];
       final cleanup2Called = <bool>[false];
@@ -1193,7 +1193,7 @@ void main() {
       expect(cleanup3Called[0], isTrue);
     });
 
-    test('should call all cleanups when effect is disposed', () {
+    test("should call all cleanups when effect is disposed", () {
       final cleanup1Called = <bool>[false];
       final cleanup2Called = <bool>[false];
 
@@ -1216,7 +1216,7 @@ void main() {
       expect(cleanup2Called[0], isTrue);
     });
 
-    test('should call cleanups in registration order', () {
+    test("should call cleanups in registration order", () {
       final signal = Signal(1);
       final cleanupOrder = <int>[];
 
@@ -1239,7 +1239,7 @@ void main() {
       expect(cleanupOrder, equals([1, 2, 3]));
     });
 
-    test('should clear cleanups after execution', () {
+    test("should clear cleanups after execution", () {
       final signal = Signal(1);
       final cleanupCallCount = <int>[0];
 
@@ -1264,7 +1264,7 @@ void main() {
       expect(cleanupCallCount[0], equals(2));
     });
 
-    test('should allow multiple cleanups in nested effects', () {
+    test("should allow multiple cleanups in nested effects", () {
       final signal = Signal(1);
       final outerCleanup1Called = <bool>[false];
       final outerCleanup2Called = <bool>[false];
@@ -1305,7 +1305,7 @@ void main() {
       expect(outerCleanup2Called[0], isTrue);
     });
 
-    test('should work with Watcher', () {
+    test("should work with Watcher", () {
       final signal = Signal(1);
       final cleanupCalled = <bool>[false];
       final watcherValues = <int>[];
@@ -1335,7 +1335,7 @@ void main() {
       expect(cleanupCalled[0], isTrue);
     });
 
-    test('should call all cleanups in Watcher when it runs again', () {
+    test("should call all cleanups in Watcher when it runs again", () {
       final signal = Signal(1);
       final cleanup1Called = <bool>[false];
       final cleanup2Called = <bool>[false];
@@ -1374,7 +1374,7 @@ void main() {
       expect(cleanup3Called[0], isTrue);
     });
 
-    test('should call cleanups in Watcher in registration order', () {
+    test("should call cleanups in Watcher in registration order", () {
       final signal = Signal(1);
       final cleanupOrder = <int>[];
 
@@ -1402,7 +1402,7 @@ void main() {
       expect(cleanupOrder, equals([1, 2, 3]));
     });
 
-    test('should call cleanup when Watcher is disposed', () {
+    test("should call cleanup when Watcher is disposed", () {
       final signal = Signal(1);
       final cleanupCalled = <bool>[false];
 
@@ -1428,8 +1428,8 @@ void main() {
     });
   });
 
-  group('onScopeDispose', () {
-    test('should call cleanup when EffectScope is disposed', () {
+  group("onScopeDispose", () {
+    test("should call cleanup when EffectScope is disposed", () {
       final cleanupCalled = <bool>[false];
 
       final scope = EffectScope()
@@ -1446,7 +1446,7 @@ void main() {
       expect(cleanupCalled[0], isTrue);
     });
 
-    test('should call all cleanups when EffectScope is disposed', () {
+    test("should call all cleanups when EffectScope is disposed", () {
       final cleanup1Called = <bool>[false];
       final cleanup2Called = <bool>[false];
       final cleanup3Called = <bool>[false];
@@ -1476,10 +1476,10 @@ void main() {
       expect(cleanup3Called[0], isTrue);
     });
 
-    test('should call cleanups in EffectScope in registration order', () {
+    test("should call cleanups in EffectScope in registration order", () {
       final cleanupOrder = <int>[];
 
-      final scope = EffectScope()
+      EffectScope()
         ..run(() {
           onScopeDispose(() {
             cleanupOrder.add(1);
@@ -1490,15 +1490,14 @@ void main() {
           onScopeDispose(() {
             cleanupOrder.add(3);
           });
-        });
-
-      scope.dispose();
+        })
+        ..dispose();
 
       // Cleanups should be called in registration order
       expect(cleanupOrder, equals([1, 2, 3]));
     });
 
-    test('should work with nested EffectScopes', () {
+    test("should work with nested EffectScopes", () {
       final outerCleanupCalled = <bool>[false];
       final innerCleanupCalled = <bool>[false];
       late EffectScope innerScope;
@@ -1530,16 +1529,15 @@ void main() {
       expect(outerCleanupCalled[0], isTrue);
     });
 
-    test('should work with scope.run() method', () {
+    test("should work with scope.run() method", () {
       final cleanupCalled = <bool>[false];
 
-      final scope = EffectScope();
-
-      scope.run(() {
-        onScopeDispose(() {
-          cleanupCalled[0] = true;
+      final scope = EffectScope()
+        ..run(() {
+          onScopeDispose(() {
+            cleanupCalled[0] = true;
+          });
         });
-      });
 
       expect(cleanupCalled[0], isFalse);
 
@@ -1548,9 +1546,9 @@ void main() {
       expect(cleanupCalled[0], isTrue);
     });
 
-    test('should work with explicit owner parameter', () {
+    test("should work with explicit owner parameter", () {
       final cleanupCalled = <bool>[false];
-      final EffectScope scope = EffectScope();
+      final scope = EffectScope();
 
       EffectScope().run(() {
         // Use explicit owner parameter
@@ -1567,8 +1565,8 @@ void main() {
     });
   });
 
-  group('EffectScope detach parameter', () {
-    test('should link to parent scope by default', () {
+  group("EffectScope detach parameter", () {
+    test("should link to parent scope by default", () {
       late EffectScope outerScope;
       late EffectScope innerScope;
 
@@ -1590,7 +1588,7 @@ void main() {
       expect(innerScope.isDisposed, isTrue);
     });
 
-    test('should not link to parent scope when detach is true', () {
+    test("should not link to parent scope when detach is true", () {
       late EffectScope outerScope;
       late EffectScope innerScope;
 
@@ -1616,7 +1614,7 @@ void main() {
       expect(innerScope.isDisposed, isTrue);
     });
 
-    test('should not link to parent scope when detach is explicitly false', () {
+    test("should not link to parent scope when detach is explicitly false", () {
       late EffectScope outerScope;
       late EffectScope innerScope;
 
@@ -1638,7 +1636,7 @@ void main() {
       expect(innerScope.isDisposed, isTrue);
     });
 
-    test('should work with detach in nested scopes', () {
+    test("should work with detach in nested scopes", () {
       late EffectScope outerScope;
       late EffectScope midScope;
       late EffectScope innerScope;
@@ -1672,7 +1670,7 @@ void main() {
       expect(innerScope.isDisposed, isTrue);
     });
 
-    test('should not link when created outside any scope with detach default',
+    test("should not link when created outside any scope with detach default",
         () {
       final scope = EffectScope();
 
@@ -1684,7 +1682,7 @@ void main() {
       expect(scope.isDisposed, isTrue);
     });
 
-    test('should not link when created outside any scope with detach true', () {
+    test("should not link when created outside any scope with detach true", () {
       final scope = EffectScope(detach: true);
 
       expect(scope.isDisposed, isFalse);

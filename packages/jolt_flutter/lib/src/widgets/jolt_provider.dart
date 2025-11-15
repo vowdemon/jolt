@@ -1,7 +1,7 @@
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
-import 'package:jolt/core.dart' as reactive;
-import 'package:jolt/jolt.dart' as jolt;
+import 'package:jolt/core.dart';
+import 'package:jolt/jolt.dart';
 import 'package:shared_interfaces/shared_interfaces.dart';
 
 import 'jolt_state.dart';
@@ -203,18 +203,18 @@ class JoltProviderElement<T> extends ComponentElement {
   @override
   JoltProvider<T> get widget => super.widget as JoltProvider<T>;
 
-  jolt.EffectScope? _scope;
-  jolt.Effect? _effect;
+  EffectScope? _scope;
+  Effect? _effect;
 
   T? _store;
 
   @override
   void mount(Element? parent, Object? newSlot) {
-    _scope = jolt.EffectScope()
+    _scope = EffectScope()
       ..run(() {
         // Use create function if provided, otherwise use value
         _store = widget.create?.call(this) ?? widget.value;
-        _effect = jolt.Effect(() {
+        _effect = Effect(() {
           if (SchedulerBinding.instance.schedulerPhase != SchedulerPhase.idle) {
             SchedulerBinding.instance.endOfFrame.then((_) {
               if (dirty) return;
@@ -273,11 +273,11 @@ class JoltProviderElement<T> extends ComponentElement {
     final store = _store as T;
     late Widget child;
 
-    final prevSub = reactive.setActiveSub(_effect as reactive.ReactiveNode);
+    final prevSub = setActiveSub(_effect as ReactiveNode);
     try {
       child = widget.builder(this, store);
     } finally {
-      reactive.setActiveSub(prevSub);
+      setActiveSub(prevSub);
     }
 
     return _JoltProviderData(

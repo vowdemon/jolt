@@ -1,10 +1,10 @@
-import 'package:jolt/jolt.dart';
-import 'package:test/test.dart';
-import 'utils.dart';
+import "package:jolt/jolt.dart";
+import "package:test/test.dart";
+import "utils.dart";
 
 void main() {
-  group('AsyncState', () {
-    test('should create AsyncLoading state', () {
+  group("AsyncState", () {
+    test("should create AsyncLoading state", () {
       const state = AsyncLoading<int>();
 
       expect(state.isLoading, isTrue);
@@ -15,7 +15,7 @@ void main() {
       expect(state.stackTrace, isNull);
     });
 
-    test('should create AsyncSuccess state', () {
+    test("should create AsyncSuccess state", () {
       const state = AsyncSuccess<int>(42);
 
       expect(state.isLoading, isFalse);
@@ -26,8 +26,8 @@ void main() {
       expect(state.stackTrace, isNull);
     });
 
-    test('should create AsyncError state', () {
-      final error = Exception('Test error');
+    test("should create AsyncError state", () {
+      final error = Exception("Test error");
       final stackTrace = StackTrace.current;
       final state = AsyncError<int>(error, stackTrace);
 
@@ -39,46 +39,46 @@ void main() {
       expect(state.stackTrace, equals(stackTrace));
     });
 
-    test('should map AsyncLoading state', () {
+    test("should map AsyncLoading state", () {
       const state = AsyncLoading<int>();
 
       final result = state.map<String>(
-        loading: () => 'loading',
-        success: (data) => 'success: $data',
-        error: (error, stackTrace) => 'error: $error',
+        loading: () => "loading",
+        success: (data) => "success: $data",
+        error: (error, stackTrace) => "error: $error",
       );
 
-      expect(result, equals('loading'));
+      expect(result, equals("loading"));
     });
 
-    test('should map AsyncSuccess state', () {
+    test("should map AsyncSuccess state", () {
       const state = AsyncSuccess<int>(42);
 
       final result = state.map<String>(
-        loading: () => 'loading',
-        success: (data) => 'success: $data',
-        error: (error, stackTrace) => 'error: $error',
+        loading: () => "loading",
+        success: (data) => "success: $data",
+        error: (error, stackTrace) => "error: $error",
       );
 
-      expect(result, equals('success: 42'));
+      expect(result, equals("success: 42"));
     });
 
-    test('should map AsyncError state', () {
-      final error = Exception('Test error');
+    test("should map AsyncError state", () {
+      final error = Exception("Test error");
       final state = AsyncError<int>(error);
 
       final result = state.map<String>(
-        loading: () => 'loading',
-        success: (data) => 'success: $data',
-        error: (error, stackTrace) => 'error: $error',
+        loading: () => "loading",
+        success: (data) => "success: $data",
+        error: (error, stackTrace) => "error: $error",
       );
 
-      expect(result, equals('error: Exception: Test error'));
+      expect(result, equals("error: Exception: Test error"));
     });
   });
 
-  group('AsyncSignal', () {
-    test('should create AsyncSignal with FutureSource', () async {
+  group("AsyncSignal", () {
+    test("should create AsyncSignal with FutureSource", () async {
       final future = Future.value(42);
       final asyncSignal = AsyncSignal.fromFuture(future);
 
@@ -91,7 +91,7 @@ void main() {
       expect(asyncSignal.data, equals(42));
     });
 
-    test('should create AsyncSignal with StreamSource', () async {
+    test("should create AsyncSignal with StreamSource", () async {
       final stream = Stream.value(42);
       final asyncSignal = AsyncSignal.fromStream(stream);
 
@@ -104,8 +104,8 @@ void main() {
       expect(asyncSignal.data, equals(42));
     });
 
-    test('should handle Future error', () async {
-      final future = Future<int>.error(Exception('Test error'));
+    test("should handle Future error", () async {
+      final future = Future<int>.error(Exception("Test error"));
       final asyncSignal = AsyncSignal.fromFuture(future);
 
       expect(asyncSignal.value, isA<AsyncLoading<int>>());
@@ -117,8 +117,8 @@ void main() {
       expect(asyncSignal.value.error, isA<Exception>());
     });
 
-    test('should handle Stream error', () async {
-      final stream = Stream<int>.error(Exception('Test error'));
+    test("should handle Stream error", () async {
+      final stream = Stream<int>.error(Exception("Test error"));
       final asyncSignal = AsyncSignal.fromStream(stream);
 
       expect(asyncSignal.value, isA<AsyncLoading<int>>());
@@ -130,14 +130,12 @@ void main() {
       expect(asyncSignal.value.error, isA<Exception>());
     });
 
-    test('should emit stream events', () async {
+    test("should emit stream events", () async {
       final future = Future.value(42);
       final asyncSignal = AsyncSignal.fromFuture(future);
-      final List<AsyncState<int>> states = [];
+      final states = <AsyncState<int>>[];
 
-      asyncSignal.listen((state) {
-        states.add(state);
-      }, immediately: true);
+      asyncSignal.listen(states.add, immediately: true);
 
       await Future.delayed(const Duration(milliseconds: 1));
 
@@ -146,7 +144,7 @@ void main() {
       expect(states[1], isA<AsyncSuccess<int>>());
     });
 
-    test('should dispose properly', () async {
+    test("should dispose properly", () {
       final future = Future.value(42);
       final asyncSignal = AsyncSignal.fromFuture(future);
 
@@ -157,9 +155,9 @@ void main() {
     });
   });
 
-  group('FutureSignal', () {
-    test('should create FutureSignal', () async {
-      final future = Future.value('hello');
+  group("FutureSignal", () {
+    test("should create FutureSignal", () async {
+      final future = Future.value("hello");
       final futureSignal = AsyncSignal.fromFuture(future);
 
       expect(futureSignal.value, isA<AsyncLoading<String>>());
@@ -167,11 +165,11 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 1));
 
       expect(futureSignal.value, isA<AsyncSuccess<String>>());
-      expect(futureSignal.data, equals('hello'));
+      expect(futureSignal.data, equals("hello"));
     });
 
-    test('should handle Future error', () async {
-      final future = Future<String>.error(Exception('Test error'));
+    test("should handle Future error", () async {
+      final future = Future<String>.error(Exception("Test error"));
       final futureSignal = AsyncSignal.fromFuture(future);
 
       expect(futureSignal.value, isA<AsyncLoading<String>>());
@@ -182,7 +180,7 @@ void main() {
       expect(futureSignal.data, isNull);
     });
 
-    test('should work with different data types', () async {
+    test("should work with different data types", () async {
       final listFuture = Future.value([1, 2, 3]);
       final listSignal = AsyncSignal.fromFuture(listFuture);
 
@@ -192,9 +190,9 @@ void main() {
     });
   });
 
-  group('StreamSignal', () {
-    test('should create StreamSignal', () async {
-      final stream = Stream.value('hello');
+  group("StreamSignal", () {
+    test("should create StreamSignal", () async {
+      final stream = Stream.value("hello");
       final streamSignal = AsyncSignal.fromStream(stream);
 
       expect(streamSignal.value, isA<AsyncLoading<String>>());
@@ -202,11 +200,11 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 1));
 
       expect(streamSignal.value, isA<AsyncSuccess<String>>());
-      expect(streamSignal.data, equals('hello'));
+      expect(streamSignal.data, equals("hello"));
     });
 
-    test('should handle Stream error', () async {
-      final stream = Stream<String>.error(Exception('Test error'));
+    test("should handle Stream error", () async {
+      final stream = Stream<String>.error(Exception("Test error"));
       final streamSignal = AsyncSignal.fromStream(stream);
 
       expect(streamSignal.value, isA<AsyncLoading<String>>());
@@ -217,10 +215,10 @@ void main() {
       expect(streamSignal.data, isNull);
     });
 
-    test('should handle multiple stream values', () async {
-      final stream = Stream.fromIterable(['hello', 'world']);
+    test("should handle multiple stream values", () async {
+      final stream = Stream.fromIterable(["hello", "world"]);
       final streamSignal = AsyncSignal.fromStream(stream);
-      final List<String> values = [];
+      final values = <String>[];
 
       streamSignal.listen((state) {
         if (state.isSuccess) {
@@ -231,11 +229,11 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 10));
 
       expect(values.length, greaterThanOrEqualTo(2));
-      expect(values, contains('hello'));
-      expect(values, contains('world'));
+      expect(values, contains("hello"));
+      expect(values, contains("world"));
     });
 
-    test('should cancel stream subscription on dispose', () async {
+    test("should cancel stream subscription on dispose", () async {
       final stream = Stream.periodic(const Duration(milliseconds: 1), (i) => i);
       final streamSignal = AsyncSignal.fromStream(stream);
 
@@ -256,8 +254,8 @@ void main() {
     });
   });
 
-  group('AsyncSource', () {
-    test('should implement custom AsyncSource', () async {
+  group("AsyncSource", () {
+    test("should implement custom AsyncSource", () async {
       final source = TestSource<String>();
       final asyncSignal = AsyncSignal(source: source);
 
@@ -272,46 +270,45 @@ void main() {
     });
   });
 
-  group('AsyncSignal integration', () {
-    test('should work with computed', () async {
+  group("AsyncSignal integration", () {
+    test("should work with computed", () async {
       final future = Future.value(42);
       final asyncSignal = AsyncSignal.fromFuture(future);
-      final computed = Computed<String>(() {
-        return asyncSignal.value.map(
-              loading: () => 'Loading...',
-              success: (data) => 'Data: $data',
-              error: (error, stackTrace) => 'Error: $error',
-            ) ??
-            'Unknown';
-      });
+      final computed = Computed<String>(() =>
+          asyncSignal.value.map(
+            loading: () => "Loading...",
+            success: (data) => "Data: $data",
+            error: (error, stackTrace) => "Error: $error",
+          ) ??
+          "Unknown");
 
-      expect(computed.value, equals('Loading...'));
+      expect(computed.value, equals("Loading..."));
 
       await Future.delayed(const Duration(milliseconds: 1));
 
-      expect(computed.value, equals('Data: 42'));
+      expect(computed.value, equals("Data: 42"));
     });
 
-    test('should work with effect', () async {
+    test("should work with effect", () async {
       final future = Future.value(42);
       final asyncSignal = AsyncSignal.fromFuture(future);
-      final List<String> states = [];
+      final states = <String>[];
 
       Effect(() {
         final state = asyncSignal.value.map(
-              loading: () => 'loading',
-              success: (data) => 'success: $data',
-              error: (error, stackTrace) => 'error: $error',
+              loading: () => "loading",
+              success: (data) => "success: $data",
+              error: (error, stackTrace) => "error: $error",
             ) ??
-            'unknown';
+            "unknown";
         states.add(state);
       });
 
-      expect(states, equals(['loading']));
+      expect(states, equals(["loading"]));
 
       await Future.delayed(const Duration(milliseconds: 1));
 
-      expect(states, equals(['loading', 'success: 42']));
+      expect(states, equals(["loading", "success: 42"]));
     });
   });
 }

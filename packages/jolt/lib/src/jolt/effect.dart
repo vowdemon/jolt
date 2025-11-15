@@ -1,14 +1,21 @@
-import 'dart:async';
+import "dart:async";
 
-import 'package:jolt/core.dart';
-import 'package:shared_interfaces/shared_interfaces.dart';
-import 'package:meta/meta.dart';
+import "package:jolt/core.dart";
+import "package:jolt/src/jolt/base.dart";
+import "package:jolt/src/jolt/track.dart";
+import "package:meta/meta.dart";
+import "package:shared_interfaces/shared_interfaces.dart";
 
-import 'base.dart';
-import 'track.dart';
-
-/// Base class for all effect nodes in the reactive system.
-
+/// Base interface for all effect nodes in the reactive system.
+///
+/// EffectBase is a marker interface that identifies nodes that represent
+/// side effects in the reactive system, such as Effect, Watcher, and EffectScope.
+///
+/// Example:
+/// ```dart
+/// EffectBase effect = Effect(() => print('Hello'));
+/// effect.dispose();
+/// ```
 abstract interface class EffectBase implements Disposable {}
 
 @protected
@@ -40,9 +47,9 @@ mixin EffectCleanupMixin {
   /// This method is called automatically when the effect is disposed or
   /// before the effect function is re-run. Cleanup functions are executed
   /// in the order they were registered.
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
   @protected
   void doCleanup() {
     if (_cleanups.isEmpty) return;
@@ -53,11 +60,14 @@ mixin EffectCleanupMixin {
   }
 }
 
-/// A scope for managing the lifecycle of effects and other reactive nodes.
+/// Implementation of [EffectScope] for managing the lifecycle of effects and other reactive nodes.
 ///
-/// EffectScope allows you to group related effects together and dispose
-/// them all at once. It's useful for component-based architectures where
-/// you want to clean up all effects when a component is destroyed.
+/// This is the concrete implementation of the [EffectScope] interface. EffectScope
+/// allows you to group related effects together and dispose them all at once.
+/// It's useful for component-based architectures where you want to clean up
+/// all effects when a component is destroyed.
+///
+/// See [EffectScope] for the public interface and usage examples.
 ///
 /// Example:
 /// ```dart
@@ -148,19 +158,65 @@ class EffectScopeImpl extends EffectScopeReactiveNode
   }
 }
 
+/// Interface for effect scopes that manage the lifecycle of effects.
+///
+/// EffectScope allows you to group related effects together and dispose
+/// them all at once. It's useful for component-based architectures.
+///
+/// Example:
+/// ```dart
+/// EffectScope scope = EffectScope()
+///   ..run(() {
+///     final signal = Signal(0);
+///     Effect(() => print(signal.value));
+///   });
+/// scope.dispose(); // Disposes all effects in scope
+/// ```
 abstract class EffectScope implements EffectNode, EffectBase {
+  /// Creates a new effect scope.
+  ///
+  /// Parameters:
+  /// - [detach]: Whether to detach this scope from its parent scope
+  /// - [onDebug]: Optional debug callback for reactive system debugging
+  ///
+  /// Example:
+  /// ```dart
+  /// final scope = EffectScope(detach: true);
+  /// ```
+  factory EffectScope({bool? detach, JoltDebugFn? onDebug}) = EffectScopeImpl;
+
+  /// Runs a function within this scope's context.
+  ///
+  /// Parameters:
+  /// - [fn]: Function to execute within the scope
+  ///
+  /// Returns: The result of the function execution
+  ///
+  /// Example:
+  /// ```dart
+  /// final result = scope.run(() => 42);
+  /// ```
   T run<T>(T Function() fn);
 
+  /// Registers a cleanup function to be called when the scope is disposed.
+  ///
+  /// Parameters:
+  /// - [fn]: The cleanup function to register
+  ///
+  /// Example:
+  /// ```dart
+  /// scope.onCleanUp(() => print('Scope disposed'));
+  /// ```
   void onCleanUp(Disposer fn);
-
-  factory EffectScope({bool? detach, JoltDebugFn? onDebug}) = EffectScopeImpl;
 }
 
-/// A reactive effect that automatically runs when its dependencies change.
+/// Implementation of [Effect] that automatically runs when its dependencies change.
 ///
-/// Effects are side-effect functions that run in response to reactive state
-/// changes. They automatically track their dependencies and re-run when
-/// any dependency changes.
+/// This is the concrete implementation of the [Effect] interface. Effects are
+/// side-effect functions that run in response to reactive state changes. They
+/// automatically track their dependencies and re-run when any dependency changes.
+///
+/// See [Effect] for the public interface and usage examples.
 ///
 /// Example:
 /// ```dart
@@ -213,16 +269,16 @@ class EffectImpl extends EffectReactiveNode
         effectFn();
       } finally {
         setActiveSub(prevSub);
-        flags &= ~(ReactiveFlags.recursedCheck);
+        flags &= ~ReactiveFlags.recursedCheck;
       }
     } else {
-      flags &= ~(ReactiveFlags.recursedCheck);
+      flags &= ~ReactiveFlags.recursedCheck;
     }
   }
 
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
   @override
 
   /// Do not call this method directly
@@ -232,9 +288,9 @@ class EffectImpl extends EffectReactiveNode
     JoltDebug.effect(this);
   }
 
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
   @protected
   void wrappedFn() => fn();
 
@@ -266,11 +322,55 @@ class EffectImpl extends EffectReactiveNode
   }
 }
 
+/// Interface for reactive effects that run when dependencies change.
+///
+/// Effects are side-effect functions that run in response to reactive state
+/// changes. They automatically track their dependencies and re-run when
+/// any dependency changes.
+///
+/// Example:
+/// ```dart
+/// Effect effect = Effect(() {
+///   print('Count: ${count.value}');
+/// });
+/// effect.run(); // Manually trigger
+/// effect.dispose(); // Stop the effect
+/// ```
 abstract class Effect implements EffectNode, EffectBase {
+  /// Creates a new effect with the given function.
+  ///
+  /// Parameters:
+  /// - [fn]: The effect function to execute
+  /// - [immediately]: Whether to run the effect immediately upon creation
+  /// - [onDebug]: Optional debug callback for reactive system debugging
+  ///
+  /// Example:
+  /// ```dart
+  /// final effect = Effect(() => print('Hello'), immediately: false);
+  /// ```
   factory Effect(void Function() fn, {bool immediately, JoltDebugFn? onDebug}) =
       EffectImpl;
 
+  /// Manually runs the effect function.
+  ///
+  /// This establishes the effect as the current reactive context,
+  /// allowing it to track dependencies accessed during execution.
+  ///
+  /// Example:
+  /// ```dart
+  /// effect.run(); // Triggers the effect
+  /// ```
   void run();
+
+  /// Registers a cleanup function to be called when the effect is disposed or re-run.
+  ///
+  /// Parameters:
+  /// - [fn]: The cleanup function to register
+  ///
+  /// Example:
+  /// ```dart
+  /// effect.onCleanUp(() => subscription.cancel());
+  /// ```
   void onCleanUp(Disposer fn);
 }
 
@@ -278,16 +378,19 @@ abstract class Effect implements EffectNode, EffectBase {
 typedef SourcesFn<T> = T Function();
 
 /// Function type for handling watcher value changes.
-typedef WatcherFn<T> = FutureOr<void> Function(T newValue, T? oldValue);
+typedef WatcherFn<T> = void Function(T newValue, T? oldValue);
 
 /// Function type for determining when a watcher should trigger.
 typedef WhenFn<T> = bool Function(T newValue, T oldValue);
 
-/// A watcher that observes changes to reactive sources and executes a callback.
+/// Implementation of [Watcher] that observes changes to reactive sources and executes a callback.
 ///
-/// Watchers are similar to effects but provide more control over when they
-/// trigger. They compare old and new values and only execute when values
-/// actually change (or when a custom condition is met).
+/// This is the concrete implementation of the [Watcher] interface. Watchers are
+/// similar to effects but provide more control over when they trigger. They compare
+/// old and new values and only execute when values actually change (or when a
+/// custom condition is met).
+///
+/// See [Watcher] for the public interface and usage examples.
 ///
 /// Example:
 /// ```dart
@@ -367,9 +470,9 @@ class WatcherImpl<T> extends EffectReactiveNode
   @protected
   late T prevSources;
 
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
   @override
   void effectFn() {
     doCleanup();
@@ -391,9 +494,9 @@ class WatcherImpl<T> extends EffectReactiveNode
     JoltDebug.effect(this);
   }
 
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
   @override
   void run() {
     effectFn();
@@ -407,7 +510,37 @@ class WatcherImpl<T> extends EffectReactiveNode
   }
 }
 
+/// Interface for watchers that observe changes to reactive sources.
+///
+/// Watchers are similar to effects but provide more control over when they
+/// trigger. They compare old and new values and only execute when values
+/// actually change (or when a custom condition is met).
+///
+/// Example:
+/// ```dart
+/// Watcher<List<int>> watcher = Watcher(
+///   () => [count.value, name.value],
+///   (newValues, oldValues) => print('Changed'),
+/// );
+/// ```
 abstract class Watcher<T> implements EffectNode, EffectBase {
+  /// Creates a new watcher with the given sources and callback.
+  ///
+  /// Parameters:
+  /// - [sourcesFn]: Function that returns the values to watch
+  /// - [fn]: Callback function executed when sources change
+  /// - [immediately]: Whether to execute the callback immediately
+  /// - [when]: Optional condition function for custom trigger logic
+  /// - [onDebug]: Optional debug callback for reactive system debugging
+  ///
+  /// Example:
+  /// ```dart
+  /// final watcher = Watcher(
+  ///   () => signal.value,
+  ///   (newValue, oldValue) => print('Changed'),
+  ///   when: (newValue, oldValue) => newValue > oldValue,
+  /// );
+  /// ```
   factory Watcher(SourcesFn<T> sourcesFn, WatcherFn<T> fn,
       {bool immediately,
       WhenFn<T>? when,
@@ -423,7 +556,25 @@ abstract class Watcher<T> implements EffectNode, EffectBase {
   /// restored afterwards to maintain the previous watcher context.
   static Watcher? activeWatcher;
 
+  /// Manually runs the watcher function.
+  ///
+  /// This checks the sources and executes the callback if the condition is met.
+  ///
+  /// Example:
+  /// ```dart
+  /// watcher.run(); // Manually trigger check
+  /// ```
   void run();
+
+  /// Registers a cleanup function to be called when the watcher is disposed or re-run.
+  ///
+  /// Parameters:
+  /// - [fn]: The cleanup function to register
+  ///
+  /// Example:
+  /// ```dart
+  /// watcher.onCleanUp(() => subscription.cancel());
+  /// ```
   void onCleanUp(Disposer fn);
 }
 
@@ -444,15 +595,15 @@ abstract class Watcher<T> implements EffectNode, EffectBase {
 ///   onEffectCleanup(() => timer.cancel());
 /// });
 /// ```
-@pragma('vm:prefer-inline')
-@pragma('wasm:prefer-inline')
-@pragma('dart2js:prefer-inline')
+@pragma("vm:prefer-inline")
+@pragma("wasm:prefer-inline")
+@pragma("dart2js:prefer-inline")
 void onEffectCleanup(Disposer fn, {EffectCleanupMixin? owner}) {
   assert(
       owner != null ||
           getActiveSub() is EffectCleanupMixin ||
           Watcher.activeWatcher != null,
-      'onCleanup can only be used within an effect');
+      "onCleanup can only be used within an effect or watcher");
 
   ((owner ?? Watcher.activeWatcher ?? getActiveSub()!) as EffectCleanupMixin)
       .onCleanUp(fn);
@@ -476,12 +627,12 @@ void onEffectCleanup(Disposer fn, {EffectCleanupMixin? owner}) {
 ///     onScopeDispose(() => subscription.cancel());
 ///   });
 /// ```
-@pragma('vm:prefer-inline')
-@pragma('wasm:prefer-inline')
-@pragma('dart2js:prefer-inline')
+@pragma("vm:prefer-inline")
+@pragma("wasm:prefer-inline")
+@pragma("dart2js:prefer-inline")
 void onScopeDispose(Disposer fn, {EffectScope? owner}) {
   assert(owner != null || getActiveScope() != null,
-      'onScopeDispose can only be used within an effect scope');
+      "onScopeDispose can only be used within an effect scope");
 
   ((owner ?? getActiveScope()!) as EffectCleanupMixin).onCleanUp(fn);
 }

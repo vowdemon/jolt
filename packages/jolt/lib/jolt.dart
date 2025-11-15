@@ -24,18 +24,17 @@
 /// ```
 library;
 
-export 'src/jolt/base.dart';
-export 'src/jolt/effect.dart';
-export 'src/jolt/computed.dart';
-export 'src/jolt/signal.dart';
-export 'src/jolt/async.dart';
-export 'src/jolt/track.dart';
-export 'src/jolt/batch.dart';
-
-export 'src/jolt/collection/iterable_signal.dart';
-export 'src/jolt/collection/list_signal.dart';
-export 'src/jolt/collection/map_signal.dart';
-export 'src/jolt/collection/set_signal.dart';
-export 'src/jolt/extension/signal.dart';
-export 'src/jolt/extension/stream.dart';
-export 'src/core/debug.dart' show JoltDebugFn, DebugNodeOperationType;
+export "src/core/debug.dart" show DebugNodeOperationType, JoltDebugFn;
+export "src/jolt/async.dart";
+export "src/jolt/base.dart";
+export "src/jolt/batch.dart";
+export "src/jolt/collection/iterable_signal.dart";
+export "src/jolt/collection/list_signal.dart";
+export "src/jolt/collection/map_signal.dart";
+export "src/jolt/collection/set_signal.dart";
+export "src/jolt/computed.dart";
+export "src/jolt/effect.dart";
+export "src/jolt/extension/signal.dart";
+export "src/jolt/extension/stream.dart";
+export "src/jolt/signal.dart";
+export "src/jolt/track.dart";

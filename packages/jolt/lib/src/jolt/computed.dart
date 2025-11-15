@@ -1,16 +1,17 @@
-import 'package:meta/meta.dart';
+import "package:jolt/core.dart";
+import "package:jolt/src/jolt/base.dart";
+import "package:jolt/src/jolt/signal.dart";
+import "package:jolt/src/jolt/track.dart";
+import "package:meta/meta.dart";
 
-import 'package:jolt/core.dart';
-
-import 'base.dart';
-import 'signal.dart';
-import 'track.dart';
-
-/// A computed value that automatically updates when its dependencies change.
+/// Implementation of [Computed] that automatically updates when its dependencies change.
 ///
-/// Computed values are derived from other reactive values and are recalculated
-/// only when their dependencies change. They are cached and only recompute
-/// when necessary, making them efficient for expensive calculations.
+/// This is the concrete implementation of the [Computed] interface. Computed values
+/// are derived from other reactive values and are recalculated only when their
+/// dependencies change. They are cached and only recompute when necessary, making
+/// them efficient for expensive calculations.
+///
+/// See [Computed] for the public interface and usage examples.
 ///
 /// Example:
 /// ```dart
@@ -29,23 +30,18 @@ class ComputedImpl<T> extends ComputedReactiveNode<T>
   ///
   /// Parameters:
   /// - [getter]: Function that computes the value based on dependencies
-  /// - [initialValue]: Optional initial value to avoid first computation
   /// - [onDebug]: Optional debug callback for reactive system debugging
   ///
   /// Example:
   /// ```dart
   /// final count = Signal(0);
   /// final doubled = Computed(() => count.value * 2);
-  /// final expensive = Computed(
-  ///   () => heavyCalculation(count.value),
-  ///   initialValue: 0, // Avoid first computation
-  /// );
+  /// final expensive = Computed(() => heavyCalculation(count.value));
   /// ```
   ComputedImpl(
     super.getter, {
-    T? initialValue,
     JoltDebugFn? onDebug,
-  }) : super(flags: ReactiveFlags.none, pendingValue: initialValue) {
+  }) : super(flags: ReactiveFlags.none) {
     JoltDebug.create(this, onDebug);
   }
 
@@ -61,7 +57,7 @@ class ComputedImpl<T> extends ComputedReactiveNode<T>
   /// ```
   @override
   T get peek {
-    assert(!isDisposed);
+    assert(!isDisposed, "Computed is disposed");
 
     if (flags == ReactiveFlags.none) {
       return untracked(() => getComputed(this));
@@ -80,9 +76,9 @@ class ComputedImpl<T> extends ComputedReactiveNode<T>
   /// final computed = Computed(() => signal.value * 2);
   /// final effect = Effect(() => print(computed.value)); // Creates dependency
   /// ```
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
   @override
   T get value => get();
 
@@ -92,12 +88,17 @@ class ComputedImpl<T> extends ComputedReactiveNode<T>
   /// if any dependencies have changed since the last computation.
   ///
   /// Returns: The current computed value
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
+  ///
+  /// Example:
+  /// ```dart
+  /// final snapshot = computed.get();
+  /// ```
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
   @override
   T get() {
-    assert(!isDisposed);
+    assert(!isDisposed, "Computed is disposed");
 
     return getComputed(this);
   }
@@ -106,18 +107,28 @@ class ComputedImpl<T> extends ComputedReactiveNode<T>
   ///
   /// This is typically called automatically by the reactive system when
   /// dependencies change, but can be called manually for custom scenarios.
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
+  ///
+  /// Example:
+  /// ```dart
+  /// computed.notify(); // Force downstream effects to re-run
+  /// ```
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
   @override
   void notify() {
-    assert(!isDisposed);
+    assert(!isDisposed, "Computed is disposed");
     notifyComputed(this);
   }
 
   /// Disposes the computed value and cleans up resources.
   ///
   /// Removes the computed value from the reactive system and clears stored values.
+  ///
+  /// Example:
+  /// ```dart
+  /// computed.dispose();
+  /// ```
   @override
   @mustCallSuper
   @protected
@@ -126,15 +137,42 @@ class ComputedImpl<T> extends ComputedReactiveNode<T>
   }
 }
 
+/// Interface for computed reactive values.
+///
+/// Computed values are derived from other reactive values and automatically
+/// update when their dependencies change. They are cached and only recompute
+/// when necessary.
+///
+/// Example:
+/// ```dart
+/// final count = Signal(0);
+/// Computed<int> doubled = Computed(() => count.value * 2);
+/// print(doubled.value); // 0
+/// count.value = 5;
+/// print(doubled.value); // 10
+/// ```
 abstract interface class Computed<T> implements Readonly<T>, ReadonlyNode<T> {
+  /// Creates a computed value with the given getter function.
+  ///
+  /// Parameters:
+  /// - [getter]: Function that computes the value based on dependencies
+  /// - [onDebug]: Optional debug callback for reactive system debugging
+  ///
+  /// Example:
+  /// ```dart
+  /// final computed = Computed(() => expensiveCalculation());
+  /// ```
   factory Computed(T Function() getter, {JoltDebugFn? onDebug}) = ComputedImpl;
 }
 
-/// A writable computed value that can be both read and written.
+/// Implementation of [WritableComputed] that can be both read and written.
 ///
+/// This is the concrete implementation of the [WritableComputed] interface.
 /// WritableComputed allows you to create computed values that can also be
 /// set directly. When set, the setter function is called, which typically
 /// updates the underlying dependencies.
+///
+/// See [WritableComputed] for the public interface and usage examples.
 ///
 /// Example:
 /// ```dart
@@ -160,7 +198,7 @@ class WritableComputedImpl<T> extends ComputedImpl<T>
   /// Parameters:
   /// - [getter]: Function that computes the value from dependencies
   /// - [setter]: Function called when the computed value is set
-  /// - [initialValue]: Optional initial value
+  /// - [onDebug]: Optional debug callback for reactive system debugging
   ///
   /// Example:
   /// ```dart
@@ -170,43 +208,36 @@ class WritableComputedImpl<T> extends ComputedImpl<T>
   ///   (value) => count.value = value ~/ 2,
   /// );
   /// ```
-  WritableComputedImpl(super.getter, this.setter,
-      {super.initialValue, super.onDebug});
+  WritableComputedImpl(super.getter, this.setter, {super.onDebug});
 
   /// The function called when this computed value is set.
   final void Function(T) setter;
 
-  /// Sets a new value for this writable computed.
+  /// {@template jolt_writable_computed_set}
+  /// Sets a new value for this writable computed by delegating to the
+  /// user-provided setter inside a batch so downstream watchers flush once.
   ///
-  /// This calls the setter function with the new value, which should
-  /// update the underlying dependencies appropriately.
+  /// Parameters:
+  /// - [newValue]: Value forwarded to the setter
   ///
   /// Example:
   /// ```dart
   /// final writableComputed = WritableComputed(getter, setter);
   /// writableComputed.value = newValue; // Calls setter(newValue)
   /// ```
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
+  /// {@endtemplate}
+  ///
+  /// {@macro jolt_writable_computed_set}
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
   @override
   set value(T newValue) => set(newValue);
 
-  /// Sets a new value for this writable computed.
-  ///
-  /// Parameters:
-  /// - [newValue]: The new value to set
-  ///
-  /// This calls the setter function and notifies subscribers of the change.
-  ///
-  /// Example:
-  /// ```dart
-  /// final writableComputed = WritableComputed(getter, setter);
-  /// writableComputed.set(newValue); // Calls setter(newValue)
-  /// ```
+  /// {@macro jolt_writable_computed_set}
   @override
   T set(T newValue) {
-    assert(!isDisposed);
+    assert(!isDisposed, "WritableComputed is disposed");
     startBatch();
     try {
       setter(newValue);
@@ -218,9 +249,46 @@ class WritableComputedImpl<T> extends ComputedImpl<T>
   }
 }
 
+/// Interface for writable computed reactive values.
+///
+/// WritableComputed allows you to create computed values that can also be
+/// set directly. When set, the setter function is called to update the
+/// underlying dependencies.
+///
+/// Example:
+/// ```dart
+/// final firstName = Signal('John');
+/// final lastName = Signal('Doe');
+///
+/// WritableComputed<String> fullName = WritableComputed(
+///   () => '${firstName.value} ${lastName.value}',
+///   (value) {
+///     final parts = value.split(' ');
+///     firstName.value = parts[0];
+///     lastName.value = parts[1];
+///   },
+/// );
+/// ```
 abstract interface class WritableComputed<T> implements Computed<T>, Signal<T> {
-  factory WritableComputed(T Function() getter, void Function(T) setter,
-      {JoltDebugFn? onDebug}) = WritableComputedImpl<T>;
+  /// Creates a writable computed value with the given getter and setter.
+  ///
+  /// Parameters:
+  /// - [getter]: Function that computes the value from dependencies
+  /// - [setter]: Function called when the computed value is set
+  /// - [onDebug]: Optional debug callback for reactive system debugging
+  ///
+  /// Example:
+  /// ```dart
+  /// final writableComputed = WritableComputed(
+  ///   () => count.value * 2,
+  ///   (value) => count.value = value ~/ 2,
+  /// );
+  /// ```
+  factory WritableComputed(
+    T Function() getter,
+    void Function(T) setter, {
+    JoltDebugFn? onDebug,
+  }) = WritableComputedImpl<T>;
 }
 
 /// Extension methods for WritableComputed to provide additional functionality.

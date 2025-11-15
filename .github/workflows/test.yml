@@ -15,14 +15,10 @@ jobs:
       - name: Setup environment and cache dependencies
         uses: ./.github/actions/prepare
       - name: Analyze packages
-        uses: invertase/github-action-dart-analyzer@v3
-        with:
-          fatal-infos: true
+        run: melos run analyze
+        shell: bash
       - name: Run packages tests
         run: melos run test
-        shell: bash
-      - name: Combine coverage reports
-        run: melos run coverage:combine
         shell: bash
       - name: Upload coverage report to Codecov
         uses: codecov/codecov-action@v5

@@ -1,10 +1,10 @@
-import 'package:jolt/jolt.dart';
-import 'package:test/test.dart';
+import "package:jolt/jolt.dart";
+import "package:test/test.dart";
 
 void main() {
-  group('Collection Signal Tests', () {
-    group('ListSignal', () {
-      test('Basic operations - create and add elements', () {
+  group("Collection Signal Tests", () {
+    group("ListSignal", () {
+      test("Basic operations - create and add elements", () {
         final listSignal = ListSignal<int>([]);
 
         expect(listSignal.value, isEmpty);
@@ -19,7 +19,7 @@ void main() {
         expect(listSignal.length, equals(3));
       });
 
-      test('Reactive updates - Effect listening', () {
+      test("Reactive updates - Effect listening", () {
         final listSignal = ListSignal<int>([]);
         final changes = <List<int>>[];
 
@@ -49,7 +49,7 @@ void main() {
             ]));
       });
 
-      test('List operations - insert and remove', () {
+      test("List operations - insert and remove", () {
         final listSignal = ListSignal<int>([1, 2, 3]);
 
         // Insert
@@ -66,10 +66,10 @@ void main() {
       });
     });
 
-    group('ListSignal ListBase methods and properties', () {
-      test('test all read-only properties and methods', () {
+    group("ListSignal ListBase methods and properties", () {
+      test("test all read-only properties and methods", () {
         final listSignal = ListSignal<int>([1, 2, 3, 4, 5]);
-        int notifyCount = -1;
+        var notifyCount = -1;
         Effect(() {
           listSignal.value;
           notifyCount++;
@@ -135,15 +135,15 @@ void main() {
         expect(listSignal.takeWhile((e) => e < 4).toList(), equals([1, 2, 3]));
         expect(listSignal.toList(), equals([1, 2, 3, 4, 5]));
         expect(listSignal.toSet(), equals({1, 2, 3, 4, 5}));
-        expect(listSignal.join(','), equals('1,2,3,4,5'));
+        expect(listSignal.join(","), equals("1,2,3,4,5"));
         expect(listSignal.cast<num>().toList(), equals([1, 2, 3, 4, 5]));
         expect(listSignal.reduce((a, b) => a + b), equals(15));
         expect(listSignal.fold<int>(0, (sum, e) => sum + e), equals(15));
 
         // forEach
         final forEachValues = <int>[];
-        // ignore: avoid_function_literals_in_foreach_calls
-        listSignal.forEach((e) => forEachValues.add(e));
+
+        listSignal.forEach(forEachValues.add);
 
         expect(forEachValues, equals([1, 2, 3, 4, 5]));
 
@@ -154,7 +154,7 @@ void main() {
         expect(notifyCount, equals(0));
       });
 
-      test('should return value.toString() in toString', () {
+      test("should return value.toString() in toString", () {
         final listSignal = ListSignal<int>([1, 2, 3]);
         expect(listSignal.toString(), equals(listSignal.value.toString()));
 
@@ -164,11 +164,11 @@ void main() {
         final emptyList = ListSignal<String>([]);
         expect(emptyList.toString(), equals(emptyList.value.toString()));
 
-        final stringList = ListSignal<String>(['a', 'b', 'c']);
+        final stringList = ListSignal<String>(["a", "b", "c"]);
         expect(stringList.toString(), equals(stringList.value.toString()));
       });
 
-      test('test write methods functionality', () {
+      test("test write methods functionality", () {
         final listSignal = ListSignal<int>([1, 2, 3]);
 
         // Setters
@@ -248,28 +248,28 @@ void main() {
         listSignal.sort();
         expect(listSignal.value, equals([5, 10, 20, 30, 40])); // After sort
         // Verify it's sorted
-        for (int i = 1; i < listSignal.value.length; i++) {
+        for (var i = 1; i < listSignal.value.length; i++) {
           expect(listSignal.value[i],
               greaterThanOrEqualTo(listSignal.value[i - 1]));
         }
       });
     });
 
-    group('MapSignal', () {
-      test('Basic operations - create and set values', () {
+    group("MapSignal", () {
+      test("Basic operations - create and set values", () {
         final mapSignal = MapSignal<String, int>({});
 
         expect(mapSignal.value, isEmpty);
 
-        mapSignal['a'] = 1;
-        expect(mapSignal.value, equals({'a': 1}));
-        expect(mapSignal['a'], equals(1));
+        mapSignal["a"] = 1;
+        expect(mapSignal.value, equals({"a": 1}));
+        expect(mapSignal["a"], equals(1));
 
-        mapSignal['b'] = 2;
-        expect(mapSignal.value, equals({'a': 1, 'b': 2}));
+        mapSignal["b"] = 2;
+        expect(mapSignal.value, equals({"a": 1, "b": 2}));
       });
 
-      test('Reactive updates - Effect listening', () {
+      test("Reactive updates - Effect listening", () {
         final mapSignal = MapSignal<String, int>({});
         final changes = <Map<String, int>>[];
 
@@ -281,34 +281,34 @@ void main() {
         expect(changes, equals([{}]));
 
         // Set values
-        mapSignal['x'] = 10;
+        mapSignal["x"] = 10;
         expect(
             changes,
             equals([
               {},
-              {'x': 10}
+              {"x": 10}
             ]));
 
-        mapSignal['y'] = 20;
+        mapSignal["y"] = 20;
         expect(
             changes,
             equals([
               {},
-              {'x': 10},
-              {'x': 10, 'y': 20}
+              {"x": 10},
+              {"x": 10, "y": 20}
             ]));
       });
 
-      test('Map operations - remove and update', () {
-        final mapSignal = MapSignal<String, int>({'a': 1, 'b': 2});
+      test("Map operations - remove and update", () {
+        final mapSignal = MapSignal<String, int>({"a": 1, "b": 2});
 
         // Update value
-        mapSignal['a'] = 10;
-        expect(mapSignal.value, equals({'a': 10, 'b': 2}));
+        mapSignal["a"] = 10;
+        expect(mapSignal.value, equals({"a": 10, "b": 2}));
 
         // Remove key
-        mapSignal.remove('a');
-        expect(mapSignal.value, equals({'b': 2}));
+        mapSignal.remove("a");
+        expect(mapSignal.value, equals({"b": 2}));
 
         // Clear
         mapSignal.clear();
@@ -316,10 +316,10 @@ void main() {
       });
     });
 
-    group('MapSignal MapBase methods and properties', () {
-      test('test all read-only properties and methods', () {
-        final mapSignal = MapSignal<String, int>({'a': 1, 'b': 2, 'c': 3});
-        int notifyCount = -1;
+    group("MapSignal MapBase methods and properties", () {
+      test("test all read-only properties and methods", () {
+        final mapSignal = MapSignal<String, int>({"a": 1, "b": 2, "c": 3});
+        var notifyCount = -1;
         Effect(() {
           mapSignal.value;
           notifyCount++;
@@ -331,17 +331,17 @@ void main() {
         expect(mapSignal.length, equals(3));
         expect(mapSignal.isEmpty, isFalse);
         expect(mapSignal.isNotEmpty, isTrue);
-        expect(mapSignal['a'], equals(1));
-        expect(mapSignal['x'], isNull);
+        expect(mapSignal["a"], equals(1));
+        expect(mapSignal["x"], isNull);
 
         // Iterator and collections
-        expect(mapSignal.keys, containsAll(['a', 'b', 'c']));
+        expect(mapSignal.keys, containsAll(["a", "b", "c"]));
         expect(mapSignal.values, containsAll([1, 2, 3]));
         expect(mapSignal.entries.length, equals(3));
 
         // Query methods
-        expect(mapSignal.containsKey('a'), isTrue);
-        expect(mapSignal.containsKey('x'), isFalse);
+        expect(mapSignal.containsKey("a"), isTrue);
+        expect(mapSignal.containsKey("x"), isFalse);
         expect(mapSignal.containsValue(2), isTrue);
         expect(mapSignal.containsValue(10), isFalse);
 
@@ -355,81 +355,81 @@ void main() {
         // Transformation methods
         final mapped = mapSignal.map<String, String>(
             (key, value) => MapEntry(key, value.toString()));
-        expect(mapped['a'], equals('1'));
+        expect(mapped["a"], equals("1"));
 
-        expect(mapSignal.cast<String, num>()['a'], equals(1));
+        expect(mapSignal.cast<String, num>()["a"], equals(1));
 
         // Test single element map
-        final singleMap = MapSignal<String, int>({'x': 42});
+        final singleMap = MapSignal<String, int>({"x": 42});
         expect(singleMap.length, equals(1));
-        expect(singleMap['x'], equals(42));
+        expect(singleMap["x"], equals(42));
 
         // Verify no notify was triggered during read-only operations
         expect(notifyCount, equals(0));
       });
 
-      test('should return value.toString() in toString', () {
-        final mapSignal = MapSignal<String, int>({'a': 1, 'b': 2});
+      test("should return value.toString() in toString", () {
+        final mapSignal = MapSignal<String, int>({"a": 1, "b": 2});
         expect(mapSignal.toString(), equals(mapSignal.value.toString()));
 
-        mapSignal.value = {'x': 10, 'y': 20};
+        mapSignal.value = {"x": 10, "y": 20};
         expect(mapSignal.toString(), equals(mapSignal.value.toString()));
 
         final emptyMap = MapSignal<String, int>({});
         expect(emptyMap.toString(), equals(emptyMap.value.toString()));
 
-        final singleEntry = MapSignal<String, String>({'key': 'value'});
+        final singleEntry = MapSignal<String, String>({"key": "value"});
         expect(singleEntry.toString(), equals(singleEntry.value.toString()));
       });
 
-      test('test write methods functionality', () {
-        final mapSignal = MapSignal<String, int>({'a': 1, 'b': 2});
+      test("test write methods functionality", () {
+        final mapSignal = MapSignal<String, int>({"a": 1, "b": 2});
 
         // Index assignment
-        mapSignal['a'] = 10;
-        expect(mapSignal.value, equals({'a': 10, 'b': 2}));
+        mapSignal["a"] = 10;
+        expect(mapSignal.value, equals({"a": 10, "b": 2}));
 
-        mapSignal['c'] = 3;
-        expect(mapSignal.value, equals({'a': 10, 'b': 2, 'c': 3}));
+        mapSignal["c"] = 3;
+        expect(mapSignal.value, equals({"a": 10, "b": 2, "c": 3}));
 
         // addAll
-        mapSignal.addAll({'d': 4, 'e': 5});
-        expect(mapSignal.value['d'], equals(4));
-        expect(mapSignal.value['e'], equals(5));
+        mapSignal.addAll({"d": 4, "e": 5});
+        expect(mapSignal.value["d"], equals(4));
+        expect(mapSignal.value["e"], equals(5));
 
         // addEntries
         mapSignal.addEntries([
-          MapEntry('f', 6),
-          MapEntry('g', 7),
+          const MapEntry("f", 6),
+          const MapEntry("g", 7),
         ]);
-        expect(mapSignal.value['f'], equals(6));
-        expect(mapSignal.value['g'], equals(7));
+        expect(mapSignal.value["f"], equals(6));
+        expect(mapSignal.value["g"], equals(7));
 
         // putIfAbsent
-        final existing = mapSignal.putIfAbsent('a', () => 100);
+        final existing = mapSignal.putIfAbsent("a", () => 100);
         expect(existing, equals(10)); // Should return existing value
-        expect(mapSignal['a'], equals(10)); // Should not change
+        expect(mapSignal["a"], equals(10)); // Should not change
 
-        final newValue = mapSignal.putIfAbsent('h', () => 8);
+        final newValue = mapSignal.putIfAbsent("h", () => 8);
         expect(newValue, equals(8));
-        expect(mapSignal['h'], equals(8));
+        expect(mapSignal["h"], equals(8));
 
         // update
-        mapSignal.update('a', (value) => value * 2);
-        expect(mapSignal['a'], equals(20));
+        mapSignal.update("a", (value) => value * 2);
+        expect(mapSignal["a"], equals(20));
 
-        mapSignal.update('i', (value) => value, ifAbsent: () => 9);
-        expect(mapSignal['i'], equals(9));
+        mapSignal.update("i", (value) => value, ifAbsent: () => 9);
+        expect(mapSignal["i"], equals(9));
 
         // updateAll
         mapSignal.updateAll((key, value) => value * 2);
-        expect(mapSignal['a'], equals(40));
-        expect(mapSignal['b'], equals(4));
+        expect(mapSignal["a"], equals(40));
+        expect(mapSignal["b"], equals(4));
 
         // removeWhere
         mapSignal.removeWhere((key, value) => value < 10);
-        expect(mapSignal['a'], equals(40)); // Kept (40 >= 10)
-        expect(mapSignal['b'], isNull); // Removed (4 < 10)
+        expect(mapSignal["a"], equals(40)); // Kept (40 >= 10)
+        expect(mapSignal["b"], isNull); // Removed (4 < 10)
 
         // clear
         mapSignal.clear();
@@ -437,10 +437,10 @@ void main() {
       });
     });
 
-    group('MapSignal notify count', () {
-      test('notify count for write methods', () {
+    group("MapSignal notify count", () {
+      test("notify count for write methods", () {
         final mapSignal = MapSignal<String, int>({});
-        int notifyCount = 0;
+        var notifyCount = 0;
 
         Effect(() {
           mapSignal.value;
@@ -449,26 +449,26 @@ void main() {
 
         expect(notifyCount, equals(1));
 
-        mapSignal['a'] = 1;
+        mapSignal["a"] = 1;
         expect(notifyCount, equals(2));
-        expect(mapSignal.value, equals({'a': 1}));
+        expect(mapSignal.value, equals({"a": 1}));
 
-        mapSignal['b'] = 2;
+        mapSignal["b"] = 2;
         expect(notifyCount, equals(3));
-        expect(mapSignal.value, equals({'a': 1, 'b': 2}));
+        expect(mapSignal.value, equals({"a": 1, "b": 2}));
 
-        mapSignal.addAll({'c': 3, 'd': 4});
+        mapSignal.addAll({"c": 3, "d": 4});
         expect(notifyCount, equals(4));
-        expect(mapSignal.value['c'], equals(3));
-        expect(mapSignal.value['d'], equals(4));
+        expect(mapSignal.value["c"], equals(3));
+        expect(mapSignal.value["d"], equals(4));
 
-        mapSignal.addEntries([MapEntry('e', 5)]);
+        mapSignal.addEntries([const MapEntry("e", 5)]);
         expect(notifyCount, equals(5));
 
-        mapSignal.putIfAbsent('f', () => 6);
+        mapSignal.putIfAbsent("f", () => 6);
         expect(notifyCount, equals(6));
 
-        mapSignal.update('a', (value) => value * 2);
+        mapSignal.update("a", (value) => value * 2);
         expect(notifyCount, equals(7));
 
         mapSignal.updateAll((key, value) => value + 1);
@@ -477,7 +477,7 @@ void main() {
         mapSignal.removeWhere((key, value) => value < 5);
         expect(notifyCount, equals(9));
 
-        mapSignal.remove('e');
+        mapSignal.remove("e");
         expect(notifyCount, equals(10));
 
         mapSignal.clear();
@@ -486,8 +486,8 @@ void main() {
       });
     });
 
-    group('SetSignal', () {
-      test('Basic operations - create and add elements', () {
+    group("SetSignal", () {
+      test("Basic operations - create and add elements", () {
         final setSignal = SetSignal<int>({});
 
         expect(setSignal.value, isEmpty);
@@ -500,7 +500,7 @@ void main() {
         expect(setSignal.value, equals({1, 2, 3}));
       });
 
-      test('Reactive updates - Effect listening', () {
+      test("Reactive updates - Effect listening", () {
         final setSignal = SetSignal<int>({});
         final changes = <Set<int>>[];
 
@@ -530,7 +530,7 @@ void main() {
             ]));
       });
 
-      test('Set operations - remove and contains check', () {
+      test("Set operations - remove and contains check", () {
         final setSignal = SetSignal<int>({1, 2, 3});
 
         // Contains check
@@ -547,10 +547,10 @@ void main() {
       });
     });
 
-    group('SetSignal SetBase methods and properties', () {
-      test('test all read-only properties and methods', () {
+    group("SetSignal SetBase methods and properties", () {
+      test("test all read-only properties and methods", () {
         final setSignal = SetSignal<int>({1, 2, 3, 4, 5});
-        int notifyCount = -1;
+        var notifyCount = -1;
         Effect(() {
           setSignal.value;
           notifyCount++;
@@ -572,7 +572,6 @@ void main() {
 
         // Iterator
         final values = <int>[];
-        // ignore: avoid_function_literals_in_foreach_calls
         expect(setSignal.iterator.moveNext(), isTrue);
         final iterator = setSignal.iterator;
         while (iterator.moveNext()) {
@@ -617,18 +616,17 @@ void main() {
         expect(setSignal.takeWhile((e) => e < 4).toSet(), equals({1, 2, 3}));
         expect(setSignal.toList(), containsAll([1, 2, 3, 4, 5]));
         expect(setSignal.toSet(), equals({1, 2, 3, 4, 5}));
-        final joined = setSignal.join(',');
-        expect(joined.contains('1'), isTrue);
-        expect(joined.contains('2'), isTrue);
-        expect(joined.contains('3'), isTrue);
+        final joined = setSignal.join(",");
+        expect(joined.contains("1"), isTrue);
+        expect(joined.contains("2"), isTrue);
+        expect(joined.contains("3"), isTrue);
         expect(setSignal.cast<num>().toSet(), equals({1, 2, 3, 4, 5}));
         expect(setSignal.reduce((a, b) => a + b), equals(15));
         expect(setSignal.fold<int>(0, (sum, e) => sum + e), equals(15));
 
         // forEach
         final forEachValues = <int>[];
-        // ignore: avoid_function_literals_in_foreach_calls
-        setSignal.forEach((e) => forEachValues.add(e));
+        setSignal.forEach(forEachValues.add);
 
         expect(forEachValues.length, equals(5));
         expect(forEachValues.toSet(), equals({1, 2, 3, 4, 5}));
@@ -637,7 +635,7 @@ void main() {
         expect(notifyCount, equals(0));
       });
 
-      test('should return value.toString() in toString', () {
+      test("should return value.toString() in toString", () {
         final setSignal = SetSignal<int>({1, 2, 3});
         expect(setSignal.toString(), equals(setSignal.value.toString()));
 
@@ -652,7 +650,7 @@ void main() {
             singleElement.toString(), equals(singleElement.value.toString()));
       });
 
-      test('test write methods functionality', () {
+      test("test write methods functionality", () {
         final setSignal = SetSignal<int>({1, 2, 3});
 
         // add
@@ -701,10 +699,10 @@ void main() {
       });
     });
 
-    group('SetSignal notify count', () {
-      test('notify count for write methods', () {
+    group("SetSignal notify count", () {
+      test("notify count for write methods", () {
         final setSignal = SetSignal<int>({});
-        int notifyCount = 0;
+        var notifyCount = 0;
 
         Effect(() {
           setSignal.value;
@@ -757,10 +755,10 @@ void main() {
       });
     });
 
-    group('ListSignal notify count', () {
-      test('notify count for setters and index assignment', () {
+    group("ListSignal notify count", () {
+      test("notify count for setters and index assignment", () {
         final listSignal = ListSignal<int>([1, 2, 3]);
-        int notifyCount = 0;
+        var notifyCount = 0;
 
         Effect(() {
           listSignal.value;
@@ -786,9 +784,9 @@ void main() {
         expect(listSignal.value, equals([100, 2]));
       });
 
-      test('notify count for add methods', () {
+      test("notify count for add methods", () {
         final listSignal = ListSignal<int>([1, 2, 3]);
-        int notifyCount = 0;
+        var notifyCount = 0;
 
         Effect(() {
           listSignal.value;
@@ -814,9 +812,9 @@ void main() {
         expect(listSignal.value, equals([1, 10, 20, 30, 2, 3, 4, 5, 6]));
       });
 
-      test('notify count for remove methods', () {
+      test("notify count for remove methods", () {
         final listSignal = ListSignal<int>([1, 2, 3, 4, 5]);
-        int notifyCount = 0;
+        var notifyCount = 0;
 
         Effect(() {
           listSignal.value;
@@ -857,9 +855,9 @@ void main() {
         expect(listSignal.value, equals([2, 4, 6]));
       });
 
-      test('notify count for other modification methods', () {
+      test("notify count for other modification methods", () {
         final listSignal = ListSignal<int>([1, 2, 3, 4, 5]);
-        int notifyCount = 0;
+        var notifyCount = 0;
 
         Effect(() {
           listSignal.value;
@@ -903,11 +901,11 @@ void main() {
       });
     });
 
-    group('IterableSignal IterableBase methods', () {
-      test('test all read-only methods and properties', () {
+    group("IterableSignal IterableBase methods", () {
+      test("test all read-only methods and properties", () {
         final source = Signal<List<int>>([1, 2, 3, 4, 5]);
         final iterableSignal = IterableSignal(() => source.value);
-        int notifyCount = -1;
+        var notifyCount = -1;
         Effect(() {
           iterableSignal.value;
           notifyCount++;
@@ -929,8 +927,8 @@ void main() {
 
         // Iterator
         final values = <int>[];
-        // ignore: avoid_function_literals_in_foreach_calls
-        iterableSignal.value.forEach((e) => values.add(e));
+
+        iterableSignal.value.forEach(values.add);
 
         expect(values, equals([1, 2, 3, 4, 5]));
 
@@ -965,7 +963,7 @@ void main() {
             iterableSignal.takeWhile((e) => e < 4).toList(), equals([1, 2, 3]));
         expect(iterableSignal.toList(), equals([1, 2, 3, 4, 5]));
         expect(iterableSignal.toSet(), equals({1, 2, 3, 4, 5}));
-        expect(iterableSignal.join(','), equals('1,2,3,4,5'));
+        expect(iterableSignal.join(","), equals("1,2,3,4,5"));
 
         // Reduction methods
         expect(iterableSignal.reduce((a, b) => a + b), equals(15));
@@ -973,7 +971,9 @@ void main() {
 
         // forEach
         final forEachValues = <int>[];
-        for (var e in iterableSignal) {
+        //
+        // ignore: prefer_foreach
+        for (final e in iterableSignal) {
           forEachValues.add(e);
         }
         expect(forEachValues, equals([1, 2, 3, 4, 5]));
@@ -990,7 +990,7 @@ void main() {
         expect(iterableSignal.last, equals(30));
       });
 
-      test('should return value.toString() in toString', () {
+      test("should return value.toString() in toString", () {
         final source = Signal<List<int>>([1, 2, 3]);
         final iterableSignal = IterableSignal(() => source.value);
         expect(
@@ -1005,7 +1005,7 @@ void main() {
         expect(
             emptyIterable.toString(), equals(emptyIterable.value.toString()));
 
-        final stringSource = Signal<List<String>>(['a', 'b']);
+        final stringSource = Signal<List<String>>(["a", "b"]);
         final stringIterable = IterableSignal(() => stringSource.value);
         expect(
             stringIterable.toString(), equals(stringIterable.value.toString()));

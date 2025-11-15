@@ -1,9 +1,7 @@
-import 'dart:collection';
+import "dart:collection";
 
-import 'package:jolt/core.dart';
-
-import '../base.dart';
-import '../signal.dart';
+import "package:jolt/core.dart";
+import "package:jolt/jolt.dart";
 
 /// A mixin that provides reactive map functionality.
 ///
@@ -17,9 +15,7 @@ mixin MapSignalMixin<K, V>
   /// Returns the value for the given key, or null if the key is not present.
   /// This operation does not trigger reactivity when used for reading.
   @override
-  V? operator [](Object? key) {
-    return value[key];
-  }
+  V? operator [](Object? key) => value[key];
 
   /// Sets the value associated with the given key.
   ///
@@ -55,9 +51,7 @@ mixin MapSignalMixin<K, V>
   ///
   /// This is a non-mutating operation that returns a new view of the map.
   @override
-  Map<RK, RV> cast<RK, RV>() {
-    return value.cast<RK, RV>();
-  }
+  Map<RK, RV> cast<RK, RV>() => value.cast<RK, RV>();
 
   /// Removes all entries from the map.
   ///
@@ -72,17 +66,13 @@ mixin MapSignalMixin<K, V>
   ///
   /// This is a non-mutating query operation.
   @override
-  bool containsKey(Object? key) {
-    return value.containsKey(key);
-  }
+  bool containsKey(Object? key) => value.containsKey(key);
 
   /// Returns true if this map contains the given value.
   ///
   /// This is a non-mutating query operation that searches through all values.
   @override
-  bool containsValue(Object? targetValue) {
-    return value.containsValue(targetValue);
-  }
+  bool containsValue(Object? targetValue) => value.containsValue(targetValue);
 
   /// Applies the given function to each key-value pair in the map.
   ///
@@ -170,28 +160,31 @@ mixin MapSignalMixin<K, V>
   ///
   /// Returns an iterable of all values in the map.
   @override
-  Iterable<V> get values => value.values;
+  IterableSignal<V> get values => IterableSignal(() => value.values);
 
   /// Returns a new map where each entry is transformed by the given function.
   ///
   /// This is a non-mutating operation that creates a new map.
   @override
-  Map<K2, V2> map<K2, V2>(MapEntry<K2, V2> Function(K key, V value) convert) {
-    return value.map(convert);
-  }
+  Map<K2, V2> map<K2, V2>(MapEntry<K2, V2> Function(K key, V value) convert) =>
+      value.map(convert);
 
   /// The map entries of this map.
   ///
   /// Returns an iterable of all key-value pairs as MapEntry objects.
   @override
-  Iterable<MapEntry<K, V>> get entries => value.entries;
+  IterableSignal<MapEntry<K, V>> get entries =>
+      IterableSignal(() => value.entries);
 }
 
-/// A reactive map that automatically notifies subscribers when modified.
+/// Implementation of [MapSignal] that automatically notifies subscribers when modified.
 ///
-/// MapSignal extends Signal to provide full Map functionality while
-/// maintaining reactivity. All map operations (put, remove, clear, etc.)
-/// will trigger notifications to subscribers.
+/// This is the concrete implementation of the [MapSignal] interface. MapSignal
+/// extends Signal to provide full Map functionality while maintaining reactivity.
+/// All map operations (put, remove, clear, etc.) will trigger notifications
+/// to subscribers.
+///
+/// See [MapSignal] for the public interface and usage examples.
 ///
 /// Example:
 /// ```dart
@@ -230,8 +223,32 @@ class MapSignalImpl<K, V> extends SignalImpl<Map<K, V>>
   MapSignalImpl(Map<K, V>? value, {super.onDebug}) : super(value ?? {});
 }
 
+/// Interface for reactive map signals.
+///
+/// MapSignal extends Signal to provide full Map functionality while
+/// maintaining reactivity. All map operations (put, remove, clear, etc.)
+/// will trigger notifications to subscribers.
+///
+/// Example:
+/// ```dart
+/// MapSignal<String, dynamic> userMap = MapSignal({'name': 'Alice', 'age': 30});
+///
+/// Effect(() => print('User: ${userMap['name']}'));
+/// userMap['name'] = 'Bob'; // Triggers effect
+/// ```
 abstract interface class MapSignal<K, V>
     implements Signal<Map<K, V>>, MapSignalMixin<K, V> {
+  /// Creates a reactive map signal with the given initial map.
+  ///
+  /// Parameters:
+  /// - [value]: Initial map content, defaults to empty map if null
+  /// - [onDebug]: Optional debug callback for reactive system debugging
+  ///
+  /// Example:
+  /// ```dart
+  /// final emptyMap = MapSignal<String, int>(null); // Creates empty map
+  /// final userMap = MapSignal({'name': 'Alice', 'age': 30});
+  /// ```
   factory MapSignal(Map<K, V>? value, {JoltDebugFn? onDebug}) =
       MapSignalImpl<K, V>;
 }

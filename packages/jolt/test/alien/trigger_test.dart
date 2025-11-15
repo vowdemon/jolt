@@ -1,14 +1,14 @@
-import 'package:test/test.dart';
+import "package:test/test.dart";
 
-import 'common.dart';
+import "common.dart";
 
 void main() {
-  group('trigger', () {
-    test('should not throw when triggering with no dependencies', () {
+  group("trigger", () {
+    test("should not throw when triggering with no dependencies", () {
       trigger(() {});
     });
 
-    test('should trigger updates for dependent computed signals', () {
+    test("should trigger updates for dependent computed signals", () {
       final arr = signal(<int>[]);
       final length = computed(() => arr().length);
 
@@ -18,7 +18,7 @@ void main() {
       expect(length(), 1);
     });
 
-    test('should trigger updates for the second source signal', () {
+    test("should trigger updates for the second source signal", () {
       final src1 = signal(<int>[]);
       final src2 = signal(<int>[]);
       final length = computed(() => src2().length);
@@ -32,7 +32,7 @@ void main() {
       expect(length(), 1);
     });
 
-    test('should trigger effect once', () {
+    test("should trigger effect once", () {
       final src1 = signal(<int>[]);
       final src2 = signal(<int>[]);
 

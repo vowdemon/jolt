@@ -1,13 +1,12 @@
-import 'package:test/test.dart';
+import "package:test/test.dart";
 
-import 'common.dart';
+import "common.dart";
 
 class MockFunction<T> {
+  MockFunction(this._fn);
   int callCount = 0;
   List<DateTime> callTimes = [];
   final T Function() _fn;
-
-  MockFunction(this._fn);
 
   T call() {
     callCount++;
@@ -32,8 +31,8 @@ class MockFunction<T> {
 }
 
 void main() {
-  group('computed', () {
-    test('should drop A->B->A updates', () {
+  group("computed", () {
+    test("should drop A->B->A updates", () {
       //     A
       //   / |
       //  B  | <- Looks like a flag doesn't it? :D
@@ -47,7 +46,7 @@ void main() {
       final c = computed(() => a() + b());
 
       final compute = MockFunction(() => "d: ${c()}");
-      final d = computed(() => compute());
+      final d = computed(compute.call);
 
       // Trigger read
       expect(d(), equals("d: 3"));
@@ -59,7 +58,7 @@ void main() {
       expect(compute.hasBeenCalledOnce, isTrue);
     });
 
-    test('should only update every signal once (diamond graph)', () {
+    test("should only update every signal once (diamond graph)", () {
       // In this scenario "D" should only update once when "A" receives
       // an update. This is sometimes referred to as the "diamond" scenario.
       //     A
@@ -69,11 +68,11 @@ void main() {
       //     D
 
       final a = signal("a");
-      final b = computed(() => a());
-      final c = computed(() => a());
+      final b = computed(a);
+      final c = computed(a);
 
       final spy = MockFunction(() => "${b()} ${c()}");
-      final d = computed(() => spy());
+      final d = computed(spy.call);
 
       expect(d(), equals("a a"));
       expect(spy.hasBeenCalledOnce, isTrue);
@@ -83,7 +82,7 @@ void main() {
       expect(spy.calledTimes, equals(2));
     });
 
-    test('should only update every signal once (diamond graph + tail)', () {
+    test("should only update every signal once (diamond graph + tail)", () {
       // "E" will be likely updated twice if our mark+sweep logic is buggy.
       //     A
       //   /   \
@@ -94,13 +93,13 @@ void main() {
       //     E
 
       final a = signal("a");
-      final b = computed(() => a());
-      final c = computed(() => a());
+      final b = computed(a);
+      final c = computed(a);
 
       final d = computed(() => "${b()} ${c()}");
 
-      final spy = MockFunction(() => d());
-      final e = computed(() => spy());
+      final spy = MockFunction(d);
+      final e = computed(spy.call);
 
       expect(e(), equals("a a"));
       expect(spy.hasBeenCalledOnce, isTrue);
@@ -110,7 +109,7 @@ void main() {
       expect(spy.calledTimes, equals(2));
     });
 
-    test('should bail out if result is the same', () {
+    test("should bail out if result is the same", () {
       // Bail out if value of "B" never changes
       // A->B->C
       final a = signal("a");
@@ -119,8 +118,8 @@ void main() {
         return "foo";
       });
 
-      final spy = MockFunction(() => b());
-      final c = computed(() => spy());
+      final spy = MockFunction(b);
+      final c = computed(spy.call);
 
       expect(c(), equals("foo"));
       expect(spy.hasBeenCalledOnce, isTrue);
@@ -131,7 +130,7 @@ void main() {
     });
 
     test(
-      'should only update every signal once (jagged diamond graph + tails)',
+      "should only update every signal once (jagged diamond graph + tails)",
       () {
         // "F" and "G" will be likely updated twice if our mark+sweep logic is buggy.
         //     A
@@ -145,18 +144,18 @@ void main() {
         //  F     G
         final a = signal("a");
 
-        final b = computed(() => a());
-        final c = computed(() => a());
+        final b = computed(a);
+        final c = computed(a);
 
-        final d = computed(() => c());
+        final d = computed(c);
 
         final eSpy = MockFunction(() => "${b()} ${d()}");
-        final e = computed(() => eSpy());
+        final e = computed(eSpy.call);
 
-        final fSpy = MockFunction(() => e());
-        final f = computed(() => fSpy());
-        final gSpy = MockFunction(() => e());
-        final g = computed(() => gSpy());
+        final fSpy = MockFunction(e);
+        final f = computed(fSpy.call);
+        final gSpy = MockFunction(e);
+        final g = computed(gSpy.call);
 
         expect(f(), equals("a a"));
         expect(fSpy.calledTimes, equals(1));
@@ -201,15 +200,15 @@ void main() {
       },
     );
 
-    test('should only subscribe to signals listened to', () {
+    test("should only subscribe to signals listened to", () {
       //    *A
       //   /   \
       // *B     C <- we don't listen to C
       final a = signal("a");
 
-      final b = computed(() => a());
-      final spy = MockFunction(() => a());
-      computed(() => spy());
+      final b = computed(a);
+      final spy = MockFunction(a);
+      computed(spy.call);
 
       expect(b(), equals("a"));
       expect(spy.hasNotBeenCalled, isTrue);
@@ -219,7 +218,7 @@ void main() {
       expect(spy.hasNotBeenCalled, isTrue);
     });
 
-    test('should only subscribe to signals listened to II', () {
+    test("should only subscribe to signals listened to II", () {
       // Here both "B" and "C" are active in the beginning, but
       // "B" becomes inactive later. At that point it should
       // not receive any updates anymore.
@@ -229,15 +228,15 @@ void main() {
       //  |
       // *C
       final a = signal("a");
-      final spyB = MockFunction(() => a());
-      final b = computed(() => spyB());
+      final spyB = MockFunction(a);
+      final b = computed(spyB.call);
 
-      final spyC = MockFunction(() => b());
-      final c = computed(() => spyC());
+      final spyC = MockFunction(b);
+      final c = computed(spyC.call);
 
-      final d = computed(() => a());
+      final d = computed(a);
 
-      String result = "";
+      var result = "";
       final unsub = effect(() {
         result = c();
       });
@@ -254,7 +253,7 @@ void main() {
       expect(d(), equals("aa"));
     });
 
-    test('should ensure subs update even if one dep unmarks it', () {
+    test("should ensure subs update even if one dep unmarks it", () {
       // In this scenario "C" always returns the same value. When "A"
       // changes, "B" will update, then "C" at which point its update
       // to "D" will be unmarked. But "D" must still update because
@@ -265,13 +264,13 @@ void main() {
       //   \   /
       //     D
       final a = signal("a");
-      final b = computed(() => a());
+      final b = computed(a);
       final c = computed(() {
         a();
         return "c";
       });
       final spy = MockFunction(() => "${b()} ${c()}");
-      final d = computed(() => spy());
+      final d = computed(spy.call);
 
       expect(d(), equals("a c"));
       spy.clear();
@@ -281,7 +280,7 @@ void main() {
       expect(spy(), equals("aa c"));
     });
 
-    test('should ensure subs update even if two deps unmark it', () {
+    test("should ensure subs update even if two deps unmark it", () {
       // In this scenario both "C" and "D" always return the same
       // value. But "E" must still update because "A" marked it.
       // If "E" isn't updated, then we have a bug.
@@ -291,7 +290,7 @@ void main() {
       //   \ | /
       //     E
       final a = signal("a");
-      final b = computed(() => a());
+      final b = computed(a);
       final c = computed(() {
         a();
         return "c";
@@ -301,7 +300,7 @@ void main() {
         return "d";
       });
       final spy = MockFunction(() => "${b()} ${c()} ${d()}");
-      final e = computed(() => spy());
+      final e = computed(spy.call);
 
       expect(e(), equals("a c d"));
       spy.clear();
@@ -311,9 +310,9 @@ void main() {
       expect(spy(), equals("aa c d"));
     });
 
-    test('should support lazy branches', () {
+    test("should support lazy branches", () {
       final a = signal(0);
-      final b = computed(() => a());
+      final b = computed(a);
       final c = computed(() => a() > 0 ? a() : b());
 
       expect(c(), equals(0));
@@ -324,7 +323,7 @@ void main() {
       expect(c(), equals(0));
     });
 
-    test('should not update a sub if all deps unmark it', () {
+    test("should not update a sub if all deps unmark it", () {
       // In this scenario "B" and "C" always return the same value. When "A"
       // changes, "D" should not update.
       //     A
@@ -342,7 +341,7 @@ void main() {
         return "c";
       });
       final spy = MockFunction(() => "${b()} ${c()}");
-      final d = computed(() => spy());
+      final d = computed(spy.call);
 
       expect(d(), equals("b c"));
       spy.clear();
@@ -353,31 +352,31 @@ void main() {
   });
 
   group("error handling", () {
-    test('should keep graph consistent on errors during activation', () {
+    test("should keep graph consistent on errors during activation", () {
       final a = signal(0);
       final b = computed(() {
         throw Exception("fail");
       });
-      final c = computed(() => a());
+      final c = computed(a);
 
-      expect(() => b(), throwsA(isA<Exception>()));
+      expect(b, throwsA(isA<Exception>()));
 
       a(1, true);
       expect(c(), equals(1));
     });
 
-    test('should keep graph consistent on errors in computeds', () {
+    test("should keep graph consistent on errors in computeds", () {
       final a = signal(0);
       final b = computed(() {
         if (a() == 1) throw Exception("fail");
         return a();
       });
-      final c = computed(() => b());
+      final c = computed(b);
 
       expect(c(), equals(0));
 
       a(1, true);
-      expect(() => b(), throwsA(isA<Exception>()));
+      expect(b, throwsA(isA<Exception>()));
 
       a(2, true);
       expect(c(), equals(2));

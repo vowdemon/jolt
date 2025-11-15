@@ -1,10 +1,10 @@
-import 'package:test/test.dart';
+import "package:test/test.dart";
 
-import 'common.dart';
+import "common.dart";
 
 void main() {
-  group('effectScope', () {
-    test('should not trigger after stop', () {
+  group("effectScope", () {
+    test("should not trigger after stop", () {
       final count = signal(1);
 
       var triggers = 0;
@@ -27,7 +27,7 @@ void main() {
       expect(triggers, 3);
     });
 
-    test('should dispose inner effects if created in an effect', () {
+    test("should dispose inner effects if created in an effect", () {
       final source = signal(1);
 
       var triggers = 0;
@@ -51,16 +51,14 @@ void main() {
   });
 
   test(
-      'should track signal updates in an inner scope when accessed by an outer effect',
+      "should track signal updates in an inner scope when accessed by an outer effect",
       () {
     final source = signal(1);
 
     var triggers = 0;
 
     effect(() {
-      effectScope(() {
-        source();
-      });
+      effectScope(source);
       triggers++;
     });
 

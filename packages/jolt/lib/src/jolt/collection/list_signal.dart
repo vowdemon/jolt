@@ -1,10 +1,10 @@
-import 'dart:collection';
-import 'dart:math' show Random;
+import "dart:collection";
+import "dart:math" show Random;
 
-import 'package:jolt/core.dart';
+import "package:jolt/core.dart";
 
-import '../base.dart';
-import '../signal.dart';
+import "package:jolt/src/jolt/base.dart";
+import "package:jolt/src/jolt/signal.dart";
 
 /// A mixin that provides reactive list functionality.
 ///
@@ -16,9 +16,7 @@ mixin ListSignalMixin<E>
   int get length => value.length;
 
   @override
-  List<R> cast<R>() {
-    return value.cast<R>();
-  }
+  List<R> cast<R>() => value.cast<R>();
 
   @override
   E get first => value.first;
@@ -33,97 +31,69 @@ mixin ListSignalMixin<E>
   Iterator<E> get iterator => value.iterator;
 
   @override
-  Iterable<E> where(bool Function(E element) test) {
-    return value.where(test);
-  }
+  Iterable<E> where(bool Function(E element) test) => value.where(test);
 
   @override
-  Iterable<T> whereType<T>() {
-    return value.whereType<T>();
-  }
+  Iterable<T> whereType<T>() => value.whereType<T>();
 
   @override
-  bool any(bool Function(E element) test) {
-    return value.any(test);
-  }
+  bool any(bool Function(E element) test) => value.any(test);
 
   @override
-  bool every(bool Function(E element) test) {
-    return value.every(test);
-  }
+  bool every(bool Function(E element) test) => value.every(test);
 
   @override
-  bool contains(Object? element) {
-    return value.contains(element);
-  }
+  bool contains(Object? element) => value.contains(element);
 
   @override
-  E firstWhere(bool Function(E element) test, {E Function()? orElse}) {
-    return value.firstWhere(test, orElse: orElse);
-  }
+  E firstWhere(bool Function(E element) test, {E Function()? orElse}) =>
+      value.firstWhere(test, orElse: orElse);
 
   @override
-  int indexOf(Object? element, [int start = 0]) {
-    return value.indexOf(element as E, start);
-  }
+  int indexOf(Object? element, [int start = 0]) =>
+      value.indexOf(element as E, start);
 
   @override
-  int indexWhere(bool Function(E element) test, [int start = 0]) {
-    return value.indexWhere(test, start);
-  }
+  int indexWhere(bool Function(E element) test, [int start = 0]) =>
+      value.indexWhere(test, start);
 
   @override
-  int lastIndexOf(Object? element, [int? start]) {
-    return value.lastIndexOf(element as E, start);
-  }
+  int lastIndexOf(Object? element, [int? start]) =>
+      value.lastIndexOf(element as E, start);
 
   @override
-  int lastIndexWhere(bool Function(E element) test, [int? start]) {
-    return value.lastIndexWhere(test, start);
-  }
+  int lastIndexWhere(bool Function(E element) test, [int? start]) =>
+      value.lastIndexWhere(test, start);
 
   @override
-  E lastWhere(bool Function(E element) test, {E Function()? orElse}) {
-    return value.lastWhere(test, orElse: orElse);
-  }
+  E lastWhere(bool Function(E element) test, {E Function()? orElse}) =>
+      value.lastWhere(test, orElse: orElse);
 
   @override
-  R fold<R>(R initialValue, R Function(R previousValue, E element) combine) {
-    return value.fold<R>(initialValue, combine);
-  }
+  R fold<R>(R initialValue, R Function(R previousValue, E element) combine) =>
+      value.fold<R>(initialValue, combine);
 
   @override
-  Iterable<E> followedBy(Iterable<E> other) {
-    return value.followedBy(other);
-  }
+  Iterable<E> followedBy(Iterable<E> other) => value.followedBy(other);
 
   @override
-  Iterable<E> getRange(int start, int end) {
-    return value.getRange(start, end);
-  }
+  Iterable<E> getRange(int start, int end) => value.getRange(start, end);
 
   @override
-  Map<int, E> asMap() {
-    return value.asMap();
-  }
+  Map<int, E> asMap() => value.asMap();
 
   @override
-  Iterable<R> expand<R>(Iterable<R> Function(E element) toElements) {
-    return value.expand<R>(toElements);
-  }
+  Iterable<R> expand<R>(Iterable<R> Function(E element) toElements) =>
+      value.expand<R>(toElements);
 
   @override
   Iterable<E> get reversed => value.reversed;
 
   @override
-  List<E> sublist(int start, [int? end]) {
-    return value.sublist(start, end);
-  }
+  List<E> sublist(int start, [int? end]) => value.sublist(start, end);
 
   @override
-  E elementAt(int index) {
-    return value.elementAt(index);
-  }
+  E elementAt(int index) => value.elementAt(index);
 
   @override
   void forEach(void Function(E element) action) {
@@ -131,54 +101,35 @@ mixin ListSignalMixin<E>
   }
 
   @override
-  String join([String separator = ""]) {
-    return value.join(separator);
-  }
+  String join([String separator = ""]) => value.join(separator);
 
   @override
-  Iterable<T> map<T>(T Function(E element) f) {
-    return value.map<T>(f);
-  }
+  Iterable<T> map<T>(T Function(E element) f) => value.map<T>(f);
 
   @override
-  E singleWhere(bool Function(E element) test, {E Function()? orElse}) {
-    return value.singleWhere(test, orElse: orElse);
-  }
+  E singleWhere(bool Function(E element) test, {E Function()? orElse}) =>
+      value.singleWhere(test, orElse: orElse);
 
   @override
-  E reduce(E Function(E value, E element) combine) {
-    return value.reduce(combine);
-  }
+  E reduce(E Function(E value, E element) combine) => value.reduce(combine);
 
   @override
-  Iterable<E> skip(int count) {
-    return value.skip(count);
-  }
+  Iterable<E> skip(int count) => value.skip(count);
 
   @override
-  Iterable<E> skipWhile(bool Function(E value) test) {
-    return value.skipWhile(test);
-  }
+  Iterable<E> skipWhile(bool Function(E value) test) => value.skipWhile(test);
 
   @override
-  Iterable<E> take(int count) {
-    return value.take(count);
-  }
+  Iterable<E> take(int count) => value.take(count);
 
   @override
-  Iterable<E> takeWhile(bool Function(E value) test) {
-    return value.takeWhile(test);
-  }
+  Iterable<E> takeWhile(bool Function(E value) test) => value.takeWhile(test);
 
   @override
-  List<E> toList({bool growable = true}) {
-    return value.toList(growable: growable);
-  }
+  List<E> toList({bool growable = true}) => value.toList(growable: growable);
 
   @override
-  Set<E> toSet() {
-    return value.toSet();
-  }
+  Set<E> toSet() => value.toSet();
 
   @override
   bool get isEmpty => value.isEmpty;
@@ -205,9 +156,7 @@ mixin ListSignalMixin<E>
   }
 
   @override
-  List<E> operator +(List<E> other) {
-    return value + other;
-  }
+  List<E> operator +(List<E> other) => value + other;
 
   @override
   E operator [](int index) => value[index];
@@ -324,11 +273,13 @@ mixin ListSignalMixin<E>
   }
 }
 
-/// A reactive list that automatically notifies subscribers when modified.
+/// Implementation of [ListSignal] that automatically notifies subscribers when modified.
 ///
-/// ListSignal extends Signal to provide full List functionality while
-/// maintaining reactivity. All list operations (add, remove, etc.) will
-/// trigger notifications to subscribers.
+/// This is the concrete implementation of the [ListSignal] interface. ListSignal
+/// extends Signal to provide full List functionality while maintaining reactivity.
+/// All list operations (add, remove, etc.) will trigger notifications to subscribers.
+///
+/// See [ListSignal] for the public interface and usage examples.
 ///
 /// Example:
 /// ```dart
@@ -364,6 +315,19 @@ class ListSignalImpl<E> extends SignalImpl<List<E>>
   ListSignalImpl(List<E>? value, {super.onDebug}) : super(value ?? []);
 }
 
+/// Interface for reactive list signals.
+///
+/// ListSignal extends Signal to provide full List functionality while
+/// maintaining reactivity. All list operations (add, remove, etc.) will
+/// trigger notifications to subscribers.
+///
+/// Example:
+/// ```dart
+/// ListSignal<String> items = ListSignal(['apple', 'banana']);
+///
+/// Effect(() => print('Items: ${items.join(', ')}'));
+/// items.add('cherry'); // Triggers effect
+/// ```
 abstract interface class ListSignal<E>
     implements Signal<List<E>>, ListSignalMixin<E> {
   /// Creates a reactive list signal with the given initial list.

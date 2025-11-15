@@ -1,6 +1,5 @@
-import 'package:meta/meta.dart';
-
-import 'reactive.dart';
+import "package:jolt/src/core/reactive.dart";
+import "package:meta/meta.dart";
 
 /// Types of operations that can be debugged in the reactive system.
 ///
@@ -49,25 +48,23 @@ typedef JoltDebugFn = void Function(
 final joltDebugFns = Expando<JoltDebugFn>();
 
 @internal
-@pragma('vm:prefer-inline')
-@pragma('wasm:prefer-inline')
-@pragma('dart2js:prefer-inline')
+@pragma("vm:prefer-inline")
+@pragma("wasm:prefer-inline")
+@pragma("dart2js:prefer-inline")
 void setJoltDebugFn(Object target, JoltDebugFn fn) {
   joltDebugFns[target] = fn;
 }
 
 @internal
-@pragma('vm:prefer-inline')
-@pragma('wasm:prefer-inline')
-@pragma('dart2js:prefer-inline')
-JoltDebugFn? getJoltDebugFn(Object target) {
-  return joltDebugFns[target];
-}
+@pragma("vm:prefer-inline")
+@pragma("wasm:prefer-inline")
+@pragma("dart2js:prefer-inline")
+JoltDebugFn? getJoltDebugFn(Object target) => joltDebugFns[target];
 
 abstract final class JoltDebug {
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
   static void create(ReactiveNode target, JoltDebugFn? fn) {
     assert(() {
       if (fn != null) {
@@ -75,76 +72,76 @@ abstract final class JoltDebug {
         fn(DebugNodeOperationType.create, target);
       }
       return true;
-    }());
+    }(), "");
   }
 
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
   static void dispose(ReactiveNode target) {
     assert(() {
       getJoltDebugFn(target)?.call(DebugNodeOperationType.dispose, target);
       return true;
-    }());
+    }(), "");
   }
 
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
   static void linked(ReactiveNode target) {
     assert(() {
       getJoltDebugFn(target)?.call(DebugNodeOperationType.linked, target);
       return true;
-    }());
+    }(), "");
   }
 
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
   static void unlinked(ReactiveNode target) {
     assert(() {
       getJoltDebugFn(target)?.call(DebugNodeOperationType.unlinked, target);
       return true;
-    }());
+    }(), "");
   }
 
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
   static void get(ReactiveNode target) {
     assert(() {
       getJoltDebugFn(target)?.call(DebugNodeOperationType.get, target);
       return true;
-    }());
+    }(), "");
   }
 
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
   static void set(ReactiveNode target) {
     assert(() {
       getJoltDebugFn(target)?.call(DebugNodeOperationType.set, target);
       return true;
-    }());
+    }(), "");
   }
 
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
   static void notify(ReactiveNode target) {
     assert(() {
       getJoltDebugFn(target)?.call(DebugNodeOperationType.notify, target);
       return true;
-    }());
+    }(), "");
   }
 
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
   static void effect(ReactiveNode target) {
     assert(() {
       getJoltDebugFn(target)?.call(DebugNodeOperationType.effect, target);
       return true;
-    }());
+    }(), "");
   }
 }

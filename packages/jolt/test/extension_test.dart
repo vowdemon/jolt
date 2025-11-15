@@ -1,23 +1,23 @@
-import 'package:jolt/jolt.dart';
-import 'package:test/test.dart';
-import 'utils.dart';
+import "package:jolt/jolt.dart";
+import "package:test/test.dart";
+import "utils.dart";
 
 void main() {
-  group('Extension methods', () {
-    group('JoltObjectExtension', () {
-      test('should convert any object to signal', () {
-        final value = 42;
+  group("Extension methods", () {
+    group("JoltObjectExtension", () {
+      test("should convert any object to signal", () {
+        const value = 42;
         final signal = value.toSignal();
 
         expect(signal, isA<Signal<int>>());
         expect(signal.value, equals(42));
       });
 
-      test('should work with different data types', () {
+      test("should work with different data types", () {
         // String
-        final stringValue = 'hello';
+        const stringValue = "hello";
         final stringSignal = stringValue.toSignal();
-        expect(stringSignal.value, equals('hello'));
+        expect(stringSignal.value, equals("hello"));
 
         // List
         final listValue = [1, 2, 3];
@@ -25,9 +25,9 @@ void main() {
         expect(listSignal.value, equals([1, 2, 3]));
 
         // Map
-        final mapValue = {'a': 1, 'b': 2};
+        final mapValue = {"a": 1, "b": 2};
         final mapSignal = mapValue.toSignal();
-        expect(mapSignal.value, equals({'a': 1, 'b': 2}));
+        expect(mapSignal.value, equals({"a": 1, "b": 2}));
 
         // Set
         final setValue = {1, 2, 3};
@@ -35,21 +35,21 @@ void main() {
         expect(setSignal.value, equals({1, 2, 3}));
 
         // Nullable
-        final Null nullableValue = null;
+        const Null nullableValue = null;
         final nullableSignal = nullableValue.toSignal();
         expect(nullableSignal.value, isNull);
       });
 
-      test('should work with custom objects', () {
-        final person = TestPerson('Alice', 30);
+      test("should work with custom objects", () {
+        final person = TestPerson("Alice", 30);
         final personSignal = person.toSignal();
 
-        expect(personSignal.value, equals(TestPerson('Alice', 30)));
+        expect(personSignal.value, equals(TestPerson("Alice", 30)));
       });
     });
 
-    group('JoltListExtension', () {
-      test('should convert list to list signal', () {
+    group("JoltListExtension", () {
+      test("should convert list to list signal", () {
         final list = [1, 2, 3];
         final listSignal = list.toListSignal();
 
@@ -57,11 +57,11 @@ void main() {
         expect(listSignal.value, equals([1, 2, 3]));
       });
 
-      test('should work with different list types', () {
+      test("should work with different list types", () {
         // String list
-        final stringList = ['hello', 'world'];
+        final stringList = ["hello", "world"];
         final stringListSignal = stringList.toListSignal();
-        expect(stringListSignal.value, equals(['hello', 'world']));
+        expect(stringListSignal.value, equals(["hello", "world"]));
 
         // Nullable list
         final nullableList = [1, null, 3];
@@ -74,20 +74,20 @@ void main() {
         expect(emptyListSignal.value, equals([]));
       });
 
-      test('should work with custom objects', () {
-        final personList = [TestPerson('Alice', 30), TestPerson('Bob', 25)];
+      test("should work with custom objects", () {
+        final personList = [TestPerson("Alice", 30), TestPerson("Bob", 25)];
         final personListSignal = personList.toListSignal();
 
         expect(
           personListSignal.value,
-          equals([TestPerson('Alice', 30), TestPerson('Bob', 25)]),
+          equals([TestPerson("Alice", 30), TestPerson("Bob", 25)]),
         );
       });
 
-      test('should be reactive', () {
+      test("should be reactive", () {
         final list = [1, 2, 3];
         final listSignal = list.toListSignal();
-        final List<List<int>> values = [];
+        final values = <List<int>>[];
 
         Effect(() {
           values.add(List.from(listSignal.value));
@@ -111,25 +111,25 @@ void main() {
       });
     });
 
-    group('JoltMapExtension', () {
-      test('should convert map to map signal', () {
-        final map = {'a': 1, 'b': 2};
+    group("JoltMapExtension", () {
+      test("should convert map to map signal", () {
+        final map = {"a": 1, "b": 2};
         final mapSignal = map.toMapSignal();
 
         expect(mapSignal, isA<MapSignal<String, int>>());
-        expect(mapSignal.value, equals({'a': 1, 'b': 2}));
+        expect(mapSignal.value, equals({"a": 1, "b": 2}));
       });
 
-      test('should work with different map types', () {
+      test("should work with different map types", () {
         // Int key map
-        final intMap = {1: 'one', 2: 'two'};
+        final intMap = {1: "one", 2: "two"};
         final intMapSignal = intMap.toMapSignal();
-        expect(intMapSignal.value, equals({1: 'one', 2: 'two'}));
+        expect(intMapSignal.value, equals({1: "one", 2: "two"}));
 
         // Nullable value map
-        final nullableMap = {'a': 1, 'b': null};
+        final nullableMap = {"a": 1, "b": null};
         final nullableMapSignal = nullableMap.toMapSignal();
-        expect(nullableMapSignal.value, equals({'a': 1, 'b': null}));
+        expect(nullableMapSignal.value, equals({"a": 1, "b": null}));
 
         // Empty map
         final emptyMap = <String, int>{};
@@ -137,26 +137,26 @@ void main() {
         expect(emptyMapSignal.value, equals({}));
       });
 
-      test('should work with custom objects', () {
+      test("should work with custom objects", () {
         final personMap = {
-          'alice': TestPerson('Alice', 30),
-          'bob': TestPerson('Bob', 25),
+          "alice": TestPerson("Alice", 30),
+          "bob": TestPerson("Bob", 25),
         };
         final personMapSignal = personMap.toMapSignal();
 
         expect(
           personMapSignal.value,
           equals({
-            'alice': TestPerson('Alice', 30),
-            'bob': TestPerson('Bob', 25),
+            "alice": TestPerson("Alice", 30),
+            "bob": TestPerson("Bob", 25),
           }),
         );
       });
 
-      test('should be reactive', () {
-        final map = {'a': 1};
+      test("should be reactive", () {
+        final map = {"a": 1};
         final mapSignal = map.toMapSignal();
-        final List<Map<String, int>> values = [];
+        final values = <Map<String, int>>[];
 
         Effect(() {
           values.add(Map.from(mapSignal.value));
@@ -165,23 +165,23 @@ void main() {
         expect(
           values,
           equals([
-            {'a': 1},
+            {"a": 1},
           ]),
         );
 
-        mapSignal['b'] = 2;
+        mapSignal["b"] = 2;
         expect(
           values,
           equals([
-            {'a': 1},
-            {'a': 1, 'b': 2},
+            {"a": 1},
+            {"a": 1, "b": 2},
           ]),
         );
       });
     });
 
-    group('JoltSetExtension', () {
-      test('should convert set to set signal', () {
+    group("JoltSetExtension", () {
+      test("should convert set to set signal", () {
         final set = {1, 2, 3};
         final setSignal = set.toSetSignal();
 
@@ -189,11 +189,11 @@ void main() {
         expect(setSignal.value, equals({1, 2, 3}));
       });
 
-      test('should work with different set types', () {
+      test("should work with different set types", () {
         // String set
-        final stringSet = {'hello', 'world'};
+        final stringSet = {"hello", "world"};
         final stringSetSignal = stringSet.toSetSignal();
-        expect(stringSetSignal.value, equals({'hello', 'world'}));
+        expect(stringSetSignal.value, equals({"hello", "world"}));
 
         // Nullable set
         final nullableSet = {1, null, 3};
@@ -206,20 +206,20 @@ void main() {
         expect(emptySetSignal.value, equals(<int>{}));
       });
 
-      test('should work with custom objects', () {
-        final personSet = {TestPerson('Alice', 30), TestPerson('Bob', 25)};
+      test("should work with custom objects", () {
+        final personSet = {TestPerson("Alice", 30), TestPerson("Bob", 25)};
         final personSetSignal = personSet.toSetSignal();
 
         expect(
           personSetSignal.value,
-          equals({TestPerson('Alice', 30), TestPerson('Bob', 25)}),
+          equals({TestPerson("Alice", 30), TestPerson("Bob", 25)}),
         );
       });
 
-      test('should be reactive', () {
+      test("should be reactive", () {
         final set = {1, 2};
         final setSignal = set.toSetSignal();
-        final List<Set<int>> values = [];
+        final values = <Set<int>>[];
 
         Effect(() {
           values.add(Set.from(setSignal.value));
@@ -243,8 +243,8 @@ void main() {
       });
     });
 
-    group('JoltIterableExtension', () {
-      test('should convert iterable to iterable signal', () {
+    group("JoltIterableExtension", () {
+      test("should convert iterable to iterable signal", () {
         final iterable = [1, 2, 3];
         final iterableSignal = iterable.toIterableSignal();
 
@@ -252,20 +252,20 @@ void main() {
         expect(iterableSignal.value, equals([1, 2, 3]));
       });
 
-      test('should work with different iterable types', () {
+      test("should work with different iterable types", () {
         // Set iterable
         final setIterable = {1, 2, 3};
         final setIterableSignal = setIterable.toIterableSignal();
         expect(setIterableSignal.value, equals({1, 2, 3}));
 
         // Map values iterable
-        final map = {'a': 1, 'b': 2};
+        final map = {"a": 1, "b": 2};
         final mapValuesIterableSignal = map.values.toIterableSignal();
         expect(mapValuesIterableSignal.value, equals([1, 2]));
 
         // Map keys iterable
         final mapKeysIterableSignal = map.keys.toIterableSignal();
-        expect(mapKeysIterableSignal.value, equals(['a', 'b']));
+        expect(mapKeysIterableSignal.value, equals(["a", "b"]));
 
         // Empty iterable
         final emptyIterable = <int>[];
@@ -273,20 +273,20 @@ void main() {
         expect(emptyIterableSignal.value, equals([]));
       });
 
-      test('should work with custom objects', () {
-        final personIterable = [TestPerson('Alice', 30), TestPerson('Bob', 25)];
+      test("should work with custom objects", () {
+        final personIterable = [TestPerson("Alice", 30), TestPerson("Bob", 25)];
         final personIterableSignal = personIterable.toIterableSignal();
 
         expect(
           personIterableSignal.value,
-          equals([TestPerson('Alice', 30), TestPerson('Bob', 25)]),
+          equals([TestPerson("Alice", 30), TestPerson("Bob", 25)]),
         );
       });
 
-      test('should be reactive', () {
+      test("should be reactive", () {
         final iterable = [1, 2, 3];
         final iterableSignal = iterable.toIterableSignal();
-        final List<Iterable<int>> values = [];
+        final values = <Iterable<int>>[];
 
         Effect(() {
           values.add(iterableSignal.value);
@@ -301,8 +301,8 @@ void main() {
       });
     });
 
-    group('JoltFutureExtension', () {
-      test('should convert future to async signal', () async {
+    group("JoltFutureExtension", () {
+      test("should convert future to async signal", () async {
         final future = Future.value(42);
         final futureSignal = future.toAsyncSignal();
 
@@ -315,13 +315,13 @@ void main() {
         expect(futureSignal.data, equals(42));
       });
 
-      test('should work with different future types', () async {
+      test("should work with different future types", () async {
         // String future
-        final stringFuture = Future.value('hello');
+        final stringFuture = Future.value("hello");
         final stringFutureSignal = stringFuture.toAsyncSignal();
 
         await Future.delayed(const Duration(milliseconds: 1));
-        expect(stringFutureSignal.data, equals('hello'));
+        expect(stringFutureSignal.data, equals("hello"));
 
         // List future
         final listFuture = Future.value([1, 2, 3]);
@@ -338,8 +338,8 @@ void main() {
         expect(nullableFutureSignal.data, isNull);
       });
 
-      test('should handle future errors', () async {
-        final errorFuture = Future<int>.error(Exception('Test error'));
+      test("should handle future errors", () async {
+        final errorFuture = Future<int>.error(Exception("Test error"));
         final errorFutureSignal = errorFuture.toAsyncSignal();
 
         expect(errorFutureSignal.value, isA<AsyncLoading<int>>());
@@ -351,17 +351,17 @@ void main() {
         expect(errorFutureSignal.value.error, isA<Exception>());
       });
 
-      test('should work with custom objects', () async {
-        final personFuture = Future.value(TestPerson('Alice', 30));
+      test("should work with custom objects", () async {
+        final personFuture = Future.value(TestPerson("Alice", 30));
         final personFutureSignal = personFuture.toAsyncSignal();
 
         await Future.delayed(const Duration(milliseconds: 1));
-        expect(personFutureSignal.data, equals(TestPerson('Alice', 30)));
+        expect(personFutureSignal.data, equals(TestPerson("Alice", 30)));
       });
     });
 
-    group('JoltStreamExtension', () {
-      test('should convert stream to async signal', () async {
+    group("JoltStreamExtension", () {
+      test("should convert stream to async signal", () async {
         final stream = Stream.value(42);
         final streamSignal = stream.toStreamSignal();
 
@@ -374,13 +374,13 @@ void main() {
         expect(streamSignal.data, equals(42));
       });
 
-      test('should work with different stream types', () async {
+      test("should work with different stream types", () async {
         // String stream
-        final stringStream = Stream.value('hello');
+        final stringStream = Stream.value("hello");
         final stringStreamSignal = stringStream.toStreamSignal();
 
         await Future.delayed(const Duration(milliseconds: 1));
-        expect(stringStreamSignal.data, equals('hello'));
+        expect(stringStreamSignal.data, equals("hello"));
 
         // List stream
         final listStream = Stream.value([1, 2, 3]);
@@ -397,8 +397,8 @@ void main() {
         expect(nullableStreamSignal.data, isNull);
       });
 
-      test('should handle stream errors', () async {
-        final errorStream = Stream<int>.error(Exception('Test error'));
+      test("should handle stream errors", () async {
+        final errorStream = Stream<int>.error(Exception("Test error"));
         final errorStreamSignal = errorStream.toStreamSignal();
 
         expect(errorStreamSignal.value, isA<AsyncLoading<int>>());
@@ -410,10 +410,10 @@ void main() {
         expect(errorStreamSignal.value.error, isA<Exception>());
       });
 
-      test('should handle multiple stream values', () async {
-        final stream = Stream.fromIterable(['hello', 'world']);
+      test("should handle multiple stream values", () async {
+        final stream = Stream.fromIterable(["hello", "world"]);
         final streamSignal = stream.toStreamSignal();
-        final List<String> values = [];
+        final values = <String>[];
 
         streamSignal.listen((state) {
           if (state.isSuccess) {
@@ -424,21 +424,21 @@ void main() {
         await Future.delayed(const Duration(milliseconds: 10));
 
         expect(values.length, greaterThanOrEqualTo(2));
-        expect(values, contains('hello'));
-        expect(values, contains('world'));
+        expect(values, contains("hello"));
+        expect(values, contains("world"));
       });
 
-      test('should work with custom objects', () async {
-        final personStream = Stream.value(TestPerson('Alice', 30));
+      test("should work with custom objects", () async {
+        final personStream = Stream.value(TestPerson("Alice", 30));
         final personStreamSignal = personStream.toStreamSignal();
 
         await Future.delayed(const Duration(milliseconds: 1));
-        expect(personStreamSignal.data, equals(TestPerson('Alice', 30)));
+        expect(personStreamSignal.data, equals(TestPerson("Alice", 30)));
       });
     });
 
-    group('Extension integration tests', () {
-      test('should work with computed', () {
+    group("Extension integration tests", () {
+      test("should work with computed", () {
         final list = [1, 2, 3];
         final listSignal = list.toListSignal();
         final computed = Computed<int>(
@@ -451,10 +451,10 @@ void main() {
         expect(computed.value, equals(10));
       });
 
-      test('should work with effect', () {
-        final map = {'a': 1};
+      test("should work with effect", () {
+        final map = {"a": 1};
         final mapSignal = map.toMapSignal();
-        final List<Map<String, int>> values = [];
+        final values = <Map<String, int>>[];
 
         Effect(() {
           values.add(Map.from(mapSignal.value));
@@ -463,24 +463,24 @@ void main() {
         expect(
           values,
           equals([
-            {'a': 1},
+            {"a": 1},
           ]),
         );
 
-        mapSignal['b'] = 2;
+        mapSignal["b"] = 2;
         expect(
           values,
           equals([
-            {'a': 1},
-            {'a': 1, 'b': 2},
+            {"a": 1},
+            {"a": 1, "b": 2},
           ]),
         );
       });
 
-      test('should work with batch updates', () {
+      test("should work with batch updates", () {
         final set = {1, 2};
         final setSignal = set.toSetSignal();
-        final List<Set<int>> values = [];
+        final values = <Set<int>>[];
 
         Effect(() {
           values.add(Set.from(setSignal.value));
@@ -494,9 +494,10 @@ void main() {
         );
 
         batch(() {
-          setSignal.add(3);
-          setSignal.add(4);
-          setSignal.remove(1);
+          setSignal
+            ..add(3)
+            ..add(4)
+            ..remove(1);
         });
 
         // 批处理中只应该触发一次更新
@@ -509,29 +510,29 @@ void main() {
         );
       });
 
-      test('should work with async operations', () async {
+      test("should work with async operations", () async {
         final future = Future.value(42);
         final futureSignal = future.toAsyncSignal();
-        final List<String> states = [];
+        final states = <String>[];
 
         Effect(() {
           final state = futureSignal.value.map(
-                loading: () => 'loading',
-                success: (data) => 'success: $data',
-                error: (error, stackTrace) => 'error: $error',
+                loading: () => "loading",
+                success: (data) => "success: $data",
+                error: (error, stackTrace) => "error: $error",
               ) ??
-              'unknown';
+              "unknown";
           states.add(state);
         });
 
-        expect(states, equals(['loading']));
+        expect(states, equals(["loading"]));
 
         await Future.delayed(const Duration(milliseconds: 1));
 
-        expect(states, equals(['loading', 'success: 42']));
+        expect(states, equals(["loading", "success: 42"]));
       });
 
-      test('should not work with chained extensions', () {
+      test("should not work with chained extensions", () {
         final list = [1, 2, 3];
         final listSignal = list.toListSignal();
         final computed = Computed<int>(

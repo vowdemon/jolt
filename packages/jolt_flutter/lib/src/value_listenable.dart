@@ -77,6 +77,7 @@ class _ValueListenableSignal<T> extends SignalImpl<T> {
 
   @override
   T set(T value) {
-    throw UnimplementedError();
+    throw UnimplementedError(
+        "ValueListenableSignal is read-only, cannot set value");
   }
 }

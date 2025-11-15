@@ -19,6 +19,6 @@
 /// ```
 library;
 
-export 'src/core/reactive.dart';
-export 'src/core/debug.dart' show JoltDebugFn, JoltDebug;
-export 'src/jolt/shared.dart' show JFinalizer;
+export "src/core/debug.dart" show JoltDebug, JoltDebugFn;
+export "src/core/reactive.dart";
+export "src/jolt/shared.dart" show JFinalizer;

@@ -50,50 +50,6 @@ void main() {
       expect(scopeNode!.debugLabel, 'Scope');
     });
 
-    testWidgets('useAutoFocus auto-focuses', (tester) async {
-      FocusNode? focusNode;
-
-      await tester.pumpWidget(MaterialApp(
-        home: Scaffold(
-          body: SetupBuilder(setup: (context) {
-            focusNode = useFocusNode();
-            useAutoFocus(focusNode!);
-            return (context) => TextField(focusNode: focusNode);
-          }),
-        ),
-      ));
-
-      await tester.pump();
-
-      expect(focusNode!.hasFocus, isTrue);
-    });
-
-    testWidgets('useFocusState responds to focus changes', (tester) async {
-      await tester.pumpWidget(MaterialApp(
-        home: Scaffold(
-          body: SetupBuilder(setup: (context) {
-            final focusNode = useFocusNode();
-            final hasFocus = useFocusState(focusNode);
-
-            return (context) => TextField(
-                  focusNode: focusNode,
-                  decoration: InputDecoration(
-                    labelText: hasFocus.value ? 'Focused' : 'Unfocused',
-                  ),
-                );
-          }),
-        ),
-      ));
-
-      expect(find.text('Unfocused'), findsOneWidget);
-
-      // Tap TextField to gain focus
-      await tester.tap(find.byType(TextField));
-      await tester.pump();
-
-      expect(find.text('Focused'), findsOneWidget);
-    });
-
     testWidgets('multiple FocusNodes managed independently', (tester) async {
       FocusNode? node1;
       FocusNode? node2;
@@ -110,25 +66,6 @@ void main() {
       expect(node1!.debugLabel, 'Node 1');
       expect(node2!.debugLabel, 'Node 2');
       expect(node1, isNot(equals(node2)));
-    });
-
-    testWidgets('useFocusState cleans up listeners', (tester) async {
-      await tester.pumpWidget(MaterialApp(
-        home: Scaffold(
-          body: SetupBuilder(setup: (context) {
-            final focusNode = useFocusNode();
-            useFocusState(focusNode);
-
-            return (context) => TextField(focusNode: focusNode);
-          }),
-        ),
-      ));
-
-      // Unmount widget
-      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
-
-      // Should have no exception (listeners cleaned up)
-      expect(tester.takeException(), isNull);
     });
   });
 }

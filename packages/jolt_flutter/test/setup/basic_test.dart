@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jolt_flutter/jolt_flutter.dart';
 import 'package:jolt_flutter/setup.dart';
 
 void main() {
   group('JoltSetupWidget Basic Functionality', () {
-    testWidgets('creates and renders', (tester) async {
+    testWidgets('create setup only once', (tester) async {
+      int setupCount = 0;
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
+          setupCount++;
           return (context) => Column(children: const [
                 Text('Title: Test'),
                 Text('Count: 42'),
@@ -16,6 +19,22 @@ void main() {
 
       expect(find.text('Title: Test'), findsOneWidget);
       expect(find.text('Count: 42'), findsOneWidget);
+      expect(setupCount, 1);
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          setupCount++;
+
+          return (context) => Column(children: const [
+                Text('Title: Test2'),
+                Text('Count: 43'),
+              ]);
+        }),
+      ));
+
+      expect(find.text('Title: Test'), findsOneWidget);
+      expect(find.text('Count: 42'), findsOneWidget);
+      expect(setupCount, 1);
     });
 
     testWidgets('onMounted lifecycle', (tester) async {
@@ -51,21 +70,88 @@ void main() {
 
     testWidgets('onUpdated lifecycle', (tester) async {
       int updateCount = 0;
+      int rebuildCount = 0;
 
       Widget buildWidget(String title) => MaterialApp(
             home: SetupBuilder(setup: (context) {
               onUpdated(() => updateCount++);
-              return (context) => Text(title);
+              return (context) {
+                rebuildCount++;
+                return Text(title);
+              };
             }),
           );
 
       await tester.pumpWidget(buildWidget('Initial'));
       await tester.pumpAndSettle();
       expect(updateCount, 0);
+      expect(rebuildCount, 1);
 
       await tester.pumpWidget(buildWidget('Updated'));
       await tester.pumpAndSettle();
       expect(updateCount, 1);
+      expect(rebuildCount, 2);
+    });
+
+    testWidgets('onUpdated lifecycle by parent widget update', (tester) async {
+      int updateCount = 0;
+      int rebuildCount = 0;
+
+      final theme = ThemeData.dark().toSignal();
+
+      await tester.pumpWidget(JoltBuilder(builder: (context) {
+        return MaterialApp(
+          theme: theme.value,
+          home: Builder(builder: (context) {
+            return SetupBuilder(setup: (context) {
+              onUpdated(() => updateCount++);
+              return (context) {
+                rebuildCount++;
+                return const Text('Test');
+              };
+            });
+          }),
+        );
+      }));
+
+      expect(rebuildCount, 1);
+      expect(updateCount, 0);
+
+      theme.value = ThemeData.light();
+      await tester.pumpAndSettle();
+
+      expect(rebuildCount, 2);
+      expect(updateCount, 1);
+    });
+
+    testWidgets('onChangedDependencies lifecycle', (tester) async {
+      int rebuildCount = 0;
+      int changedCount = 0;
+      final toTestWidget = SetupBuilder(setup: (context) {
+        CounterInherited.of(context);
+        onChangedDependencies(() => changedCount++);
+        return (context) {
+          rebuildCount++;
+          return const Text('Test');
+        };
+      });
+      await tester.pumpWidget(MaterialApp(
+        home: CounterInherited(
+          value: 1,
+          child: toTestWidget,
+        ),
+      ));
+      expect(rebuildCount, 1);
+      expect(changedCount, 0);
+
+      await tester.pumpWidget(MaterialApp(
+        home: CounterInherited(
+          value: 2,
+          child: toTestWidget,
+        ),
+      ));
+      expect(rebuildCount, 2);
+      expect(changedCount, 1);
     });
 
     testWidgets('useContext retrieves correctly', (tester) async {
@@ -164,5 +250,23 @@ class _PropsWidget extends JoltSetupWidget {
           Text('Title: ${props.value.title}'),
           Text('Count: ${props.value.count}'),
         ]);
+  }
+}
+
+class CounterInherited extends InheritedWidget {
+  final int value;
+  const CounterInherited({
+    super.key,
+    required this.value,
+    required super.child,
+  });
+
+  @override
+  bool updateShouldNotify(covariant CounterInherited oldWidget) {
+    return oldWidget.value != value;
+  }
+
+  static CounterInherited of(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<CounterInherited>()!;
   }
 }

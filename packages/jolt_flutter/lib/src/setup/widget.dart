@@ -1,6 +1,5 @@
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
-import 'package:jolt/core.dart';
 import 'package:jolt/jolt.dart';
 import 'package:shared_interfaces/shared_interfaces.dart';
 
@@ -102,14 +101,16 @@ class JoltSetupWidgetElement<T extends JoltSetupWidget>
     for (var callback in setupContext._onUpdatedCallbacks) {
       callback();
     }
+
+    rebuild(force: true);
   }
 
   @override
   void didChangeDependencies() {
-    super.didChangeDependencies();
     for (var callback in setupContext._onChangedDependenciesCallbacks) {
       callback();
     }
+    super.didChangeDependencies();
   }
 
   @override
@@ -122,8 +123,8 @@ class JoltSetupWidgetElement<T extends JoltSetupWidget>
       return true;
     }());
 
-    return trackWith(() => setupContext.setupBuilder!(this),
-        setupContext.renderer as ReactiveNode);
+    return trackWithEffect(
+        () => setupContext.setupBuilder!(this), setupContext.renderer!);
   }
 }
 
@@ -207,9 +208,11 @@ abstract final class HookUtils {
 final onMounted = HookUtils.onMounted;
 final onUnmounted = HookUtils.onUnmounted;
 final onUpdated = HookUtils.onUpdated;
+final onChangedDependencies = HookUtils.onChangedDependencies;
 final useContext = HookUtils.useContext;
 final useSetupContext = HookUtils.useSetupContext;
 final useWidgetProps = HookUtils.useWidgetProps;
+final useHook = HookUtils.use;
 
 class JoltSetupContext extends EffectScopeImpl {
   JoltSetupContext(this.element)

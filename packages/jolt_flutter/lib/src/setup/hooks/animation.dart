@@ -12,7 +12,7 @@ TickerProvider useSingleTickerProvider() {
   final provider = _SingleTickerProvider(context);
 
   onMounted(provider._init);
-  onUpdated(provider._update);
+  onChangedDependencies(provider._update);
   onUnmounted(provider._dispose);
 
   return provider;

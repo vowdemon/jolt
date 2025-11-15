@@ -1,5 +1,4 @@
 import 'package:flutter/widgets.dart';
-import 'package:jolt/jolt.dart';
 
 import '../widget.dart';
 
@@ -53,25 +52,4 @@ FocusScopeNode useFocusScopeNode({
   onUnmounted(scopeNode.dispose);
 
   return scopeNode;
-}
-
-/// Listens to the focus state of a focus node
-///
-/// Returns a reactive Signal indicating whether the node has focus
-ReadonlySignal<bool> useFocusState(FocusNode focusNode) {
-  final hasFocus = Signal(focusNode.hasFocus);
-
-  void listener() => hasFocus.value = focusNode.hasFocus;
-
-  onMounted(() => focusNode.addListener(listener));
-  onUnmounted(() => focusNode.removeListener(listener));
-
-  return hasFocus.readonly();
-}
-
-/// Automatically requests focus
-///
-/// Requests focus automatically after the component is mounted
-void useAutoFocus(FocusNode focusNode) {
-  onMounted(() => focusNode.requestFocus());
 }

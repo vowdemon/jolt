@@ -1,4 +1,5 @@
 import "package:jolt/core.dart";
+import 'package:jolt/jolt.dart';
 
 /// Executes a function without tracking reactive dependencies.
 ///
@@ -38,7 +39,7 @@ T untracked<T>(T Function() fn) {
   }
 }
 
-/// Executes a function with a specific reactive node as the active subscriber.
+/// Executes a function with a specific effect node as the active subscriber.
 ///
 /// This function temporarily sets the given reactive node as the active subscriber,
 /// allowing it to track dependencies accessed within the function. This is useful
@@ -46,13 +47,14 @@ T untracked<T>(T Function() fn) {
 ///
 /// Parameters:
 /// - [fn]: Function to execute with the specified subscriber
-/// - [sub]: The reactive node to use as the active subscriber
+/// - [sub]: The effect node to use as the active subscriber
+/// - [purge]: Whether to purge dependencies after execution
 ///
 /// Returns: The result of the function execution
 ///
 /// Example:
 /// ```dart
-/// final customNode = ReactiveNode(flags: ReactiveFlags.mutable);
+/// final customNode = EffectNode();
 /// final result = trackWith(() {
 ///   return signal.value; // Tracked by customNode
 /// }, customNode);
@@ -60,12 +62,21 @@ T untracked<T>(T Function() fn) {
 @pragma("vm:prefer-inline")
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
-T trackWith<T>(T Function() fn, ReactiveNode sub) {
-  final prevSub = setActiveSub(sub);
+T trackWithEffect<T>(T Function() fn, EffectNode sub, [bool purge = true]) {
+  final effectNode = sub as ReactiveNode;
+  if (purge) {
+    ++cycle;
+    effectNode.depsTail = null;
+  }
+  final prevSub = setActiveSub(effectNode);
   try {
     return fn();
   } finally {
     setActiveSub(prevSub);
+    if (purge) {
+      effectNode.flags = ReactiveFlags.watching;
+      purgeDeps(effectNode);
+    }
   }
 }
 

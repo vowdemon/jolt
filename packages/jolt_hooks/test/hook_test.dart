@@ -1078,5 +1078,99 @@ void main() {
       expect(buildCount, equals(3));
       expect(find.text('Outer: 1, Inner: 1'), findsOneWidget);
     });
+
+    testWidgets('should rebuild when useState changes in useJoltWidget',
+        (tester) async {
+      int buildCount = 0;
+      late ValueNotifier<int> countNotifier;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HookBuilder(builder: (context) {
+            final count = useState(0);
+            countNotifier = count;
+
+            return useJoltWidget(() {
+              buildCount++;
+              // Access useState value directly in useJoltWidget
+              // Note: useJoltWidget can only track Jolt reactive values,
+              // so it won't automatically track useState changes
+              // The widget will rebuild when parent HookBuilder rebuilds
+              return Text('Count: ${count.value}',
+                  textDirection: TextDirection.ltr);
+            });
+          }),
+        ),
+      );
+
+      expect(buildCount, equals(1));
+      expect(find.text('Count: 0'), findsOneWidget);
+
+      // Change useState value
+      countNotifier.value = 5;
+      await tester.pumpAndSettle();
+
+      // The widget will rebuild because HookBuilder rebuilds when useState changes
+      // but useJoltWidget itself doesn't track useState directly
+      expect(find.text('Count: 5'), findsOneWidget);
+
+      // Change again
+      countNotifier.value = 10;
+      await tester.pumpAndSettle();
+
+      expect(find.text('Count: 10'), findsOneWidget);
+    });
+
+    testWidgets(
+        'should rebuild when useState changes via external trigger in useJoltWidget',
+        (tester) async {
+      int buildCount = 0;
+      late ValueNotifier<int> countNotifier;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HookBuilder(builder: (context) {
+            final count = useState(0);
+            countNotifier = count;
+
+            return Column(
+              textDirection: TextDirection.ltr,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                useJoltWidget(() {
+                  buildCount++;
+                  // Access useState value directly in useJoltWidget
+                  return Text('Count: ${count.value}',
+                      textDirection: TextDirection.ltr);
+                }),
+                ElevatedButton(
+                  onPressed: () => countNotifier.value++,
+                  child: const Text('Increment'),
+                ),
+              ],
+            );
+          }),
+        ),
+      );
+
+      expect(buildCount, equals(1));
+      expect(find.text('Count: 0'), findsOneWidget);
+
+      // Tap the button to increment the counter
+      await tester.tap(find.byType(ElevatedButton));
+      await tester.pumpAndSettle();
+
+      // The widget will rebuild because HookBuilder rebuilds when useState changes
+      // but useJoltWidget itself doesn't track useState directly
+      expect(buildCount, greaterThan(1));
+      expect(find.text('Count: 1'), findsOneWidget);
+
+      // Tap again
+      await tester.tap(find.byType(ElevatedButton));
+      await tester.pumpAndSettle();
+
+      expect(buildCount, greaterThan(2));
+      expect(find.text('Count: 2'), findsOneWidget);
+    });
   });
 }

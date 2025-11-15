@@ -6,17 +6,7 @@ import "package:jolt/src/jolt/track.dart";
 import "package:meta/meta.dart";
 import "package:shared_interfaces/shared_interfaces.dart";
 
-/// Base interface for all effect nodes in the reactive system.
-///
-/// EffectBase is a marker interface that identifies nodes that represent
-/// side effects in the reactive system, such as Effect, Watcher, and EffectScope.
-///
-/// Example:
-/// ```dart
-/// EffectBase effect = Effect(() => print('Hello'));
-/// effect.dispose();
-/// ```
-abstract interface class EffectBase implements Disposable {}
+/// Base class for all effect nodes in the reactive system.
 
 @protected
 mixin EffectCleanupMixin {
@@ -172,7 +162,7 @@ class EffectScopeImpl extends EffectScopeReactiveNode
 ///   });
 /// scope.dispose(); // Disposes all effects in scope
 /// ```
-abstract class EffectScope implements EffectNode, EffectBase {
+abstract class EffectScope implements EffectNode {
   /// Creates a new effect scope.
   ///
   /// Parameters:
@@ -336,7 +326,7 @@ class EffectImpl extends EffectReactiveNode
 /// effect.run(); // Manually trigger
 /// effect.dispose(); // Stop the effect
 /// ```
-abstract class Effect implements EffectNode, EffectBase {
+abstract class Effect implements EffectNode {
   /// Creates a new effect with the given function.
   ///
   /// Parameters:
@@ -523,7 +513,7 @@ class WatcherImpl<T> extends EffectReactiveNode
 ///   (newValues, oldValues) => print('Changed'),
 /// );
 /// ```
-abstract class Watcher<T> implements EffectNode, EffectBase {
+abstract class Watcher<T> implements EffectNode {
   /// Creates a new watcher with the given sources and callback.
   ///
   /// Parameters:

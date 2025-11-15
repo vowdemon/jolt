@@ -45,6 +45,10 @@ melos:
       run: |
         chmod +x ./.github/scripts/merge_coverage.sh
         ./.github/scripts/merge_coverage.sh
+    coverage:
+      run: |
+        melos run test
+        genhtml coverage/combined.info -o coverage/html
     analyze:
       run: melos exec -c 1 -- flutter analyze
     test:

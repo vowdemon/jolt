@@ -50,13 +50,46 @@ class ComputedImpl<T> extends ComputedReactiveNode<T>
   /// Use this when you need to read the value without triggering reactivity.
   /// Note that the value may be stale if dependencies have changed.
   ///
+  /// Unlike [peekCached], this method always recomputes the value (if needed)
+  /// rather than returning a cached value. This ensures you get the latest
+  /// computed result, but may be less efficient if you just need a quick
+  /// cached value check.
+  ///
   /// Example:
   /// ```dart
   /// final computed = Computed(() => expensiveCalculation());
-  /// print(computed.peek); // Doesn't trigger recomputation
+  /// print(computed.peek); // Doesn't trigger recomputation but may recompute internally
   /// ```
   @override
   T get peek {
+    assert(!isDisposed, "Computed is disposed");
+
+    return untracked(() => getComputed(this));
+  }
+
+  /// Returns the cached computed value without establishing a reactive dependency.
+  ///
+  /// This method returns the cached value directly if available, without
+  /// recomputing. Only computes the value if no cache exists (initial state).
+  ///
+  /// **Difference from [peek]:**
+  /// - [peek]: Always recomputes the value if needed, ensuring you get the
+  ///   latest result (though still without establishing dependencies)
+  /// - [peekCached]: Returns the cached value immediately if available, only
+  ///   computing when no cache exists. This is more efficient when you just
+  ///   need to check the last computed value, but the value may be stale
+  ///   if dependencies have changed since the last computation.
+  ///
+  /// Use this when you need a quick, efficient access to the last computed
+  /// value and don't care if it might be slightly out of date.
+  ///
+  /// Example:
+  /// ```dart
+  /// final computed = Computed(() => expensiveCalculation());
+  /// print(computed.peekCached); // Returns cached value immediately if available
+  /// ```
+  @override
+  T get peekCached {
     assert(!isDisposed, "Computed is disposed");
 
     if (flags == ReactiveFlags.none) {
@@ -163,6 +196,29 @@ abstract interface class Computed<T> implements Readonly<T>, ReadonlyNode<T> {
   /// final computed = Computed(() => expensiveCalculation());
   /// ```
   factory Computed(T Function() getter, {JoltDebugFn? onDebug}) = ComputedImpl;
+
+  /// Returns the cached computed value without establishing a reactive dependency.
+  ///
+  /// This method returns the cached value directly if available, without
+  /// recomputing. Only computes the value if no cache exists (initial state).
+  ///
+  /// **Difference from [peek]:**
+  /// - [peek]: Always recomputes the value if needed, ensuring you get the
+  ///   latest result (though still without establishing dependencies)
+  /// - [peekCached]: Returns the cached value immediately if available, only
+  ///   computing when no cache exists. This is more efficient when you just
+  ///   need to check the last computed value, but the value may be stale
+  ///   if dependencies have changed since the last computation.
+  ///
+  /// Use this when you need a quick, efficient access to the last computed
+  /// value and don't care if it might be slightly out of date.
+  ///
+  /// Example:
+  /// ```dart
+  /// final computed = Computed(() => expensiveCalculation());
+  /// print(computed.peekCached); // Returns cached value immediately if available
+  /// ```
+  T get peekCached;
 }
 
 /// Implementation of [WritableComputed] that can be both read and written.

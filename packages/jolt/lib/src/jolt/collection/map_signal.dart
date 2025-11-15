@@ -160,7 +160,7 @@ mixin MapSignalMixin<K, V>
   ///
   /// Returns an iterable of all values in the map.
   @override
-  IterableSignal<V> get values => IterableSignal(() => value.values);
+  Iterable<V> get values => value.values;
 
   /// Returns a new map where each entry is transformed by the given function.
   ///
@@ -173,8 +173,7 @@ mixin MapSignalMixin<K, V>
   ///
   /// Returns an iterable of all key-value pairs as MapEntry objects.
   @override
-  IterableSignal<MapEntry<K, V>> get entries =>
-      IterableSignal(() => value.entries);
+  Iterable<MapEntry<K, V>> get entries => value.entries;
 }
 
 /// Implementation of [MapSignal] that automatically notifies subscribers when modified.

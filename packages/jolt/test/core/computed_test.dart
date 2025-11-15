@@ -14,15 +14,112 @@ void main() {
         final signal = Signal(1);
         final computed = Computed<int>(() => signal.value * 2);
         Effect(() {
-          computed.peek;
+          computed.peekCached;
         });
 
-        expect(computed.peek, equals(2));
+        expect(computed.peekCached, equals(2));
         expect(computed.value, equals(2));
 
         signal.value = 2;
-        expect(computed.peek, equals(2));
+        expect(computed.peekCached, equals(2));
         expect(computed.value, equals(4));
+      });
+
+      test("peekCached should return cached value when available", () {
+        final signal = Signal(1);
+        var computeCount = 0;
+        final computed = Computed<int>(() {
+          computeCount++;
+          return signal.value * 2;
+        });
+
+        // First access - no cache, should compute
+        expect(computed.peekCached, equals(2));
+        expect(computeCount, equals(1));
+
+        // Second access with cached value - should return cache without recomputing
+        expect(computed.peekCached, equals(2));
+        expect(computeCount, equals(1)); // Count should not increase
+
+        // Accessing value will update it and invalidate cache
+        signal.value = 2;
+        expect(computed.value, equals(4));
+        expect(computeCount, equals(2));
+
+        // peekCached should now return the cached value (4)
+        expect(computed.peekCached, equals(4));
+        expect(computeCount, equals(2)); // Still no recompute
+      });
+
+      test("peekCached should compute only when no cache exists", () {
+        final computed = Computed<int>(() => 10);
+
+        // First access - no cache, computes
+        expect(computed.peekCached, equals(10));
+
+        // Subsequent accesses return cache without computing
+        expect(computed.peekCached, equals(10));
+        expect(computed.peekCached, equals(10));
+      });
+
+      test("peekCached should not establish reactive dependency", () {
+        final signal = Signal(1);
+        final computed = Computed<int>(() => signal.value * 2);
+        final values = <int>[];
+
+        Effect(() {
+          values.add(computed.peekCached);
+        });
+
+        expect(values, equals([2]));
+
+        // Changing signal should not trigger effect because peekCached doesn't track
+        signal.value = 3;
+        expect(values, equals([2])); // Effect not triggered
+
+        // peekCached still returns old cached value
+        expect(computed.peekCached, equals(2));
+      });
+
+      test("peek vs peekCached difference", () {
+        final signal = Signal(1);
+        var computeCount = 0;
+        final computed = Computed<int>(() {
+          computeCount++;
+          return signal.value * 2;
+        });
+
+        // Initial state - both should compute
+        expect(computed.peek, equals(2));
+        expect(computeCount, equals(1));
+        expect(computed.peekCached, equals(2));
+        expect(computeCount, equals(1)); // peekCached uses cache from peek
+
+        // Change signal
+        signal.value = 3;
+
+        // peek always recomputes (if needed), so it gets fresh value
+        expect(computed.peek, equals(6));
+        expect(computeCount, equals(2)); // Recomputed
+
+        // peekCached returns cached value (from previous peek call)
+        expect(computed.peekCached, equals(6));
+        expect(computeCount, equals(2)); // No recompute, uses cache
+
+        // Change signal again
+        signal.value = 4;
+
+        // peekCached still returns stale cached value
+        expect(computed.peekCached, equals(6));
+        expect(computeCount, equals(2)); // Still no recompute
+
+        // peek recomputes and gets fresh value
+        expect(computed.peek, equals(8));
+        expect(computeCount, equals(3)); // Recomputed
+
+        // Now peekCached gets fresh cache
+        expect(computed.peekCached, equals(8));
+        expect(computeCount, equals(3)); // No recompute
       });
     });
 
@@ -230,7 +327,7 @@ void main() {
       expect(dualComputed.value, equals(3));
 
       dualComputed.set(15);
-      expect(dualComputed.peek, equals(3));
+      expect(dualComputed.peekCached, equals(3));
       expect(dualComputed.value, equals(45));
       expect(signal.value, equals(45));
     });

@@ -39,8 +39,8 @@ class JoltSetupWidgetElement<T extends JoltSetupWidget>
     assert(() {
       setupContext._onMountedCallbacks.clear();
       setupContext._onUpdatedCallbacks.clear();
+      setupContext._onChangedDependenciesCallbacks.clear();
       setupContext._onUnmountedCallbacks.clear();
-
       setupContext.renderer?.dispose();
 
       // 重新执行 setup
@@ -107,7 +107,7 @@ class JoltSetupWidgetElement<T extends JoltSetupWidget>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    for (var callback in setupContext._onUpdatedCallbacks) {
+    for (var callback in setupContext._onChangedDependenciesCallbacks) {
       callback();
     }
   }
@@ -153,6 +153,15 @@ abstract final class HookUtils {
     final currentContext = useSetupContext();
 
     currentContext._onUpdatedCallbacks.add(callback);
+  }
+
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
+  static void onChangedDependencies(void Function() callback) {
+    final currentContext = useSetupContext();
+
+    currentContext._onChangedDependenciesCallbacks.add(callback);
   }
 
   @pragma('vm:prefer-inline')
@@ -221,6 +230,7 @@ class JoltSetupContext extends EffectScopeImpl {
   final List<void Function()> _onMountedCallbacks = [];
   final List<void Function()> _onUnmountedCallbacks = [];
   final List<void Function()> _onUpdatedCallbacks = [];
+  final List<void Function()> _onChangedDependenciesCallbacks = [];
 
   late final Map<Type, List<Object>> _hookCacheByType = {};
   late final Map<Type, int> _typeIndexCounters = {};
@@ -310,6 +320,7 @@ class JoltSetupContext extends EffectScopeImpl {
     _onMountedCallbacks.clear();
     _onUnmountedCallbacks.clear();
     _onUpdatedCallbacks.clear();
+    _onChangedDependenciesCallbacks.clear();
 
     assert(() {
       _hookCacheByType.clear();

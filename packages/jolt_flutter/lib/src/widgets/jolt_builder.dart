@@ -1,8 +1,9 @@
-import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:jolt/core.dart' as reactive;
 import 'package:jolt/jolt.dart' as jolt;
 import 'package:jolt_flutter/core.dart';
+
+import '../shared.dart';
 
 /// A widget that automatically rebuilds when any signal accessed in its builder changes.
 ///
@@ -72,7 +73,7 @@ class JoltBuilder extends StatelessWidget {
 ///
 /// This element creates an [EffectScope] to track dependencies and automatically
 /// triggers rebuilds when tracked signals change.
-class JoltBuilderElement extends StatelessElement {
+class JoltBuilderElement extends StatelessElement with JoltCommonEffectBuilder {
   JoltBuilderElement(JoltBuilder super.widget);
 
   @override
@@ -82,7 +83,7 @@ class JoltBuilderElement extends StatelessElement {
 
   @override
   void mount(Element? parent, Object? newSlot) {
-    _effect = jolt.Effect(_effectFn, immediately: false);
+    _effect = jolt.Effect(joltBuildTriggerEffect, immediately: false);
 
     super.mount(parent, newSlot);
   }
@@ -93,18 +94,6 @@ class JoltBuilderElement extends StatelessElement {
     _effect = null;
 
     super.unmount();
-  }
-
-  void _effectFn() {
-    if (SchedulerBinding.instance.schedulerPhase != SchedulerPhase.idle) {
-      SchedulerBinding.instance.endOfFrame.then((_) {
-        if (dirty) return;
-        markNeedsBuild();
-      });
-    } else {
-      if (dirty) return;
-      markNeedsBuild();
-    }
   }
 
   @override

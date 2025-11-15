@@ -1,6 +1,6 @@
 name: jolt_flutter
 description: "Flutter library for jolt reactive signals library that builds reactive widgets from signals, automatically updating UI when signals change."
-version: 1.1.2
+version: 1.1.3
 
 repository: https://github.com/vowdemon/jolt
 homepage: https://jolt.vowdemon.com

@@ -27,6 +27,6 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  jolt_flutter: ^1.1.2
+  jolt_flutter: ^1.1.3
 
   flutter_lints: ^5.0.0

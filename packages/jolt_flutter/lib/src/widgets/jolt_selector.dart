@@ -108,7 +108,7 @@ class JoltSelectorElement<T> extends ComponentElement {
   jolt.Effect? _effect;
 
   T? _state;
-  bool _isFirst = true;
+  bool _isFirstBuildEffect = true;
 
   @override
   void mount(Element? parent, Object? newSlot) {
@@ -116,7 +116,7 @@ class JoltSelectorElement<T> extends ComponentElement {
       final oldState = _state;
       _state = widget.selector(_state);
 
-      if (!_isFirst) {
+      if (!_isFirstBuildEffect) {
         if (oldState != _state) {
           if (SchedulerBinding.instance.schedulerPhase != SchedulerPhase.idle) {
             SchedulerBinding.instance.endOfFrame.then((_) {
@@ -129,7 +129,7 @@ class JoltSelectorElement<T> extends ComponentElement {
           }
         }
       } else {
-        _isFirst = false;
+        _isFirstBuildEffect = false;
       }
     });
 

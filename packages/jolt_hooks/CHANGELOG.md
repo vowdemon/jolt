@@ -1,3 +1,20 @@
+## 2.0.0-beta.1
+
+**BREAKING CHANGES:**
+
+- **API signature changes:**
+  - `JoltHook(signal)` (passing instance) → `JoltHook(() => signal)` (passing factory function)
+  - `JoltEffectHook(effect)` (passing instance) → `JoltEffectHook(() => effect)` (passing factory function)
+  
+  **Migration guide:**
+  - Custom hooks need to change parameters from instances to factory functions
+  - Official hooks (`useSignal`, `useComputed`, etc.) require no changes
+
+ - **CHORE**: update dependencies (jolt-v2.0.0)
+ - **REFACTOR**(core): optimize reactive system core and improve code quality. ([444957b6](https://github.com/vowdemon/jolt/commit/444957b6f5e382d689e91db0159fc81d604dfecf))
+ - **REFACTOR**: restructure core interfaces and implementation classes. ([e552ab33](https://github.com/vowdemon/jolt/commit/e552ab336b5a3a759bf55b7c77b29bdabf5fd780))
+ - **FEAT**: implement Setup Widget with type-based hook hot reload. ([e71cf18c](https://github.com/vowdemon/jolt/commit/e71cf18c67d2dbf1c011309ef5e45cba219d8299))
+
 ## 1.0.3
 
  - **FIX**(jolt_hooks): delay instance creation to avoid recreating on rebuild. ([b2121cf9](https://github.com/vowdemon/jolt/commit/b2121cf9d87ff45597efd9884c649f3ecb5303af))

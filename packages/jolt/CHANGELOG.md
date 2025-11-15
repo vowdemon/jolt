@@ -1,3 +1,55 @@
+## 2.0.0-beta.1
+
+**BREAKING CHANGES:**
+
+- **Type replacements:**
+  - `JReadonlyValue<T>` → `ReadonlyNode<T>`
+  - `JWritableValue<T>` → `WritableNode<T>`
+  - `JEffect` → `EffectNode` (mixin)
+  
+  **Migration guide:**
+  - Type annotations and generic constraints: `JReadonlyValue<T>` → `ReadonlyNode<T>`
+  - Custom class inheritance: `extends JReadonlyValue<T>` → `with ReadonlyNodeMixin<T> implements ReadonlyNode<T>`
+  - Effect classes: `extends JEffect` → `with EffectNode implements ChainedDisposable`
+
+- **Property replacement:**
+  - `Computed.pendingValue` → `Computed.peekCached`
+
+- **Computed API changes:**
+  - `Computed` constructor no longer exposes `initialValue` parameter
+  - `Computed.peek()` method behavior changed: previously used to view cached value, now behaves the same as `untracked`, used to read value without tracking
+  - Added `Computed.peekCached()` method: used to view cached value (replaces the original `peek()` functionality)
+  
+  **Migration guide:**
+  - If you previously used `computed.peek()` to view cached value, change to `computed.peekCached()`
+  - If you need to read value without tracking, use `computed.peek()` or `untracked(() => computed.value)`
+
+**Other changes:**
+
+- **Reactive system refactoring:**
+  - Refactored reactive system abstract classes, separating implementation from interfaces for better extensibility and hiding node details
+
+- **New methods:**
+  - Added `trackWithEffect()` method: used to append dependencies to side effects
+  - Added `notifyAll()` method: used to collect subscribers and notify them
+
+- **Watcher enhancements:**
+  - Added `Watcher.immediately()` factory method: creates a Watcher that executes immediately
+  - Added `Watcher.once()` factory method: creates a Watcher that executes only once
+  - Added pause/resume functionality: `pause()` and `resume()` methods
+  - Added `ignoreUpdates()` method: used to ignore updates
+
+- **Extension methods:**
+  - Added `update()` extension method: facilitates functional updates from old value to new value
+  - Added `until()` extension method: returns a Future for one-time listening to signal value changes
+
+ - **REFACTOR**(jolt): remove EffectBase and add trackWithEffect". ([a00420e3](https://github.com/vowdemon/jolt/commit/a00420e358acc2fed4a3967e04be8ac1aff22a62))
+ - **REFACTOR**(core): optimize reactive system core and improve code quality. ([444957b6](https://github.com/vowdemon/jolt/commit/444957b6f5e382d689e91db0159fc81d604dfecf))
+ - **REFACTOR**: restructure core interfaces and implementation classes. ([e552ab33](https://github.com/vowdemon/jolt/commit/e552ab336b5a3a759bf55b7c77b29bdabf5fd780))
+ - **FEAT**(jolt): add until/update methods and improve APIs. ([44eb0c7b](https://github.com/vowdemon/jolt/commit/44eb0c7b58bc8a7cc07ab6cc4dbcd25d9e5083cf))
+ - **FEAT**(watcher): add pause/resume and ignoreUpdates functionality. ([c882bf72](https://github.com/vowdemon/jolt/commit/c882bf72d04af4e639b29300bf0a5ec3e25bc9aa))
+ - **FEAT**: implement Setup Widget with type-based hook hot reload. ([e71cf18c](https://github.com/vowdemon/jolt/commit/e71cf18c67d2dbf1c011309ef5e45cba219d8299))
+
 ## 1.0.4
 
  - **REFACTOR**: flatten ReactiveSystem to library level, add upstream sync. ([1969693f](https://github.com/vowdemon/jolt/commit/1969693f4dd1a655711419937f43b2fdee6d4266))

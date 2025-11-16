@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
-import 'package:jolt/core.dart' show JFinalizer, Readonly, Writable;
 import 'package:jolt/jolt.dart' as jolt;
-import 'package:jolt_flutter/jolt_flutter.dart';
+import 'package:jolt_flutter/core.dart';
 import 'package:shared_interfaces/shared_interfaces.dart';
 
 part 'value_listenable.dart';

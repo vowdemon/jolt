@@ -1,4 +1,5 @@
 import "package:jolt/jolt.dart";
+import "package:jolt/src/jolt/computed.dart";
 
 /// Implementation of [ConvertComputed] that converts between different types.
 ///

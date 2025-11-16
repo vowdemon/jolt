@@ -198,23 +198,3 @@ abstract interface class Signal<T>
         ReadonlySignal<T> {
   factory Signal(T value, {JoltDebugFn? onDebug}) = SignalImpl;
 }
-
-/// Extension methods for Signal to provide additional functionality.
-extension JoltSignalExtension<T> on Signal<T> {
-  /// Returns a read-only view of this signal.
-  ///
-  /// The returned ReadonlySignal cannot be used to modify the value,
-  /// but still provides reactive access to the current value.
-  ///
-  /// Returns: A read-only interface to this signal
-  ///
-  /// Example:
-  /// ```dart
-  /// final counter = Signal(0);
-  /// final readonlyCounter = counter.readonly();
-  ///
-  /// print(readonlyCounter.value); // OK
-  /// // readonlyCounter.value = 1; // Compile error
-  /// ```
-  ReadonlySignal<T> readonly() => this;
-}

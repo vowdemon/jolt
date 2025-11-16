@@ -346,23 +346,3 @@ abstract interface class WritableComputed<T> implements Computed<T>, Signal<T> {
     JoltDebugFn? onDebug,
   }) = WritableComputedImpl<T>;
 }
-
-/// Extension methods for WritableComputed to provide additional functionality.
-extension JoltWritableComputedExtension<T> on WritableComputed<T> {
-  /// Returns a read-only view of this writable computed.
-  ///
-  /// The returned Computed cannot be used to modify the value,
-  /// but still provides reactive access to the computed value.
-  ///
-  /// Returns: A read-only interface to this writable computed
-  ///
-  /// Example:
-  /// ```dart
-  /// final writableComputed = WritableComputed(getter, setter);
-  /// final readonlyComputed = writableComputed.readonly();
-  ///
-  /// print(readonlyComputed.value); // OK
-  /// // readonlyComputed.value = 1; // Compile error
-  /// ```
-  Computed<T> readonly() => this;
-}

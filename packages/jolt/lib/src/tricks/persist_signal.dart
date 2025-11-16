@@ -1,6 +1,7 @@
 import "dart:async";
 
 import "package:jolt/jolt.dart";
+import "package:jolt/src/jolt/signal.dart";
 
 /// Implementation of [PersistSignal] that persists its value to external storage.
 ///

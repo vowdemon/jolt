@@ -34,3 +34,43 @@ extension JoltWritableExtension<T> on WritableNode<T> {
   @pragma("dart2js:prefer-inline")
   T update(T Function(T value) updater) => set(updater(peek));
 }
+
+/// Extension methods for WritableComputed to provide additional functionality.
+extension JoltWritableComputedExtension<T> on WritableComputed<T> {
+  /// Returns a read-only view of this writable computed.
+  ///
+  /// The returned Computed cannot be used to modify the value,
+  /// but still provides reactive access to the computed value.
+  ///
+  /// Returns: A read-only interface to this writable computed
+  ///
+  /// Example:
+  /// ```dart
+  /// final writableComputed = WritableComputed(getter, setter);
+  /// final readonlyComputed = writableComputed.readonly();
+  ///
+  /// print(readonlyComputed.value); // OK
+  /// // readonlyComputed.value = 1; // Compile error
+  /// ```
+  Computed<T> readonly() => this;
+}
+
+/// Extension methods for Signal to provide additional functionality.
+extension JoltSignalExtension<T> on Signal<T> {
+  /// Returns a read-only view of this signal.
+  ///
+  /// The returned ReadonlySignal cannot be used to modify the value,
+  /// but still provides reactive access to the current value.
+  ///
+  /// Returns: A read-only interface to this signal
+  ///
+  /// Example:
+  /// ```dart
+  /// final counter = Signal(0);
+  /// final readonlyCounter = counter.readonly();
+  ///
+  /// print(readonlyCounter.value); // OK
+  /// // readonlyCounter.value = 1; // Compile error
+  /// ```
+  ReadonlySignal<T> readonly() => this;
+}

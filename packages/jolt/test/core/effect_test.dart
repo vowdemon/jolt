@@ -1,5 +1,6 @@
 import "package:jolt/jolt.dart";
 import "package:jolt/src/core/reactive.dart";
+import "package:jolt/src/jolt/effect.dart";
 import "package:test/test.dart";
 import "../utils.dart";
 

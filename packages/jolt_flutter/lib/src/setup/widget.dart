@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:jolt/core.dart';
 import 'package:jolt/jolt.dart';
 import 'package:jolt_flutter/src/shared.dart';
 import 'package:shared_interfaces/shared_interfaces.dart';

@@ -1,6 +1,7 @@
 import "dart:async";
 
 import "package:jolt/jolt.dart";
+import "package:jolt/src/jolt/signal.dart";
 import "package:test/test.dart";
 
 import "utils.dart";

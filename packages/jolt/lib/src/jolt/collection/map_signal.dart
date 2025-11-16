@@ -2,6 +2,7 @@ import "dart:collection";
 
 import "package:jolt/core.dart";
 import "package:jolt/jolt.dart";
+import "package:jolt/src/jolt/signal.dart";
 
 /// A mixin that provides reactive map functionality.
 ///

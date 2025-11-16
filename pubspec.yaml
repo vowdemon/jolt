@@ -19,6 +19,9 @@ dev_dependencies:
   melos: ^7.3.0
 
 melos:
+  categories:
+    examples:
+      - examples/*
   ide:
     intellij:
       enabled: false

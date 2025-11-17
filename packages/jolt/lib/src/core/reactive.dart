@@ -634,8 +634,8 @@ T getSignal<T>(SignalReactiveNode<T> signal) {
 @pragma("vm:prefer-inline")
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
-void notifySignal<T>(SignalReactiveNode<T> signal) {
-  signal.flags = ReactiveFlags.mutable | ReactiveFlags.dirty;
+void notifySignal<T>(ReactiveNode signal) {
+  signal.flags = ReactiveFlags.mutable;
 
   var subs = signal.subs;
 

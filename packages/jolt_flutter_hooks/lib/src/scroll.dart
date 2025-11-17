@@ -13,13 +13,13 @@ ScrollController useScrollController({
   ScrollControllerCallback? onAttach,
   ScrollControllerCallback? onDetach,
 }) {
-  final controller = ScrollController(
-    initialScrollOffset: initialScrollOffset,
-    keepScrollOffset: keepScrollOffset,
-    debugLabel: debugLabel,
-    onAttach: onAttach,
-    onDetach: onDetach,
-  );
+  final controller = useHook(() => ScrollController(
+        initialScrollOffset: initialScrollOffset,
+        keepScrollOffset: keepScrollOffset,
+        debugLabel: debugLabel,
+        onAttach: onAttach,
+        onDetach: onDetach,
+      ));
 
   onUnmounted(controller.dispose);
 
@@ -38,12 +38,12 @@ TabController useTabController({
   TickerProvider? vsync,
   Duration? animationDuration,
 }) {
-  final controller = TabController(
-    length: length,
-    initialIndex: initialIndex,
-    vsync: vsync ?? useSingleTickerProvider(),
-    animationDuration: animationDuration,
-  );
+  final controller = useHook(() => TabController(
+        length: length,
+        initialIndex: initialIndex,
+        vsync: vsync ?? useSingleTickerProvider(),
+        animationDuration: animationDuration,
+      ));
 
   onUnmounted(controller.dispose);
 
@@ -59,13 +59,13 @@ PageController usePageController(
     double viewportFraction = 1.0,
     void Function(ScrollPosition)? onAttach,
     void Function(ScrollPosition)? onDetach}) {
-  final controller = PageController(
-    initialPage: initialPage,
-    keepPage: keepPage,
-    viewportFraction: viewportFraction,
-    onAttach: onAttach,
-    onDetach: onDetach,
-  );
+  final controller = useHook(() => PageController(
+        initialPage: initialPage,
+        keepPage: keepPage,
+        viewportFraction: viewportFraction,
+        onAttach: onAttach,
+        onDetach: onDetach,
+      ));
 
   onUnmounted(controller.dispose);
 
@@ -82,13 +82,13 @@ FixedExtentScrollController useFixedExtentScrollController({
   bool keepScrollOffset = true,
   String? debugLabel,
 }) {
-  final controller = FixedExtentScrollController(
-    initialItem: initialItem,
-    onAttach: onAttach,
-    onDetach: onDetach,
-    keepScrollOffset: keepScrollOffset,
-    debugLabel: debugLabel,
-  );
+  final controller = useHook(() => FixedExtentScrollController(
+        initialItem: initialItem,
+        onAttach: onAttach,
+        onDetach: onDetach,
+        keepScrollOffset: keepScrollOffset,
+        debugLabel: debugLabel,
+      ));
 
   onUnmounted(controller.dispose);
 

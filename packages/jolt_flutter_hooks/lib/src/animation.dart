@@ -9,7 +9,7 @@ import 'package:jolt_flutter/setup.dart';
 /// If you need multiple tickers, call this hook multiple times
 TickerProvider useSingleTickerProvider() {
   final context = useContext();
-  final provider = _SingleTickerProvider(context);
+  final provider = useHook(() => _SingleTickerProvider(context));
 
   onMounted(provider._init);
   onChangedDependencies(provider._update);
@@ -76,15 +76,15 @@ AnimationController useAnimationController({
   double upperBound = 1.0,
   AnimationBehavior animationBehavior = AnimationBehavior.normal,
 }) {
-  final controller = AnimationController(
-    vsync: vsync ?? useSingleTickerProvider(),
-    value: value,
-    duration: duration,
-    reverseDuration: reverseDuration,
-    lowerBound: lowerBound,
-    upperBound: upperBound,
-    animationBehavior: animationBehavior,
-  );
+  final controller = useHook(() => AnimationController(
+        vsync: vsync ?? useSingleTickerProvider(),
+        value: value,
+        duration: duration,
+        reverseDuration: reverseDuration,
+        lowerBound: lowerBound,
+        upperBound: upperBound,
+        animationBehavior: animationBehavior,
+      ));
 
   onUnmounted(controller.dispose);
 

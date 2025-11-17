@@ -13,14 +13,14 @@ FocusNode useFocusNode({
   bool descendantsAreFocusable = true,
   bool descendantsAreTraversable = true,
 }) {
-  final focusNode = FocusNode(
-    debugLabel: debugLabel,
-    onKeyEvent: onKeyEvent,
-    skipTraversal: skipTraversal,
-    canRequestFocus: canRequestFocus,
-    descendantsAreFocusable: descendantsAreFocusable,
-    descendantsAreTraversable: descendantsAreTraversable,
-  );
+  final focusNode = useHook(() => FocusNode(
+        debugLabel: debugLabel,
+        onKeyEvent: onKeyEvent,
+        skipTraversal: skipTraversal,
+        canRequestFocus: canRequestFocus,
+        descendantsAreFocusable: descendantsAreFocusable,
+        descendantsAreTraversable: descendantsAreTraversable,
+      ));
 
   onUnmounted(focusNode.dispose);
 

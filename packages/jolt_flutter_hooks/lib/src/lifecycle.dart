@@ -8,9 +8,9 @@ import 'package:jolt_flutter/setup.dart';
 ReadonlySignal<AppLifecycleState?> useAppLifecycleState([
   AppLifecycleState? initialState,
 ]) {
-  final observer = _AppLifecycleObserver(
-    initialState ?? WidgetsBinding.instance.lifecycleState,
-  );
+  final observer = useHook(() => _AppLifecycleObserver(
+        initialState ?? WidgetsBinding.instance.lifecycleState,
+      ));
 
   onMounted(observer.attach);
   onUnmounted(observer.dispose);

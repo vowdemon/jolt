@@ -19,7 +19,7 @@ final class _TextEditingControllerCreator {
   ///
   /// [text] Initial text content
   TextEditingController call([String? text]) {
-    final controller = TextEditingController(text: text);
+    final controller = useHook(() => TextEditingController(text: text));
     onUnmounted(controller.dispose);
     return controller;
   }
@@ -28,7 +28,7 @@ final class _TextEditingControllerCreator {
   ///
   /// [value] Initial TextEditingValue
   TextEditingController fromValue([TextEditingValue? value]) {
-    final controller = TextEditingController.fromValue(value);
+    final controller = useHook(() => TextEditingController.fromValue(value));
     onUnmounted(controller.dispose);
     return controller;
   }

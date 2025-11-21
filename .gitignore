@@ -1,3 +1,19 @@
+# Custom rules
+
+examples/**/android/
+examples/**/ios/
+examples/**/linux/
+examples/**/macos/
+examples/**/web/
+examples/**/windows/
+examples/**/test/
+examples/**/pubspec.lock
+
+devtools_options.yaml
+.fvmrc
+
+*_prompt.md
+
 # Miscellaneous
 *.class
 *.log
@@ -46,3 +62,6 @@ app.*.map.json
 
 /web
 .metadata
+
+# FVM Version Cache
+.fvm/

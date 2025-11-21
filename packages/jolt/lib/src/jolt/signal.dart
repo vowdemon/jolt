@@ -197,4 +197,6 @@ abstract interface class Signal<T>
         ReadonlyNode<T>,
         ReadonlySignal<T> {
   factory Signal(T value, {JoltDebugFn? onDebug}) = SignalImpl;
+  factory Signal.lazy({JoltDebugFn? onDebug}) =>
+      SignalImpl(null, onDebug: onDebug);
 }

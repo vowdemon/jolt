@@ -241,5 +241,72 @@ void main() {
       expect(stringSignal.toString(), equals("world"));
       expect(stringSignal.toString(), equals(stringSignal.value));
     });
+
+    test("should throw error when accessing uninitialized lazy signal", () {
+      final lazySignal = Signal<int>.lazy();
+
+      // Accessing uninitialized lazy signal should throw
+      expect(() => lazySignal.value, throwsA(isA<TypeError>()));
+      expect(() => lazySignal.get(), throwsA(isA<TypeError>()));
+      expect(() => lazySignal.peek, throwsA(isA<TypeError>()));
+
+      // After setting a value, it should work
+      lazySignal.value = 42;
+      expect(lazySignal.value, equals(42));
+      expect(lazySignal.get(), equals(42));
+      expect(lazySignal.peek, equals(42));
+    });
+
+    test("should work with nullable lazy signal", () {
+      final lazySignal = Signal<int?>.lazy();
+
+      // Nullable lazy signal can be accessed without error
+      expect(lazySignal.value, isNull);
+      expect(lazySignal.get(), isNull);
+      expect(lazySignal.peek, isNull);
+
+      // Can set value
+      lazySignal.value = 42;
+      expect(lazySignal.value, equals(42));
+
+      // Can set back to null
+      lazySignal.value = null;
+      expect(lazySignal.value, isNull);
+    });
+
+    test("should throw error when accessing uninitialized lazy signal in computed",
+        () {
+      final lazySignal = Signal<int>.lazy();
+
+      // Accessing in computed should throw
+      expect(
+          () => Computed(() => lazySignal.value * 2),
+          throwsA(isA<TypeError>()));
+
+      // After setting a value, computed should work
+      lazySignal.value = 5;
+      final computed = Computed(() => lazySignal.value * 2);
+      expect(computed.value, equals(10));
+    });
+
+    test("should throw error when accessing uninitialized lazy signal in effect",
+        () {
+      final lazySignal = Signal<int>.lazy();
+      final values = <int>[];
+
+      // Accessing in effect should throw
+      expect(
+          () => Effect(() {
+                values.add(lazySignal.value);
+              }),
+          throwsA(isA<TypeError>()));
+
+      // After setting a value, effect should work
+      lazySignal.value = 10;
+      Effect(() {
+        values.add(lazySignal.value);
+      });
+      expect(values, equals([10]));
+    });
   });
 }

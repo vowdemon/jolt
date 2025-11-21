@@ -12,7 +12,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           provider = useSingleTickerProvider();
-          return (context) => const Text('Test');
+          return () => const Text('Test');
         }),
       ));
 
@@ -27,7 +27,7 @@ void main() {
         home: SetupBuilder(setup: (context) {
           final provider = useSingleTickerProvider();
           ticker = provider.createTicker((_) {});
-          return (context) => const Text('Test');
+          return () => const Text('Test');
         }),
       ));
 
@@ -48,7 +48,7 @@ void main() {
           controller = useAnimationController(
             duration: const Duration(seconds: 1),
           );
-          return (context) => const Text('Test');
+          return () => const Text('Test');
         }),
       ));
 
@@ -69,7 +69,7 @@ void main() {
             upperBound: 1.5,
             value: 1.0,
           );
-          return (context) => Text('Value: ${controller!.value}');
+          return () => Text('Value: ${controller!.value}');
         }),
       ));
 
@@ -86,7 +86,7 @@ void main() {
             vsync: vsync,
             duration: const Duration(seconds: 1),
           );
-          return (context) => const Text('Test');
+          return () => const Text('Test');
         }),
       ));
 
@@ -106,7 +106,7 @@ void main() {
             duration: const Duration(milliseconds: 100),
           );
 
-          return (context) => AnimatedBuilder(
+          return () => AnimatedBuilder(
                 animation: controller,
                 builder: (context, child) => Text('${controller.isAnimating}'),
               );
@@ -136,7 +136,7 @@ void main() {
             duration: const Duration(milliseconds: 200),
           );
 
-          return (context) => Text('Test');
+          return () => Text('Test');
         }),
       ));
 
@@ -159,7 +159,7 @@ void main() {
         CounterInherited.of(context);
         final provider = useSingleTickerProvider();
         ticker = provider.createTicker((_) {});
-        return (context) => const Text('Test');
+        return () => const Text('Test');
       });
 
       await tester.pumpWidget(MaterialApp(
@@ -201,7 +201,7 @@ void main() {
           ticker = provider.createTicker((_) {});
           initialMuted = ticker!.muted;
         }
-        return (context) => const Text('Test');
+        return () => const Text('Test');
       });
 
       await tester.pumpWidget(MaterialApp(
@@ -238,7 +238,7 @@ void main() {
         CounterInherited.of(context);
         final provider = useSingleTickerProvider();
         ticker ??= provider.createTicker((_) {});
-        return (context) => const Text('Test');
+        return () => const Text('Test');
       });
 
       await tester.pumpWidget(MaterialApp(

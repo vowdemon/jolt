@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import 'package:jolt_flutter/setup.dart';
+import 'package:jolt_flutter_hooks/src/shared.dart';
 
 /// Creates a focus node
 ///
@@ -13,16 +14,16 @@ FocusNode useFocusNode({
   bool descendantsAreFocusable = true,
   bool descendantsAreTraversable = true,
 }) {
-  final focusNode = useHook(() => FocusNode(
-        debugLabel: debugLabel,
-        onKeyEvent: onKeyEvent,
-        skipTraversal: skipTraversal,
-        canRequestFocus: canRequestFocus,
-        descendantsAreFocusable: descendantsAreFocusable,
-        descendantsAreTraversable: descendantsAreTraversable,
-      ));
-
-  onUnmounted(focusNode.dispose);
+  final focusNode = useHook(SimpleSetupHook(
+      () => FocusNode(
+            debugLabel: debugLabel,
+            onKeyEvent: onKeyEvent,
+            skipTraversal: skipTraversal,
+            canRequestFocus: canRequestFocus,
+            descendantsAreFocusable: descendantsAreFocusable,
+            descendantsAreTraversable: descendantsAreTraversable,
+          ),
+      onUnmount: (focusNode) => focusNode.dispose));
 
   return focusNode;
 }
@@ -40,16 +41,16 @@ FocusScopeNode useFocusScopeNode({
   TraversalEdgeBehavior directionalTraversalEdgeBehavior =
       TraversalEdgeBehavior.stop,
 }) {
-  final scopeNode = FocusScopeNode(
-    debugLabel: debugLabel,
-    onKeyEvent: onKeyEvent,
-    skipTraversal: skipTraversal,
-    canRequestFocus: canRequestFocus,
-    traversalEdgeBehavior: traversalEdgeBehavior,
-    directionalTraversalEdgeBehavior: directionalTraversalEdgeBehavior,
-  );
-
-  onUnmounted(scopeNode.dispose);
+  final scopeNode = useHook(SimpleSetupHook(
+      () => FocusScopeNode(
+            debugLabel: debugLabel,
+            onKeyEvent: onKeyEvent,
+            skipTraversal: skipTraversal,
+            canRequestFocus: canRequestFocus,
+            traversalEdgeBehavior: traversalEdgeBehavior,
+            directionalTraversalEdgeBehavior: directionalTraversalEdgeBehavior,
+          ),
+      onUnmount: (scopeNode) => scopeNode.dispose));
 
   return scopeNode;
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:jolt_flutter/setup.dart';
+import 'package:jolt_flutter_hooks/src/shared.dart';
 import 'animation.dart';
 
 /// Creates a scroll controller
@@ -13,15 +14,15 @@ ScrollController useScrollController({
   ScrollControllerCallback? onAttach,
   ScrollControllerCallback? onDetach,
 }) {
-  final controller = useHook(() => ScrollController(
-        initialScrollOffset: initialScrollOffset,
-        keepScrollOffset: keepScrollOffset,
-        debugLabel: debugLabel,
-        onAttach: onAttach,
-        onDetach: onDetach,
-      ));
-
-  onUnmounted(controller.dispose);
+  final controller = useHook(SimpleSetupHook(
+      () => ScrollController(
+            initialScrollOffset: initialScrollOffset,
+            keepScrollOffset: keepScrollOffset,
+            debugLabel: debugLabel,
+            onAttach: onAttach,
+            onDetach: onDetach,
+          ),
+      onUnmount: (controller) => controller.dispose()));
 
   return controller;
 }
@@ -38,14 +39,14 @@ TabController useTabController({
   TickerProvider? vsync,
   Duration? animationDuration,
 }) {
-  final controller = useHook(() => TabController(
-        length: length,
-        initialIndex: initialIndex,
-        vsync: vsync ?? useSingleTickerProvider(),
-        animationDuration: animationDuration,
-      ));
-
-  onUnmounted(controller.dispose);
+  final controller = useHook(SimpleSetupHook(
+      () => TabController(
+            length: length,
+            initialIndex: initialIndex,
+            vsync: vsync ?? useSingleTickerProvider(),
+            animationDuration: animationDuration,
+          ),
+      onUnmount: (controller) => controller.dispose()));
 
   return controller;
 }
@@ -59,15 +60,15 @@ PageController usePageController(
     double viewportFraction = 1.0,
     void Function(ScrollPosition)? onAttach,
     void Function(ScrollPosition)? onDetach}) {
-  final controller = useHook(() => PageController(
-        initialPage: initialPage,
-        keepPage: keepPage,
-        viewportFraction: viewportFraction,
-        onAttach: onAttach,
-        onDetach: onDetach,
-      ));
-
-  onUnmounted(controller.dispose);
+  final controller = useHook(SimpleSetupHook(
+      () => PageController(
+            initialPage: initialPage,
+            keepPage: keepPage,
+            viewportFraction: viewportFraction,
+            onAttach: onAttach,
+            onDetach: onDetach,
+          ),
+      onUnmount: (controller) => controller.dispose()));
 
   return controller;
 }
@@ -82,15 +83,15 @@ FixedExtentScrollController useFixedExtentScrollController({
   bool keepScrollOffset = true,
   String? debugLabel,
 }) {
-  final controller = useHook(() => FixedExtentScrollController(
-        initialItem: initialItem,
-        onAttach: onAttach,
-        onDetach: onDetach,
-        keepScrollOffset: keepScrollOffset,
-        debugLabel: debugLabel,
-      ));
-
-  onUnmounted(controller.dispose);
+  final controller = useHook(SimpleSetupHook(
+      () => FixedExtentScrollController(
+            initialItem: initialItem,
+            onAttach: onAttach,
+            onDetach: onDetach,
+            keepScrollOffset: keepScrollOffset,
+            debugLabel: debugLabel,
+          ),
+      onUnmount: (controller) => controller.dispose()));
 
   return controller;
 }

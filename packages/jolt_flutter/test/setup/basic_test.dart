@@ -10,7 +10,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           setupCount++;
-          return (context) => Column(children: const [
+          return () => Column(children: const [
                 Text('Title: Test'),
                 Text('Count: 42'),
               ]);
@@ -25,7 +25,7 @@ void main() {
         home: SetupBuilder(setup: (context) {
           setupCount++;
 
-          return (context) => Column(children: const [
+          return () => Column(children: const [
                 Text('Title: Test2'),
                 Text('Count: 43'),
               ]);
@@ -43,7 +43,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           onMounted(() => mounted = true);
-          return (context) => const Text('Test');
+          return () => const Text('Test');
         }),
       ));
       await tester.pumpAndSettle();
@@ -57,7 +57,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           onUnmounted(() => unmounted = true);
-          return (context) => const Text('Test');
+          return () => const Text('Test');
         }),
       ));
       await tester.pumpAndSettle();
@@ -75,7 +75,7 @@ void main() {
       Widget buildWidget(String title) => MaterialApp(
             home: SetupBuilder(setup: (context) {
               onUpdated(() => updateCount++);
-              return (context) {
+              return () {
                 rebuildCount++;
                 return Text(title);
               };
@@ -105,7 +105,7 @@ void main() {
           home: Builder(builder: (context) {
             return SetupBuilder(setup: (context) {
               onUpdated(() => updateCount++);
-              return (context) {
+              return () {
                 rebuildCount++;
                 return const Text('Test');
               };
@@ -130,7 +130,7 @@ void main() {
       final toTestWidget = SetupBuilder(setup: (context) {
         CounterInherited.of(context);
         onChangedDependencies(() => changedCount++);
-        return (context) {
+        return () {
           rebuildCount++;
           return const Text('Test');
         };
@@ -154,13 +154,100 @@ void main() {
       expect(changedCount, 1);
     });
 
+    testWidgets('onActivated lifecycle', (tester) async {
+      bool activated = false;
+
+      final testWidget = SetupBuilder(setup: (context) {
+        onActivated(() => activated = true);
+        return () => const Text('Test');
+      });
+
+      await tester.pumpWidget(MaterialApp(
+        home: testWidget,
+      ));
+      await tester.pumpAndSettle();
+      expect(activated, isFalse);
+
+      // Get the element and manually call activate to verify the callback works
+      final element = tester.element(find.text('Test'));
+      if (element is SetupWidgetElement) {
+        element.activate();
+        expect(activated, isTrue);
+      }
+    });
+
+    testWidgets('onDeactivated lifecycle', (tester) async {
+      bool deactivated = false;
+
+      final testWidget = SetupBuilder(setup: (context) {
+        onDeactivated(() => deactivated = true);
+        return () => const Text('Test');
+      });
+
+      await tester.pumpWidget(MaterialApp(
+        home: testWidget,
+      ));
+      await tester.pumpAndSettle();
+      expect(deactivated, isFalse);
+
+      // Get the element and manually call deactivate to verify the callback works
+      final element = tester.element(find.text('Test'));
+      if (element is SetupWidgetElement) {
+        element.deactivate();
+        expect(deactivated, isTrue);
+      }
+    });
+
+    testWidgets('onActivated and onDeactivated lifecycle together',
+        (tester) async {
+      int activatedCount = 0;
+      int deactivatedCount = 0;
+
+      final testWidget = SetupBuilder(setup: (context) {
+        onActivated(() => activatedCount++);
+        onDeactivated(() => deactivatedCount++);
+        return () => const Text('Test');
+      });
+
+      await tester.pumpWidget(MaterialApp(
+        home: testWidget,
+      ));
+      await tester.pumpAndSettle();
+      expect(activatedCount, 0);
+      expect(deactivatedCount, 0);
+
+      // Get the element and manually call lifecycle methods
+      final element = tester.element(find.text('Test'));
+      if (element is SetupWidgetElement) {
+        // Test deactivate
+        element.deactivate();
+        expect(activatedCount, 0);
+        expect(deactivatedCount, 1);
+
+        // Test activate
+        element.activate();
+        expect(activatedCount, 1);
+        expect(deactivatedCount, 1);
+
+        // Test deactivate again
+        element.deactivate();
+        expect(activatedCount, 1);
+        expect(deactivatedCount, 2);
+
+        // Test activate again
+        element.activate();
+        expect(activatedCount, 2);
+        expect(deactivatedCount, 2);
+      }
+    });
+
     testWidgets('useContext retrieves correctly', (tester) async {
       BuildContext? captured;
 
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           captured = useContext();
-          return (context) => const Text('Test');
+          return () => const Text('Test');
         }),
       ));
       await tester.pumpAndSettle();
@@ -175,7 +262,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           captured = useSetupContext();
-          return (context) => const Text('Test');
+          return () => const Text('Test');
         }),
       ));
       await tester.pumpAndSettle();
@@ -224,7 +311,7 @@ void main() {
           onUnmounted(() => unmounted.add(1));
           onUnmounted(() => unmounted.add(2));
           onUnmounted(() => unmounted.add(3));
-          return (context) => const Text('Test');
+          return () => const Text('Test');
         }),
       ));
       await tester.pumpAndSettle();
@@ -238,17 +325,17 @@ void main() {
 }
 
 // Helper widget for testing useProps reactive behavior
-class _PropsWidget extends SetupWidget {
+class _PropsWidget extends SetupWidget<_PropsWidget> {
   final String title;
   final int count;
+
   const _PropsWidget({required this.title, required this.count});
 
   @override
-  Widget Function(BuildContext context) setup(BuildContext context) {
-    final props = useProps();
-    return (context) => Column(children: [
-          Text('Title: ${props.value.title}'),
-          Text('Count: ${props.value.count}'),
+  setup(context, props) {
+    return () => Column(children: [
+          Text('Title: ${props().title}'),
+          Text('Count: ${props().count}'),
         ]);
   }
 }

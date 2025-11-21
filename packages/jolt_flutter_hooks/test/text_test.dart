@@ -12,7 +12,7 @@ void main() {
         home: Scaffold(
           body: SetupBuilder(setup: (context) {
             controller = useTextEditingController();
-            return (context) => TextField(controller: controller);
+            return () => TextField(controller: controller);
           }),
         ),
       ));
@@ -28,7 +28,7 @@ void main() {
         home: Scaffold(
           body: SetupBuilder(setup: (context) {
             controller = useTextEditingController('Initial text');
-            return (context) => TextField(controller: controller);
+            return () => TextField(controller: controller);
           }),
         ),
       ));
@@ -49,7 +49,7 @@ void main() {
         home: Scaffold(
           body: SetupBuilder(setup: (context) {
             controller = useTextEditingController.fromValue(initialValue);
-            return (context) => TextField(controller: controller);
+            return () => TextField(controller: controller);
           }),
         ),
       ));
@@ -64,7 +64,7 @@ void main() {
         home: Scaffold(
           body: SetupBuilder(setup: (context) {
             final controller = useTextEditingController('Text');
-            return (context) => TextField(controller: controller);
+            return () => TextField(controller: controller);
           }),
         ),
       ));
@@ -82,7 +82,7 @@ void main() {
         home: Scaffold(
           body: SetupBuilder(setup: (context) {
             controller = useTextEditingController('Initial');
-            return (context) => TextField(controller: controller);
+            return () => TextField(controller: controller);
           }),
         ),
       ));
@@ -106,7 +106,7 @@ void main() {
         home: Scaffold(
           body: SetupBuilder(setup: (context) {
             controller = useTextEditingController();
-            return (context) => TextField(controller: controller);
+            return () => TextField(controller: controller);
           }),
         ),
       ));
@@ -138,7 +138,7 @@ void main() {
             controller1 = useTextEditingController('Controller 1');
             controller2 = useTextEditingController('Controller 2');
 
-            return (context) => Column(
+            return () => Column(
                   children: [
                     TextField(controller: controller1),
                     TextField(controller: controller2),

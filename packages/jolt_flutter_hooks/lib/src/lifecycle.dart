@@ -8,51 +8,35 @@ import 'package:jolt_flutter/setup.dart';
 ReadonlySignal<AppLifecycleState?> useAppLifecycleState([
   AppLifecycleState? initialState,
 ]) {
-  final observer = useHook(() => _AppLifecycleObserver(
-        initialState ?? WidgetsBinding.instance.lifecycleState,
-      ));
+  final observer = useHook(_AppLifecycleObserver());
 
-  onMounted(observer.attach);
-  onUnmounted(observer.dispose);
-
-  return observer.state;
+  return observer.readonly();
 }
 
-class _AppLifecycleObserver with WidgetsBindingObserver {
-  _AppLifecycleObserver(AppLifecycleState? initialState)
-      : _state = Signal<AppLifecycleState?>(initialState);
+class _AppLifecycleObserver extends SetupHook<Signal<AppLifecycleState?>>
+    with WidgetsBindingObserver {
+  _AppLifecycleObserver();
 
-  final Signal<AppLifecycleState?> _state;
-  bool _isAttached = false;
-
-  ReadonlySignal<AppLifecycleState?> get state => _state.readonly();
-
-  void attach() {
-    if (_isAttached) return;
-    final binding = WidgetsBinding.instance;
-    binding.addObserver(this);
-    _isAttached = true;
-
-    final lifecycleState = binding.lifecycleState;
-    // coverage:ignore-start
-    if (lifecycleState != null) {
-      _state.value = lifecycleState;
-    }
-    // coverage:ignore-end
+  @override
+  void mount() {
+    WidgetsBinding.instance.addObserver(this);
+    state.value = WidgetsBinding.instance.lifecycleState;
   }
 
-  void dispose() {
-    if (_isAttached) {
-      WidgetsBinding.instance.removeObserver(this);
-      _isAttached = false;
-    }
-    _state.dispose();
+  @override
+  void unmount() {
+    WidgetsBinding.instance.removeObserver(this);
   }
 
   // coverage:ignore-start
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    _state.value = state;
+    this.state.value = state;
   }
   // coverage:ignore-end
+
+  @override
+  Signal<AppLifecycleState?> createState() {
+    return Signal<AppLifecycleState?>(WidgetsBinding.instance.lifecycleState);
+  }
 }

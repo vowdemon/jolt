@@ -3,25 +3,21 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
 import 'package:jolt_flutter/setup.dart';
+import 'package:jolt_flutter_hooks/src/shared.dart';
 
 /// Creates a single ticker provider
 ///
 /// If you need multiple tickers, call this hook multiple times
 TickerProvider useSingleTickerProvider() {
-  final context = useContext();
-  final provider = useHook(() => _SingleTickerProvider(context));
-
-  onMounted(provider._init);
-  onChangedDependencies(provider._update);
-  onUnmounted(provider._dispose);
+  final provider = useHook(_SingleTickerProvider());
 
   return provider;
 }
 
-class _SingleTickerProvider implements TickerProvider {
-  _SingleTickerProvider(this._context);
+class _SingleTickerProvider extends SetupHook<TickerProvider>
+    implements TickerProvider {
+  _SingleTickerProvider();
 
-  final BuildContext _context;
   Ticker? _ticker;
   ValueListenable<bool>? _tickerModeNotifier;
 
@@ -30,16 +26,19 @@ class _SingleTickerProvider implements TickerProvider {
     assert(_ticker == null,
         'useSingleTickerProvider can only create one Ticker. If you need multiple tickers, call this hook multiple times.');
 
-    _ticker = Ticker(onTick, debugLabel: 'created by $_context');
+    _ticker = Ticker(onTick, debugLabel: 'created by $context');
     _updateTickerMode();
     return _ticker!;
   }
 
-  void _init() => _updateTickerMode();
+  @override
+  void mount() => _updateTickerMode();
 
-  void _update() => _updateTickerMode();
+  @override
+  void dependenciesChange() => _updateTickerMode();
 
-  void _dispose() {
+  @override
+  void unmount() {
     assert(_ticker == null || !_ticker!.isActive,
         'Ticker is still active. Please dispose AnimationController first.');
 
@@ -49,7 +48,7 @@ class _SingleTickerProvider implements TickerProvider {
   }
 
   void _updateTickerMode() {
-    final notifier = TickerMode.getNotifier(_context);
+    final notifier = TickerMode.getNotifier(context);
     if (notifier == _tickerModeNotifier) return;
 
     _tickerModeNotifier?.removeListener(_onTickerModeChanged);
@@ -61,6 +60,11 @@ class _SingleTickerProvider implements TickerProvider {
 
   void _onTickerModeChanged() {
     _ticker?.muted = !(_tickerModeNotifier?.value ?? true);
+  }
+
+  @override
+  TickerProvider createState() {
+    return this;
   }
 }
 
@@ -76,17 +80,18 @@ AnimationController useAnimationController({
   double upperBound = 1.0,
   AnimationBehavior animationBehavior = AnimationBehavior.normal,
 }) {
-  final controller = useHook(() => AnimationController(
-        vsync: vsync ?? useSingleTickerProvider(),
-        value: value,
-        duration: duration,
-        reverseDuration: reverseDuration,
-        lowerBound: lowerBound,
-        upperBound: upperBound,
-        animationBehavior: animationBehavior,
-      ));
-
-  onUnmounted(controller.dispose);
+  final vsyncProvider = vsync ?? useSingleTickerProvider();
+  final controller = useHook(SimpleSetupHook(
+      () => AnimationController(
+            vsync: vsyncProvider,
+            value: value,
+            duration: duration,
+            reverseDuration: reverseDuration,
+            lowerBound: lowerBound,
+            upperBound: upperBound,
+            animationBehavior: animationBehavior,
+          ),
+      onUnmount: (controller) => controller.dispose()));
 
   return controller;
 }

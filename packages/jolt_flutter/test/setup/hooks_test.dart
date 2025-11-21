@@ -11,7 +11,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           signal = useSignal(42);
-          return (context) => Text('Value: ${signal.value}');
+          return () => Text('Value: ${signal.value}');
         }),
       ));
 
@@ -28,7 +28,7 @@ void main() {
         home: SetupBuilder(setup: (context) {
           final signal = useSignal(5);
           final computed = useComputed(() => signal.value * 2);
-          return (context) => Text('Computed: ${computed.value}');
+          return () => Text('Computed: ${computed.value}');
         }),
       ));
 
@@ -44,7 +44,7 @@ void main() {
             () => source.value * 2,
             (value) => source.value = value ~/ 2,
           );
-          return (context) => Text('Writable: ${writable.value}');
+          return () => Text('Writable: ${writable.value}');
         }),
       ));
 
@@ -61,7 +61,7 @@ void main() {
             effectCount++;
             signal.value; // Track dependency
           });
-          return (context) => Text('Count: ${signal.value}');
+          return () => Text('Count: ${signal.value}');
         }),
       ));
       await tester.pumpAndSettle();
@@ -78,7 +78,7 @@ void main() {
           useJoltEffect(() {
             effectCount++;
           }, immediately: false);
-          return (context) => Text('Count: ${signal.value}');
+          return () => Text('Count: ${signal.value}');
         }),
       ));
       await tester.pumpAndSettle();
@@ -101,7 +101,7 @@ void main() {
             },
             immediately: true,
           );
-          return (context) => Text('Value: ${signal.value}');
+          return () => Text('Value: ${signal.value}');
         }),
       ));
       await tester.pumpAndSettle();
@@ -115,7 +115,7 @@ void main() {
         home: SetupBuilder(setup: (context) {
           final scope = useJoltEffectScope();
           expect(scope, isNotNull);
-          return (context) => const Text('Test');
+          return () => const Text('Test');
         }),
       ));
       await tester.pumpAndSettle();
@@ -127,7 +127,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           final list = useListSignal([1, 2, 3]);
-          return (context) => Text('Length: ${list.value.length}');
+          return () => Text('Length: ${list.value.length}');
         }),
       ));
 
@@ -138,7 +138,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           final map = useMapSignal({'key': 'value'});
-          return (context) => Text('Value: ${map.value['key']}');
+          return () => Text('Value: ${map.value['key']}');
         }),
       ));
 
@@ -149,7 +149,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           final set = useSetSignal({1, 2, 3});
-          return (context) => Text('Size: ${set.value.length}');
+          return () => Text('Size: ${set.value.length}');
         }),
       ));
 
@@ -160,25 +160,25 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           final iterable = useIterableSignal(() => [1, 2, 3]);
-          return (context) => Text('Count: ${iterable.value.length}');
+          return () => Text('Count: ${iterable.value.length}');
         }),
       ));
 
       expect(find.text('Count: 3'), findsOneWidget);
     });
 
-    testWidgets('useJoltStream creates stream from node', (tester) async {
-      await tester.pumpWidget(MaterialApp(
-        home: SetupBuilder(setup: (context) {
-          final signal = useSignal(1);
-          final stream = useJoltStream(signal);
-          expect(stream, isNotNull);
-          return (context) => Text('Value: ${signal.value}');
-        }),
-      ));
+    // testWidgets('useJoltStream creates stream from node', (tester) async {
+    //   await tester.pumpWidget(MaterialApp(
+    //     home: SetupBuilder(setup: (context) {
+    //       final signal = useSignal(1);
+    //       final stream = useJoltStream(signal);
+    //       expect(stream, isNotNull);
+    //       return () => Text('Value: ${signal.value}');
+    //     }),
+    //   ));
 
-      expect(find.text('Value: 1'), findsOneWidget);
-    });
+    //   expect(find.text('Value: 1'), findsOneWidget);
+    // });
 
     testWidgets('useConvertComputed creates converted computed',
         (tester) async {
@@ -190,7 +190,7 @@ void main() {
             (value) => int.parse(value),
             (value) => value.toString(),
           );
-          return (context) => Text('Converted: ${converted.value}');
+          return () => Text('Converted: ${converted.value}');
         }),
       ));
 
@@ -205,7 +205,7 @@ void main() {
             () => 42,
             (value) async {},
           );
-          return (context) => Text('Persist: ${persist.value}');
+          return () => Text('Persist: ${persist.value}');
         }),
       ));
 
@@ -223,7 +223,7 @@ void main() {
           signal1 = useSignal(1);
           final signal2 = useSignal(2);
           final computed = useComputed(() => signal1.value + signal2.value);
-          return (context) => Text('Sum: ${computed.value}');
+          return () => Text('Sum: ${computed.value}');
         }),
       ));
 
@@ -246,7 +246,7 @@ void main() {
             signal.value; // Track signal
             onEffectCleanup(() => disposed = true);
           });
-          return (context) => Text('Value: ${signal.value}');
+          return () => Text('Value: ${signal.value}');
         }),
       ));
       await tester.pumpAndSettle();

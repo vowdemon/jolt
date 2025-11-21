@@ -12,7 +12,7 @@ void main() {
         home: Scaffold(
           body: SetupBuilder(setup: (context) {
             controller = useScrollController();
-            return (context) => ListView.builder(
+            return () => ListView.builder(
                   controller: controller,
                   itemCount: 10,
                   itemBuilder: (context, index) => Text('Item $index'),
@@ -31,7 +31,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           controller = useScrollController(initialScrollOffset: 100.0);
-          return (context) => ListView.builder(
+          return () => ListView.builder(
                 controller: controller,
                 itemCount: 100,
                 itemBuilder: (context, index) => SizedBox(
@@ -50,7 +50,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           final controller = useScrollController();
-          return (context) => ListView(controller: controller);
+          return () => ListView(controller: controller);
         }),
       ));
 
@@ -65,7 +65,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           controller = useTabController(length: 3);
-          return (context) => DefaultTabController(
+          return () => DefaultTabController(
                 length: 3,
                 child: Scaffold(
                   appBar: AppBar(
@@ -101,7 +101,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           controller = useTabController(length: 3, initialIndex: 1);
-          return (context) => const Scaffold(body: SizedBox());
+          return () => const Scaffold(body: SizedBox());
         }),
       ));
 
@@ -116,7 +116,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           controller = useTabController(length: 3);
-          return (context) => const Scaffold(body: SizedBox());
+          return () => const Scaffold(body: SizedBox());
         }),
       ));
 
@@ -139,7 +139,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           final controller = useTabController(length: 3);
-          return (context) => Scaffold(
+          return () => Scaffold(
                 body: TabBar(
                   controller: controller,
                   tabs: const [Tab(text: '1'), Tab(text: '2'), Tab(text: '3')],
@@ -159,7 +159,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           controller = usePageController();
-          return (context) => PageView(
+          return () => PageView(
                 controller: controller,
                 children: const [
                   Center(child: Text('Page 1')),
@@ -180,7 +180,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           controller = usePageController(initialPage: 1);
-          return (context) => PageView(
+          return () => PageView(
                 controller: controller,
                 children: const [
                   Center(child: Text('Page 1')),
@@ -205,7 +205,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           controller = usePageController();
-          return (context) => PageView(
+          return () => PageView(
                 controller: controller,
                 children: const [
                   Center(child: Text('Page 1')),
@@ -236,7 +236,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           final controller = usePageController();
-          return (context) => PageView(
+          return () => PageView(
                 controller: controller,
                 children: const [Text('Page 1')],
               );
@@ -255,7 +255,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           controller = useFixedExtentScrollController();
-          return (context) => SizedBox(
+          return () => SizedBox(
                 height: 200,
                 child: ListWheelScrollView(
                   controller: controller,
@@ -280,7 +280,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           controller = useFixedExtentScrollController(initialItem: 3);
-          return (context) => SizedBox(
+          return () => SizedBox(
                 height: 200,
                 child: ListWheelScrollView(
                   controller: controller,
@@ -305,7 +305,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           controller = useFixedExtentScrollController();
-          return (context) => SizedBox(
+          return () => SizedBox(
                 height: 200,
                 child: ListWheelScrollView(
                   controller: controller,
@@ -332,7 +332,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           final controller = useFixedExtentScrollController();
-          return (context) => SizedBox(
+          return () => SizedBox(
                 height: 200,
                 child: ListWheelScrollView(
                   controller: controller,
@@ -357,7 +357,7 @@ void main() {
           scrollController = useScrollController();
           pageController = usePageController();
 
-          return (context) => Column(
+          return () => Column(
                 children: [
                   Expanded(
                     child: ListView(

@@ -6,4 +6,4 @@
 library;
 
 export 'src/setup/widget.dart';
-export 'src/setup/hooks.dart';
+export 'src/setup/jolt_hooks.dart';

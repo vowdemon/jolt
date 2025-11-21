@@ -11,7 +11,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           focusNode = useFocusNode(debugLabel: 'Test Node');
-          return (context) => const Text('Test');
+          return () => const Text('Test');
         }),
       ));
 
@@ -25,7 +25,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           focusNode = useFocusNode();
-          return (context) => const Text('Test');
+          return () => const Text('Test');
         }),
       ));
 
@@ -42,7 +42,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           scopeNode = useFocusScopeNode(debugLabel: 'Scope');
-          return (context) => const Text('Test');
+          return () => const Text('Test');
         }),
       ));
 
@@ -60,7 +60,7 @@ void main() {
           node1 = useFocusNode(debugLabel: 'Node 1');
           node2 = useFocusNode(debugLabel: 'Node 2');
 
-          return (context) => const Text('Test');
+          return () => const Text('Test');
         }),
       ));
 

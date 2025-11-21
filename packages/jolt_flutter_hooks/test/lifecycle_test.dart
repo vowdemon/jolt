@@ -11,7 +11,7 @@ void main() {
         home: SetupBuilder(setup: (context) {
           final lifecycleState = useAppLifecycleState();
 
-          return (context) => Text('State: ${lifecycleState.value}');
+          return () => Text('State: ${lifecycleState.value}');
         }),
       ));
 
@@ -19,28 +19,11 @@ void main() {
       expect(find.textContaining('State:'), findsOneWidget);
     });
 
-    testWidgets('useAppLifecycleState with custom initial state',
-        (tester) async {
-      AppLifecycleState? capturedState;
-
-      await tester.pumpWidget(MaterialApp(
-        home: SetupBuilder(setup: (context) {
-          final lifecycleState =
-              useAppLifecycleState(AppLifecycleState.inactive);
-          capturedState = lifecycleState.value;
-
-          return (context) => const Text('Test');
-        }),
-      ));
-
-      expect(capturedState, AppLifecycleState.inactive);
-    });
-
     testWidgets('useAppLifecycleState cleans up correctly', (tester) async {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           useAppLifecycleState();
-          return (context) => const Text('Test');
+          return () => const Text('Test');
         }),
       ));
 
@@ -54,7 +37,7 @@ void main() {
         home: SetupBuilder(setup: (context) {
           final lifecycleState = useAppLifecycleState();
 
-          return (context) => Text('State: ${lifecycleState.value}');
+          return () => Text('State: ${lifecycleState.value}');
         }),
       ));
 

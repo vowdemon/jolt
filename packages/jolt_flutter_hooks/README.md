@@ -7,6 +7,7 @@
 
 A collection of declarative hooks for Flutter widgets, built on top of [Jolt Flutter](https://pub.dev/packages/jolt_flutter) setup system. This package provides convenient hooks for managing common Flutter resources like controllers, focus nodes, and lifecycle states with automatic cleanup.
 
+⚠️ **Warning**: The tests in this package are currently unstable and may occasionally fail. This is a known issue that we're working to resolve.
 
 ## Quick Start
 

@@ -148,7 +148,7 @@ SetupBuilder(
       print('Widget unmounted');
     });
     
-    return (context) => Column(
+    return () => Column(
       children: [
         Text('Count: ${count.value}'),
         ElevatedButton(
@@ -166,18 +166,18 @@ SetupBuilder(
 You can also create your own SetupWidget by extending `SetupWidget`:
 
 ```dart
-class CounterWidget extends SetupWidget {
+class CounterWidget extends SetupWidget<CounterWidget> {
   const CounterWidget({super.key});
 
   @override
-  WidgetBuilder setup(BuildContext context) {
+  setup(context, props) {
     final count = useSignal(0);
     
     useJoltEffect(() {
       print('Count changed: ${count.value}');
     });
     
-    return (context) => Column(
+    return () => Column(
       children: [
         Text('Count: ${count.value}'),
         ElevatedButton(
@@ -189,6 +189,10 @@ class CounterWidget extends SetupWidget {
   }
 }
 ```
+
+**Note:** The `setup` function receives two parameters:
+- `context`: The `SetupBuildContext` that provides access to the widget's build context
+- `props`: A `PropsReadonlyNode` that provides reactive access to the widget instance and its properties
 
 ### Available Hooks
 
@@ -229,19 +233,24 @@ setup: (context) {
     print('Dependencies changed');
   });
   
-  // Watch widget parameters
-  final props = useProps();
+  onActivated(() {
+    print('Widget activated');
+  });
   
-  return (context) => Text('Count: ${count.value}');
+  onDeactivated(() {
+    print('Widget deactivated');
+  });
+  
+  return () => Text('Count: ${count.value}');
 }
 ```
 
 ### Watching Widget Parameters
 
-Since the `setup` function executes only once, you cannot directly access widget parameters in the builder function to react to changes. Use `useProps()` to create a reactive reference to the widget instance, which is the **only way** to watch for widget parameter changes in SetupWidget.
+Since the `setup` function executes only once, you cannot directly access widget parameters in the builder function to react to changes. The `props` parameter (a `PropsReadonlyNode`) provides reactive access to the widget instance, which is the **only way** to watch for widget parameter changes in SetupWidget.
 
 ```dart
-class UserCard extends SetupWidget {
+class UserCard extends SetupWidget<UserCard> {
   final String name;
   final int age;
   
@@ -252,17 +261,17 @@ class UserCard extends SetupWidget {
   });
 
   @override
-  WidgetBuilder setup(BuildContext context) {
-    // useProps() returns a reactive ReadonlyNode that tracks widget changes
-    final props = useProps();
+  setup(context, props) {
+    // props is a ReadonlyNode that tracks widget changes
+    // You can use props.value, props(), or props.get() to access the widget instance
     
     // Create a computed that reacts to prop changes
     final displayText = useComputed(() => 
-      '${props.value.name} (${props.value.age})'
+      '${props().name} (${props().age})'
     );
     
     // The builder will rebuild when props change
-    return (context) => Text(displayText.value);
+    return () => Text(displayText.value);
   }
 }
 
@@ -271,7 +280,13 @@ UserCard(name: 'Alice', age: 30)  // Initial render
 UserCard(name: 'Bob', age: 25)    // Widget updates, builder rebuilds
 ```
 
-**Important:** `useProps()` returns a `ReadonlyNode<YourWidgetType>`, allowing you to access widget properties reactively. When the parent widget updates the SetupWidget with new parameters, the `props.value` will reflect the new widget instance, triggering reactive updates in any Computed or Effect that depends on it.
+**Important:** The `props` parameter is a `ReadonlyNode<YourWidgetType>`, allowing you to access widget properties reactively. You can use:
+- `props.value` - Get the widget instance (establishes reactive dependency)
+- `props()` - Shorthand for `props.value`
+- `props.get()` - Same as `props.value`
+- `props.peek` - Get the widget instance without establishing a reactive dependency
+
+When the parent widget updates the SetupWidget with new parameters, accessing `props.value` (or `props()`/`props.get()`) will reflect the new widget instance, triggering reactive updates in any Computed or Effect that depends on it.
 
 ### Lifecycle Management
 
@@ -291,7 +306,7 @@ setup: (context) {
     timer.value?.cancel();
   });
   
-  return (context) => Text('Timer running');
+  return () => Text('Timer running');
 }
 ```
 
@@ -335,7 +350,7 @@ setup: (context) {
   
   // After hot reload, count and name will retain their values
   // if the setup function structure remains unchanged
-  return (context) => Text('${name.value}: ${count.value}');
+  return () => Text('${name.value}: ${count.value}');
 }
 ```
 

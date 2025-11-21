@@ -1,3 +1,8 @@
+## 2.0.0-beta.2
+
+ - **REFACTOR**(jolt_flutter): refactor SetupWidget hook system architecture. ([db32a9a3](https://github.com/vowdemon/jolt/commit/db32a9a3d1e2a18c82ea58fdfa97406899d3e0a2))
+ - **REFACTOR**: restructure public API exports. ([d3716988](https://github.com/vowdemon/jolt/commit/d37169880998cfc145962cca6efc339d7a39c898))
+
 ## 2.0.0-beta.1
 
 **New features:**

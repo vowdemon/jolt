@@ -3,6 +3,51 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-11-21
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`jolt` - `v2.0.0-beta.2`](#jolt---v200-beta2)
+ - [`jolt_flutter` - `v2.0.0-beta.2`](#jolt_flutter---v200-beta2)
+ - [`jolt_flutter_hooks` - `v1.0.0-beta.2`](#jolt_flutter_hooks---v100-beta2)
+ - [`jolt_hooks` - `v2.0.0-beta.2`](#jolt_hooks---v200-beta2)
+ - [`jolt_surge` - `v2.0.0-beta.2`](#jolt_surge---v200-beta2)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `jolt_hooks` - `v2.0.0-beta.2`
+ - `jolt_surge` - `v2.0.0-beta.2`
+
+---
+
+#### `jolt` - `v2.0.0-beta.2`
+
+ - **REFACTOR**(jolt_flutter): refactor SetupWidget hook system architecture. ([db32a9a3](https://github.com/vowdemon/jolt/commit/db32a9a3d1e2a18c82ea58fdfa97406899d3e0a2))
+ - **REFACTOR**: make notifySignal more generic and remove redundant dirty flag. ([8bf595de](https://github.com/vowdemon/jolt/commit/8bf595dec20146443a406bbc5de037ba5c678907))
+ - **REFACTOR**: restructure public API exports. ([d3716988](https://github.com/vowdemon/jolt/commit/d37169880998cfc145962cca6efc339d7a39c898))
+ - **FEAT**(jolt): add Signal.lazy factory constructor. ([436ec10d](https://github.com/vowdemon/jolt/commit/436ec10d1cc2801d7a53ea64a997a4e03d6d7c3e))
+
+#### `jolt_flutter` - `v2.0.0-beta.2`
+
+ - **REFACTOR**(jolt_flutter): refactor SetupWidget hook system architecture. ([db32a9a3](https://github.com/vowdemon/jolt/commit/db32a9a3d1e2a18c82ea58fdfa97406899d3e0a2))
+ - **REFACTOR**: restructure public API exports. ([d3716988](https://github.com/vowdemon/jolt/commit/d37169880998cfc145962cca6efc339d7a39c898))
+
+#### `jolt_flutter_hooks` - `v1.0.0-beta.2`
+
+ - **REFACTOR**(jolt_flutter): refactor SetupWidget hook system architecture. ([db32a9a3](https://github.com/vowdemon/jolt/commit/db32a9a3d1e2a18c82ea58fdfa97406899d3e0a2))
+ - **FIX**: hot reload of hooks. ([b6b90eef](https://github.com/vowdemon/jolt/commit/b6b90eef465b87ce7d676ba1df89503a7a1a6c77))
+
+
 ## 2025-11-16
 
 ### Changes

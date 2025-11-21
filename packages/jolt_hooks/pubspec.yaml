@@ -10,7 +10,7 @@ topics:
   - signals
   - hook
 
-version: 2.0.0-beta.1
+version: 2.0.0-beta.2
 
 resolution: workspace
 
@@ -22,11 +22,11 @@ dependencies:
     sdk: flutter
 
   flutter_hooks: ^0.21.3+1
-  jolt: ^2.0.0-beta.1
+  jolt: ^2.0.0-beta.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  jolt_flutter: ^2.0.0-beta.1
+  jolt_flutter: ^2.0.0-beta.2
 
   flutter_lints: ^5.0.0

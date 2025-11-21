@@ -1,3 +1,10 @@
+## 2.0.0-beta.2
+
+ - **REFACTOR**(jolt_flutter): refactor SetupWidget hook system architecture. ([db32a9a3](https://github.com/vowdemon/jolt/commit/db32a9a3d1e2a18c82ea58fdfa97406899d3e0a2))
+ - **REFACTOR**: make notifySignal more generic and remove redundant dirty flag. ([8bf595de](https://github.com/vowdemon/jolt/commit/8bf595dec20146443a406bbc5de037ba5c678907))
+ - **REFACTOR**: restructure public API exports. ([d3716988](https://github.com/vowdemon/jolt/commit/d37169880998cfc145962cca6efc339d7a39c898))
+ - **FEAT**(jolt): add Signal.lazy factory constructor. ([436ec10d](https://github.com/vowdemon/jolt/commit/436ec10d1cc2801d7a53ea64a997a4e03d6d7c3e))
+
 ## 2.0.0-beta.1
 
 **BREAKING CHANGES:**

@@ -18,7 +18,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       home: JoltBuilder(
-        builder: (context) => const MyHomePage(title: 'Flutter Demo Home Page'),
+        builder: (context) =>
+            MyHomePage(title: 'Flutter Demo Home Page ${computed.value}'),
       ),
     );
   }

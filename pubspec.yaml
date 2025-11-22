@@ -11,22 +11,24 @@ workspace:
   - packages/jolt_flutter
   - packages/jolt_hooks
   - packages/jolt_surge
+  - packages/jolt_lint
   - packages/jolt_flutter_hooks
   - packages/jolt_hooks/example
   - packages/jolt_surge/example
+  - packages/jolt_lint/example
 
 dev_dependencies:
   melos: ^7.3.0
 
 melos:
+  categories:
+    examples:
+      - examples/*
   ide:
     intellij:
       enabled: false
   command:
     bootstrap:
-      environment:
-        sdk: ">=3.6.0 <4.0.0"
-
       dependencies:
         meta: ^1.0.0
 

@@ -1,28 +1,3 @@
-# Custom rules
-
-examples/**/android/
-examples/**/ios/
-examples/**/linux/
-examples/**/macos/
-examples/**/web/
-examples/**/windows/
-examples/**/test/
-examples/**/pubspec.lock
-
-packages/**/example/android/
-packages/**/example/ios/
-packages/**/example/linux/
-packages/**/example/macos/
-packages/**/example/web/
-packages/**/example/windows/
-packages/**/example/test/
-packages/**/example/pubspec.lock
-
-devtools_options.yaml
-.fvmrc
-
-*_prompt.md
-
 # Miscellaneous
 *.class
 *.log
@@ -68,9 +43,3 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
-
-/web
-.metadata
-
-# FVM Version Cache
-.fvm/

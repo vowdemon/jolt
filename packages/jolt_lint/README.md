@@ -8,7 +8,7 @@ Add to `analysis_options.yaml`:
 
 ```yaml
 plugins:
-  jolt_lint: ^1.0.0.beta.1
+  jolt_lint: ^2.0.0-beta.1
 ```
 
 ## Requirements

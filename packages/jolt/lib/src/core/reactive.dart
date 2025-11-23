@@ -101,11 +101,11 @@ EffectScopeReactiveNode? activeScope;
 @pragma("dart2js:prefer-inline")
 @override
 bool updateNode(ReactiveNode node) {
-  if (node is ComputedReactiveNode) {
-    return updateComputed(node);
-  } else {
-    return updateSignal(node as SignalReactiveNode);
-  }
+  return switch (node) {
+    ComputedReactiveNode() => updateComputed(node),
+    SignalReactiveNode() => updateSignal(node),
+    _ => updateCustom(node),
+  };
 }
 
 /// Enqueues an [EffectReactiveNode] chain for execution.
@@ -374,6 +374,41 @@ bool updateSignal<T>(SignalReactiveNode<T> signal) {
   return signal.cachedValue != (signal.cachedValue = signal.pendingValue);
 }
 
+/// Updates a custom reactive node and returns whether its value changed.
+///
+/// This function is called by [updateNode] for nodes that are not standard
+/// [ComputedReactiveNode] or [SignalReactiveNode] instances. It handles
+/// [CustomReactiveNode] instances by calling their [CustomReactiveNode.updateNode]
+/// method, which allows custom update logic.
+///
+/// For non-custom nodes, this function always returns `true`, indicating that
+/// the node should be treated as changed.
+///
+/// Parameters:
+/// - [node]: Custom reactive node to update
+///
+/// Returns: `true` if the node's value changed, `false` otherwise
+///
+/// Example:
+/// ```dart
+/// final customNode = CustomWidgetPropsNode<MyWidget>();
+/// if (updateCustom(customNode) && customNode.subs != null) {
+///   shallowPropagate(customNode.subs!);
+/// }
+/// ```
+@pragma("vm:prefer-inline")
+@pragma("wasm:prefer-inline")
+@pragma("dart2js:prefer-inline")
+bool updateCustom<T>(ReactiveNode node) {
+  node.flags = ReactiveFlags.mutable;
+
+  if (node is CustomReactiveNode) {
+    return node.updateNode();
+  } else {
+    return true;
+  }
+}
+
 /// Remove the pending flag from a reactive node
 @pragma("vm:prefer-inline")
 @pragma("wasm:prefer-inline")
@@ -634,22 +669,58 @@ T getSignal<T>(SignalReactiveNode<T> signal) {
 @pragma("vm:prefer-inline")
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
-void notifySignal<T>(ReactiveNode signal) {
-  signal.flags = ReactiveFlags.mutable;
+void notifySignal<T>(SignalReactiveNode signal) {
+  // Mark as changed even if the underlying reference didn't change (e.g. in-place mutations).
+  signal.flags = ReactiveFlags.mutable | ReactiveFlags.dirty;
 
-  var subs = signal.subs;
+  signal.cachedValue = null;
 
-  while (subs != null) {
-    subs.sub.flags |= ReactiveFlags.pending;
+  final subs = signal.subs;
+  if (subs != null) {
+    propagate(subs);
     shallowPropagate(subs);
-    subs = subs.nextSub;
-  }
-
-  if (signal.subs != null && batchDepth == 0) {
-    flushEffects();
+    if (batchDepth == 0) {
+      flushEffects();
+    }
   }
 
   JoltDebug.notify(signal);
+}
+
+/// Invalidates a custom reactive node so that subscribers re-evaluate without
+/// changing the stored value.
+///
+/// This function marks a custom reactive node as dirty and notifies all its
+/// subscribers to re-evaluate. Unlike [notifySignal] and [notifyComputed],
+/// this function works with any [ReactiveNode], including [CustomReactiveNode]
+/// instances.
+///
+/// The node is marked as dirty and mutable, and all subscribers are propagated.
+/// If not in a batch, effects are flushed immediately.
+///
+/// Parameters:
+/// - [node]: Custom reactive node to invalidate
+///
+/// Example:
+/// ```dart
+/// final customNode = CustomWidgetPropsNode<MyWidget>();
+/// notifyCustom(customNode); // Triggers subscriber re-evaluation
+/// ```
+@pragma("vm:prefer-inline")
+@pragma("wasm:prefer-inline")
+@pragma("dart2js:prefer-inline")
+void notifyCustom<T>(ReactiveNode node) {
+  node.flags = ReactiveFlags.mutable | ReactiveFlags.dirty;
+
+  final subs = node.subs;
+  if (subs != null) {
+    propagate(subs);
+    if (batchDepth == 0) {
+      flushEffects();
+    }
+  }
+
+  JoltDebug.notify(node);
 }
 
 /// Disposes any reactive node and detaches all dependencies/subscribers.
@@ -878,6 +949,74 @@ abstract class SignalReactiveNode<T> extends ReactiveNode {
 
   T? pendingValue;
   late T? cachedValue = pendingValue;
+}
+
+/// Base class for custom reactive nodes with custom update logic.
+///
+/// This class allows you to create reactive nodes that have custom update
+/// behavior beyond the standard signal and computed patterns. When a
+/// [CustomReactiveNode] is updated via [updateCustom], the system
+/// calls [updateNode] to determine if the node's value has actually changed.
+///
+/// ## Implementing CustomReactiveNode
+///
+/// Subclasses must implement [updateNode] to define how the node updates
+/// and whether its value has changed. The method should:
+/// - Update the node's internal state if needed
+/// - Return `true` if the value changed (subscribers will be notified)
+/// - Return `false` if the value did not change (no notifications)
+///
+/// Example:
+/// ```dart
+/// class CustomWidgetPropsNode<T> extends CustomReactiveNode<T> {
+///   CustomWidgetPropsNode() : super(flags: ReactiveFlags.mutable);
+///
+///   bool _dirty = false;
+///
+///   @override
+///   void notify() {
+///     _dirty = true;
+///     notifyReactiveNode(this);
+///   }
+///
+///   @override
+///   bool updateNode() {
+///     if (_dirty) {
+///       _dirty = false;
+///       return true; // Value changed, notify subscribers
+///     }
+///     return false; // No change
+///   }
+/// }
+/// ```
+abstract class CustomReactiveNode<T> extends ReactiveNode {
+  CustomReactiveNode({required super.flags});
+
+  /// Updates the node and reports whether its value changed.
+  ///
+  /// This method is called by [updateCustom] when the reactive system
+  /// needs to update this node. Implementations should:
+  /// - Update any internal state or cached values
+  /// - Return `true` if the node's value has changed (subscribers will be notified)
+  /// - Return `false` if the value is unchanged (no notifications will be sent)
+  ///
+  /// The return value determines whether subscribers are notified of changes.
+  /// If `true` is returned, the reactive system will propagate updates to
+  /// all subscribers of this node.
+  ///
+  /// Returns: `true` if the value changed, `false` otherwise
+  ///
+  /// Example:
+  /// ```dart
+  /// @override
+  /// bool updateNode() {
+  ///   final oldValue = _cachedValue;
+  ///   _cachedValue = _computeNewValue();
+  ///   return oldValue != _cachedValue;
+  /// }
+  /// ```
+  @protected
+  bool updateNode();
 }
 
 /// Shared contract for effect-like nodes that can be disposed.

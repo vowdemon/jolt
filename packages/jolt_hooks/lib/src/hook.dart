@@ -685,11 +685,12 @@ abstract class JoltEffectScopeHookCreator {
   /// {@endtemplate}
   EffectScope call({
     void Function(EffectScope scope)? fn,
+    bool detach = false,
     List<Object?>? keys,
     JoltDebugFn? onDebug,
   }) {
     return use(JoltEffectHook(() {
-      final scope = EffectScope(onDebug: onDebug);
+      final scope = EffectScope(detach: detach, onDebug: onDebug);
       if (fn != null) {
         scope.run(() => fn(scope));
       }

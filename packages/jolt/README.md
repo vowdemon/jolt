@@ -103,10 +103,10 @@ count.value = 2; // Effect runs again
 // values = [0, 1, 2]
 
 // Effects run immediately by default
-// Use immediately: false to defer execution
+// Use lazy: true to defer execution
 Effect(() {
   print('Deferred effect');
-}, immediately: false);
+}, lazy: true);
 ```
 
 ### Effect Scopes
@@ -351,7 +351,7 @@ theme.value = 'dark'; // Automatically saved to storage
 ### Effect Dependencies
 - Effects only re-run when tracked dependencies change
 - Use `untracked()` to access values without creating dependencies
-- Effects run immediately when created (unless `immediately: false`)
+- Effects run immediately when created (unless `lazy: true`)
 
 ### Memory Management
 - Always dispose signals and effects when no longer needed

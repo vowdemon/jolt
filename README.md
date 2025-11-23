@@ -6,11 +6,10 @@
 [![jolt_flutter](https://img.shields.io/pub/v/jolt_flutter?label=jolt_flutter)](https://pub.dev/packages/jolt_flutter)
 [![jolt_hooks](https://img.shields.io/pub/v/jolt_hooks?label=jolt_hooks)](https://pub.dev/packages/jolt_hooks)
 [![jolt_surge](https://img.shields.io/pub/v/jolt_surge?label=jolt_surge)](https://pub.dev/packages/jolt_surge)
+[![jolt_lint](https://img.shields.io/pub/v/jolt_lint?label=jolt_lint)](https://pub.dev/packages/jolt_lint)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/vowdemon/jolt/blob/main/LICENSE)
 
-A lightweight and simple reactive signal library for Dart and Flutter.
-
-Jolt is a reactive state management library that provides signals, computed values, effects, and reactive collections. The library is designed to be lightweight, simple, and easy to use, with low cognitive overhead for developers. With alien_signals as its powerful underlying engine, Jolt also delivers excellent performance while keeping the API simple and intuitive.
+Reactive state management for Dart and Flutter using signals, computed values, effects, and reactive collections. Focused on developer experience and efficiency with a concise API. Built on alien_signals for performance.
 
 ## Documentation
 
@@ -18,7 +17,7 @@ Jolt is a reactive state management library that provides signals, computed valu
 
 ## Packages
 
-The Jolt ecosystem consists of four packages:
+The Jolt ecosystem consists of five packages:
 
 ### [jolt](packages/jolt/) - Core Library
 
@@ -53,6 +52,13 @@ A state management pattern inspired by [BLoC's Cubit](https://bloclibrary.dev/#/
 - `SurgeProvider` - Provides Surge instances to the widget tree
 - `SurgeConsumer` - Unified widget for both building UI and handling side effects
 - `SurgeBuilder`, `SurgeListener`, `SurgeSelector` - Convenience widgets
+
+### [jolt_lint](packages/jolt_lint/) - Lint Tool
+
+A lint tool designed for the Jolt ecosystem, providing code transformation assists and rule checks:
+- Code transformation assists: Convert to/from Signal, wrap widgets with JoltBuilder/JoltProvider/JoltSelector
+- Lint rules: `no_setup_this` rule to ensure Setup pattern purity
+- IDE integration: Quick fixes and real-time code quality checks
 
 ## Quick Start
 

@@ -40,7 +40,7 @@ class ConvertComputedImpl<T, U> extends WritableComputedImpl<T>
         );
 
   /// The source signal to convert from.
-  final Signal<U> source;
+  final WritableNode<U> source;
 
   /// Function to convert from source type to target type.
   final T Function(U value) decode;
@@ -85,7 +85,7 @@ abstract interface class ConvertComputed<T, U> implements WritableComputed<T> {
   ///   encode: (String v) => int.parse(v),
   /// );
   /// ```
-  factory ConvertComputed(Signal<U> source,
+  factory ConvertComputed(WritableNode<U> source,
       {required T Function(U value) decode,
       required U Function(T value) encode,
       JoltDebugFn? onDebug}) = ConvertComputedImpl<T, U>;

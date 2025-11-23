@@ -24,6 +24,12 @@ melos:
   categories:
     examples:
       - examples/*
+    testable:
+      - packages/jolt
+      - packages/jolt_flutter
+      - packages/jolt_hooks
+      - packages/jolt_surge
+      - packages/jolt_flutter_hooks
   ide:
     intellij:
       enabled: false
@@ -40,7 +46,7 @@ melos:
 
   scripts:
     test:select:
-      run: melos exec -c 1 -- flutter test --coverage
+      run: melos exec --category="testable" -c 1 -- flutter test --coverage
       packageFilters:
         dirExists: test
       description: Run `flutter test` for selected packages.

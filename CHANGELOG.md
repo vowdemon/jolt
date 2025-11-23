@@ -3,6 +3,28 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-11-23
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`jolt_lint` - `v2.0.0-beta.2`](#jolt_lint---v200-beta2)
+
+---
+
+#### `jolt_lint` - `v2.0.0-beta.2`
+
+ - **FIX**: improve pub score and fix minor issues. ([1306da3b](https://github.com/vowdemon/jolt/commit/1306da3b49e7fb7f105e81ce7b4ec3dd7889edeb))
+ - **FEAT**: add jolt_lint package. ([ab6a50d6](https://github.com/vowdemon/jolt/commit/ab6a50d6c7caacbb5ad9fd635fc8b5723079ae44))
+
+
 ## 2025-11-21
 
 ### Changes

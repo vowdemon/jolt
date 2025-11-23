@@ -3,7 +3,6 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
 import 'package:jolt_flutter/setup.dart';
-import 'package:jolt_flutter_hooks/src/shared.dart';
 
 /// Creates a single ticker provider
 ///
@@ -35,7 +34,7 @@ class _SingleTickerProvider extends SetupHook<TickerProvider>
   void mount() => _updateTickerMode();
 
   @override
-  void dependenciesChange() => _updateTickerMode();
+  void didChangeDependencies() => _updateTickerMode();
 
   @override
   void unmount() {
@@ -63,7 +62,7 @@ class _SingleTickerProvider extends SetupHook<TickerProvider>
   }
 
   @override
-  TickerProvider createState() {
+  TickerProvider build() {
     return this;
   }
 }
@@ -81,7 +80,7 @@ AnimationController useAnimationController({
   AnimationBehavior animationBehavior = AnimationBehavior.normal,
 }) {
   final vsyncProvider = vsync ?? useSingleTickerProvider();
-  final controller = useHook(SimpleSetupHook(
+  final controller = useMemoized(
       () => AnimationController(
             vsync: vsyncProvider,
             value: value,
@@ -91,7 +90,7 @@ AnimationController useAnimationController({
             upperBound: upperBound,
             animationBehavior: animationBehavior,
           ),
-      onUnmount: (controller) => controller.dispose()));
+      (controller) => controller.dispose());
 
   return controller;
 }

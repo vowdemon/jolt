@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:jolt_flutter/setup.dart';
-import 'package:jolt_flutter_hooks/src/shared.dart';
 import 'animation.dart';
 
 /// Creates a scroll controller
@@ -14,7 +13,7 @@ ScrollController useScrollController({
   ScrollControllerCallback? onAttach,
   ScrollControllerCallback? onDetach,
 }) {
-  final controller = useHook(SimpleSetupHook(
+  final controller = useMemoized(
       () => ScrollController(
             initialScrollOffset: initialScrollOffset,
             keepScrollOffset: keepScrollOffset,
@@ -22,7 +21,7 @@ ScrollController useScrollController({
             onAttach: onAttach,
             onDetach: onDetach,
           ),
-      onUnmount: (controller) => controller.dispose()));
+      (controller) => controller.dispose);
 
   return controller;
 }
@@ -39,14 +38,14 @@ TabController useTabController({
   TickerProvider? vsync,
   Duration? animationDuration,
 }) {
-  final controller = useHook(SimpleSetupHook(
+  final controller = useMemoized(
       () => TabController(
             length: length,
             initialIndex: initialIndex,
             vsync: vsync ?? useSingleTickerProvider(),
             animationDuration: animationDuration,
           ),
-      onUnmount: (controller) => controller.dispose()));
+      (controller) => controller.dispose);
 
   return controller;
 }
@@ -60,7 +59,7 @@ PageController usePageController(
     double viewportFraction = 1.0,
     void Function(ScrollPosition)? onAttach,
     void Function(ScrollPosition)? onDetach}) {
-  final controller = useHook(SimpleSetupHook(
+  final controller = useMemoized(
       () => PageController(
             initialPage: initialPage,
             keepPage: keepPage,
@@ -68,7 +67,7 @@ PageController usePageController(
             onAttach: onAttach,
             onDetach: onDetach,
           ),
-      onUnmount: (controller) => controller.dispose()));
+      (controller) => controller.dispose);
 
   return controller;
 }
@@ -83,7 +82,7 @@ FixedExtentScrollController useFixedExtentScrollController({
   bool keepScrollOffset = true,
   String? debugLabel,
 }) {
-  final controller = useHook(SimpleSetupHook(
+  final controller = useMemoized(
       () => FixedExtentScrollController(
             initialItem: initialItem,
             onAttach: onAttach,
@@ -91,7 +90,7 @@ FixedExtentScrollController useFixedExtentScrollController({
             keepScrollOffset: keepScrollOffset,
             debugLabel: debugLabel,
           ),
-      onUnmount: (controller) => controller.dispose()));
+      (controller) => controller.dispose);
 
   return controller;
 }

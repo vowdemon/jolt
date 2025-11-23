@@ -1,6 +1,5 @@
 import 'package:flutter/widgets.dart';
 import 'package:jolt_flutter/setup.dart';
-import 'package:jolt_flutter_hooks/src/shared.dart';
 
 /// Creates a text editing controller
 ///
@@ -20,9 +19,8 @@ final class _TextEditingControllerCreator {
   ///
   /// [text] Initial text content
   TextEditingController call([String? text]) {
-    final controller = useHook(SimpleSetupHook(
-        () => TextEditingController(text: text),
-        onUnmount: (controller) => controller.dispose()));
+    final controller = useMemoized(() => TextEditingController(text: text),
+        (controller) => controller.dispose);
 
     return controller;
   }
@@ -31,9 +29,8 @@ final class _TextEditingControllerCreator {
   ///
   /// [value] Initial TextEditingValue
   TextEditingController fromValue([TextEditingValue? value]) {
-    final controller = useHook(SimpleSetupHook(
-        () => TextEditingController.fromValue(value),
-        onUnmount: (controller) => controller.dispose()));
+    final controller = useMemoized(() => TextEditingController.fromValue(value),
+        (controller) => controller.dispose);
 
     return controller;
   }

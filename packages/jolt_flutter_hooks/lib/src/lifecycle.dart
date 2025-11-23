@@ -36,7 +36,7 @@ class _AppLifecycleObserver extends SetupHook<Signal<AppLifecycleState?>>
   // coverage:ignore-end
 
   @override
-  Signal<AppLifecycleState?> createState() {
+  Signal<AppLifecycleState?> build() {
     return Signal<AppLifecycleState?>(WidgetsBinding.instance.lifecycleState);
   }
 }

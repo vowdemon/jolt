@@ -215,7 +215,7 @@ class JoltProviderElement<T> extends ComponentElement
       ..run(() {
         // Use create function if provided, otherwise use value
         _store = widget.create?.call(this) ?? widget.value;
-        _effect = Effect(joltBuildTriggerEffect, immediately: false);
+        _effect = Effect.lazy(joltBuildTriggerEffect);
       });
 
     super.mount(parent, newSlot);

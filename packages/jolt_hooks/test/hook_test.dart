@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jolt/tricks.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
 
 import 'package:jolt_hooks/jolt_hooks.dart';
@@ -29,6 +30,28 @@ void main() {
       await tester.tap(find.byType(Text));
       await tester.pumpAndSettle();
       expect(find.text('124'), findsOneWidget);
+    });
+
+    testWidgets('useSignal.lazy: creates signal without initial value',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            final state = useSignal.lazy<String?>();
+
+            return JoltBuilder(
+              builder: (context) {
+                return Text(
+                  'Value: ${state.value ?? 'null'}',
+                  textDirection: TextDirection.ltr,
+                );
+              },
+            );
+          },
+        ),
+      );
+
+      expect(find.text('Value: null'), findsOneWidget);
     });
   });
 
@@ -68,7 +91,7 @@ void main() {
         HookBuilder(
           builder: (context) {
             final signal = useSignal(10);
-            final writableComputed = useWritableComputed(
+            final writableComputed = useComputed.writable(
               () => signal.value * 2,
               (value) => signal.value = value ~/ 2,
             );
@@ -128,7 +151,7 @@ void main() {
         HookBuilder(
           builder: (context) {
             final source = useSignal(123);
-            final converted = useConvertComputed(
+            final converted = useComputed.convert(
               source,
               (int value) => 'Number: $value',
               (String value) => int.parse(value.split(': ')[1]),
@@ -190,7 +213,7 @@ void main() {
       await tester.pumpWidget(
         HookBuilder(
           builder: (context) {
-            final persistSignal = usePersistSignal(
+            final persistSignal = useSignal.persist(
               () => 100,
               () async => storedValue,
               (value) async => storedValue = value,
@@ -241,7 +264,7 @@ void main() {
       await tester.pumpWidget(
         HookBuilder(
           builder: (context) {
-            final asyncSignal = useAsyncSignal(
+            final asyncSignal = useSignal.async(
               FutureSource(
                 Future.delayed(const Duration(milliseconds: 100), () => 42),
               ),
@@ -313,6 +336,90 @@ void main() {
         equals(2),
       ); // Effect should run again when signal changes
     });
+
+    testWidgets(
+        'useJoltEffect: with lazy=false runs immediately and on changes',
+        (WidgetTester tester) async {
+      int effectCount = 0;
+
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            final signal = useSignal(0);
+
+            useJoltEffect(() {
+              effectCount++;
+              signal.value;
+            }, lazy: false);
+
+            return GestureDetector(
+              onTap: () => signal.value++,
+              child: JoltBuilder(
+                builder: (context) {
+                  return Text(
+                    'Count: ${signal.value}',
+                    textDirection: TextDirection.ltr,
+                  );
+                },
+              ),
+            );
+          },
+        ),
+      );
+
+      expect(effectCount, equals(1)); // Runs immediately when lazy=false
+
+      await tester.tap(find.byType(Text));
+      await tester.pumpAndSettle();
+
+      expect(effectCount, equals(2)); // Runs again when dependency changes
+    });
+
+    testWidgets('useJoltEffect.lazy: does not run automatically',
+        (WidgetTester tester) async {
+      int effectCount = 0;
+      late Effect effect;
+
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            final signal = useSignal(0);
+
+            effect = useJoltEffect.lazy(() {
+              effectCount++;
+              signal.value;
+            });
+
+            return GestureDetector(
+              onTap: () => signal.value++,
+              child: JoltBuilder(
+                builder: (context) {
+                  return Text(
+                    'Count: ${signal.value}',
+                    textDirection: TextDirection.ltr,
+                  );
+                },
+              ),
+            );
+          },
+        ),
+      );
+
+      expect(
+          effectCount, equals(0)); // Does not run automatically when lazy=true
+
+      // Signal changes but effect doesn't run automatically
+      await tester.tap(find.byType(Text));
+      await tester.pumpAndSettle();
+
+      expect(effectCount, equals(0)); // Still doesn't run automatically
+
+      // Manually run the effect
+      effect.run();
+      await tester.pumpAndSettle();
+
+      expect(effectCount, equals(1)); // Runs when manually triggered
+    });
   });
 
   group('useJoltWatcher', () {
@@ -326,7 +433,7 @@ void main() {
           builder: (context) {
             final signal = useSignal(0);
 
-            useJoltWatcher(() => signal.value, (value, previousValue) {
+            useWatcher(() => signal.value, (value, previousValue) {
               watchCount++;
             });
 
@@ -354,6 +461,72 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(watchCount, equals(1)); // Watcher should run when signal changes
+    });
+
+    testWidgets('useWatcher.immediately: executes immediately', (
+      WidgetTester tester,
+    ) async {
+      int watchCount = 0;
+
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            final signal = useSignal(1);
+
+            useWatcher.immediately(() => signal.value, (value, previousValue) {
+              watchCount++;
+            });
+
+            return JoltBuilder(
+              builder: (context) {
+                return Text(
+                  'Count: ${signal.value}',
+                  textDirection: TextDirection.ltr,
+                );
+              },
+            );
+          },
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(watchCount, greaterThanOrEqualTo(1)); // Should execute immediately
+    });
+
+    testWidgets('useWatcher.once: executes only once', (
+      WidgetTester tester,
+    ) async {
+      int watchCount = 0;
+      late Signal<int> signal;
+
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            signal = useSignal(1);
+
+            useWatcher.once(() => signal.value, (value, previousValue) {
+              watchCount++;
+            });
+
+            return JoltBuilder(
+              builder: (context) {
+                return Text(
+                  'Count: ${signal.value}',
+                  textDirection: TextDirection.ltr,
+                );
+              },
+            );
+          },
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      signal.value = 2;
+      await tester.pumpAndSettle();
+
+      expect(watchCount, lessThanOrEqualTo(1)); // Should execute at most once
     });
   });
 
@@ -399,7 +572,7 @@ void main() {
             final signal = useSignal(0);
 
             // Create an effect scope
-            useJoltEffectScope(fn: (scope) {
+            useEffectScope(fn: (scope) {
               scopeEffectCount++;
               // Access signal within the scope
               signal.value;
@@ -436,7 +609,7 @@ void main() {
       await tester.pumpWidget(
         HookBuilder(
           builder: (context) {
-            final listSignal = useListSignal([1, 2, 3]);
+            final listSignal = useSignal.list([1, 2, 3]);
 
             return Column(
               children: [
@@ -480,7 +653,7 @@ void main() {
       await tester.pumpWidget(
         HookBuilder(
           builder: (context) {
-            final mapSignal = useMapSignal({'a': 1, 'b': 2});
+            final mapSignal = useSignal.map({'a': 1, 'b': 2});
 
             return Column(
               children: [
@@ -524,7 +697,7 @@ void main() {
       await tester.pumpWidget(
         HookBuilder(
           builder: (context) {
-            final setSignal = useSetSignal({1, 2, 3});
+            final setSignal = useSignal.set({1, 2, 3});
 
             return Column(
               children: [
@@ -570,7 +743,7 @@ void main() {
       await tester.pumpWidget(
         HookBuilder(
           builder: (context) {
-            final iterableSignal = useIterableSignal(
+            final iterableSignal = useSignal.iterable(
               () => [1, 2, 3].map((x) => x * 2),
             );
 
@@ -1171,6 +1344,375 @@ void main() {
 
       expect(buildCount, greaterThan(2));
       expect(find.text('Count: 2'), findsOneWidget);
+    });
+  });
+
+  group('Hook disposal', () {
+    testWidgets('useSignal is disposed on unmount', (tester) async {
+      late Signal<int> signal;
+
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            signal = useSignal(1);
+            return Text('Value: ${signal.value}',
+                textDirection: TextDirection.ltr);
+          },
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      expect(find.text('Value: 1'), findsOneWidget);
+
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+      await tester.pumpAndSettle();
+
+      expect(signal.isDisposed, isTrue);
+    });
+
+    testWidgets('useSignal.lazy is disposed on unmount', (tester) async {
+      late Signal<String?> signal;
+
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            signal = useSignal.lazy<String?>();
+            return Text('Value: ${signal.value ?? 'null'}',
+                textDirection: TextDirection.ltr);
+          },
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+      await tester.pumpAndSettle();
+
+      expect(signal.isDisposed, isTrue);
+    });
+
+    testWidgets('useSignal.list is disposed on unmount', (tester) async {
+      late ListSignal<int> list;
+
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            list = useSignal.list([1, 2, 3]);
+            return Text('Length: ${list.value.length}',
+                textDirection: TextDirection.ltr);
+          },
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+      await tester.pumpAndSettle();
+
+      expect(list.isDisposed, isTrue);
+    });
+
+    testWidgets('useSignal.map is disposed on unmount', (tester) async {
+      late MapSignal<String, String> map;
+
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            map = useSignal.map({'key': 'value'});
+            return Text('Value: ${map.value['key']}',
+                textDirection: TextDirection.ltr);
+          },
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+      await tester.pumpAndSettle();
+
+      expect(map.isDisposed, isTrue);
+    });
+
+    testWidgets('useSignal.set is disposed on unmount', (tester) async {
+      late SetSignal<int> set;
+
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            set = useSignal.set({1, 2, 3});
+            return Text('Size: ${set.value.length}',
+                textDirection: TextDirection.ltr);
+          },
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+      await tester.pumpAndSettle();
+
+      expect(set.isDisposed, isTrue);
+    });
+
+    testWidgets('useSignal.iterable is disposed on unmount', (tester) async {
+      late IterableSignal<int> iterable;
+
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            iterable = useSignal.iterable(() => [1, 2, 3]);
+            return Text('Count: ${iterable.value.length}',
+                textDirection: TextDirection.ltr);
+          },
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+      await tester.pumpAndSettle();
+
+      expect(iterable.isDisposed, isTrue);
+    });
+
+    testWidgets('useSignal.async is disposed on unmount', (tester) async {
+      late AsyncSignal<int> asyncSignal;
+
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            asyncSignal = useSignal.async(
+              FutureSource(Future.value(42)),
+            );
+            return Text('Async', textDirection: TextDirection.ltr);
+          },
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+      await tester.pumpAndSettle();
+
+      expect(asyncSignal.isDisposed, isTrue);
+    });
+
+    testWidgets('useSignal.persist is disposed on unmount', (tester) async {
+      late PersistSignal<int> persist;
+
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            persist = useSignal.persist(
+              () => 0,
+              () => 42,
+              (value) async {},
+            );
+            return Text('Persist: ${persist.value}',
+                textDirection: TextDirection.ltr);
+          },
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+      await tester.pumpAndSettle();
+
+      expect(persist.isDisposed, isTrue);
+    });
+
+    testWidgets('useComputed is disposed on unmount', (tester) async {
+      late Computed<int> computed;
+
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            final signal = useSignal(5);
+            computed = useComputed(() => signal.value * 2);
+            return Text('Computed: ${computed.value}',
+                textDirection: TextDirection.ltr);
+          },
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+      await tester.pumpAndSettle();
+
+      expect(computed.isDisposed, isTrue);
+    });
+
+    testWidgets('useComputed.writable is disposed on unmount', (tester) async {
+      late Computed<int> writable;
+
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            final source = useSignal(10);
+            writable = useComputed.writable(
+              () => source.value * 2,
+              (value) => source.value = value ~/ 2,
+            );
+            return Text('Writable: ${writable.value}',
+                textDirection: TextDirection.ltr);
+          },
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+      await tester.pumpAndSettle();
+
+      expect(writable.isDisposed, isTrue);
+    });
+
+    testWidgets('useComputed.convert is disposed on unmount', (tester) async {
+      late ConvertComputed<int, String> converted;
+
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            final source = useSignal('123');
+            converted = useComputed.convert<int, String>(
+              source,
+              (value) => int.parse(value),
+              (value) => value.toString(),
+            );
+            return Text('Converted: ${converted.value}',
+                textDirection: TextDirection.ltr);
+          },
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+      await tester.pumpAndSettle();
+
+      expect(converted.isDisposed, isTrue);
+    });
+
+    testWidgets('useJoltEffect is disposed on unmount', (tester) async {
+      late Effect effect;
+
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            final signal = useSignal(1);
+            effect = useJoltEffect(() {
+              signal.value;
+            });
+            return Text('Value: ${signal.value}',
+                textDirection: TextDirection.ltr);
+          },
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+      await tester.pumpAndSettle();
+
+      expect(effect.isDisposed, isTrue);
+    });
+
+    testWidgets('useWatcher is disposed on unmount', (tester) async {
+      late Watcher watcher;
+
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            final signal = useSignal(1);
+            watcher = useWatcher(
+              () => signal.value,
+              (newValue, oldValue) {},
+            );
+            return Text('Value: ${signal.value}',
+                textDirection: TextDirection.ltr);
+          },
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+      await tester.pumpAndSettle();
+
+      expect(watcher.isDisposed, isTrue);
+    });
+
+    testWidgets('useWatcher.immediately is disposed on unmount',
+        (tester) async {
+      late Watcher watcher;
+
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            final signal = useSignal(1);
+            watcher = useWatcher.immediately(
+              () => signal.value,
+              (newValue, oldValue) {},
+            );
+            return Text('Value: ${signal.value}',
+                textDirection: TextDirection.ltr);
+          },
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+      await tester.pumpAndSettle();
+
+      expect(watcher.isDisposed, isTrue);
+    });
+
+    testWidgets('useWatcher.once is disposed on unmount', (tester) async {
+      late Watcher watcher;
+
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            final signal = useSignal(1);
+            watcher = useWatcher.once(
+              () => signal.value,
+              (newValue, oldValue) {},
+            );
+            return Text('Value: ${signal.value}',
+                textDirection: TextDirection.ltr);
+          },
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+      await tester.pumpAndSettle();
+
+      expect(watcher.isDisposed, isTrue);
+    });
+
+    testWidgets('useEffectScope is disposed on unmount', (tester) async {
+      late EffectScope scope;
+
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            scope = useEffectScope();
+            return const Text('Test', textDirection: TextDirection.ltr);
+          },
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+      await tester.pumpAndSettle();
+
+      expect(scope.isDisposed, isTrue);
     });
   });
 }

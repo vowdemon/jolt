@@ -83,7 +83,7 @@ class JoltBuilderElement extends StatelessElement with JoltCommonEffectBuilder {
 
   @override
   void mount(Element? parent, Object? newSlot) {
-    _effect = jolt.Effect(joltBuildTriggerEffect, immediately: false);
+    _effect = jolt.Effect.lazy(joltBuildTriggerEffect);
 
     super.mount(parent, newSlot);
   }

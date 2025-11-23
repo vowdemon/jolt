@@ -140,7 +140,7 @@ class JoltWidgetHookState<T extends Widget>
 
   @override
   void initHook() {
-    _effect = Effect(_effectFn, immediately: false);
+    _effect = Effect.lazy(_effectFn);
   }
 
   void _effectFn() {

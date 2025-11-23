@@ -129,8 +129,7 @@ class SetupWidgetElement<T extends SetupWidget<T>> extends ComponentElement
         setupContext._resetHookIndex();
 
         setupContext.setupBuilder = widget.setup(this, _propsNode);
-        setupContext.renderer =
-            Effect(joltBuildTriggerEffect, immediately: false);
+        setupContext.renderer = Effect.lazy(joltBuildTriggerEffect);
 
         setupContext._cleanupUnusedHooks();
       });
@@ -157,8 +156,7 @@ class SetupWidgetElement<T extends SetupWidget<T>> extends ComponentElement
     setupContext.run(() {
       setupContext._resetHookIndex();
       setupContext.setupBuilder = widget.setup(this, _propsNode);
-      setupContext.renderer =
-          Effect(joltBuildTriggerEffect, immediately: false);
+      setupContext.renderer = Effect.lazy(joltBuildTriggerEffect);
       for (var hook in setupContext._hooks) {
         hook.mount();
       }

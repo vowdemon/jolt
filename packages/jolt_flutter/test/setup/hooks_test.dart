@@ -23,6 +23,25 @@ void main() {
       expect(find.text('Value: 100'), findsOneWidget);
     });
 
+    testWidgets('useSignal.lazy creates signal without initial value',
+        (tester) async {
+      late Signal<String?> signal;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          signal = useSignal.lazy<String?>();
+          return () => Text('Value: ${signal.value ?? 'empty'}');
+        }),
+      ));
+
+      expect(find.text('Value: empty'), findsOneWidget);
+
+      signal.value = 'loaded';
+      await tester.pumpAndSettle();
+
+      expect(find.text('Value: loaded'), findsOneWidget);
+    });
+
     testWidgets('useComputed creates computed value', (tester) async {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
@@ -40,7 +59,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           final source = useSignal(10);
-          final writable = useWritableComputed(
+          final writable = useComputed.writable(
             () => source.value * 2,
             (value) => source.value = value ~/ 2,
           );
@@ -57,7 +76,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           final signal = useSignal(1);
-          useJoltEffect(() {
+          useEffect(() {
             effectCount++;
             signal.value; // Track dependency
           });
@@ -75,7 +94,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           final signal = useSignal(1);
-          useJoltEffect(() {
+          useEffect(() {
             effectCount++;
           }, immediately: false);
           return () => Text('Count: ${signal.value}');
@@ -93,7 +112,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           final signal = useSignal(1);
-          useJoltWatcher(
+          useWatcher(
             () => signal.value,
             (newValue, oldValue) {
               watchCount++;
@@ -113,7 +132,7 @@ void main() {
     testWidgets('useJoltEffectScope creates effect scope', (tester) async {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
-          final scope = useJoltEffectScope();
+          final scope = useEffectScope();
           expect(scope, isNotNull);
           return () => const Text('Test');
         }),
@@ -126,7 +145,7 @@ void main() {
     testWidgets('useListSignal creates list signal', (tester) async {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
-          final list = useListSignal([1, 2, 3]);
+          final list = useSignal.list([1, 2, 3]);
           return () => Text('Length: ${list.value.length}');
         }),
       ));
@@ -137,7 +156,7 @@ void main() {
     testWidgets('useMapSignal creates map signal', (tester) async {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
-          final map = useMapSignal({'key': 'value'});
+          final map = useSignal.map({'key': 'value'});
           return () => Text('Value: ${map.value['key']}');
         }),
       ));
@@ -148,7 +167,7 @@ void main() {
     testWidgets('useSetSignal creates set signal', (tester) async {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
-          final set = useSetSignal({1, 2, 3});
+          final set = useSignal.set({1, 2, 3});
           return () => Text('Size: ${set.value.length}');
         }),
       ));
@@ -159,7 +178,7 @@ void main() {
     testWidgets('useIterableSignal creates iterable signal', (tester) async {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
-          final iterable = useIterableSignal(() => [1, 2, 3]);
+          final iterable = useSignal.iterable(() => [1, 2, 3]);
           return () => Text('Count: ${iterable.value.length}');
         }),
       ));
@@ -185,7 +204,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           final source = useSignal('123');
-          final converted = useConvertComputed<int, String>(
+          final converted = useComputed.convert<int, String>(
             source,
             (value) => int.parse(value),
             (value) => value.toString(),
@@ -200,7 +219,7 @@ void main() {
     testWidgets('usePersistSignal creates persist signal', (tester) async {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
-          final persist = usePersistSignal(
+          final persist = useSignal.persist(
             () => 0,
             () => 42,
             (value) async {},
@@ -242,7 +261,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           final signal = useSignal(1);
-          useJoltEffect(() {
+          useEffect(() {
             signal.value; // Track signal
             onEffectCleanup(() => disposed = true);
           });

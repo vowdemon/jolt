@@ -9,7 +9,7 @@ class _TestLifecycleHook extends SetupHook<String> {
   final _LifecycleTracker tracker;
 
   @override
-  String createState() => 'initial';
+  String build() => 'initial';
 
   @override
   void mount() {
@@ -24,7 +24,7 @@ class _TestLifecycleHook extends SetupHook<String> {
   }
 
   @override
-  void update() {
+  void didUpdateWidget() {
     tracker.updateCount++;
     tracker.updateOrder.add('update');
   }
@@ -36,7 +36,7 @@ class _TestLifecycleHook extends SetupHook<String> {
   }
 
   @override
-  void dependenciesChange() {
+  void didChangeDependencies() {
     tracker.dependenciesChangeCount++;
     tracker.dependenciesChangeOrder.add('dependenciesChange');
   }
@@ -435,7 +435,7 @@ class _TestContextHook extends SetupHook<String> {
   final void Function(BuildContext) onContext;
 
   @override
-  String createState() {
+  String build() {
     onContext(context);
     return 'test';
   }

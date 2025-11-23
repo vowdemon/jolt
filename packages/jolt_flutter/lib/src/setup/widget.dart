@@ -1,10 +1,10 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:jolt/core.dart';
 import 'package:jolt/jolt.dart';
 import 'package:jolt_flutter/src/shared.dart';
+import 'package:shared_interfaces/shared_interfaces.dart';
 
 part 'hooks.dart';
 
@@ -14,16 +14,26 @@ part 'hooks.dart';
 /// not on every rebuild. This provides better performance and a more predictable
 /// execution model compared to React-style hooks.
 ///
+/// ## Hot Reload Behavior
+///
+/// During hot reload, hooks are matched in order by their runtime type:
+/// - If types match in sequence, existing hooks are reused and [SetupHook.reassemble] is called
+/// - If a type mismatch occurs, all subsequent hooks are unmounted in reverse order
+/// - New or replacement hooks will have [SetupHook.mount] called
+///
+/// This ensures hooks maintain correct state during development while
+/// adapting to code changes.
+///
 /// Example:
 /// ```dart
 /// class CounterWidget extends SetupWidget {
 ///   const CounterWidget({super.key});
 ///
 ///   @override
-///   WidgetBuilder setup(BuildContext context) {
+///   setup(context, props) {
 ///     final count = useSignal(0);
 ///
-///     return (context) => Column(
+///     return () => Column(
 ///       children: [
 ///         Text('Count: ${count.value}'),
 ///         ElevatedButton(
@@ -41,14 +51,19 @@ abstract class SetupWidget<T extends SetupWidget<T>> extends Widget {
 
   /// The setup function that runs once when the widget is created.
   ///
-  /// This function should return a [WidgetBuilder] that will be called on
+  /// This function should return a [SetupFunction] that will be called on
   /// each rebuild. Use hooks like [useSignal], [useComputed], etc. to manage
   /// reactive state within this function.
   ///
-  /// Parameters:
-  /// - [context]: The build context
+  /// Hooks are cached and reused across hot reloads based on their runtime type
+  /// and position in the sequence. If the hook sequence changes during hot reload,
+  /// mismatched hooks will be unmounted and recreated.
   ///
-  /// Returns: A widget builder function
+  /// Parameters:
+  /// - [context]: The setup build context providing access to widget props
+  /// - [props]: A reactive node that tracks widget property changes
+  ///
+  /// Returns: A widget builder function that runs on each reactive rebuild
   SetupFunction<T> setup(
       SetupBuildContext<T> context, PropsReadonlyNode<T> props);
 
@@ -56,53 +71,39 @@ abstract class SetupWidget<T extends SetupWidget<T>> extends Widget {
   SetupWidgetElement<T> createElement() => SetupWidgetElement<T>(this);
 }
 
-/// Extension methods for SetupWidget.
-// extension SetupWidgetExtension<T extends SetupWidget<T>> on T {
-// /// Returns a reactive reference to the widget instance.
-// ///
-// /// This is the only way to watch for widget parameter changes in SetupWidget,
-// /// since the setup function executes only once.
-// ///
-// /// Returns: A [ReadonlyNode] that tracks widget changes
-// ///
-// /// Example:
-// /// ```dart
-// /// class UserCard extends SetupWidget {
-// ///   final String name;
-// ///
-// ///   const UserCard({super.key, required this.name});
-// ///
-// ///   @override
-// ///   WidgetBuilder setup(BuildContext context) {
-// ///     final props = useProps();
-// ///     return (context) => Text(props.value.name);
-// ///   }
-// /// }
-// /// ```
-// @pragma('vm:prefer-inline')
-// @pragma('wasm:prefer-inline')
-// @pragma('dart2js:prefer-inline')
-// PropsReadonlyNode<T> useProps() =>
-//     (useContext() as SetupBuildContext<T>).props as PropsReadonlyNode<T>;
-
-// T get props => useProps().value;
-// }
-
+/// The build context for SetupWidget that provides access to widget properties.
+///
+/// This interface extends [BuildContext] and adds a reactive [props] getter
+/// that allows tracking widget property changes within the reactive system.
 abstract interface class SetupBuildContext<T extends SetupWidget<T>>
     implements BuildContext {
+  /// The current widget instance.
+  ///
+  /// Accessing this property within a reactive context (like [useComputed] or
+  /// [useEffect]) will establish a dependency on widget updates.
   T get props;
 }
 
+/// The Element that manages the lifecycle of a SetupWidget.
+///
+/// This element is responsible for:
+/// - Running the setup function once on creation
+/// - Managing hook lifecycle (mount, unmount, reassemble)
+/// - Handling hot reload with hook sequence matching
+/// - Propagating widget updates to hooks
+/// - Managing the reactive effect that triggers rebuilds
 class SetupWidgetElement<T extends SetupWidget<T>> extends ComponentElement
     with JoltCommonEffectBuilder
     implements SetupBuildContext<T> {
   SetupWidgetElement(SetupWidget<T> super.widget);
 
+  /// The setup context that manages hooks and reactive state.
   late final JoltSetupContext<T> setupContext = JoltSetupContext(this);
 
   @override
   T get widget => super.widget as T;
 
+  /// The reactive node that tracks widget property changes.
   late final _propsNode = PropsReadonlyNode<T>(this);
 
   @override
@@ -120,18 +121,10 @@ class SetupWidgetElement<T extends SetupWidget<T>> extends ComponentElement
 
   void _reload() {
     assert(() {
-      setupContext._onMountedCallbacks.clear();
-      setupContext._onUpdatedCallbacks.clear();
-      setupContext._onChangedDependenciesCallbacks.clear();
-      setupContext._onUnmountedCallbacks.clear();
-      setupContext._onActivatedCallbacks.clear();
-      setupContext._onDeactivatedCallbacks.clear();
       setupContext.renderer?.dispose();
 
-      // 清空 _hooks 列表，准备按新的调用顺序重新构建
       setupContext._hooks.clear();
 
-      // 重新执行 setup
       setupContext.run(() {
         setupContext._resetHookIndex();
 
@@ -169,9 +162,6 @@ class SetupWidgetElement<T extends SetupWidget<T>> extends ComponentElement
       for (var hook in setupContext._hooks) {
         hook.mount();
       }
-      for (var callback in setupContext._onMountedCallbacks) {
-        callback();
-      }
     });
   }
 
@@ -179,9 +169,6 @@ class SetupWidgetElement<T extends SetupWidget<T>> extends ComponentElement
   void unmount() {
     for (var hook in setupContext._hooks.reversed) {
       hook.unmount();
-    }
-    for (var callback in setupContext._onUnmountedCallbacks) {
-      callback();
     }
 
     super.unmount();
@@ -196,10 +183,7 @@ class SetupWidgetElement<T extends SetupWidget<T>> extends ComponentElement
     assert(widget == newWidget);
     _propsNode.notify();
     for (var hook in setupContext._hooks) {
-      hook.update();
-    }
-    for (var callback in setupContext._onUpdatedCallbacks) {
-      callback();
+      hook.didUpdateWidget();
     }
 
     rebuild(force: true);
@@ -208,34 +192,28 @@ class SetupWidgetElement<T extends SetupWidget<T>> extends ComponentElement
   @override
   void didChangeDependencies() {
     for (var hook in setupContext._hooks) {
-      hook.dependenciesChange();
-    }
-    for (var callback in setupContext._onChangedDependenciesCallbacks) {
-      callback();
+      hook.didChangeDependencies();
     }
 
     super.didChangeDependencies();
   }
 
+  // coverage:ignore-start
   @override
   void activate() {
     super.activate();
     for (var hook in setupContext._hooks) {
       hook.activated();
     }
-    for (var callback in setupContext._onActivatedCallbacks) {
-      callback();
-    }
   }
+  // coverage:ignore-end
 
   @override
   void deactivate() {
     for (var hook in setupContext._hooks.reversed) {
       hook.deactivated();
     }
-    for (var callback in setupContext._onDeactivatedCallbacks) {
-      callback();
-    }
+
     super.deactivate();
   }
 
@@ -256,6 +234,11 @@ class SetupWidgetElement<T extends SetupWidget<T>> extends ComponentElement
   }
 }
 
+/// The setup context that manages hooks and reactive state for a SetupWidget.
+///
+/// This context extends [EffectScopeImpl] to provide automatic cleanup of
+/// reactive nodes when the widget is disposed. It also manages the hook
+/// lifecycle including hot reload support.
 class JoltSetupContext<T extends SetupWidget<T>> extends EffectScopeImpl {
   JoltSetupContext(this.element) : super(detach: true);
 
@@ -266,22 +249,29 @@ class JoltSetupContext<T extends SetupWidget<T>> extends EffectScopeImpl {
   @pragma('dart2js:prefer-inline')
   SetupBuildContext<T> get context => element as SetupBuildContext<T>;
 
+  /// The setup function that returns the widget builder.
   SetupFunction<T>? setupBuilder;
+
+  /// The effect that triggers widget rebuilds when reactive dependencies change.
   Effect? renderer;
 
+  /// The list of hooks registered for this widget.
   final List<SetupHook> _hooks = [];
 
-  final List<void Function()> _onMountedCallbacks = [];
-  final List<void Function()> _onUnmountedCallbacks = [];
-  final List<void Function()> _onUpdatedCallbacks = [];
-  final List<void Function()> _onChangedDependenciesCallbacks = [];
-  final List<void Function()> _onActivatedCallbacks = [];
-  final List<void Function()> _onDeactivatedCallbacks = [];
+  // coverage:ignore-start
+  /// Temporary list used during hot reload to build the new hook sequence.
+  final List<SetupHook> _newHooks = [];
 
-  late final Map<Type, List<SetupHook>> _hookCacheByType = {};
-  late final Map<Type, int> _typeIndexCounters = {};
-  late final Map<Type, int> _newTypeUsageCounts = {};
+  /// Set of hooks that were newly created during hot reload.
+  /// These hooks will have their [SetupHook.mount] method called.
+  final Set<SetupHook> _newlyCreatedHooks = {};
+
+  /// Current position in the hook sequence during hot reload.
+  late int _currentHookIndex = 0;
+
+  /// Whether the widget is currently in hot reload mode.
   late bool _isReassembling = false;
+  // coverage:ignore-end
 
   // coverage:ignore-start
   @pragma('vm:prefer-inline')
@@ -289,89 +279,99 @@ class JoltSetupContext<T extends SetupWidget<T>> extends EffectScopeImpl {
   @pragma('dart2js:prefer-inline')
   void _resetHookIndex() {
     assert(() {
-      _typeIndexCounters.clear();
-      _newTypeUsageCounts.clear();
+      _currentHookIndex = 0;
+      _newHooks.clear();
+      _newlyCreatedHooks.clear();
       return true;
     }());
   }
 
+  /// Registers and manages a hook in the setup context.
+  ///
+  /// During normal operation, hooks are simply added to the list and initialized.
+  ///
+  /// During hot reload, hooks are matched sequentially by their runtime type:
+  /// - If the current hook type matches the old hook at the same position,
+  ///   the old hook is reused and its state is preserved
+  /// - If a type mismatch occurs, all remaining old hooks from that position
+  ///   onwards are unmounted in reverse order
+  /// - New hooks are created and marked for mounting
+  ///
+  /// This ensures that hook state is preserved when possible while safely
+  /// handling changes to the hook sequence during development.
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
   U _useHook<U>(SetupHook<U> hook) {
-    final hookType = U;
     U? hookState;
     SetupHook<U>? existingHook;
 
     assert(() {
-      final typeIndex = _typeIndexCounters[hookType] ?? 0;
-      _typeIndexCounters[hookType] = typeIndex + 1;
-      _newTypeUsageCounts[hookType] = typeIndex + 1;
+      if (_isReassembling && _currentHookIndex < _hooks.length) {
+        final oldHook = _hooks[_currentHookIndex];
 
-      final typeCache = _hookCacheByType[hookType];
-      if (typeCache != null && typeIndex < typeCache.length) {
-        // 重用已存在的 hook（按类型和索引匹配）
-        existingHook = typeCache[typeIndex] as SetupHook<U>;
-        hookState = existingHook!.state;
-        return true;
+        if (oldHook.runtimeType == hook.runtimeType) {
+          existingHook = oldHook as SetupHook<U>;
+          hookState = existingHook!.state;
+          _newHooks.add(existingHook!);
+          _currentHookIndex++;
+          return true;
+        } else {
+          for (int i = _hooks.length - 1; i >= _currentHookIndex; i--) {
+            _hooks[i].unmount();
+          }
+          _hooks.removeRange(_currentHookIndex, _hooks.length);
+        }
       }
 
-      // 创建新的 hook
-      hookState = hook.initState();
-      _hookCacheByType.putIfAbsent(hookType, () => []).add(hook);
-      _hooks.add(hook);
+      hookState = hook.firstBuild();
+      _newHooks.add(hook);
+      _newlyCreatedHooks.add(hook);
+      _currentHookIndex++;
       return true;
     }());
 
-    final result = hookState ?? hook.initState();
+    final result = hookState ?? hook.firstBuild();
     final hookToAdd = existingHook ?? hook;
 
-    if (!kDebugMode) {
+    if (!_isReassembling) {
       _hooks.add(hookToAdd);
     }
 
     return result;
   }
 
+  /// Cleans up unused hooks after hot reload completes.
+  ///
+  /// This method:
+  /// 1. Unmounts any remaining old hooks that weren't matched
+  /// 2. Replaces the hook list with the new sequence
+  /// 3. Calls [SetupHook.mount] on newly created hooks
+  /// 4. Calls [SetupHook.reassemble] on reused hooks
   void _cleanupUnusedHooks() {
     assert(() {
       if (!_isReassembling) return true;
-      final unusedHooks = <SetupHook>[];
 
-      // 按类型序列清理未使用的 hooks
-      _hookCacheByType.forEach((type, hooks) {
-        final newCount = _newTypeUsageCounts[type] ?? 0;
-        final oldCount = hooks.length;
-
-        if (newCount < oldCount) {
-          unusedHooks.addAll(hooks.sublist(newCount, oldCount));
-          hooks.removeRange(newCount, oldCount);
+      if (_currentHookIndex < _hooks.length) {
+        for (int i = _hooks.length - 1; i >= _currentHookIndex; i--) {
+          _hooks[i].unmount();
         }
-      });
-
-      _hookCacheByType.removeWhere((type, hooks) {
-        if (!_newTypeUsageCounts.containsKey(type)) {
-          unusedHooks.addAll(hooks);
-          return true;
-        }
-        return false;
-      });
-
-      // 按定义顺序的逆序清理（与 unmount 保持一致）
-      for (var hook in unusedHooks.reversed) {
-        hook.unmount();
+        _hooks.removeRange(_currentHookIndex, _hooks.length);
       }
 
-      // 从 _hooks 列表中移除未使用的 hooks（保持顺序）
-      final unusedHooksSet = unusedHooks.toSet();
-      _hooks.removeWhere((hook) => unusedHooksSet.contains(hook));
+      _hooks.clear();
+      _hooks.addAll(_newHooks);
+      _newHooks.clear();
 
-      // 通知所有保留的 hooks 重新组装（按定义顺序）
-      for (var hooks in _hookCacheByType.values) {
-        for (var hook in hooks) {
+      for (var hook in _hooks) {
+        if (_newlyCreatedHooks.contains(hook)) {
+          hook.mount();
+        } else {
           hook.reassemble();
         }
       }
+
+      _newlyCreatedHooks.clear();
 
       return true;
     }());
@@ -393,18 +393,12 @@ class JoltSetupContext<T extends SetupWidget<T>> extends EffectScopeImpl {
 
   @override
   void onDispose() {
-    _onMountedCallbacks.clear();
-    _onUnmountedCallbacks.clear();
-    _onUpdatedCallbacks.clear();
-    _onChangedDependenciesCallbacks.clear();
-    _onActivatedCallbacks.clear();
-    _onDeactivatedCallbacks.clear();
     _hooks.clear();
 
     assert(() {
-      _hookCacheByType.clear();
-      _typeIndexCounters.clear();
-      _newTypeUsageCounts.clear();
+      _newHooks.clear();
+      _newlyCreatedHooks.clear();
+      _currentHookIndex = 0;
       return true;
     }());
 
@@ -431,6 +425,10 @@ class JoltSetupContext<T extends SetupWidget<T>> extends EffectScopeImpl {
 /// A convenience widget that uses a builder function for setup.
 ///
 /// This is the simplest way to use SetupWidget without creating a custom class.
+/// Use this for quick prototyping or simple components.
+///
+/// For complex widgets with properties, it's recommended to create a proper
+/// SetupWidget subclass instead.
 ///
 /// Example:
 /// ```dart
@@ -438,7 +436,7 @@ class JoltSetupContext<T extends SetupWidget<T>> extends EffectScopeImpl {
 ///   setup: (context) {
 ///     final count = useSignal(0);
 ///
-///     return (context) => Column(
+///     return () => Column(
 ///       children: [
 ///         Text('Count: ${count.value}'),
 ///         ElevatedButton(
@@ -469,17 +467,52 @@ class SetupBuilder extends SetupWidget<SetupBuilder> {
 
 /// A function type that creates a setup function from a BuildContext.
 ///
-/// This is used by [SetupBuilder] to provide the setup function.
+/// This is used by [SetupBuilder] to provide the setup function in a more
+/// convenient inline format.
+///
+/// Parameters:
+/// - [context]: The setup build context
+///
+/// Returns: A [SetupFunction] that builds the widget on each reactive update
 typedef SetupFunctionBuilder<T extends SetupWidget<T>> = SetupFunction<T>
     Function(SetupBuildContext<T> context);
 
-/// A function type that builds a widget from a BuildContext.
+/// A function type that builds a widget.
 ///
 /// This is the return type of the [SetupWidget.setup] method. The returned
-/// builder function is called on each rebuild, while the setup function
-/// itself runs only once.
+/// builder function is called on each rebuild triggered by reactive dependencies,
+/// while the setup function itself runs only once during widget creation.
+///
+/// The function takes no parameters and returns a Widget. All reactive state
+/// should be captured from the setup closure.
 typedef SetupFunction<T> = Widget Function();
 
+/// A reactive node that tracks widget property changes.
+///
+/// This node allows reactive code (like [useComputed] or [useEffect]) to depend
+/// on widget properties. When the widget is updated with new properties, this
+/// node notifies all its subscribers to re-run.
+///
+/// The node's value is the current widget instance, so you can access any
+/// property of the widget reactively.
+///
+/// Example:
+/// ```dart
+/// class UserCard extends SetupWidget<UserCard> {
+///   final String name;
+///   final int age;
+///
+///   const UserCard({super.key, required this.name, required this.age});
+///
+///   @override
+///   setup(context, props) {
+///     // React to name changes
+///     final displayName = useComputed(() => 'User: ${props.value.name}');
+///
+///     return () => Text(displayName.value);
+///   }
+/// }
+/// ```
 class PropsReadonlyNode<T extends SetupWidget<T>> extends ReactiveNode
     implements ReadonlyNode<T> {
   PropsReadonlyNode(this._context) : super(flags: ReactiveFlags.mutable);

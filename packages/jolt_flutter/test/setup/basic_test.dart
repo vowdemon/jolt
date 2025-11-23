@@ -74,7 +74,7 @@ void main() {
 
       Widget buildWidget(String title) => MaterialApp(
             home: SetupBuilder(setup: (context) {
-              onUpdated(() => updateCount++);
+              onDidUpdateWidget(() => updateCount++);
               return () {
                 rebuildCount++;
                 return Text(title);
@@ -104,7 +104,7 @@ void main() {
           theme: theme.value,
           home: Builder(builder: (context) {
             return SetupBuilder(setup: (context) {
-              onUpdated(() => updateCount++);
+              onDidUpdateWidget(() => updateCount++);
               return () {
                 rebuildCount++;
                 return const Text('Test');
@@ -129,7 +129,7 @@ void main() {
       int changedCount = 0;
       final toTestWidget = SetupBuilder(setup: (context) {
         CounterInherited.of(context);
-        onChangedDependencies(() => changedCount++);
+        onDidChangeDependencies(() => changedCount++);
         return () {
           rebuildCount++;
           return const Text('Test');
@@ -319,7 +319,24 @@ void main() {
 
       await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
       await tester.pumpAndSettle();
-      expect(unmounted, [1, 2, 3]);
+      expect(unmounted, [3, 2, 1]);
+    });
+
+    testWidgets('context.props provides access to widget', (tester) async {
+      await tester.pumpWidget(const MaterialApp(
+        home: _ContextPropsWidget(message: 'Hello', value: 42),
+      ));
+
+      expect(find.text('Message: Hello'), findsOneWidget);
+      expect(find.text('Value: 42'), findsOneWidget);
+
+      await tester.pumpWidget(const MaterialApp(
+        home: _ContextPropsWidget(message: 'World', value: 100),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Message: World'), findsOneWidget);
+      expect(find.text('Value: 100'), findsOneWidget);
     });
   });
 }
@@ -355,5 +372,23 @@ class CounterInherited extends InheritedWidget {
 
   static CounterInherited of(BuildContext context) {
     return context.dependOnInheritedWidgetOfExactType<CounterInherited>()!;
+  }
+}
+
+class _ContextPropsWidget extends SetupWidget<_ContextPropsWidget> {
+  final String message;
+  final int value;
+
+  const _ContextPropsWidget({
+    required this.message,
+    required this.value,
+  });
+
+  @override
+  setup(context, props) {
+    return () => Column(children: [
+          Text('Message: ${context.props.message}'),
+          Text('Value: ${context.props.value}'),
+        ]);
   }
 }

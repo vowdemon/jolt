@@ -1,5 +1,10 @@
 # Jolt Lint
 
+[![CI/CD](https://github.com/vowdemon/jolt/actions/workflows/cicd.yml/badge.svg)](https://github.com/vowdemon/jolt/actions/workflows/cicd.yml)
+[![codecov](https://codecov.io/gh/vowdemon/jolt/graph/badge.svg?token=CBL7C4ZRZD)](https://codecov.io/gh/vowdemon/jolt)
+[![jolt_lint](https://img.shields.io/pub/v/jolt_lint?label=jolt_lint)](https://pub.dev/packages/jolt_lint)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/vowdemon/jolt/blob/main/LICENSE)
+
 A lint tool designed for the Jolt reactive state management ecosystem, providing code transformation assists and rule checks.
 
 ## Installation

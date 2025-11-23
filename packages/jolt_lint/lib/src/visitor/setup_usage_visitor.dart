@@ -20,7 +20,7 @@ class SetupUsageVisitor extends RecursiveAstVisitor<void> {
     // this.xxx, (this..xx).xx
 
     if (node.target is ThisExpression || node.realTarget is ThisExpression) {
-      rule.reportAtNode(node, diagnosticCode: JoltCode.setupThisExplict);
+      rule.reportAtNode(node, diagnosticCode: JoltCode.setupThisExplicit);
     }
     super.visitPropertyAccess(node);
   }
@@ -29,7 +29,7 @@ class SetupUsageVisitor extends RecursiveAstVisitor<void> {
   void visitMethodInvocation(MethodInvocation node) {
     // this.xxx(), (this..xx).xx()
     if (node.target is ThisExpression || node.realTarget is ThisExpression) {
-      rule.reportAtNode(node, diagnosticCode: JoltCode.setupThisExplict);
+      rule.reportAtNode(node, diagnosticCode: JoltCode.setupThisExplicit);
     }
 
     super.visitMethodInvocation(node);

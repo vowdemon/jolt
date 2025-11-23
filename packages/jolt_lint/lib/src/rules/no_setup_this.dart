@@ -8,7 +8,7 @@ import 'package:jolt_lint/src/visitor/setup_finder_visitor.dart';
 
 class NoSetupThisRule extends MultiAnalysisRule {
   NoSetupThisRule()
-      : super(name: 'no_setup_this', description: 'No setup this');
+    : super(name: 'no_setup_this', description: 'No setup this');
 
   @override
   void registerNodeProcessors(
@@ -22,9 +22,9 @@ class NoSetupThisRule extends MultiAnalysisRule {
 
   @override
   List<DiagnosticCode> get diagnosticCodes => [
-        JoltCode.setupThisExplict,
-        JoltCode.setupThisImplicit,
-        JoltCode.setupThisAssign,
-        JoltCode.setupThisAssignable,
-      ];
+    JoltCode.setupThisExplicit,
+    JoltCode.setupThisImplicit,
+    JoltCode.setupThisAssign,
+    JoltCode.setupThisAssignable,
+  ];
 }

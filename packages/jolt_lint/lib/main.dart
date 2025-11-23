@@ -1,3 +1,9 @@
+/// Jolt lint tool for reactive state management.
+///
+/// This package provides lint rules, quick fixes, and code assists
+/// for the Jolt reactive state management ecosystem.
+library;
+
 import 'package:analysis_server_plugin/plugin.dart';
 import 'package:analysis_server_plugin/registry.dart';
 import 'package:jolt_lint/src/assists/convert_from_signal.dart';
@@ -8,16 +14,31 @@ import 'package:jolt_lint/src/rules/no_setup_this.dart';
 import 'package:jolt_lint/src/shared.dart';
 
 /// JoltLint plugin instance.
+///
+/// This is the main entry point for the Jolt lint tool. The analyzer
+/// will automatically discover and use this plugin when the package
+/// is added to `analysis_options.yaml`.
 final plugin = JoltLintPlugin();
 
 /// JoltLint plugin implementation.
+///
+/// Provides lint rules, quick fixes, and code assists for the Jolt
+/// reactive state management ecosystem.
 class JoltLintPlugin extends Plugin {
+  /// Registers all lint rules, fixes, and assists with the analyzer.
+  ///
+  /// This method is called automatically by the analyzer when the plugin
+  /// is loaded. It registers:
+  /// - The `no_setup_this` rule to prevent accessing instance members
+  ///   directly in setup methods
+  /// - Quick fixes for setup method violations
+  /// - Code assists for wrapping widgets and converting signals
   @override
   void register(PluginRegistry registry) {
     // Register diagnostics, quick fixes, and assists.
     registry.registerWarningRule(NoSetupThisRule());
     registry.registerFixForRule(
-      JoltCode.setupThisExplict,
+      JoltCode.setupThisExplicit,
       FixSetupThisExplicit.new,
     );
     registry.registerFixForRule(
@@ -42,6 +63,9 @@ class JoltLintPlugin extends Plugin {
     registry.registerAssist(ConvertFromSignalAssist.new);
   }
 
+  /// The name of this plugin.
+  ///
+  /// Used by the analyzer to identify this plugin in diagnostics and logs.
   @override
   String get name => 'JoltLint';
 }

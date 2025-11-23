@@ -1,5 +1,5 @@
 name: jolt_lint
-description: A comprehensive lint tool for the Jolt reactive state management ecosystem, providing code quality checks, best practices enforcement, and developer assistance to ensure optimal usage of Jolt libraries.
+description: Lint tool for the Jolt reactive state management ecosystem, providing code quality checks and developer assistance.
 
 repository: https://github.com/vowdemon/jolt
 
@@ -12,9 +12,9 @@ environment:
 
 dependencies:
   analysis_server_plugin: ^0.3.3
-  analyzer: ^8.4.0
+  analyzer: ">=8.4.0 <10.0.0"
   analyzer_plugin: ^0.13.10
 
 dev_dependencies:
   lints: ^5.0.0
-  test: ^1.0.0
+  test: ^1.24.0

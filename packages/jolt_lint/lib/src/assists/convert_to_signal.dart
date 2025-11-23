@@ -76,7 +76,7 @@ class ConvertToSignalAssist extends ResolvedCorrectionProducer {
       });
     }
 
-    AstNode? scope = node.root;
+    AstNode scope = node.root;
 
     final visitor = _ScopeVisitor(variable.declaredFragment!.element);
     scope.accept(visitor);
@@ -100,10 +100,10 @@ class _ScopeVisitor extends RecursiveAstVisitor<void> {
   _ScopeVisitor(this.target);
 
   @override
-  Future<void> visitSimpleIdentifier(SimpleIdentifier node) async {
+  void visitSimpleIdentifier(SimpleIdentifier node) {
     final element = node.element;
 
-    if (element == target) {
+    if (element == target && !node.inDeclarationContext()) {
       edits.add(node);
     }
 

@@ -21,7 +21,8 @@ class WrapBuilderAssist extends ResolvedCorrectionProducer {
     DartFileEditBuilder,
     AstNode,
     ResolvedUnitResult,
-  ) builder;
+  )
+  builder;
 
   @override
   final AssistKind assistKind;
@@ -65,8 +66,8 @@ class WrapBuilderAssist extends ResolvedCorrectionProducer {
     }
 
     // [Widget(...)]
-    final instanceCreation =
-        node.thisOrAncestorOfType<InstanceCreationExpression>();
+    final instanceCreation = node
+        .thisOrAncestorOfType<InstanceCreationExpression>();
     if (instanceCreation != null) {
       final clazz = instanceCreation.constructorName.element?.enclosingElement;
       if (clazz != null) {
@@ -81,39 +82,35 @@ class WrapBuilderAssist extends ResolvedCorrectionProducer {
 
   factory WrapBuilderAssist.joltBuilder({
     required CorrectionProducerContext context,
-  }) =>
-      WrapBuilderAssist(
-        context: context,
-        builder: _wrapJoltBuilder,
-        assistKind: JoltAssist.wrapJoltBuilder,
-      );
+  }) => WrapBuilderAssist(
+    context: context,
+    builder: _wrapJoltBuilder,
+    assistKind: JoltAssist.wrapJoltBuilder,
+  );
 
   factory WrapBuilderAssist.joltProvider({
     required CorrectionProducerContext context,
-  }) =>
-      WrapBuilderAssist(
-        context: context,
-        builder: _wrapJoltProviderBuilder,
-        assistKind: JoltAssist.wrapJoltProvider,
-      );
+  }) => WrapBuilderAssist(
+    context: context,
+    builder: _wrapJoltProviderBuilder,
+    assistKind: JoltAssist.wrapJoltProvider,
+  );
 
   factory WrapBuilderAssist.joltSelector({
     required CorrectionProducerContext context,
-  }) =>
-      WrapBuilderAssist(
-        context: context,
-        builder: _wrapJoltSelectorBuilder,
-        assistKind: JoltAssist.wrapJoltSelector,
-      );
+  }) => WrapBuilderAssist(
+    context: context,
+    builder: _wrapJoltSelectorBuilder,
+    assistKind: JoltAssist.wrapJoltSelector,
+  );
 
   factory WrapBuilderAssist.setupBuilder({
     required CorrectionProducerContext context,
-  }) =>
-      WrapBuilderAssist(
-        context: context,
-        builder: _wrapSetupBuilder,
-        assistKind: JoltAssist.wrapSetupBuilder,
-      );
+  }) => WrapBuilderAssist(
+    context: context,
+    builder: _wrapSetupBuilder,
+    assistKind: JoltAssist.wrapSetupBuilder,
+  );
 }
 
 void _wrapJoltBuilder(

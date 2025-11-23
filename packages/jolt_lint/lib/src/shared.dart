@@ -10,7 +10,7 @@ import 'package:analyzer_plugin/utilities/fixes/fixes.dart';
 
 abstract final class JoltCode {
   /// Accessing instance members via this
-  static const setupThisExplict = LintCode(
+  static const setupThisExplicit = LintCode(
     'no_setup_this_explicit',
 
     'Accessing instance fields or methods via this is not allowed in setup.',
@@ -67,7 +67,7 @@ abstract final class JoltFix {
     DartFixKindPriority.standard + 1,
     "Replace this with props()",
   );
-  static const setupThisExplict = FixKind(
+  static const setupThisExplicit = FixKind(
     'jolt.fix.setupThis.explicit',
     DartFixKindPriority.standard + 1,
     "Replace this with props()",

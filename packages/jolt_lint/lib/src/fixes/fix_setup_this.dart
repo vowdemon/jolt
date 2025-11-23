@@ -10,7 +10,7 @@ class FixSetupThisExplicit extends ResolvedCorrectionProducer
   FixSetupThisExplicit({required super.context});
 
   @override
-  FixKind get fixKind => JoltFix.setupThisExplict;
+  FixKind get fixKind => JoltFix.setupThisExplicit;
 }
 
 class FixSetupThisImplicit extends ResolvedCorrectionProducer

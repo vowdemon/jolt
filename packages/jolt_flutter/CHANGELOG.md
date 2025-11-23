@@ -1,3 +1,9 @@
+## 2.0.0-beta.3
+
+ - **REFACTOR**(jolt_flutter,jolt_hooks): unify hook calling style for better extensibility. ([fc27ba2e](https://github.com/vowdemon/jolt/commit/fc27ba2e6ea31ee22a281eb5200e594c19fd4614))
+ - **REFACTOR**(setup): restructure hook system with improved lifecycle management. ([9fa92a97](https://github.com/vowdemon/jolt/commit/9fa92a979afb7c2e0ccc5ddd5a22b49d50bf7604))
+ - **FIX**: adapt PropsReadonlyNode to CustomReactiveNode. ([5470aa67](https://github.com/vowdemon/jolt/commit/5470aa67fb0a8ff93310c8cc504e263d52822579))
+
 ## 2.0.0-beta.2
 
  - **REFACTOR**(jolt_flutter): refactor SetupWidget hook system architecture. ([db32a9a3](https://github.com/vowdemon/jolt/commit/db32a9a3d1e2a18c82ea58fdfa97406899d3e0a2))

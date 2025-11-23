@@ -3,6 +3,45 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-11-24
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - [`jolt` - `v2.0.0-beta.3`](#jolt---v200-beta3)
+
+Packages with other changes:
+
+ - [`jolt_flutter` - `v2.0.0-beta.3`](#jolt_flutter---v200-beta3)
+ - [`jolt_flutter_hooks` - `v1.0.0-beta.3`](#jolt_flutter_hooks---v100-beta3)
+ - [`jolt_hooks` - `v2.0.0-beta.3`](#jolt_hooks---v200-beta3)
+
+---
+
+#### `jolt` - `v2.0.0-beta.3`
+
+ - **FIX**(convert_computed): accept WritableNode instead of Signal for source. ([41adf88a](https://github.com/vowdemon/jolt/commit/41adf88acafee7633b5bda83a91ed27901fa6425))
+ - **FEAT**: improve notify() support for mutable values and add tests. ([8e238f7d](https://github.com/vowdemon/jolt/commit/8e238f7dfd97a1f58de60abc26ff669d0891ee8f))
+ - **BREAKING** **FEAT**(jolt): add Effect.lazy and improve CustomReactiveNode tests. ([ef64a431](https://github.com/vowdemon/jolt/commit/ef64a431cf75538175d6e9ea0151c0ea51005992))
+
+#### `jolt_flutter` - `v2.0.0-beta.3`
+
+ - **REFACTOR**(jolt_flutter,jolt_hooks): unify hook calling style for better extensibility. ([fc27ba2e](https://github.com/vowdemon/jolt/commit/fc27ba2e6ea31ee22a281eb5200e594c19fd4614))
+ - **REFACTOR**(setup): restructure hook system with improved lifecycle management. ([9fa92a97](https://github.com/vowdemon/jolt/commit/9fa92a979afb7c2e0ccc5ddd5a22b49d50bf7604))
+ - **FIX**: adapt PropsReadonlyNode to CustomReactiveNode. ([5470aa67](https://github.com/vowdemon/jolt/commit/5470aa67fb0a8ff93310c8cc504e263d52822579))
+
+#### `jolt_flutter_hooks` - `v1.0.0-beta.3`
+
+ - **REFACTOR**(hooks): migrate to new setup hook API. ([b857d225](https://github.com/vowdemon/jolt/commit/b857d2255432893e4e3477b4171b73d29896cfce))
+
+#### `jolt_hooks` - `v2.0.0-beta.3`
+
+ - **REFACTOR**(jolt_flutter,jolt_hooks): unify hook calling style for better extensibility. ([fc27ba2e](https://github.com/vowdemon/jolt/commit/fc27ba2e6ea31ee22a281eb5200e594c19fd4614))
+
+
 ## 2025-11-23
 
 ### Changes

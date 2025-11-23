@@ -1,3 +1,7 @@
+## 2.0.0-beta.3
+
+ - **REFACTOR**(jolt_flutter,jolt_hooks): unify hook calling style for better extensibility. ([fc27ba2e](https://github.com/vowdemon/jolt/commit/fc27ba2e6ea31ee22a281eb5200e594c19fd4614))
+
 ## 2.0.0-beta.2
 
  - Update a dependency to the latest release.

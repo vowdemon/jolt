@@ -1,3 +1,11 @@
+## 2.0.0-beta.3
+
+> Note: This release has breaking changes.
+
+ - **FIX**(convert_computed): accept WritableNode instead of Signal for source. ([41adf88a](https://github.com/vowdemon/jolt/commit/41adf88acafee7633b5bda83a91ed27901fa6425))
+ - **FEAT**: improve notify() support for mutable values and add tests. ([8e238f7d](https://github.com/vowdemon/jolt/commit/8e238f7dfd97a1f58de60abc26ff669d0891ee8f))
+ - **BREAKING** **FEAT**(jolt): add Effect.lazy and improve CustomReactiveNode tests. ([ef64a431](https://github.com/vowdemon/jolt/commit/ef64a431cf75538175d6e9ea0151c0ea51005992))
+
 ## 2.0.0-beta.2
 
  - **REFACTOR**(jolt_flutter): refactor SetupWidget hook system architecture. ([db32a9a3](https://github.com/vowdemon/jolt/commit/db32a9a3d1e2a18c82ea58fdfa97406899d3e0a2))

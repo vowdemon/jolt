@@ -1,3 +1,7 @@
+## 1.0.0-beta.3
+
+ - **REFACTOR**(hooks): migrate to new setup hook API. ([b857d225](https://github.com/vowdemon/jolt/commit/b857d2255432893e4e3477b4171b73d29896cfce))
+
 ## 1.0.0-beta.2
 
  - **REFACTOR**(jolt_flutter): refactor SetupWidget hook system architecture. ([db32a9a3](https://github.com/vowdemon/jolt/commit/db32a9a3d1e2a18c82ea58fdfa97406899d3e0a2))

@@ -21,6 +21,44 @@ void main() {
       expect(values, equals([1]));
     });
 
+    test("Effect.lazy should not run automatically", () {
+      final signal = Signal(1);
+      final values = <int>[];
+
+      final effect = Effect.lazy(() {
+        values.add(signal.value);
+      });
+
+      expect(values, isEmpty); // Does not run automatically
+
+      signal.value = 2;
+      expect(values, isEmpty); // Still doesn't run when dependency changes
+
+      effect.run(); // Manually trigger
+      expect(values, equals([2])); // Runs when manually triggered
+
+      signal.value = 3;
+      expect(values,
+          equals([2, 3])); // Still doesn't auto-run after manual trigger
+    });
+
+    test("Effect with lazy=true should not run automatically", () {
+      final signal = Signal(1);
+      final values = <int>[];
+
+      final effect = Effect(() {
+        values.add(signal.value);
+      }, lazy: true);
+
+      expect(values, isEmpty); // Does not run automatically
+
+      signal.value = 2;
+      expect(values, isEmpty); // Still doesn't run when dependency changes
+
+      effect.run(); // Manually trigger
+      expect(values, equals([2])); // Runs when manually triggered
+    });
+
     test("should re-run effect when dependencies change", () {
       final signal = Signal(1);
       final values = <int>[];

@@ -4,8 +4,6 @@ import "package:shared_interfaces/shared_interfaces.dart";
 import "package:jolt/core.dart";
 import "package:jolt/jolt.dart";
 
-/// Base class for all effect nodes in the reactive system.
-
 @protected
 mixin EffectCleanupMixin {
   bool get isDisposed;
@@ -227,26 +225,39 @@ abstract class EffectScope implements EffectNode {
 class EffectImpl extends EffectReactiveNode
     with EffectNode, EffectCleanupMixin
     implements Effect {
+  /// {@template jolt_effect_impl}
   /// Creates a new effect with the given function.
   ///
   /// Parameters:
   /// - [fn]: The effect function to execute
-  /// - [immediately]: Whether to run the effect immediately upon creation
+  /// - [lazy]: Whether to run the effect immediately upon creation.
+  ///   If `true`, the effect will execute once immediately when created,
+  ///   then automatically re-run whenever its reactive dependencies change.
+  ///   If `false` (default), the effect will only run when dependencies change,
+  ///   not immediately upon creation.
+  /// - [onDebug]: Optional debug callback for reactive system debugging
   ///
-  /// The effect function will be called immediately (if [immediately] is true)
-  /// and then whenever any of its reactive dependencies change.
+  /// The effect function will be called immediately upon creation (if [lazy] is true)
+  /// and then automatically whenever any of its reactive dependencies change.
   ///
   /// Example:
   /// ```dart
   /// final signal = Signal(0);
   ///
+  /// // Effect runs immediately and whenever signal changes
   /// final effect = Effect(() {
   ///   print('Signal value: ${signal.value}');
-  /// }, immediately: false); // Don't run immediately
+  /// }, lazy: true);
   ///
-  /// effect.run(); // Manually run the effect
+  /// // Effect only runs when signal changes (not immediately)
+  /// final delayedEffect = Effect(() {
+  ///   print('Signal value: ${signal.value}');
+  /// }, lazy: false);
+  ///
+  /// signal.value = 1; // Both effects run
   /// ```
-  EffectImpl(this.fn, {bool immediately = true, JoltDebugFn? onDebug})
+  /// {@endtemplate}
+  EffectImpl(this.fn, {bool lazy = false, JoltDebugFn? onDebug})
       : super(flags: ReactiveFlags.watching | ReactiveFlags.recursedCheck) {
     JoltDebug.create(this, onDebug);
 
@@ -255,7 +266,7 @@ class EffectImpl extends EffectReactiveNode
       link(this, prevSub, 0);
     }
 
-    if (immediately) {
+    if (!lazy) {
       final prevSub = setActiveSub(this);
       try {
         _effectFn();
@@ -266,6 +277,39 @@ class EffectImpl extends EffectReactiveNode
     } else {
       flags &= ~ReactiveFlags.recursedCheck;
     }
+  }
+
+  /// {@template jolt_effect_impl.lazy}
+  /// Creates a new effect that runs immediately upon creation.
+  ///
+  /// This factory method is a convenience constructor for creating an effect
+  /// with [lazy] set to `true`. The effect will execute once immediately when
+  /// created, then automatically re-run whenever its reactive dependencies change.
+  ///
+  /// Parameters:
+  /// - [fn]: The effect function to execute
+  /// - [onDebug]: Optional debug callback for reactive system debugging
+  ///
+  /// Returns: A new [Effect] instance that executes immediately
+  ///
+  /// Example:
+  /// ```dart
+  /// final signal = Signal(10);
+  /// final values = <int>[];
+  ///
+  /// Effect.lazy(() {
+  ///   values.add(signal.value);
+  /// });
+  ///
+  /// // Effect executed immediately with value 10
+  /// expect(values, equals([10]));
+  ///
+  /// signal.value = 20; // Effect runs again
+  /// expect(values, equals([10, 20]));
+  /// ```
+  /// {@endtemplate}
+  factory EffectImpl.lazy(void Function() fn, {JoltDebugFn? onDebug}) {
+    return EffectImpl(fn, lazy: true, onDebug: onDebug);
   }
 
   @pragma("vm:prefer-inline")
@@ -294,7 +338,7 @@ class EffectImpl extends EffectReactiveNode
   ///
   /// Example:
   /// ```dart
-  /// final effect = Effect(() => print('Hello'), immediately: false);
+  /// final effect = Effect(() => print('Hello'), lazy: false);
   /// effect.run(); // Prints: "Hello"
   /// ```
   @override
@@ -336,19 +380,16 @@ class EffectImpl extends EffectReactiveNode
 /// effect.dispose(); // Stop the effect
 /// ```
 abstract class Effect implements EffectNode {
-  /// Creates a new effect with the given function.
-  ///
-  /// Parameters:
-  /// - [fn]: The effect function to execute
-  /// - [immediately]: Whether to run the effect immediately upon creation
-  /// - [onDebug]: Optional debug callback for reactive system debugging
-  ///
-  /// Example:
-  /// ```dart
-  /// final effect = Effect(() => print('Hello'), immediately: false);
-  /// ```
-  factory Effect(void Function() fn, {bool immediately, JoltDebugFn? onDebug}) =
-      EffectImpl;
+  /// {@macro jolt_effect_impl}
+  factory Effect(
+    void Function() fn, {
+    bool lazy,
+    JoltDebugFn? onDebug,
+  }) = EffectImpl;
+
+  /// {@macro jolt_effect_impl.lazy}
+  factory Effect.lazy(void Function() fn, {JoltDebugFn? onDebug}) =
+      EffectImpl.lazy;
 
   /// Manually runs the effect function.
   ///
@@ -409,6 +450,7 @@ typedef WhenFn<T> = bool Function(T newValue, T oldValue);
 class WatcherImpl<T> extends EffectReactiveNode
     with EffectNode, EffectCleanupMixin
     implements Watcher<T> {
+  /// {@template jolt_watcher_impl}
   /// Creates a new watcher with the given sources and callback.
   ///
   /// Parameters:
@@ -428,6 +470,7 @@ class WatcherImpl<T> extends EffectReactiveNode
   ///   when: (newValue, oldValue) => newValue > oldValue, // Only when increasing
   /// );
   /// ```
+  /// {@endtemplate}
   WatcherImpl(this.sourcesFn, this.fn,
       {bool immediately = false, this.when, JoltDebugFn? onDebug})
       : super(flags: ReactiveFlags.watching) {
@@ -454,6 +497,98 @@ class WatcherImpl<T> extends EffectReactiveNode
     } finally {
       setActiveSub(prevSub);
     }
+  }
+
+  /// {@template jolt_watcher_impl.immediately}
+  /// Creates a watcher that executes the callback immediately upon creation.
+  ///
+  /// This factory method is a convenience constructor for creating a watcher
+  /// with [immediately] set to `true`. The callback will be executed once
+  /// immediately with the current source values, and then whenever the sources
+  /// change and the condition (if provided) is met.
+  ///
+  /// Parameters:
+  /// - [sourcesFn]: Function that returns the values to watch
+  /// - [fn]: Callback function executed when sources change
+  /// - [when]: Optional condition function for custom trigger logic
+  /// - [onDebug]: Optional debug callback for reactive system debugging
+  ///
+  /// Returns: A new [Watcher] instance that executes immediately
+  ///
+  /// Example:
+  /// ```dart
+  /// final signal = Signal(10);
+  /// final values = <int>[];
+  ///
+  /// Watcher.immediately(
+  ///   () => signal.value,
+  ///   (newValue, oldValue) {
+  ///     values.add(newValue);
+  ///   },
+  /// );
+  ///
+  /// // Callback executed immediately with value 10
+  /// expect(values, equals([10]));
+  ///
+  /// signal.value = 20; // Triggers callback again
+  /// expect(values, equals([10, 20]));
+  /// ```
+  /// {@endtemplate}
+  factory WatcherImpl.immediately(SourcesFn<T> sourcesFn, WatcherFn<T> fn,
+      {WhenFn<T>? when, JoltDebugFn? onDebug}) {
+    return WatcherImpl(sourcesFn, fn,
+        immediately: true, when: when, onDebug: onDebug);
+  }
+
+  /// {@template jolt_watcher_impl.once}
+  /// Creates a watcher that executes once and then automatically disposes itself.
+  ///
+  /// This factory method creates a watcher that will execute its callback
+  /// on the first change after creation, and then automatically dispose itself.
+  /// The watcher will not respond to changes before the first trigger, and
+  /// will not respond to any changes after disposal.
+  ///
+  /// Parameters:
+  /// - [sourcesFn]: Function that returns the values to watch
+  /// - [fn]: Callback function executed on first change
+  /// - [when]: Optional condition function for custom trigger logic
+  /// - [onDebug]: Optional debug callback for reactive system debugging
+  ///
+  /// Returns: A new [Watcher] instance that auto-disposes after first execution
+  ///
+  /// Example:
+  /// ```dart
+  /// final signal = Signal(1);
+  /// final values = <int>[];
+  ///
+  /// final watcher = Watcher.once(
+  ///   () => signal.value,
+  ///   (newValue, _) {
+  ///     values.add(newValue);
+  ///   },
+  /// );
+  ///
+  /// expect(values, isEmpty);
+  /// expect(watcher.isDisposed, isFalse);
+  ///
+  /// signal.value = 2; // Triggers and disposes
+  /// expect(values, equals([2]));
+  /// expect(watcher.isDisposed, isTrue);
+  ///
+  /// signal.value = 3; // No longer responds
+  /// expect(values, equals([2]));
+  /// ```
+  /// {@endtemplate}
+  factory WatcherImpl.once(SourcesFn<T> sourcesFn, WatcherFn<T> fn,
+      {WhenFn<T>? when, JoltDebugFn? onDebug}) {
+    late WatcherImpl<T> watcher;
+
+    watcher = WatcherImpl(sourcesFn, (newValue, oldValue) {
+      fn(newValue, oldValue);
+      watcher.dispose();
+    }, when: when, immediately: false, onDebug: onDebug);
+
+    return watcher;
   }
 
   /// Function that provides the source values to watch.
@@ -593,114 +728,19 @@ class WatcherImpl<T> extends EffectReactiveNode
 /// );
 /// ```
 abstract class Watcher<T> implements EffectNode {
-  /// Creates a new watcher with the given sources and callback.
-  ///
-  /// Parameters:
-  /// - [sourcesFn]: Function that returns the values to watch
-  /// - [fn]: Callback function executed when sources change
-  /// - [immediately]: Whether to execute the callback immediately
-  /// - [when]: Optional condition function for custom trigger logic
-  /// - [onDebug]: Optional debug callback for reactive system debugging
-  ///
-  /// Example:
-  /// ```dart
-  /// final watcher = Watcher(
-  ///   () => signal.value,
-  ///   (newValue, oldValue) => print('Changed'),
-  ///   when: (newValue, oldValue) => newValue > oldValue,
-  /// );
-  /// ```
+  /// {@macro jolt_watcher_impl}
   factory Watcher(SourcesFn<T> sourcesFn, WatcherFn<T> fn,
       {bool immediately,
       WhenFn<T>? when,
       JoltDebugFn? onDebug}) = WatcherImpl<T>;
 
-  /// Creates a watcher that executes the callback immediately upon creation.
-  ///
-  /// This factory method is a convenience constructor for creating a watcher
-  /// with [immediately] set to `true`. The callback will be executed once
-  /// immediately with the current source values, and then whenever the sources
-  /// change and the condition (if provided) is met.
-  ///
-  /// Parameters:
-  /// - [sourcesFn]: Function that returns the values to watch
-  /// - [fn]: Callback function executed when sources change
-  /// - [when]: Optional condition function for custom trigger logic
-  /// - [onDebug]: Optional debug callback for reactive system debugging
-  ///
-  /// Returns: A new [Watcher] instance that executes immediately
-  ///
-  /// Example:
-  /// ```dart
-  /// final signal = Signal(10);
-  /// final values = <int>[];
-  ///
-  /// Watcher.immediately(
-  ///   () => signal.value,
-  ///   (newValue, oldValue) {
-  ///     values.add(newValue);
-  ///   },
-  /// );
-  ///
-  /// // Callback executed immediately with value 10
-  /// expect(values, equals([10]));
-  ///
-  /// signal.value = 20; // Triggers callback again
-  /// expect(values, equals([10, 20]));
-  /// ```
+  /// {@macro jolt_watcher_impl.immediately}
   factory Watcher.immediately(SourcesFn<T> sourcesFn, WatcherFn<T> fn,
-          {WhenFn<T>? when, JoltDebugFn? onDebug}) =>
-      WatcherImpl<T>(sourcesFn, fn,
-          immediately: true, when: when, onDebug: onDebug);
+      {WhenFn<T>? when, JoltDebugFn? onDebug}) = WatcherImpl.immediately;
 
-  /// Creates a watcher that executes once and then automatically disposes itself.
-  ///
-  /// This factory method creates a watcher that will execute its callback
-  /// on the first change after creation, and then automatically dispose itself.
-  /// The watcher will not respond to changes before the first trigger, and
-  /// will not respond to any changes after disposal.
-  ///
-  /// Parameters:
-  /// - [sourcesFn]: Function that returns the values to watch
-  /// - [fn]: Callback function executed on first change
-  /// - [when]: Optional condition function for custom trigger logic
-  /// - [onDebug]: Optional debug callback for reactive system debugging
-  ///
-  /// Returns: A new [Watcher] instance that auto-disposes after first execution
-  ///
-  /// Example:
-  /// ```dart
-  /// final signal = Signal(1);
-  /// final values = <int>[];
-  ///
-  /// final watcher = Watcher.once(
-  ///   () => signal.value,
-  ///   (newValue, _) {
-  ///     values.add(newValue);
-  ///   },
-  /// );
-  ///
-  /// expect(values, isEmpty);
-  /// expect(watcher.isDisposed, isFalse);
-  ///
-  /// signal.value = 2; // Triggers and disposes
-  /// expect(values, equals([2]));
-  /// expect(watcher.isDisposed, isTrue);
-  ///
-  /// signal.value = 3; // No longer responds
-  /// expect(values, equals([2]));
-  /// ```
+  /// {@macro jolt_watcher_impl.once}
   factory Watcher.once(SourcesFn<T> sourcesFn, WatcherFn<T> fn,
-      {WhenFn<T>? when, JoltDebugFn? onDebug}) {
-    late Watcher<T> watcher;
-
-    watcher = Watcher(sourcesFn, (newValue, oldValue) {
-      fn(newValue, oldValue);
-      watcher.dispose();
-    }, when: when, immediately: false, onDebug: onDebug);
-
-    return watcher;
-  }
+      {WhenFn<T>? when, JoltDebugFn? onDebug}) = WatcherImpl.once;
 
   /// The currently active watcher instance.
   ///

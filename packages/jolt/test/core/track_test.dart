@@ -293,7 +293,7 @@ void main() {
   group("trackWithEffect", () {
     test("should track dependencies with specified effect node", () {
       final signal = Signal(1);
-      final customEffect = Effect(() {}, immediately: false);
+      final customEffect = Effect(() {}, lazy: true);
       final values = <int>[];
 
       trackWithEffect(() {
@@ -308,7 +308,7 @@ void main() {
     });
 
     test("should return function result", () {
-      final customEffect = Effect(() {}, immediately: false);
+      final customEffect = Effect(() {}, lazy: true);
       final result = trackWithEffect(() => 42, customEffect);
       expect(result, equals(42));
     });
@@ -316,7 +316,7 @@ void main() {
     test("should track multiple signals", () {
       final signal1 = Signal(1);
       final signal2 = Signal(2);
-      final customEffect = Effect(() {}, immediately: false);
+      final customEffect = Effect(() {}, lazy: true);
       final values = <int>[];
 
       trackWithEffect(() {
@@ -328,7 +328,7 @@ void main() {
 
     test("should work with purge=true (default)", () {
       final signal = Signal(1);
-      final customEffect = Effect(() {}, immediately: false);
+      final customEffect = Effect(() {}, lazy: true);
       final values = <int>[];
 
       trackWithEffect(() {
@@ -347,7 +347,7 @@ void main() {
 
     test("should work with purge=false", () {
       final signal = Signal(1);
-      final customEffect = Effect(() {}, immediately: false);
+      final customEffect = Effect(() {}, lazy: true);
       final values = <int>[];
 
       trackWithEffect(() {
@@ -367,7 +367,7 @@ void main() {
     test("should work with computed values", () {
       final signal = Signal(2);
       final computed = Computed<int>(() => signal.value * 2);
-      final customEffect = Effect(() {}, immediately: false);
+      final customEffect = Effect(() {}, lazy: true);
       final values = <int>[];
 
       trackWithEffect(() {
@@ -378,7 +378,7 @@ void main() {
     });
 
     test("should handle errors correctly", () {
-      final customEffect = Effect(() {}, immediately: false);
+      final customEffect = Effect(() {}, lazy: true);
       bool errorCaught = false;
 
       try {
@@ -396,8 +396,8 @@ void main() {
     test("should work with nested trackWithEffect calls", () {
       final signal1 = Signal(1);
       final signal2 = Signal(2);
-      final customEffect1 = Effect(() {}, immediately: false);
-      final customEffect2 = Effect(() {}, immediately: false);
+      final customEffect1 = Effect(() {}, lazy: true);
+      final customEffect2 = Effect(() {}, lazy: true);
       final values = <int>[];
 
       trackWithEffect(() {
@@ -412,8 +412,8 @@ void main() {
 
     test("should restore previous active subscriber", () {
       final signal = Signal(1);
-      final outerEffect = Effect(() {}, immediately: false);
-      final innerEffect = Effect(() {}, immediately: false);
+      final outerEffect = Effect(() {}, lazy: true);
+      final innerEffect = Effect(() {}, lazy: true);
       final values = <int>[];
 
       trackWithEffect(() {

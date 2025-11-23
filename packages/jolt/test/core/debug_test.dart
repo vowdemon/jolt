@@ -57,7 +57,7 @@ void main() {
     test("debug effect", () {
       final counter = DebugCounter();
 
-      final e = Effect(() => 1, immediately: false, onDebug: counter.onDebug);
+      final e = Effect(() => 1, lazy: true, onDebug: counter.onDebug);
 
       expect(counter.createCount, equals(1));
       expect(counter.count, equals(1));

@@ -513,11 +513,13 @@ typedef SetupFunction<T> = Widget Function();
 ///   }
 /// }
 /// ```
-class PropsReadonlyNode<T extends SetupWidget<T>> extends ReactiveNode
+class PropsReadonlyNode<T extends SetupWidget<T>> extends CustomReactiveNode
     implements ReadonlyNode<T> {
   PropsReadonlyNode(this._context) : super(flags: ReactiveFlags.mutable);
 
   final BuildContext _context;
+
+  bool _dirty = false;
 
   @override
   T get() {
@@ -541,7 +543,8 @@ class PropsReadonlyNode<T extends SetupWidget<T>> extends ReactiveNode
 
   @override
   void notify() {
-    notifySignal(this);
+    _dirty = true;
+    notifyCustom(this);
   }
 
   @override
@@ -561,5 +564,14 @@ class PropsReadonlyNode<T extends SetupWidget<T>> extends ReactiveNode
   // coverage:ignore-start
   @override
   void onDispose() {}
+
+  @override
+  bool updateNode() {
+    if (_dirty) {
+      _dirty = false;
+      return true;
+    }
+    return false;
+  }
   // coverage:ignore-end
 }

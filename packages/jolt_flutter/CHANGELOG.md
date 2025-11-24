@@ -1,3 +1,9 @@
+## 2.0.0-beta.4
+
+> Note: This release has breaking changes.
+
+ - **BREAKING** **FEAT**(jolt_flutter): add SetupMixin. ([50487f6c](https://github.com/vowdemon/jolt/commit/50487f6cd809618f2da4bc05d797f214e49ec5ac))
+
 ## 2.0.0-beta.3
 
  - **REFACTOR**(jolt_flutter,jolt_hooks): unify hook calling style for better extensibility. ([fc27ba2e](https://github.com/vowdemon/jolt/commit/fc27ba2e6ea31ee22a281eb5200e594c19fd4614))

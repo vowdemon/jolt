@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-11-25
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - [`jolt_flutter` - `v2.0.0-beta.4`](#jolt_flutter---v200-beta4)
+
+Packages with other changes:
+
+ - There are no other changes in this release.
+
+---
+
+#### `jolt_flutter` - `v2.0.0-beta.4`
+
+ - **BREAKING** **FEAT**(jolt_flutter): add SetupMixin. ([50487f6c](https://github.com/vowdemon/jolt/commit/50487f6cd809618f2da4bc05d797f214e49ec5ac))
+
+
 ## 2025-11-24
 
 ### Changes

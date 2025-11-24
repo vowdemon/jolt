@@ -5,36 +5,22 @@
 [![jolt_flutter](https://img.shields.io/pub/v/jolt_flutter?label=jolt_flutter)](https://pub.dev/packages/jolt_flutter)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/vowdemon/jolt/blob/main/LICENSE)
 
-A Flutter integration package for [Jolt](https://pub.dev/packages/jolt) reactive state management. Jolt Flutter provides Flutter-specific widgets and utilities for working with Jolt signals, computed values, and reactive state. It includes widgets like `JoltBuilder` for reactive UI updates and seamless integration with Flutter's ValueNotifier system.
+Flutter integration for [Jolt](https://pub.dev/packages/jolt). Provides widgets like `JoltBuilder`, `JoltSelector`, and `JoltProvider` to use Jolt's reactive system in Flutter. Also includes bidirectional `ValueNotifier` conversion and a hooks-style Setup Widget API.
 
-## Quick Start
+> **📦 Package Exports**
+> 
+> `jolt_flutter` re-exports all APIs from the `jolt` package, so you only need to import `jolt_flutter` to access all Jolt reactive primitives (Signal, Computed, Effect, etc.).
+
+## Usage
 
 ```dart
-import 'package:flutter/material.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
 
-void main() {
-  runApp(MyApp());
-}
+final counter = Signal(0);
 
-class MyApp extends StatelessWidget {
-  final counter = Signal(0);
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        body: JoltBuilder(
-          builder: (context) => Text('Count: ${counter.value}'),
-        ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () => counter.value++,
-          child: Icon(Icons.add),
-        ),
-      ),
-    );
-  }
-}
+JoltBuilder(
+  builder: (context) => Text('Count: ${counter.value}'),
+)
 ```
 
 ## Core Widgets
@@ -116,244 +102,6 @@ Builder(
 )
 ```
 
-## Setup Widget
-
-> **⚠️ Important Note for `flutter_hooks` Users:**
->
-> If you are already using or prefer the `flutter_hooks` package and its ecosystem, **do not import `jolt_flutter/setup.dart`**. Setup Widget follows a fundamentally different execution model:
->
-> - **Setup Widget**: The `setup` function runs **once** when the widget is created
-> - **flutter_hooks**: Hook functions run **on every build** (similar to React hooks)
->
-> These different models can cause confusion if mixed. Instead, if you want to use Jolt with the `flutter_hooks` pattern, import `jolt_hooks`, which provides hooks that work seamlessly with `HookWidget` and integrate perfectly with the existing `flutter_hooks` ecosystem.
-
-Setup Widget provides a composition-based API for Flutter widgets, similar to Vue's Composition API. The key difference from React hooks is that the `setup` function executes only once when the widget is first created, not on every rebuild. This provides better performance and a more predictable execution model.
-
-### SetupBuilder
-
-The simplest way to use Setup Widget is with `SetupBuilder`:
-
-```dart
-import 'package:jolt_flutter/setup.dart';
-
-SetupBuilder(
-  setup: (context) {
-    final count = useSignal(0);
-    
-    onMounted(() {
-      print('Widget mounted');
-    });
-    
-    onUnmounted(() {
-      print('Widget unmounted');
-    });
-    
-    return () => Column(
-      children: [
-        Text('Count: ${count.value}'),
-        ElevatedButton(
-          onPressed: () => count.value++,
-          child: Text('Increment'),
-        ),
-      ],
-    );
-  },
-)
-```
-
-### Custom SetupWidget
-
-You can also create your own SetupWidget by extending `SetupWidget`:
-
-```dart
-class CounterWidget extends SetupWidget<CounterWidget> {
-  const CounterWidget({super.key});
-
-  @override
-  setup(context, props) {
-    final count = useSignal(0);
-    
-    useJoltEffect(() {
-      print('Count changed: ${count.value}');
-    });
-    
-    return () => Column(
-      children: [
-        Text('Count: ${count.value}'),
-        ElevatedButton(
-          onPressed: () => count.value++,
-          child: Text('Increment'),
-        ),
-      ],
-    );
-  }
-}
-```
-
-**Note:** The `setup` function receives two parameters:
-- `context`: The `SetupBuildContext` that provides access to the widget's build context
-- `props`: A `PropsReadonlyNode` that provides reactive access to the widget instance and its properties
-
-### Available Hooks
-
-Setup Widget provides hooks for all Jolt reactive primitives:
-
-```dart
-setup: (context) {
-  // Signals
-  final count = useSignal(0);
-  final name = useSignal('Flutter');
-  
-  // Computed values
-  final doubled = useComputed(() => count.value * 2);
-  
-  // Reactive collections
-  final items = useListSignal(['apple', 'banana']);
-  final userMap = useMapSignal({'name': 'John', 'age': 30});
-  
-  // Effects
-  useJoltEffect(() {
-    print('Count changed: ${count.value}');
-  });
-  
-  // Lifecycle callbacks
-  onMounted(() {
-    print('Widget mounted');
-  });
-  
-  onUnmounted(() {
-    print('Widget unmounted');
-  });
-  
-  onUpdated(() {
-    print('Widget updated');
-  });
-  
-  onChangedDependencies(() {
-    print('Dependencies changed');
-  });
-  
-  onActivated(() {
-    print('Widget activated');
-  });
-  
-  onDeactivated(() {
-    print('Widget deactivated');
-  });
-  
-  return () => Text('Count: ${count.value}');
-}
-```
-
-### Watching Widget Parameters
-
-Since the `setup` function executes only once, you cannot directly access widget parameters in the builder function to react to changes. The `props` parameter (a `PropsReadonlyNode`) provides reactive access to the widget instance, which is the **only way** to watch for widget parameter changes in SetupWidget.
-
-```dart
-class UserCard extends SetupWidget<UserCard> {
-  final String name;
-  final int age;
-  
-  const UserCard({
-    super.key,
-    required this.name,
-    required this.age,
-  });
-
-  @override
-  setup(context, props) {
-    // props is a ReadonlyNode that tracks widget changes
-    // You can use props.value, props(), or props.get() to access the widget instance
-    
-    // Create a computed that reacts to prop changes
-    final displayText = useComputed(() => 
-      '${props().name} (${props().age})'
-    );
-    
-    // The builder will rebuild when props change
-    return () => Text(displayText.value);
-  }
-}
-
-// Usage
-UserCard(name: 'Alice', age: 30)  // Initial render
-UserCard(name: 'Bob', age: 25)    // Widget updates, builder rebuilds
-```
-
-**Important:** The `props` parameter is a `ReadonlyNode<YourWidgetType>`, allowing you to access widget properties reactively. You can use:
-- `props.value` - Get the widget instance (establishes reactive dependency)
-- `props()` - Shorthand for `props.value`
-- `props.get()` - Same as `props.value`
-- `props.peek` - Get the widget instance without establishing a reactive dependency
-
-When the parent widget updates the SetupWidget with new parameters, accessing `props.value` (or `props()`/`props.get()`) will reflect the new widget instance, triggering reactive updates in any Computed or Effect that depends on it.
-
-### Lifecycle Management
-
-All hooks automatically dispose their resources when the widget is unmounted. This ensures proper cleanup and prevents memory leaks:
-
-```dart
-setup: (context) {
-  final timer = useSignal<Timer?>(null);
-  
-  onMounted(() {
-    timer.value = Timer.periodic(Duration(seconds: 1), (_) {
-      print('Tick');
-    });
-  });
-  
-  onUnmounted(() {
-    timer.value?.cancel();
-  });
-  
-  return () => Text('Timer running');
-}
-```
-
-### Setup Execution Model
-
-Unlike React hooks where the component function runs on every render, Setup Widget's `setup` function executes only once when the widget is first created. This provides several benefits:
-
-- **Performance**: Setup logic doesn't re-run unnecessarily
-- **Stability**: Hook instances persist across rebuilds
-- **Predictability**: Initialization happens once, making state management clearer
-
-The returned builder function is called on each rebuild, allowing the UI to react to signal changes while keeping the setup logic stable.
-
-### Hot Reload Support
-
-Setup Widget supports Flutter's hot reload feature with intelligent state preservation. The hot reload mechanism works as follows:
-
-**State Storage via `useHook()`:**
-All hooks created through `useHook()` (which is used internally by hooks like `useSignal`, `useComputed`, etc.) store their state in a type-indexed cache. Each hook state is stored based on its type and the order it appears in the setup function, creating a type sequence that uniquely identifies each hook.
-
-**Hot Reload Process:**
-1. When hot reload occurs, Flutter calls `reassemble()` on the widget
-2. Setup Widget detects the reassembly and marks the context for reload
-3. The setup function is re-executed with the same type sequence
-4. As each hook is called, `useHook()` matches the hook by its type and position in the sequence
-5. If a matching state exists in the cache, it's reused; otherwise, a new state is created
-6. Unused hooks (removed from the setup function) are automatically cleaned up
-
-**Important Notes:**
-- Hot reload is the **only** way to make setup re-execute for the same widget instance
-- In release builds, all hot reload code is stripped out (assert blocks), so setup executes only once
-- Hook state preservation depends on maintaining the same type sequence in your setup function
-- If you change the order or types of hooks, state may not be preserved correctly
-
-```dart
-setup: (context) {
-  // These hooks will preserve state during hot reload
-  // as long as their types and order remain the same
-  final count = useSignal(0);        // Type: Signal<int>, Index: 0
-  final name = useSignal('Flutter'); // Type: Signal<String>, Index: 1
-  
-  // After hot reload, count and name will retain their values
-  // if the setup function structure remains unchanged
-  return () => Text('${name.value}: ${count.value}');
-}
-```
-
 ## ValueNotifier Integration
 
 ### Converting Jolt Signals to ValueNotifier
@@ -402,81 +150,373 @@ final notifier = signal.notifier;
 signal.value = 42; // notifier.value is now 42
 ```
 
-## Flutter Integration Examples
+## Setup Widget
 
-### With Async Operations
+> **⚠️ Important Note**
+>
+> Setup Widget and its hooks are **not part** of the `flutter_hooks` ecosystem. If you need `flutter_hooks`-compatible APIs, use the [`jolt_hooks`](https://pub.dev/packages/jolt_hooks) package instead.
+>
+> **Key Execution Difference:**
+> - **Setup Widget**: The `setup` function runs **once** when the widget is created (like Vue / SolidJS), then rebuilds are driven by the reactive system
+> - **flutter_hooks**: Hook functions run **on every build** (like React Hooks)
+>
+> These are fundamentally different models. Avoid mixing them to prevent confusion.
+
+Setup Widget provides a composition API similar to Vue's Composition API for building Flutter widgets. The key difference from React hooks: the `setup` function executes only once when the widget is created, not on every rebuild. This provides better performance and a more predictable execution model.
+
+### SetupBuilder
+
+The simplest way to use Setup Widget is with `SetupBuilder`:
 
 ```dart
-final userSignal = AsyncSignal.fromFuture(fetchUser());
+import 'package:jolt_flutter/setup.dart';
 
-JoltBuilder(
-  builder: (context) {
-    final state = userSignal.value;
-    if (state.isLoading) return CircularProgressIndicator();
-    if (state.isError) return Text('Error: ${state.error}');
-    return Text('User: ${state.data}');
+SetupBuilder(
+  setup: (context) {
+    final count = useSignal(0);
+    
+    return () => Column(
+      children: [
+        Text('Count: ${count.value}'),
+        ElevatedButton(
+          onPressed: () => count.value++,
+          child: Text('Click'),
+        ),
+      ],
+    );
   },
 )
 ```
 
-### With Collections
+### SetupWidget vs SetupMixin
+
+Before diving into each API, understand their differences:
+
+| Feature | SetupWidget | SetupMixin |
+|---------|-------------|-----------------|
+| Base class | Extends `Widget` | Mixin for `State<T>` |
+| Mutability | Like `StatelessWidget`, immutable | Mutable State class |
+| `this` reference | ❌ Not available | ✅ Full access |
+| Instance methods/fields | ❌ Should not use | ✅ Can define freely |
+| Setup signature | `setup(context, props)` | `setup(context)` |
+| Reactive props access | `props().property` | `props.property` |
+| Non-reactive props access | `props.peek.property` | `widget.property` |
+| Lifecycle methods | Via hooks only | Both hooks + State methods |
+| Use case | Simple immutable widgets | Need State capabilities |
+
+### SetupWidget
+
+Create custom widgets by extending `SetupWidget`:
 
 ```dart
-final items = ListSignal(['apple', 'banana']);
+class CounterWidget extends SetupWidget<CounterWidget> {
+  final int initialValue;
+  
+  const CounterWidget({super.key, this.initialValue = 0});
 
-JoltBuilder(
-  builder: (context) => ListView.builder(
-    itemCount: items.length,
-    itemBuilder: (context, index) => ListTile(
-      title: Text(items[index]),
-    ),
-  ),
-)
+  @override
+  setup(context, props) {
+    // Use props.peek for one-time initialization (non-reactive)
+    final count = useSignal(props.peek.initialValue);
+    
+    // Use props() for reactive access
+    final displayText = useComputed(() => 
+      'Count: ${count.value}, Initial: ${props().initialValue}'
+    );
+    
+    return () => Column(
+      children: [
+        Text(displayText.value),
+        ElevatedButton(
+          onPressed: () => count.value++,
+          child: const Text('Increment'),
+        ),
+      ],
+    );
+  }
+}
 ```
 
-## Performance Tips
+**Important Notes:**
 
-### Use JoltSelector for Fine-Grained Updates
+- `setup` receives two parameters:
+  - `context`: Standard Flutter `BuildContext`
+  - `props`: `PropsReadonlyNode<YourWidgetType>`, provides reactive access to widget instance
+
+- **Props Access Methods:**
+  - `props()` / `props.value` / `props.get()` - Reactive access, establishes dependencies
+  - `props.peek` - Non-reactive access, for one-time initialization
+
+- **Like `StatelessWidget`:** The widget class should be immutable and not hold mutable state or define instance methods
+
+### SetupMixin
+
+Add composition API support to existing `StatefulWidget`s:
 
 ```dart
-final user = Signal(User(name: 'John', age: 30));
+class CounterWidget extends StatefulWidget {
+  final int initialValue;
+  
+  const CounterWidget({super.key, this.initialValue = 0});
 
-// Only rebuilds when name changes
-JoltSelector(
-  selector: (prev) => user.value.name,
-  builder: (context, name) => Text('Hello $name'),
-)
+  @override
+  State<CounterWidget> createState() => _CounterWidgetState();
+}
+
+class _CounterWidgetState extends State<CounterWidget>
+    with SetupMixin<CounterWidget> {
+  
+  @override
+  setup(context) {
+    // Use widget.property for one-time initialization (non-reactive)
+    final count = useSignal(widget.initialValue);
+    
+    // Use props.property for reactive access
+    final displayText = useComputed(() => 
+      'Count: ${count.value}, Initial: ${props.initialValue}'
+    );
+    
+    return () => Column(
+      children: [
+        Text(displayText.value),
+        ElevatedButton(
+          onPressed: () => count.value++,
+          child: const Text('Increment'),
+        ),
+      ],
+    );
+  }
+}
 ```
 
-### Batch Updates
+**Key Differences:**
 
-Batch multiple signal updates to avoid unnecessary rebuilds:
+- `setup` receives only one parameter: `context` (no `props` parameter)
+- Provides a `props` getter for reactive widget property access
+- Compatible with traditional `State` lifecycle methods (`initState`, `dispose`, etc.)
+
+**Two Ways to Access Widget Properties:**
 
 ```dart
-batch(() {
-  counter.value++;
-  name.value = 'New Name';
-  // Only one rebuild occurs
-});
+setup(context) {
+  // 1. widget.property - Non-reactive (equivalent to props.peek in SetupWidget)
+  //    For one-time initialization, won't trigger updates on changes
+  final initial = widget.initialValue;
+  
+  // 2. props.property - Reactive (equivalent to props() in SetupWidget)
+  //    Use inside computed/effects to react to property changes
+  final reactive = useComputed(() => props.initialValue * 2);
+  
+  return () => Text('${reactive.value}');
+}
 ```
 
-## Important Notes
+**State Context and `this` Reference:**
 
-### Widget Lifecycle
-- `JoltBuilder` automatically tracks signal dependencies
-- Widgets rebuild only when tracked signals change
-- Use `JoltSelector` for performance optimization
+Unlike `SetupWidget` (which is analogous to `StatelessWidget`), `SetupMixin` runs within a `State` class, giving you full access to `this` and mutable state:
 
-### Memory Management
-- Signals are automatically disposed when widgets are disposed
-- `JoltProvider` manages resource lifecycle with `JoltState`
-- ValueNotifier integration handles cleanup automatically
+```dart
+class _CounterWidgetState extends State<CounterWidget>
+    with SetupMixin<CounterWidget> {
+  
+  // ✅ Allowed: Define instance fields in State
+  final _controller = TextEditingController();
+  int _tapCount = 0;
+  
+  // ✅ Allowed: Define instance methods
+  void _handleTap() {
+    setState(() => _tapCount++);
+  }
+  
+  @override
+  void initState() {
+    super.initState();
+    // Traditional State initialization
+  }
+  
+  @override
+  setup(context) {
+    final count = useSignal(0);
+    
+    // ✅ Access 'this' and instance members
+    onMounted(() {
+      _controller.text = 'Initial: ${widget.initialValue}';
+    });
+    
+    return () => Column(
+      children: [
+        TextField(controller: _controller),
+        Text('Taps: $_tapCount'),
+        ElevatedButton(
+          onPressed: _handleTap,
+          child: Text('Count: ${count.value}'),
+        ),
+      ],
+    );
+  }
+  
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+}
+```
 
-### Performance Tips
-- Use `JoltSelector` for fine-grained updates
-- Batch multiple signal updates with `batch()`
-- Avoid accessing signals in widget constructors
-- Use `JoltProvider` for resources that need lifecycle management
+**Key Point:** `SetupWidget` is like `StatelessWidget` - the widget class itself should be immutable. `SetupMixin` works within a `State` class where you can freely use `this`, define methods, maintain fields, and leverage the full capabilities of stateful widgets.
+
+### Choosing the Right Pattern
+
+> **💡 No Right or Wrong Choice**
+>
+> There's no single "correct" way to build widgets in Jolt. SetupWidget, SetupMixin, and traditional Flutter patterns (StatelessWidget, StatefulWidget) are all first-class citizens. Each shines in different scenarios—what matters is knowing when to use which, keeping your code clear and maintainable.
+>
+> The Setup API itself is entirely optional. If your team is comfortable with standard Flutter patterns and they're working well, there's no need to change. You can also use Riverpod, flutter_hooks, or any other state management solution you prefer, even mixing them in the same project.
+>
+> When you need composition-based logic, reactive state, or Vue/Solid-style patterns, the Setup API is there to give you that extra power—without forcing you to rewrite existing code.
+
+**When to Use SetupWidget:**
+- Creating simple, immutable widgets (like `StatelessWidget`)
+- Want a pure composition-based API
+- No need for instance methods, mutable fields, or `this` reference
+- Prefer cleaner, more concise code
+- All logic can be expressed through reactive hooks
+
+**When to Use SetupMixin:**
+- Need instance methods, fields, or access to `this`
+- Need to use existing State mixins, special State base classes, or State extensions
+- Want to combine composition API with imperative logic
+- Need full control over `State` lifecycle methods (`initState`, `dispose`, `didUpdateWidget`, etc.)
+- Working with complex widget logic that benefits from both approaches
+
+### Available Hooks
+
+Setup Widget provides hooks for all Jolt reactive primitives:
+
+> **💡 About Using Hooks**
+>
+> For reactive objects like `Signal` and `Computed`, you can create them directly without hooks if they'll be garbage collected when the widget unmounts (e.g., local variables in the setup function). The main purpose of hooks is to ensure proper cleanup and state preservation during widget unmount or hot reload.
+>
+> ```dart
+> setup(context, props) {
+>   // Using hooks - Recommended, automatic lifecycle management
+>   final count = useSignal(0);
+>   
+>   // Without hooks - Also fine, gets GC'd after widget unmounts
+>   final temp = Signal(0);
+>   
+>   return () => Text('Count: ${count.value}');
+> }
+> ```
+
+#### Reactive State Hooks
+
+| Hook | Description |
+|------|-------------|
+| `useSignal(initial)` | Create a reactive Signal |
+| `useSignal.lazy<T>()` | Create a lazy-loaded Signal |
+| `useSignal.list(initial)` | Create a reactive list |
+| `useSignal.map(initial)` | Create a reactive Map |
+| `useSignal.set(initial)` | Create a reactive Set |
+| `useSignal.iterable(getter)` | Create a reactive Iterable |
+| `useSignal.async(source)` | Create an async Signal |
+| `useSignal.persist(...)` | Create a persisted Signal |
+
+#### Computed Value Hooks
+
+| Hook | Description |
+|------|-------------|
+| `useComputed(fn)` | Create a computed value |
+| `useComputed.writable(getter, setter)` | Create a writable computed value |
+| `useComputed.convert(source, decode, encode)` | Create a type-converting computed value |
+
+#### Effect Hooks
+
+| Hook | Description |
+|------|-------------|
+| `useEffect(fn)` | Create an effect |
+| `useEffect.lazy(fn)` | Create an immediately-executing effect |
+| `useWatcher(sourcesFn, fn)` | Create a watcher |
+| `useWatcher.immediately(...)` | Create an immediately-executing watcher |
+| `useWatcher.once(...)` | Create a one-time watcher |
+
+#### Lifecycle Hooks
+
+| Hook | Description |
+|------|-------------|
+| `onMounted(fn)` | Callback when widget mounts |
+| `onUnmounted(fn)` | Callback when widget unmounts |
+| `onDidUpdateWidget(fn)` | Callback when widget updates |
+| `onDidChangeDependencies(fn)` | Callback when dependencies change |
+| `onActivated(fn)` | Callback when widget activates |
+| `onDeactivated(fn)` | Callback when widget deactivates |
+
+#### Utility Hooks
+
+| Hook | Description |
+|------|-------------|
+| `useContext()` | Get BuildContext |
+| `useSetupContext()` | Get JoltSetupContext |
+| `useEffectScope()` | Create an effect scope |
+| `useStream(value)` | Create a stream from reactive value |
+| `useMemoized(creator, [disposer])` | Memoize value with optional cleanup |
+| `useAutoDispose(creator)` | Auto-dispose resource |
+| `useHook(hook)` | Use a custom hook |
+
+**Usage Example:**
+
+```dart
+setup: (context) {
+  // Signals
+  final count = useSignal(0);
+  final name = useSignal('Flutter');
+  
+  // Computed values
+  final doubled = useComputed(() => count.value * 2);
+  
+  // Reactive collections
+  final items = useSignal.list(['apple', 'banana']);
+  final userMap = useSignal.map({'name': 'John', 'age': 30});
+  
+  // Effects
+  useEffect(() {
+    print('Count changed: ${count.value}');
+  });
+  
+  // Lifecycle callbacks
+  onMounted(() {
+    print('Widget mounted');
+  });
+  
+  onUnmounted(() {
+    print('Widget unmounted');
+  });
+  
+  return () => Text('Count: ${count.value}');
+}
+```
+
+**Automatic Resource Cleanup:**
+
+All hooks automatically clean up their resources when the widget unmounts, ensuring proper cleanup and preventing memory leaks:
+
+```dart
+setup: (context) {
+  final timer = useSignal<Timer?>(null);
+  
+  onMounted(() {
+    timer.value = Timer.periodic(Duration(seconds: 1), (_) {
+      print('Tick');
+    });
+  });
+  
+  onUnmounted(() {
+    timer.value?.cancel();
+  });
+  
+  return () => Text('Timer running');
+}
+```
 
 ## Related Packages
 

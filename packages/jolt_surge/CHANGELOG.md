@@ -1,3 +1,9 @@
+## 2.0.0-beta.3
+
+> Note: This release has breaking changes.
+
+ - **BREAKING** **FEAT**(jolt_surge): add Cubit-compatible factory constructors and .full constructors. ([4efff1d0](https://github.com/vowdemon/jolt/commit/4efff1d0bd3e73eb5a14b1aed9bc2722713a51f9))
+
 ## 2.0.0-beta.2
 
  - Update a dependency to the latest release.

@@ -11,6 +11,27 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 Packages with breaking changes:
 
+ - [`jolt_surge` - `v2.0.0-beta.3`](#jolt_surge---v200-beta3)
+
+Packages with other changes:
+
+ - There are no other changes in this release.
+
+---
+
+#### `jolt_surge` - `v2.0.0-beta.3`
+
+ - **BREAKING** **FEAT**(jolt_surge): add Cubit-compatible factory constructors and .full constructors. ([4efff1d0](https://github.com/vowdemon/jolt/commit/4efff1d0bd3e73eb5a14b1aed9bc2722713a51f9))
+
+
+## 2025-11-25
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
  - [`jolt_flutter` - `v2.0.0-beta.4`](#jolt_flutter---v200-beta4)
 
 Packages with other changes:

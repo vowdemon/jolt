@@ -5,5 +5,5 @@
 /// hooks for reactive state management and lifecycle callbacks.
 library;
 
-export 'src/setup/widget.dart';
+export 'src/setup/framework.dart';
 export 'src/setup/jolt_hooks.dart';

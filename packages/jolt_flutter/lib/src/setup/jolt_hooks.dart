@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:jolt/jolt.dart';
 import 'package:jolt/tricks.dart';
-import 'package:jolt_flutter/src/setup/widget.dart';
+import 'package:jolt_flutter/src/setup/framework.dart';
 
 /// Helper class for creating signal hooks in SetupWidget.
 abstract class JoltSignalHookCreator {

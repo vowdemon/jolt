@@ -1,4 +1,4 @@
-part of 'widget.dart';
+part of 'framework.dart';
 
 enum _LifeCycleHookType {
   mounted,
@@ -343,8 +343,7 @@ T useHook<T>(SetupHook<T> hook) => JoltSetupContext.current!._useHook(hook);
 /// ```
 abstract class SetupHook<T> {
   SetupHook()
-      : assert(JoltSetupContext.current != null,
-            'SetupWidgetElement is not exists'),
+      : assert(JoltSetupContext.current != null, 'Setup context is not exists'),
         _context = JoltSetupContext.current!.context;
 
   late final BuildContext _context;

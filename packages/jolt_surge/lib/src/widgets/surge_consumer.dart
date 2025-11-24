@@ -41,16 +41,24 @@ import '../surge.dart';
 /// - [SurgeListener] for listener-only functionality
 /// - [SurgeSelector] for fine-grained rebuild control with selector
 class SurgeConsumer<T extends Surge<S>, S> extends StatefulWidget {
-  /// Creates a SurgeConsumer widget.
+  /// Creates a SurgeConsumer widget with full access to the Surge instance.
+  ///
+  /// This is the full-featured constructor that provides access to the Surge
+  /// instance in all callbacks. Use this when you need to access the Surge instance
+  /// in your builder, listener, buildWhen, or listenWhen functions.
   ///
   /// Parameters:
   /// - [key]: The widget key
-  /// - [builder]: The builder function that builds the UI based on state
-  /// - [listener]: Optional listener function for side effects
+  /// - [builder]: The builder function that builds the UI based on state.
+  ///   Receives `(context, state, surge)` parameters.
+  /// - [listener]: Optional listener function for side effects.
+  ///   Receives `(context, state, surge)` parameters.
   /// - [buildWhen]: Optional condition function to control when to rebuild.
+  ///   Receives `(prevState, newState, surge)` parameters.
   ///   Returns true to rebuild, false to skip. Defaults to always rebuilding.
   ///   This function is tracked by default (can depend on external signals).
   /// - [listenWhen]: Optional condition function to control when to execute listener.
+  ///   Receives `(prevState, newState, surge)` parameters.
   ///   Returns true to execute, false to skip. Defaults to always executing.
   ///   This function is tracked by default (can depend on external signals).
   /// - [surge]: Optional Surge instance. If not provided, will be obtained from context
@@ -60,12 +68,12 @@ class SurgeConsumer<T extends Surge<S>, S> extends StatefulWidget {
   /// tracking them, use [untracked]:
   ///
   /// ```dart
-  /// SurgeConsumer<CounterSurge, int>(
+  /// SurgeConsumer<CounterSurge, int>.full(
   ///   buildWhen: (prev, next, s) => untracked(() => shouldRebuildSignal.value),
   ///   // ...
   /// );
   /// ```
-  const SurgeConsumer({
+  const SurgeConsumer.full({
     super.key,
     required this.builder,
     this.listener,
@@ -73,6 +81,67 @@ class SurgeConsumer<T extends Surge<S>, S> extends StatefulWidget {
     this.listenWhen,
     this.surge,
   });
+
+  /// Creates a SurgeConsumer widget with Cubit-compatible API.
+  ///
+  /// This factory constructor provides a 100% compatible API with `BlocConsumer`
+  /// from the `flutter_bloc` package, making it easy to migrate from Bloc/Cubit
+  /// to Surge. The builder, listener, buildWhen, and listenWhen functions do not
+  /// receive the Surge instance, matching the Cubit API exactly.
+  ///
+  /// Parameters:
+  /// - [key]: The widget key
+  /// - [builder]: The builder function that builds the UI based on state.
+  ///   Receives `(context, state)` parameters (no Surge instance).
+  /// - [listener]: Optional listener function for side effects.
+  ///   Receives `(context, state)` parameters (no Surge instance).
+  /// - [surge]: Optional Surge instance. If not provided, will be obtained from context
+  /// - [buildWhen]: Optional condition function to control when to rebuild.
+  ///   Receives `(prevState, newState)` parameters (no Surge instance).
+  ///   Returns true to rebuild, false to skip. Defaults to always rebuilding.
+  /// - [listenWhen]: Optional condition function to control when to execute listener.
+  ///   Receives `(prevState, newState)` parameters (no Surge instance).
+  ///   Returns true to execute, false to skip. Defaults to always executing.
+  ///
+  /// Example:
+  /// ```dart
+  /// // Cubit-compatible usage (same as BlocConsumer)
+  /// SurgeConsumer<CounterSurge, int>(
+  ///   buildWhen: (prev, next) => next.isEven, // Only rebuild when even
+  ///   listenWhen: (prev, next) => next > prev, // Only listen when increasing
+  ///   builder: (context, state) => Text('count: $state'),
+  ///   listener: (context, state) {
+  ///     ScaffoldMessenger.of(context).showSnackBar(
+  ///       SnackBar(content: Text('Count is now: $state')),
+  ///     );
+  ///   },
+  /// );
+  /// ```
+  ///
+  /// See also:
+  /// - [SurgeConsumer.full] for access to the Surge instance in callbacks
+  factory SurgeConsumer({
+    Key? key,
+    required Widget Function(BuildContext context, S state) builder,
+    void Function(BuildContext context, S state)? listener,
+    T? surge,
+    bool Function(S prevState, S newState)? buildWhen,
+    bool Function(S prevState, S newState)? listenWhen,
+  }) =>
+      SurgeConsumer.full(
+        key: key,
+        builder: (context, state, _) => builder(context, state),
+        listener: listener != null
+            ? (context, state, _) => listener(context, state)
+            : null,
+        surge: surge,
+        buildWhen: buildWhen != null
+            ? (prevState, newState, _) => buildWhen(prevState, newState)
+            : null,
+        listenWhen: listenWhen != null
+            ? (prevState, newState, _) => listenWhen(prevState, newState)
+            : null,
+      );
 
   /// The builder function that builds the UI based on state.
   ///

@@ -35,13 +35,19 @@ import '../surge.dart';
 /// - [SurgeBuilder] for builder-only functionality
 /// - [SurgeListener] for listener-only functionality
 class SurgeSelector<T extends Surge<S>, S, C> extends StatefulWidget {
-  /// Creates a SurgeSelector widget.
+  /// Creates a SurgeSelector widget with full access to the Surge instance.
+  ///
+  /// This is the full-featured constructor that provides access to the Surge
+  /// instance in callbacks. Use this when you need to access the Surge instance
+  /// in your selector or builder functions.
   ///
   /// Parameters:
   /// - [key]: The widget key
-  /// - [builder]: The builder function that builds the UI based on selected value
+  /// - [builder]: The builder function that builds the UI based on selected value.
+  ///   Receives `(context, selected, surge)` parameters.
   /// - [selector]: The selector function that extracts a value from the state.
-  ///   This function is tracked by default (can depend on external signals)
+  ///   Receives `(state, surge)` parameters.
+  ///   This function is tracked by default (can depend on external signals).
   /// - [surge]: Optional Surge instance. If not provided, will be obtained from context
   ///
   /// The widget only rebuilds when the value returned by [selector] changes
@@ -53,7 +59,7 @@ class SurgeSelector<T extends Surge<S>, S, C> extends StatefulWidget {
   /// wrap the access in [untracked]:
   ///
   /// ```dart
-  /// SurgeSelector<CounterSurge, int, String>(
+  /// SurgeSelector<CounterSurge, int, String>.full(
   ///   selector: (state, s) => untracked(() => externalSignal.valueAsLabel(state)),
   ///   builder: (context, selected, s) => Text(selected),
   /// );
@@ -61,18 +67,63 @@ class SurgeSelector<T extends Surge<S>, S, C> extends StatefulWidget {
   ///
   /// Example:
   /// ```dart
-  /// SurgeSelector<CounterSurge, int, String>(
+  /// SurgeSelector<CounterSurge, int, String>.full(
   ///   selector: (state, s) => state.isEven ? 'even' : 'odd',
   ///   builder: (context, selected, s) => Text('Number is $selected'),
   /// );
   /// // Only rebuilds when the state changes between even and odd
   /// ```
-  const SurgeSelector({
+  const SurgeSelector.full({
     super.key,
     required this.builder,
     required this.selector,
     this.surge,
   });
+
+  /// Creates a SurgeSelector widget with Cubit-compatible API.
+  ///
+  /// This factory constructor provides a 100% compatible API with `BlocSelector`
+  /// from the `flutter_bloc` package, making it easy to migrate from Bloc/Cubit
+  /// to Surge. The builder and selector functions do not receive the Surge instance,
+  /// matching the Cubit API exactly.
+  ///
+  /// Parameters:
+  /// - [key]: The widget key
+  /// - [builder]: The builder function that builds the UI based on selected value.
+  ///   Receives `(context, selected)` parameters (no Surge instance).
+  /// - [selector]: The selector function that extracts a value from the state.
+  ///   Receives `(state)` parameter (no Surge instance).
+  ///   This function is tracked by default (can depend on external signals).
+  /// - [surge]: Optional Surge instance. If not provided, will be obtained from context
+  ///
+  /// The widget only rebuilds when the value returned by [selector] changes
+  /// (determined by `==` comparison). This allows fine-grained control over
+  /// when to rebuild.
+  ///
+  /// Example:
+  /// ```dart
+  /// // Cubit-compatible usage (same as BlocSelector)
+  /// SurgeSelector<CounterSurge, int, String>(
+  ///   selector: (state) => state.isEven ? 'even' : 'odd',
+  ///   builder: (context, selected) => Text('Number is $selected'),
+  /// );
+  /// // Only rebuilds when the state changes between even and odd
+  /// ```
+  ///
+  /// See also:
+  /// - [SurgeSelector.full] for access to the Surge instance in callbacks
+  factory SurgeSelector({
+    Key? key,
+    required Widget Function(BuildContext context, C state) builder,
+    required C Function(S state) selector,
+    T? surge,
+  }) =>
+      SurgeSelector.full(
+        key: key,
+        builder: (context, state, _) => builder(context, state),
+        selector: (state, _) => selector(state),
+        surge: surge,
+      );
 
   /// The builder function that builds the UI based on the selected value.
   ///

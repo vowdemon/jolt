@@ -193,7 +193,7 @@ void main() {
                 created = CounterSurge();
                 return created!;
               },
-              child: SurgeBuilder<CounterSurge, int>(
+              child: SurgeBuilder<CounterSurge, int>.full(
                 builder: (context, state, surge) => Text('$state'),
               ),
             ),
@@ -220,7 +220,7 @@ void main() {
             textDirection: TextDirection.ltr,
             child: SurgeProvider<CounterSurge>.value(
               value: surge,
-              child: SurgeBuilder<CounterSurge, int>(
+              child: SurgeBuilder<CounterSurge, int>.full(
                 builder: (context, state, s) => Text('$state'),
               ),
             ),
@@ -255,7 +255,7 @@ void main() {
             textDirection: TextDirection.ltr,
             child: SurgeProvider<CounterSurge>.value(
               value: surge,
-              child: SurgeBuilder<CounterSurge, int>(
+              child: SurgeBuilder<CounterSurge, int>.full(
                 builder: (context, state, s) {
                   buildCount++;
                   return Text('state=$state');
@@ -284,7 +284,7 @@ void main() {
             textDirection: TextDirection.ltr,
             child: SurgeProvider<CounterSurge>.value(
               value: surge,
-              child: SurgeBuilder<CounterSurge, int>(
+              child: SurgeBuilder<CounterSurge, int>.full(
                 buildWhen: (prev, next, s) => next.isEven,
                 builder: (context, state, s) {
                   buildCount++;
@@ -327,7 +327,7 @@ void main() {
             textDirection: TextDirection.ltr,
             child: SurgeProvider<CounterSurge>.value(
               value: s,
-              child: SurgeBuilder<CounterSurge, int>(
+              child: SurgeBuilder<CounterSurge, int>.full(
                 builder: (context, state, surge) =>
                     Text('id=${surge.hashCode};state=$state'),
               ),
@@ -369,7 +369,7 @@ void main() {
             textDirection: TextDirection.ltr,
             child: SurgeProvider<CounterSurge>.value(
               value: surge,
-              child: SurgeListener<CounterSurge, int>(
+              child: SurgeListener<CounterSurge, int>.full(
                 listener: (context, state, s) => received.add(state),
                 child: const SizedBox(),
               ),
@@ -398,7 +398,7 @@ void main() {
             textDirection: TextDirection.ltr,
             child: SurgeProvider<CounterSurge>.value(
               value: surge,
-              child: SurgeListener<CounterSurge, int>(
+              child: SurgeListener<CounterSurge, int>.full(
                 listenWhen: (prev, next, s) => next.isEven,
                 listener: (context, state, s) => received.add(state),
                 child: const SizedBox(),
@@ -437,7 +437,7 @@ void main() {
             textDirection: TextDirection.ltr,
             child: SurgeProvider<CounterSurge>.value(
               value: s,
-              child: SurgeListener<CounterSurge, int>(
+              child: SurgeListener<CounterSurge, int>.full(
                 listener: (context, state, surge) =>
                     received.add('id=${surge.hashCode};$state'),
                 child: const SizedBox(),
@@ -485,7 +485,7 @@ void main() {
             textDirection: TextDirection.ltr,
             child: SurgeProvider<CounterSurge>.value(
               value: surge,
-              child: SurgeConsumer<CounterSurge, int>(
+              child: SurgeConsumer<CounterSurge, int>.full(
                 builder: (context, state, s) {
                   buildCount++;
                   return Text('state=$state');
@@ -513,7 +513,7 @@ void main() {
             textDirection: TextDirection.ltr,
             child: SurgeProvider<CounterSurge>.value(
               value: surge,
-              child: SurgeConsumer<CounterSurge, int>(
+              child: SurgeConsumer<CounterSurge, int>.full(
                 buildWhen: (prev, next, s) => next.isEven,
                 builder: (context, state, s) {
                   buildCount++;
@@ -549,7 +549,7 @@ void main() {
             textDirection: TextDirection.ltr,
             child: SurgeProvider<CounterSurge>.value(
               value: surge,
-              child: SurgeConsumer<CounterSurge, int>(
+              child: SurgeConsumer<CounterSurge, int>.full(
                 listener: (context, state, s) => received.add(state),
                 builder: (context, state, s) => Text('state=$state'),
               ),
@@ -576,7 +576,7 @@ void main() {
             textDirection: TextDirection.ltr,
             child: SurgeProvider<CounterSurge>.value(
               value: surge,
-              child: SurgeConsumer<CounterSurge, int>(
+              child: SurgeConsumer<CounterSurge, int>.full(
                 listenWhen: (prev, next, s) => next.isEven,
                 listener: (context, state, s) => received.add(state),
                 builder: (context, state, s) => Text('state=$state'),
@@ -612,7 +612,7 @@ void main() {
             textDirection: TextDirection.ltr,
             child: SurgeProvider<CounterSurge>.value(
               value: s,
-              child: SurgeConsumer<CounterSurge, int>(
+              child: SurgeConsumer<CounterSurge, int>.full(
                 builder: (context, state, surge) =>
                     Text('id=${surge.hashCode};state=$state'),
               ),
@@ -655,7 +655,7 @@ void main() {
             textDirection: TextDirection.ltr,
             child: SurgeProvider<CounterSurge>.value(
               value: surgeOuter,
-              child: SurgeBuilder<CounterSurge, int>(
+              child: SurgeBuilder<CounterSurge, int>.full(
                 surge: surgeInner,
                 builder: (context, state, surge) =>
                     Text('id=${surge.hashCode};state=$state'),
@@ -688,7 +688,7 @@ void main() {
         await tester.pumpWidget(
           Directionality(
             textDirection: TextDirection.ltr,
-            child: SurgeBuilder<CounterSurge, int>(
+            child: SurgeBuilder<CounterSurge, int>.full(
               surge: surge,
               builder: (context, state, s) => Text('state=$state'),
             ),
@@ -715,7 +715,7 @@ void main() {
             textDirection: TextDirection.ltr,
             child: SurgeProvider<CounterSurge>.value(
               value: surgeOuter,
-              child: SurgeListener<CounterSurge, int>(
+              child: SurgeListener<CounterSurge, int>.full(
                 surge: surgeInner,
                 listener: (context, state, s) => received.add(state),
                 child: const SizedBox(),
@@ -744,7 +744,7 @@ void main() {
         await tester.pumpWidget(
           Directionality(
             textDirection: TextDirection.ltr,
-            child: SurgeListener<CounterSurge, int>(
+            child: SurgeListener<CounterSurge, int>.full(
               surge: surge,
               listener: (context, state, s) => received.add(state),
               child: const SizedBox(),
@@ -771,7 +771,7 @@ void main() {
             textDirection: TextDirection.ltr,
             child: SurgeProvider<CounterSurge>.value(
               value: surgeOuter,
-              child: SurgeConsumer<CounterSurge, int>(
+              child: SurgeConsumer<CounterSurge, int>.full(
                 surge: surgeInner,
                 listener: (context, state, s) => received.add(state),
                 builder: (context, state, s) {
@@ -812,7 +812,7 @@ void main() {
         await tester.pumpWidget(
           Directionality(
             textDirection: TextDirection.ltr,
-            child: SurgeConsumer<CounterSurge, int>(
+            child: SurgeConsumer<CounterSurge, int>.full(
               surge: surge,
               listener: (context, state, s) => received.add(state),
               builder: (context, state, s) {
@@ -844,7 +844,7 @@ void main() {
         Widget buildWithSurge(CounterSurge s) {
           return Directionality(
             textDirection: TextDirection.ltr,
-            child: SurgeBuilder<CounterSurge, int>(
+            child: SurgeBuilder<CounterSurge, int>.full(
               surge: s,
               builder: (context, state, surge) =>
                   Text('id=${surge.hashCode};state=$state'),
@@ -882,7 +882,7 @@ void main() {
         Widget buildWithSurge(CounterSurge s) {
           return Directionality(
             textDirection: TextDirection.ltr,
-            child: SurgeListener<CounterSurge, int>(
+            child: SurgeListener<CounterSurge, int>.full(
               surge: s,
               listener: (context, state, surge) =>
                   received.add('id=${surge.hashCode};$state'),
@@ -923,7 +923,7 @@ void main() {
         Widget buildWithSurge(CounterSurge s) {
           return Directionality(
             textDirection: TextDirection.ltr,
-            child: SurgeConsumer<CounterSurge, int>(
+            child: SurgeConsumer<CounterSurge, int>.full(
               surge: s,
               listener: (context, state, surge) =>
                   received.add('id=${surge.hashCode};$state'),
@@ -972,7 +972,7 @@ void main() {
             textDirection: TextDirection.ltr,
             child: SurgeProvider<CounterSurge>.value(
               value: surge,
-              child: SurgeSelector<CounterSurge, int, String>(
+              child: SurgeSelector<CounterSurge, int, String>.full(
                 selector: (state, _) => state.isEven ? 'even' : 'odd',
                 builder: (context, selected, s) {
                   buildCount++;
@@ -1004,7 +1004,7 @@ void main() {
             textDirection: TextDirection.ltr,
             child: SurgeProvider<CounterSurge>.value(
               value: surge,
-              child: SurgeSelector<CounterSurge, int, bool>(
+              child: SurgeSelector<CounterSurge, int, bool>.full(
                 selector: (state, _) => state.isEven,
                 builder: (context, isEven, s) {
                   buildCount++;
@@ -1043,7 +1043,7 @@ void main() {
             textDirection: TextDirection.ltr,
             child: SurgeProvider<CounterSurge>.value(
               value: s,
-              child: SurgeSelector<CounterSurge, int, String>(
+              child: SurgeSelector<CounterSurge, int, String>.full(
                 selector: (state, _) => 'id=${s.hashCode};$state',
                 builder: (context, selected, surge) => Text(selected),
               ),
@@ -1081,7 +1081,7 @@ void main() {
             textDirection: TextDirection.ltr,
             child: SurgeProvider<CounterSurge>.value(
               value: surge,
-              child: SurgeSelector<CounterSurge, int, int>(
+              child: SurgeSelector<CounterSurge, int, int>.full(
                 selector: (state, _) => state,
                 builder: (context, selected, s) => Text('state=$selected'),
               ),
@@ -1107,7 +1107,7 @@ void main() {
             textDirection: TextDirection.ltr,
             child: SurgeProvider<CounterSurge>.value(
               value: surgeOuter,
-              child: SurgeSelector<CounterSurge, int, String>(
+              child: SurgeSelector<CounterSurge, int, String>.full(
                 surge: surgeInner,
                 selector: (state, surge) => 'id=${surge.hashCode};$state',
                 builder: (context, selected, s) => Text(selected),
@@ -1138,7 +1138,7 @@ void main() {
         await tester.pumpWidget(
           Directionality(
             textDirection: TextDirection.ltr,
-            child: SurgeSelector<CounterSurge, int, String>(
+            child: SurgeSelector<CounterSurge, int, String>.full(
               surge: surge,
               selector: (state, s) => 'state=$state',
               builder: (context, selected, s) => Text(selected),
@@ -1161,7 +1161,7 @@ void main() {
         Widget buildWithSurge(CounterSurge s) {
           return Directionality(
             textDirection: TextDirection.ltr,
-            child: SurgeSelector<CounterSurge, int, String>(
+            child: SurgeSelector<CounterSurge, int, String>.full(
               surge: s,
               selector: (state, surge) => 'id=${surge.hashCode};$state',
               builder: (context, selected, s) => Text(selected),
@@ -1203,7 +1203,7 @@ void main() {
             textDirection: TextDirection.ltr,
             child: SurgeProvider<CounterSurge>.value(
               value: surge,
-              child: SurgeBuilder<CounterSurge, int>(
+              child: SurgeBuilder<CounterSurge, int>.full(
                 builder: (context, state, s) {
                   final ov = other.value;
                   buildCount++;
@@ -1243,7 +1243,7 @@ void main() {
             textDirection: TextDirection.ltr,
             child: SurgeProvider<CounterSurge>.value(
               value: surge,
-              child: SurgeBuilder<CounterSurge, int>(
+              child: SurgeBuilder<CounterSurge, int>.full(
                 buildWhen: (prev, next, s) {
                   final _ = other.value;
                   return true;
@@ -1286,7 +1286,7 @@ void main() {
             textDirection: TextDirection.ltr,
             child: SurgeProvider<CounterSurge>.value(
               value: surge,
-              child: SurgeConsumer<CounterSurge, int>(
+              child: SurgeConsumer<CounterSurge, int>.full(
                 listener: (context, state, s) {
                   final _ = other.value;
                   received.add(state);
@@ -1321,7 +1321,7 @@ void main() {
             textDirection: TextDirection.ltr,
             child: SurgeProvider<CounterSurge>.value(
               value: surge,
-              child: SurgeConsumer<CounterSurge, int>(
+              child: SurgeConsumer<CounterSurge, int>.full(
                 listenWhen: (prev, next, s) {
                   final _ = other.value;
                   return true;
@@ -1357,7 +1357,7 @@ void main() {
             textDirection: TextDirection.ltr,
             child: SurgeProvider<CounterSurge>.value(
               value: surge,
-              child: SurgeSelector<CounterSurge, int, String>(
+              child: SurgeSelector<CounterSurge, int, String>.full(
                 selector: (state, s) {
                   // Read external signal; because of untracked, should NOT cause tracking
                   final ov = other.value;
@@ -1402,7 +1402,7 @@ void main() {
               textDirection: TextDirection.ltr,
               child: SurgeProvider<CounterSurge>.value(
                 value: surge,
-                child: SurgeBuilder<CounterSurge, int>(
+                child: SurgeBuilder<CounterSurge, int>.full(
                   buildWhen: (prev, next, s) {
                     final _ = untracked(() => other.value);
                     return true;
@@ -1445,7 +1445,7 @@ void main() {
               textDirection: TextDirection.ltr,
               child: SurgeProvider<CounterSurge>.value(
                 value: surge,
-                child: SurgeConsumer<CounterSurge, int>(
+                child: SurgeConsumer<CounterSurge, int>.full(
                   listenWhen: (prev, next, s) {
                     final _ = untracked(() => other.value);
                     return true;
@@ -1481,7 +1481,7 @@ void main() {
               textDirection: TextDirection.ltr,
               child: SurgeProvider<CounterSurge>.value(
                 value: surge,
-                child: SurgeSelector<CounterSurge, int, String>(
+                child: SurgeSelector<CounterSurge, int, String>.full(
                   selector: (state, s) {
                     final ov = untracked(() => other.value);
                     return 'state=$state;ov=$ov';
@@ -1527,7 +1527,7 @@ void main() {
             textDirection: TextDirection.ltr,
             child: SurgeProvider<CounterSurge>.value(
               value: surge,
-              child: SurgeConsumer<CounterSurge, int>(
+              child: SurgeConsumer<CounterSurge, int>.full(
                 listenWhen: (prev, next, s) {
                   other.value; // tracked if alive
                   return true;
@@ -1567,7 +1567,7 @@ void main() {
             textDirection: TextDirection.ltr,
             child: SurgeProvider<CounterSurge>.value(
               value: surge,
-              child: SurgeSelector<CounterSurge, int, String>(
+              child: SurgeSelector<CounterSurge, int, String>.full(
                 selector: (state, s) => 'state=$state;ov=${other.value}',
                 builder: (context, selected, s) {
                   buildCount++;
@@ -1588,6 +1588,316 @@ void main() {
         await tester.pump();
 
         expect(buildCount, 1);
+      });
+    });
+
+    group('Cubit-compatible factory constructors', () {
+      group('SurgeBuilder', () {
+        testWidgets('factory constructor works without surge parameter',
+            (tester) async {
+          final surge = CounterSurge();
+          var buildCount = 0;
+
+          await tester.pumpWidget(
+            Directionality(
+              textDirection: TextDirection.ltr,
+              child: SurgeProvider<CounterSurge>.value(
+                value: surge,
+                child: SurgeBuilder<CounterSurge, int>(
+                  builder: (context, state) {
+                    buildCount++;
+                    return Text('state=$state');
+                  },
+                ),
+              ),
+            ),
+          );
+
+          expect(find.text('state=0'), findsOneWidget);
+          expect(buildCount, 1);
+
+          surge.emit(1);
+          await tester.pump();
+          expect(find.text('state=1'), findsOneWidget);
+          expect(buildCount, 2);
+
+          surge.dispose();
+        });
+
+        testWidgets(
+            'factory constructor buildWhen works without surge parameter',
+            (tester) async {
+          final surge = CounterSurge();
+          var buildCount = 0;
+
+          await tester.pumpWidget(
+            Directionality(
+              textDirection: TextDirection.ltr,
+              child: SurgeProvider<CounterSurge>.value(
+                value: surge,
+                child: SurgeBuilder<CounterSurge, int>(
+                  buildWhen: (prev, next) => next.isEven,
+                  builder: (context, state) {
+                    buildCount++;
+                    return Text('state=$state');
+                  },
+                ),
+              ),
+            ),
+          );
+
+          expect(find.text('state=0'), findsOneWidget);
+          expect(buildCount, 1);
+
+          // next=1 -> odd -> no rebuild expected
+          surge.emit(1);
+          await tester.pump();
+          expect(find.text('state=0'), findsOneWidget);
+          expect(buildCount, 1);
+
+          // next=2 -> even -> rebuild expected
+          surge.emit(2);
+          await tester.pump();
+          expect(find.text('state=2'), findsOneWidget);
+          expect(buildCount, 2);
+
+          surge.dispose();
+        });
+      });
+
+      group('SurgeConsumer', () {
+        testWidgets('factory constructor works without surge parameter',
+            (tester) async {
+          final surge = CounterSurge();
+          var buildCount = 0;
+          final received = <int>[];
+
+          await tester.pumpWidget(
+            Directionality(
+              textDirection: TextDirection.ltr,
+              child: SurgeProvider<CounterSurge>.value(
+                value: surge,
+                child: SurgeConsumer<CounterSurge, int>(
+                  builder: (context, state) {
+                    buildCount++;
+                    return Text('state=$state');
+                  },
+                  listener: (context, state) => received.add(state),
+                ),
+              ),
+            ),
+          );
+
+          expect(find.text('state=0'), findsOneWidget);
+          expect(buildCount, 1);
+          expect(received, isEmpty);
+
+          surge.emit(1);
+          await tester.pump();
+          expect(find.text('state=1'), findsOneWidget);
+          expect(buildCount, 2);
+          expect(received, [1]);
+
+          surge.dispose();
+        });
+
+        testWidgets(
+            'factory constructor buildWhen and listenWhen work without surge parameter',
+            (tester) async {
+          final surge = CounterSurge();
+          var buildCount = 0;
+          final received = <int>[];
+
+          await tester.pumpWidget(
+            Directionality(
+              textDirection: TextDirection.ltr,
+              child: SurgeProvider<CounterSurge>.value(
+                value: surge,
+                child: SurgeConsumer<CounterSurge, int>(
+                  buildWhen: (prev, next) => next.isEven,
+                  listenWhen: (prev, next) => next > prev,
+                  builder: (context, state) {
+                    buildCount++;
+                    return Text('state=$state');
+                  },
+                  listener: (context, state) => received.add(state),
+                ),
+              ),
+            ),
+          );
+
+          expect(find.text('state=0'), findsOneWidget);
+          expect(buildCount, 1);
+          expect(received, isEmpty);
+
+          // next=1 -> odd -> no rebuild, but next > prev -> listen
+          surge.emit(1);
+          await tester.pump();
+          expect(find.text('state=0'), findsOneWidget);
+          expect(buildCount, 1);
+          expect(received, [1]);
+
+          // next=2 -> even -> rebuild, and next > prev -> listen
+          surge.emit(2);
+          await tester.pump();
+          expect(find.text('state=2'), findsOneWidget);
+          expect(buildCount, 2);
+          expect(received, [1, 2]);
+
+          // next=2 -> same state, no update triggered, no rebuild, no listen
+          surge.emit(2);
+          await tester.pump();
+          expect(find.text('state=2'), findsOneWidget);
+          expect(buildCount, 2); // No rebuild because state didn't change
+          expect(received, [1, 2]); // No listen because state didn't change
+
+          surge.dispose();
+        });
+      });
+
+      group('SurgeListener', () {
+        testWidgets('factory constructor works without surge parameter',
+            (tester) async {
+          final surge = CounterSurge();
+          final received = <int>[];
+
+          await tester.pumpWidget(
+            Directionality(
+              textDirection: TextDirection.ltr,
+              child: SurgeProvider<CounterSurge>.value(
+                value: surge,
+                child: SurgeListener<CounterSurge, int>(
+                  listener: (context, state) => received.add(state),
+                  child: const SizedBox(),
+                ),
+              ),
+            ),
+          );
+
+          expect(received, isEmpty);
+          surge.emit(1);
+          await tester.pump();
+          expect(received, [1]);
+
+          surge.emit(2);
+          await tester.pump();
+          expect(received, [1, 2]);
+
+          surge.dispose();
+        });
+
+        testWidgets(
+            'factory constructor listenWhen works without surge parameter',
+            (tester) async {
+          final surge = CounterSurge();
+          final received = <int>[];
+
+          await tester.pumpWidget(
+            Directionality(
+              textDirection: TextDirection.ltr,
+              child: SurgeProvider<CounterSurge>.value(
+                value: surge,
+                child: SurgeListener<CounterSurge, int>(
+                  listenWhen: (prev, next) => next.isEven,
+                  listener: (context, state) => received.add(state),
+                  child: const SizedBox(),
+                ),
+              ),
+            ),
+          );
+
+          surge.emit(1); // odd -> should not call
+          await tester.pump();
+          expect(received, isEmpty);
+
+          surge.emit(2); // even -> should call
+          await tester.pump();
+          expect(received, [2]);
+
+          surge.emit(3); // odd -> no call
+          await tester.pump();
+          expect(received, [2]);
+
+          surge.emit(4); // even -> call
+          await tester.pump();
+          expect(received, [2, 4]);
+
+          surge.dispose();
+        });
+      });
+
+      group('SurgeSelector', () {
+        testWidgets('factory constructor works without surge parameter',
+            (tester) async {
+          final surge = CounterSurge();
+          var buildCount = 0;
+
+          await tester.pumpWidget(
+            Directionality(
+              textDirection: TextDirection.ltr,
+              child: SurgeProvider<CounterSurge>.value(
+                value: surge,
+                child: SurgeSelector<CounterSurge, int, String>(
+                  selector: (state) => state.isEven ? 'even' : 'odd',
+                  builder: (context, selected) {
+                    buildCount++;
+                    return Text('sel=$selected');
+                  },
+                ),
+              ),
+            ),
+          );
+
+          expect(find.text('sel=even'), findsOneWidget);
+          expect(buildCount, 1);
+
+          surge.emit(1); // odd -> selection changes
+          await tester.pump();
+          expect(find.text('sel=odd'), findsOneWidget);
+          expect(buildCount, 2);
+
+          surge.dispose();
+        });
+
+        testWidgets(
+            'factory constructor does not rebuild when selector returns same value',
+            (tester) async {
+          final surge = CounterSurge();
+          var buildCount = 0;
+
+          await tester.pumpWidget(
+            Directionality(
+              textDirection: TextDirection.ltr,
+              child: SurgeProvider<CounterSurge>.value(
+                value: surge,
+                child: SurgeSelector<CounterSurge, int, bool>(
+                  selector: (state) => state.isEven,
+                  builder: (context, isEven) {
+                    buildCount++;
+                    return Text('even=$isEven');
+                  },
+                ),
+              ),
+            ),
+          );
+
+          expect(find.text('even=true'), findsOneWidget);
+          expect(buildCount, 1);
+
+          // state 2 is also even -> selector result stays true -> expect no rebuild
+          surge.emit(2);
+          await tester.pump();
+          expect(find.text('even=true'), findsOneWidget);
+          expect(buildCount, 1);
+
+          // change parity -> selector result changes -> expect rebuild
+          surge.emit(3);
+          await tester.pump();
+          expect(find.text('even=false'), findsOneWidget);
+          expect(buildCount, 2);
+
+          surge.dispose();
+        });
       });
     });
   });

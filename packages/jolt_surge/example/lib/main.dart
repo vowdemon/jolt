@@ -31,7 +31,7 @@ class MainApp extends StatelessWidget {
     return SurgeProvider<BrightnessSurge>(
       create: (_) => BrightnessSurge(),
       child: SurgeBuilder<BrightnessSurge, Brightness>(
-        builder: (context, brightness, _) {
+        builder: (context, brightness) {
           return SurgeProvider<CounterSurge>(
             create: (_) => CounterSurge(),
             child: MaterialApp(
@@ -78,7 +78,7 @@ class HomePage extends StatelessWidget {
           children: [
             // Counter display using SurgeBuilder
             SurgeBuilder<CounterSurge, int>(
-              builder: (context, count, surge) {
+              builder: (context, count) {
                 return Column(
                   children: [
                     Text(
@@ -87,8 +87,8 @@ class HomePage extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     SurgeSelector<CounterSurge, int, int>(
-                      selector: (state, surge) => state * 2,
-                      builder: (context, doubleValue, surge) => Text(
+                      selector: (state) => state * 2,
+                      builder: (context, doubleValue) => Text(
                         'Double: $doubleValue',
                         style: Theme.of(context).textTheme.displayMedium,
                       ),
@@ -124,7 +124,7 @@ class HomePage extends StatelessWidget {
             const SizedBox(height: 32),
             // Example with SurgeConsumer for side effects
             SurgeConsumer<CounterSurge, int>(
-              listener: (context, state, surge) {
+              listener: (context, state) {
                 // Side effect: Show snackbar when counter reaches 10
                 if (state == 10) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -135,8 +135,8 @@ class HomePage extends StatelessWidget {
                   );
                 }
               },
-              listenWhen: (prev, next, _) => next == 10,
-              builder: (context, state, surge) {
+              listenWhen: (prev, next) => next == 10,
+              builder: (context, state) {
                 return Text(
                   'Last action: ${state >= 10 ? "Reached 10!" : "Counting..."}',
                   style: Theme.of(context).textTheme.bodyLarge,

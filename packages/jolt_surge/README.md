@@ -35,7 +35,7 @@ class CounterSurge extends Surge<int> {
 SurgeProvider<CounterSurge>(
   create: (_) => CounterSurge(), // auto-disposed on unmount
   child: SurgeBuilder<CounterSurge, int>(
-    builder: (context, state, surge) => Text('count: $state'),
+    builder: (context, state) => Text('count: $state'),
   ),
 );
 ```
@@ -48,7 +48,7 @@ final surge = CounterSurge();
 SurgeProvider<CounterSurge>.value(
   value: surge, // not auto-disposed
   child: SurgeBuilder<CounterSurge, int>(
-    builder: (context, state, s) => Text('count: $state'),
+    builder: (context, state) => Text('count: $state'),
   ),
 );
 ```
@@ -90,21 +90,24 @@ Understanding tracking behavior is crucial for optimal performance:
 
 ## Comparison with Cubit
 
-Jolt Surge's API is ~90% similar to BLoC's Cubit, making it easy to migrate between them. If you're familiar with Cubit, you can seamlessly switch to Surge and experience a signal-powered version of Cubit. However, there are key differences that leverage Jolt's reactive capabilities:
+Jolt Surge provides **100% Cubit-compatible APIs**, making it a drop-in replacement for Cubit. Use `.full` constructors when you need access to the Surge instance in callbacks.
 
 ### Similarities
 
 | Feature | Cubit | Surge |
 |---------|-------|-------|
 | State container | `Cubit<State>` | `Surge<State>` |
-| State access | `state` getter | `state` getter |
+| State access | `state` getter | `state` getter (reactive) |
 | State emission | `emit(State)` | `emit(State)` |
 | Lifecycle hook | `onChange(Change)` | `onChange(Change)` |
 | Disposal | `close()` | `dispose()` |
 | Provider pattern | `BlocProvider` | `SurgeProvider` |
-| Builder widget | `BlocBuilder` | `SurgeBuilder` |
-| Listener widget | `BlocListener` | `SurgeListener` |
-| Conditional rebuild | `buildWhen` | `buildWhen` |
+| Builder widget | `BlocBuilder` | `SurgeBuilder` (Cubit-compatible) |
+| Consumer widget | `BlocConsumer` | `SurgeConsumer` (Cubit-compatible) |
+| Listener widget | `BlocListener` | `SurgeListener` (Cubit-compatible) |
+| Selector widget | `BlocSelector` | `SurgeSelector` (Cubit-compatible) |
+| Conditional rebuild | `buildWhen` | `buildWhen` (Cubit-compatible) |
+| Widget callback signature | `(context, state)` | `(context, state)` (Cubit-compatible) or `(context, state, surge)` (`.full`) |
 
 ### Key Differences
 
@@ -124,80 +127,13 @@ Jolt Surge's API is ~90% similar to BLoC's Cubit, making it easy to migrate betw
    - **Cubit**: Relies on Stream-based updates
    - **Surge**: Leverages Jolt's fine-grained dependency tracking for optimal rebuilds
 
-5. **Widget Callback APIs: Surge Instance Access**
-   - **Cubit**: Widget callbacks (builder, listener, selector) only receive `(context, state)` - only state is accessible
-   - **Surge**: Widget callbacks receive `(context, state, surge)` or `(state, surge)` - both state and Surge instance are accessible
-
-   **Note:** If you prefer the Cubit-style API and don't need the Surge instance, you can simply ignore it by using `_` as the parameter name: `(context, state, _)` or `(state, _)`.
-
-   This difference is crucial for derived values. In Cubit, when you need computed values based on state, you have two options:
-   - Cache the value manually
-   - Write a getter function that recalculates on every access
-
-   With Surge, since it's built on Jolt Signals, you can define `Computed` properties directly in your Surge class. These computed values are automatically cached and only recompute when their dependencies change. By passing the Surge instance to callbacks, you can access these computed properties directly:
-
-   ```dart
-   // Cubit approach - manual caching or getter
-   class CounterCubit extends Cubit<int> {
-     CounterCubit() : super(0);
-     void increment() => emit(state + 1);
-     
-     // Option 1: Manual cache
-     int? _doubledCache;
-     int get doubled {
-       _doubledCache ??= state * 2;
-       return _doubledCache!;
-     }
-     
-     // Option 2: Getter (recalculates every time)
-     int get doubled => state * 2;
-   }
-   
-   BlocBuilder<CounterCubit, int>(
-     builder: (context, state) {
-       // Can only access state, not the cubit instance
-       // Must use context.read<CounterCubit>() to access getters
-       final cubit = context.read<CounterCubit>();
-       return Text('Doubled: ${cubit.doubled}');
-     },
-   )
-   
-   // Surge approach - reactive computed
-   class CounterSurge extends Surge<int> {
-     CounterSurge() : super(0);
-     void increment() => emit(state + 1);
-     
-     // Computed automatically caches and only recomputes when state changes
-     late final doubled = Computed(() => state * 2);
-   }
-   
-   // All Surge widgets pass the surge instance
-   SurgeBuilder<CounterSurge, int>(
-     builder: (context, state, surge) {
-       // Direct access to computed properties via surge instance
-       return Text('Doubled: ${surge.doubled.value}');
-     },
-   )
-   
-   SurgeSelector<CounterSurge, int, String>(
-     selector: (state, surge) => surge.doubled.value.toString(),
-     builder: (context, selected, surge) => Text(selected),
-   )
-   
-   // If you prefer Cubit-style API, simply ignore the surge parameter
-   SurgeBuilder<CounterSurge, int>(
-     builder: (context, state, _) {
-       // Works just like BlocBuilder - only using state
-       return Text('Count: $state');
-     },
-   )
-   ```
-
-   This design allows you to encapsulate derived state logic within the Surge class, making it more maintainable and leveraging Jolt's reactive system for optimal performance. The Surge instance in callbacks provides a clean, type-safe way to access these computed values without needing to look up the instance from context. If you don't need computed properties, you can simply ignore the surge parameter with `_` to maintain the familiar Cubit-style API.
+5. **Widget Callback APIs**
+   - **Cubit**: Callbacks receive `(context, state)`
+   - **Surge**: Default callbacks receive `(context, state)`. Use `.full` constructors to access Surge instance: `(context, state, surge)`
 
 ### Code Example
 
-The API is nearly identical, making it easy to switch between Cubit and Surge:
+The API is 100% compatible, making it a drop-in replacement:
 
 ```dart
 // Cubit
@@ -206,69 +142,80 @@ class CounterCubit extends Cubit<int> {
   void increment() => emit(state + 1);
 }
 
-// Surge (signal-powered Cubit)
+BlocBuilder<CounterCubit, int>(
+  builder: (context, state) => Text('Count: $state'),
+);
+
+// Surge (signal-powered Cubit) - Cubit-compatible API
 class CounterSurge extends Surge<int> {
   CounterSurge() : super(0);
   void increment() => emit(state + 1);
 }
-```
 
-The main difference is the underlying reactive system: Cubit uses Streams, while Surge uses Jolt Signals, providing automatic dependency tracking and better performance optimizations. You can easily migrate between them and experience the benefits of signal-based state management.
-
-## Widgets
-
-### SurgeConsumer
-- builder: non-tracked UI build.
-- listener: non-tracked side effect (runs when effect recomputes).
-- buildWhen(prev, next, surge): tracked condition for rebuilding.
-- listenWhen(prev, next, surge): tracked condition for listener.
-
-```dart
-SurgeConsumer<CounterSurge, int>(
-  buildWhen: (prev, next, s) => next.isEven, // tracked
-  listenWhen: (prev, next, s) => next > prev, // tracked
-  builder: (context, state, s) => Text('count: $state'),
-  listener: (context, state, s) {
-    // e.g., SnackBar or analytics
-  },
+SurgeBuilder<CounterSurge, int>(
+  builder: (context, state) => Text('Count: $state'), // Same signature!
 );
 ```
 
-Disable tracking for a condition:
+The main difference is the underlying reactive system: Cubit uses Streams, while Surge uses Jolt Signals, providing automatic dependency tracking and better performance optimizations.
+
+## Widgets
+
+All widgets support Cubit-compatible API by default. Use `.full` constructors to access the Surge instance in callbacks.
+
+### SurgeConsumer
+
 ```dart
-buildWhen: (prev, next, s) => untracked(() => shouldRebuildSignal.value),
+SurgeConsumer<CounterSurge, int>(
+  buildWhen: (prev, next) => next.isEven, // tracked
+  listenWhen: (prev, next) => next > prev, // tracked
+  builder: (context, state) => Text('count: $state'),
+  listener: (context, state) {
+    // e.g., SnackBar or analytics
+  },
+);
+
+// With .full to access surge instance
+SurgeConsumer<CounterSurge, int>.full(
+  builder: (context, state, surge) => Text('${surge.doubled.value}'),
+);
 ```
 
+**Tracking:** `builder` and `listener` are non-tracked. `buildWhen` and `listenWhen` are tracked by default.
+
 ### SurgeBuilder
+
 ```dart
 SurgeBuilder<CounterSurge, int>(
-  builder: (context, state, s) => Text('count: $state'),
+  builder: (context, state) => Text('count: $state'),
+  buildWhen: (prev, next) => next.isEven, // optional
 );
 ```
 
 ### SurgeListener
+
 ```dart
 SurgeListener<CounterSurge, int>(
-  listener: (context, state, s) {
+  listener: (context, state) {
     // side-effect only
   },
+  listenWhen: (prev, next) => next > prev, // optional
   child: const SizedBox.shrink(),
 );
 ```
 
 ### SurgeSelector
+
 Rebuild only when the selected value changes by equality.
+
 ```dart
 SurgeSelector<CounterSurge, int, String>(
-  selector: (state, s) => state.isEven ? 'even' : 'odd', // tracked by default
-  builder: (context, selected, s) => Text(selected),
+  selector: (state) => state.isEven ? 'even' : 'odd', // tracked by default
+  builder: (context, selected) => Text(selected),
 );
 ```
 
-Disable selector tracking:
-```dart
-selector: (state, s) => untracked(() => externalSignal.valueAsLabel(state)),
-```
+**Tracking:** `selector` is tracked by default. Disable with `untracked(() => ...)`.
 
 ## Advanced Usage
 

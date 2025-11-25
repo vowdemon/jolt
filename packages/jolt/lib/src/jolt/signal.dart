@@ -97,6 +97,13 @@ class SignalImpl<T> extends SignalReactiveNode<T>
     return getSignal(this);
   }
 
+  /// Returns the current signal value (equivalent to `value`).
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
+  @override
+  T call() => get();
+
   /// {@template jolt_signal_set}
   /// Sets a new value for the signal and notifies subscribers when it changes.
   ///
@@ -178,7 +185,10 @@ class SignalImpl<T> extends SignalReactiveNode<T>
 /// }
 /// ```
 abstract interface class ReadonlySignal<T>
-    implements Readonly<T>, ReadonlyNode<T> {}
+    implements Readonly<T>, ReadonlyNode<T> {
+  /// Returns the current signal value (equivalent to `value`).
+  T call();
+}
 
 /// A writable interface for signals that allows modification.
 ///
@@ -199,4 +209,8 @@ abstract interface class Signal<T>
   factory Signal(T value, {JoltDebugFn? onDebug}) = SignalImpl;
   factory Signal.lazy({JoltDebugFn? onDebug}) =>
       SignalImpl(null, onDebug: onDebug);
+
+  /// Returns the current signal value (equivalent to `value`).
+  @override
+  T call();
 }

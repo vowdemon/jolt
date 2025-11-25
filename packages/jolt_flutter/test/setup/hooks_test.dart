@@ -1,8 +1,40 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jolt/jolt.dart';
 import 'package:jolt/tricks.dart';
 import 'package:jolt_flutter/setup.dart';
+
+/// Helper InheritedWidget for testing useInherited
+class _TestCounter extends InheritedWidget {
+  final int count;
+
+  const _TestCounter({
+    required this.count,
+    required super.child,
+  });
+
+  @override
+  bool updateShouldNotify(covariant _TestCounter oldWidget) {
+    return oldWidget.count != count;
+  }
+
+  static _TestCounter of(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<_TestCounter>()!;
+  }
+}
+
+/// Helper SetupWidget for testing useInherited with persistent widget instance
+class _TestThemeWidget extends SetupWidget<_TestThemeWidget> {
+  const _TestThemeWidget();
+
+  @override
+  setup(context, props) {
+    final theme = useInherited(Theme.of);
+    return () => Text('Color: ${theme.value.primaryColor}');
+  }
+}
 
 void main() {
   group('Jolt Hooks', () {
@@ -689,6 +721,193 @@ void main() {
 
         expect(scope.isDisposed, isTrue);
       });
+    });
+  });
+
+  group('useInherited', () {
+    testWidgets('useInherited gets initial value from InheritedWidget',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(primaryColor: Colors.blue),
+          home: SetupBuilder(setup: (context) {
+            final theme = useInherited(Theme.of);
+            return () => Text('Color: ${theme().primaryColor}');
+          }),
+        ),
+      );
+
+      expect(find.text('Color: ${Colors.blue}'), findsOneWidget);
+    });
+
+    testWidgets('useInherited updates when InheritedWidget changes',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(primaryColor: Colors.blue),
+          home: SetupBuilder(setup: (context) {
+            final theme = useInherited(Theme.of);
+            return () => Text('Color: ${theme().primaryColor}');
+          }),
+        ),
+      );
+
+      expect(find.text('Color: ${Colors.blue}'), findsOneWidget);
+
+      // Change theme
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(primaryColor: Colors.red),
+          home: SetupBuilder(setup: (context) {
+            final theme = useInherited(Theme.of);
+            return () => Text('Color: ${theme().primaryColor}');
+          }),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Color: ${Colors.red}'), findsOneWidget);
+      expect(find.text('Color: ${Colors.blue}'), findsNothing);
+    });
+
+    testWidgets('useInherited works with MediaQuery', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MediaQuery(
+            data: const MediaQueryData(textScaleFactor: 1.0),
+            child: SetupBuilder(setup: (context) {
+              final mediaQuery = useInherited(MediaQuery.of);
+              return () => Text('Scale: ${mediaQuery().textScaleFactor}');
+            }),
+          ),
+        ),
+      );
+
+      expect(find.text('Scale: 1.0'), findsOneWidget);
+
+      // Change MediaQuery
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MediaQuery(
+            data: const MediaQueryData(textScaleFactor: 1.5),
+            child: SetupBuilder(setup: (context) {
+              final mediaQuery = useInherited(MediaQuery.of);
+              return () => Text('Scale: ${mediaQuery().textScaleFactor}');
+            }),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Scale: 1.5'), findsOneWidget);
+      expect(find.text('Scale: 1.0'), findsNothing);
+    });
+
+    testWidgets('useInherited works with custom InheritedWidget',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: _TestCounter(
+            count: 10,
+            child: SetupBuilder(setup: (context) {
+              final counter = useInherited(_TestCounter.of);
+              return () => Text('Count: ${counter().count}');
+            }),
+          ),
+        ),
+      );
+
+      expect(find.text('Count: 10'), findsOneWidget);
+
+      // Change counter
+      await tester.pumpWidget(
+        MaterialApp(
+          home: _TestCounter(
+            count: 20,
+            child: SetupBuilder(setup: (context) {
+              final counter = useInherited(_TestCounter.of);
+              return () => Text('Count: ${counter().count}');
+            }),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Count: 20'), findsOneWidget);
+      expect(find.text('Count: 10'), findsNothing);
+    });
+
+    testWidgets('useInherited works with multiple InheritedWidgets',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(primaryColor: Colors.blue),
+          home: MediaQuery(
+            data: const MediaQueryData(textScaleFactor: 1.0),
+            child: SetupBuilder(setup: (context) {
+              final theme = useInherited(Theme.of);
+              final mediaQuery = useInherited(MediaQuery.of);
+              return () => Text(
+                  'Theme: ${theme().primaryColor}, Scale: ${mediaQuery().textScaleFactor}');
+            }),
+          ),
+        ),
+      );
+
+      expect(find.textContaining('Theme: ${Colors.blue}'), findsOneWidget);
+      expect(find.textContaining('Scale: 1.0'), findsOneWidget);
+
+      // Change both
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(primaryColor: Colors.red),
+          home: MediaQuery(
+            data: const MediaQueryData(textScaleFactor: 1.5),
+            child: SetupBuilder(setup: (context) {
+              final theme = useInherited(Theme.of);
+              final mediaQuery = useInherited(MediaQuery.of);
+              return () => Text(
+                  'Theme: ${theme().primaryColor}, Scale: ${mediaQuery().textScaleFactor}');
+            }),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Theme: ${Colors.red}'), findsOneWidget);
+      expect(find.textContaining('Scale: 1.5'), findsOneWidget);
+      expect(find.textContaining('Theme: ${Colors.blue}'), findsNothing);
+      expect(find.textContaining('Scale: 1.0'), findsNothing);
+    });
+
+    testWidgets(
+        'useInherited works with SetupWidget that maintains same instance',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(primaryColor: Colors.blue),
+          home: const _TestThemeWidget(),
+        ),
+      );
+
+      expect(find.text('Color: ${Colors.blue}'), findsOneWidget);
+
+      // Change theme with same widget instance
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(primaryColor: Colors.red),
+          home: const _TestThemeWidget(),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Color: ${Colors.red}'), findsOneWidget);
+      expect(find.text('Color: ${Colors.blue}'), findsNothing);
     });
   });
 }

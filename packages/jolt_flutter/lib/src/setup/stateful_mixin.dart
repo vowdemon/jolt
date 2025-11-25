@@ -159,7 +159,6 @@ mixin SetupMixin<T extends StatefulWidget> on State<T> {
   void didUpdateWidget(covariant T oldWidget) {
     super.didUpdateWidget(oldWidget);
     setupContext.notifyUpdate();
-    (context as ComponentElement).markNeedsBuild();
   }
 
   @override

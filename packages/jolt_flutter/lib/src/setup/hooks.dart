@@ -489,3 +489,92 @@ class DisposableHook<T> extends SetupHook<T> {
 T useMemoized<T>(T Function() creator, [void Function(T state)? disposer]) {
   return useHook(DisposableHook(creator, disposer));
 }
+
+/// A hook that provides reactive access to an [InheritedWidget].
+///
+/// This hook ensures that when the [InheritedWidget] changes, the widget
+/// will rebuild automatically. Use this in [setup] instead of directly
+/// calling methods like [Theme.of] to ensure your widget responds to changes.
+///
+/// ## Why use this?
+///
+/// When you access an [InheritedWidget] directly in [setup] (e.g., `Theme.of(context)`),
+/// the value is captured once and won't update when the inherited widget changes.
+/// This hook creates a reactive signal that updates when dependencies change.
+///
+/// ## Example
+///
+/// ```dart
+/// @override
+/// setup(context, props) {
+///   // ✅ Correct: Use useInherited to get reactive access
+///   final theme = useInherited((context) => Theme.of(context));
+///
+///   // Now calling theme() returns the latest Theme
+///   return () => Text(
+///     'Hello',
+///     style: theme().textTheme.bodyLarge,
+///   );
+/// }
+/// ```
+///
+/// ## Comparison
+///
+/// ```dart
+/// // ❌ Wrong: Theme won't update when it changes
+/// @override
+/// setup(context, props) {
+///   final theme = Theme.of(context);
+///   return () => Text('Hello', style: theme.textTheme.bodyLarge);
+/// }
+///
+/// // ✅ Correct: Theme updates reactively
+/// @override
+/// setup(context, props) {
+///   final theme = useInherited((context) => Theme.of(context));
+///   return () => Text('Hello', style: theme().textTheme.bodyLarge);
+/// }
+///
+/// // ✅ Also correct: Access in builder function
+/// @override
+/// setup(context, props) {
+///   return () {
+///     final theme = Theme.of(context);
+///     return Text('Hello', style: theme.textTheme.bodyLarge);
+///   };
+/// }
+/// ```
+class _UseInheritedHook<T> extends SetupHook<Computed<T>> {
+  _UseInheritedHook(this.getter);
+
+  late final Computed<T> _computed;
+  final T Function(BuildContext) getter;
+
+  @override
+  Computed<T> build() {
+    return _computed = Computed(() => getter(context));
+  }
+
+  @override
+  void didChangeDependencies() {
+    _computed.notify();
+  }
+}
+
+/// Reactively tracks an [InheritedWidget] inside `setup`.
+///
+/// Provide a `getter` such as `(context) => Theme.of(context)`. The hook calls it
+/// with the current [BuildContext], and the returned [Computed] keeps widgets in
+/// sync by updating whenever the inherited widget changes.
+///
+/// Example:
+///
+/// ```
+/// final theme = useInherited((context) => Theme.of(context));
+/// return () => Text('Hello', style: theme().textTheme.bodyLarge);
+/// ```
+///
+/// Returns a computed signal that stays in sync with the inherited widget.
+Computed<T> useInherited<T>(T Function(BuildContext) getter) {
+  return useHook(_UseInheritedHook<T>(getter));
+}

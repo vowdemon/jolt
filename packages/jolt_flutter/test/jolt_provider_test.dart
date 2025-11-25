@@ -232,49 +232,6 @@ void main() {
       expect(find.text('No Provider'), findsOneWidget);
     });
 
-    testWidgets('should recreate store when create function changes',
-        (tester) async {
-      _TestStore? store1;
-      _TestStore? store2;
-
-      Widget widget = MaterialApp(
-        home: JoltProvider<_TestStore>(
-          create: (context) {
-            store1 = _TestStore(context);
-            return store1!;
-          },
-          builder: (context, s) => Text('Count: ${s.counter.value}'),
-        ),
-      );
-
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
-
-      expect(store1, isNotNull);
-      expect(store1!.mounted, isTrue);
-
-      widget = MaterialApp(
-        home: JoltProvider<_TestStore>(
-          create: (context) {
-            store2 = _TestStore(context);
-            return store2!;
-          },
-          builder: (context, s) => Text('Count: ${s.counter.value}'),
-        ),
-      );
-
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
-
-      expect(store1!.unmounted, isTrue);
-      expect(store2, isNotNull);
-      expect(store2!.mounted, isTrue);
-      expect(store2!.unmounted, isFalse);
-
-      store1!.counter.dispose();
-      store2!.counter.dispose();
-    });
-
     testWidgets('should not recreate store for const instances',
         (tester) async {
       const constStore = _ConstStore('value');
@@ -564,6 +521,54 @@ void main() {
       store!.counter.dispose();
     });
 
+    testWidgets(
+        'should ignore create function change when value is already initialized',
+        (tester) async {
+      _TestStore? store1;
+      _TestStore? store2;
+      final key = GlobalKey();
+
+      Widget widget = MaterialApp(
+        home: JoltProvider<_TestStore>(
+          key: key,
+          create: (context) {
+            store1 = _TestStore(context);
+            return store1!;
+          },
+          builder: (context, s) => Text('Count: ${s.counter.value}'),
+        ),
+      );
+
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+
+      expect(store1, isNotNull);
+      expect(store1!.mounted, isTrue);
+      expect(store1!.unmounted, isFalse);
+
+      // Change create function but use same key (same element)
+      widget = MaterialApp(
+        home: JoltProvider<_TestStore>(
+          key: key,
+          create: (context) {
+            store2 = _TestStore(context);
+            return store2!;
+          },
+          builder: (context, s) => Text('Count: ${s.counter.value}'),
+        ),
+      );
+
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+
+      // Store1 should still be used (not recreated) because value was already initialized
+      expect(store1!.unmounted, isFalse);
+      expect(store2, isNull); // New create function should not be called
+      expect(find.text('Count: 0'), findsOneWidget);
+
+      store1!.counter.dispose();
+    });
+
     testWidgets('should work with value parameter', (tester) async {
       _TestStore? store;
 
@@ -627,52 +632,6 @@ void main() {
       store.counter.value = 10;
       expect(store.counter.value, equals(10));
       store.counter.dispose();
-    });
-
-    testWidgets('should switch from create to new create', (tester) async {
-      _TestStore? store1;
-      _TestStore? store2;
-
-      Widget widget = MaterialApp(
-        home: JoltProvider<_TestStore>(
-          create: (context) {
-            store1 = _TestStore(context);
-            return store1!;
-          },
-          builder: (context, s) => Text('Store1: ${s.counter.value}'),
-        ),
-      );
-
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
-
-      expect(store1, isNotNull);
-      expect(store1!.mounted, isTrue);
-      expect(store1!.unmounted, isFalse);
-
-      widget = MaterialApp(
-        home: JoltProvider<_TestStore>(
-          create: (context) {
-            store2 = _TestStore(context);
-            return store2!;
-          },
-          builder: (context, s) => Text('Store2: ${s.counter.value}'),
-        ),
-      );
-
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
-
-      // Old store should be unmounted
-      expect(store1!.unmounted, isTrue);
-      // New store should be mounted
-      expect(store2, isNotNull);
-      expect(store2!.mounted, isTrue);
-      expect(store2!.unmounted, isFalse);
-      expect(find.text('Store2: 0'), findsOneWidget);
-
-      store1!.counter.dispose();
-      store2!.counter.dispose();
     });
 
     testWidgets('should switch from create to value', (tester) async {
@@ -1015,52 +974,6 @@ void main() {
       expect(find.text('Value: 0'), findsOneWidget);
 
       valueStore!.counter.dispose();
-    });
-
-    testWidgets(
-        'should dispose old Disposable resource when switching from create to new create',
-        (tester) async {
-      _DisposableStore? createdStore1;
-      _DisposableStore? createdStore2;
-
-      Widget widget = MaterialApp(
-        home: JoltProvider<_DisposableStore>(
-          create: (context) {
-            createdStore1 = _DisposableStore();
-            return createdStore1!;
-          },
-          builder: (context, s) => Text('Created1: ${s.counter.value}'),
-        ),
-      );
-
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
-
-      expect(createdStore1, isNotNull);
-      expect(createdStore1!.disposed, isFalse);
-      expect(find.text('Created1: 0'), findsOneWidget);
-
-      widget = MaterialApp(
-        home: JoltProvider<_DisposableStore>(
-          create: (context) {
-            createdStore2 = _DisposableStore();
-            return createdStore2!;
-          },
-          builder: (context, s) => Text('Created2: ${s.counter.value}'),
-        ),
-      );
-
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
-
-      // Old store should be disposed when switching from create to new create
-      expect(createdStore1!.disposed, isTrue);
-      // New store should not be disposed
-      expect(createdStore2, isNotNull);
-      expect(createdStore2!.disposed, isFalse);
-      expect(find.text('Created2: 0'), findsOneWidget);
-
-      createdStore2!.counter.dispose();
     });
 
     testWidgets(

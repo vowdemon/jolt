@@ -109,6 +109,7 @@ class JoltSelectorElement<T> extends ComponentElement {
 
   T? _state;
   bool _isFirstBuildEffect = true;
+  bool _isScheduled = false;
 
   @override
   void mount(Element? parent, Object? newSlot) {
@@ -119,7 +120,10 @@ class JoltSelectorElement<T> extends ComponentElement {
       if (!_isFirstBuildEffect) {
         if (oldState != _state) {
           if (SchedulerBinding.instance.schedulerPhase != SchedulerPhase.idle) {
+            if (_isScheduled) return;
+            _isScheduled = true;
             SchedulerBinding.instance.endOfFrame.then((_) {
+              _isScheduled = false;
               if (dirty) return;
               markNeedsBuild();
             });

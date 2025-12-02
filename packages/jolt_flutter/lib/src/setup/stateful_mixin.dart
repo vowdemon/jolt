@@ -195,10 +195,15 @@ mixin SetupMixin<T extends StatefulWidget> on State<T> {
 
   /* ------------------------------ Build flow ----------------------------- */
 
+  bool _isScheduled = false;
+
   void _triggerRebuild() {
     final element = context as ComponentElement;
     if (SchedulerBinding.instance.schedulerPhase != SchedulerPhase.idle) {
+      if (_isScheduled) return;
+      _isScheduled = true;
       SchedulerBinding.instance.endOfFrame.then((_) {
+        _isScheduled = false;
         if (element.dirty || !mounted) return;
         element.markNeedsBuild();
       });

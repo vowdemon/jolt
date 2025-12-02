@@ -1,3 +1,9 @@
+## 2.0.0-beta.5
+
+ - **FIX**(jolt_flutter): prevent duplicate scheduled rebuilds. ([59d535df](https://github.com/vowdemon/jolt/commit/59d535df27db8f1c860fd48db6c7a558a8cde893))
+ - **FIX**(jolt_flutter): fix provider update logic and add .value constructor. ([88177013](https://github.com/vowdemon/jolt/commit/88177013c3e372c658893118ea75341dfa63130a))
+ - **FEAT**: add call helpers, useInherited hook, drop extra rebuild. ([69263dd1](https://github.com/vowdemon/jolt/commit/69263dd1b0c69c7e2c3c9ad787202ccbdfdb3f37))
+
 ## 2.0.0-beta.4
 
 > Note: This release has breaking changes.

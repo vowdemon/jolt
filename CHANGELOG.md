@@ -3,6 +3,35 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-12-02
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`jolt` - `v2.0.0-beta.4`](#jolt---v200-beta4)
+ - [`jolt_flutter` - `v2.0.0-beta.5`](#jolt_flutter---v200-beta5)
+
+---
+
+#### `jolt` - `v2.0.0-beta.4`
+
+ - **FEAT**(jolt): add ReadonlySignal factory constructor documentation and implementation. ([8b1be50e](https://github.com/vowdemon/jolt/commit/8b1be50ea00432b8a463a1a32a8df1972882f669))
+ - **FEAT**: add call helpers, useInherited hook, drop extra rebuild. ([69263dd1](https://github.com/vowdemon/jolt/commit/69263dd1b0c69c7e2c3c9ad787202ccbdfdb3f37))
+
+#### `jolt_flutter` - `v2.0.0-beta.5`
+
+ - **FIX**(jolt_flutter): prevent duplicate scheduled rebuilds. ([59d535df](https://github.com/vowdemon/jolt/commit/59d535df27db8f1c860fd48db6c7a558a8cde893))
+ - **FIX**(jolt_flutter): fix provider update logic and add .value constructor. ([88177013](https://github.com/vowdemon/jolt/commit/88177013c3e372c658893118ea75341dfa63130a))
+ - **FEAT**: add call helpers, useInherited hook, drop extra rebuild. ([69263dd1](https://github.com/vowdemon/jolt/commit/69263dd1b0c69c7e2c3c9ad787202ccbdfdb3f37))
+
+
 ## 2025-11-25
 
 ### Changes

@@ -1,3 +1,8 @@
+## 2.0.0-beta.4
+
+ - **FEAT**(jolt): add ReadonlySignal factory constructor documentation and implementation. ([8b1be50e](https://github.com/vowdemon/jolt/commit/8b1be50ea00432b8a463a1a32a8df1972882f669))
+ - **FEAT**: add call helpers, useInherited hook, drop extra rebuild. ([69263dd1](https://github.com/vowdemon/jolt/commit/69263dd1b0c69c7e2c3c9ad787202ccbdfdb3f37))
+
 ## 2.0.0-beta.3
 
 > Note: This release has breaking changes.

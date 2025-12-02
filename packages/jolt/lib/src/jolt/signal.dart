@@ -1,3 +1,5 @@
+import "dart:async";
+
 import "package:jolt/core.dart";
 import "package:jolt/src/jolt/base.dart";
 import "package:meta/meta.dart";
@@ -188,6 +190,21 @@ abstract interface class ReadonlySignal<T>
     implements Readonly<T>, ReadonlyNode<T> {
   /// Returns the current signal value (equivalent to `value`).
   T call();
+
+  /// Creates a constant read-only signal with a fixed value.
+  ///
+  /// The returned signal will always return the same value and cannot be modified.
+  /// This is useful for creating immutable signals that don't change over time.
+  ///
+  /// Parameters:
+  /// - [value]: The constant value for the signal
+  ///
+  /// Example:
+  /// ```dart
+  /// final constant = ReadonlySignal(42);
+  /// print(constant.value); // Always 42
+  /// ```
+  factory ReadonlySignal(T value) = _ConstantSignalImpl<T>;
 }
 
 /// A writable interface for signals that allows modification.
@@ -213,4 +230,46 @@ abstract interface class Signal<T>
   /// Returns the current signal value (equivalent to `value`).
   @override
   T call();
+}
+
+class _ConstantSignalImpl<T> implements ReadonlySignal<T> {
+  _ConstantSignalImpl(this._value);
+
+  final T _value;
+
+  @override
+  FutureOr<void> dispose() {}
+
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
+  @override
+  T get() => _value;
+
+  @override
+  bool get isDisposed => false;
+
+  @override
+  void notify() {}
+
+  @override
+  void onDispose() {}
+
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
+  @override
+  T get peek => _value;
+
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
+  @override
+  T get value => _value;
+
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
+  @override
+  T call() => _value;
 }

@@ -1044,6 +1044,8 @@ abstract interface class EffectBaseReactiveNode
 class _DummyEffectNode extends ReactiveNode implements EffectReactiveNode {
   _DummyEffectNode({required super.flags});
 
+  // never called
+  // coverage:ignore-start
   @pragma("vm:prefer-inline")
   @pragma("wasm:prefer-inline")
   @pragma("dart2js:prefer-inline")
@@ -1052,6 +1054,7 @@ class _DummyEffectNode extends ReactiveNode implements EffectReactiveNode {
     disposeNode(this);
   }
 
+  // never called
   @pragma("vm:prefer-inline")
   @pragma("wasm:prefer-inline")
   @pragma("dart2js:prefer-inline")
@@ -1059,6 +1062,7 @@ class _DummyEffectNode extends ReactiveNode implements EffectReactiveNode {
   void runEffect() {
     defaultRunEffect(this, () {});
   }
+  // coverage:ignore-end
 }
 
 /// Interface for effects that provide custom scheduling behavior.

@@ -131,6 +131,20 @@ void main() {
       expect(computed.peek, equals(10));
     });
 
+    test("should support call() method that returns same as get()", () {
+      final signal = Signal(5);
+      final computed = Computed<int>(() => signal.value * 2);
+
+      expect(computed(), equals(10));
+      expect(computed(), equals(computed.get()));
+      expect(computed(), equals(computed.value));
+
+      signal.value = 3;
+      expect(computed(), equals(6));
+      expect(computed(), equals(computed.get()));
+      expect(computed(), equals(computed.value));
+    });
+
     test("should update when dependencies change", () {
       final signal = Signal(1);
       final computed = Computed<int>(() => signal.value + 1);

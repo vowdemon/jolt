@@ -58,6 +58,18 @@ void main() {
       expect(signal.value, equals(42));
     });
 
+    test("should support call() method that returns same as get()", () {
+      final signal = Signal(5);
+      expect(signal(), equals(5));
+      expect(signal(), equals(signal.get()));
+      expect(signal(), equals(signal.value));
+
+      signal.value = 10;
+      expect(signal(), equals(10));
+      expect(signal(), equals(signal.get()));
+      expect(signal(), equals(signal.value));
+    });
+
     test("should force update signal", () {
       final signal = Signal(1);
       final values = <int>[];
@@ -310,6 +322,123 @@ void main() {
       // Effect runs immediately, so we should have one value
       expect(values.length, greaterThanOrEqualTo(1));
       expect(values.last, equals(10));
+    });
+  });
+
+  group("ReadonlySignal (ConstantSignal)", () {
+    test("should create constant signal with ReadonlySignal factory", () {
+      final constant = ReadonlySignal(42);
+      expect(constant.value, equals(42));
+      expect(constant.peek, equals(42));
+      expect(constant.get(), equals(42));
+    });
+
+    test("should support call() method for constant signal", () {
+      final constant = ReadonlySignal(100);
+      expect(constant(), equals(100));
+      expect(constant(), equals(constant.get()));
+      expect(constant(), equals(constant.value));
+      expect(constant(), equals(constant.peek));
+    });
+
+    test("constant signal should always return same value", () {
+      final constant = ReadonlySignal("hello");
+      expect(constant.value, equals("hello"));
+      expect(constant.value, equals("hello"));
+      expect(constant(), equals("hello"));
+      expect(constant.peek, equals("hello"));
+    });
+
+    test("constant signal should not be writable", () {
+      final constant = ReadonlySignal(42);
+      // ReadonlySignal doesn't have a value setter, so it's readonly
+      expect(constant, isA<ReadonlySignal<int>>());
+      // Verify it's not a Signal (which is writable)
+      expect(constant, isNot(isA<Signal<int>>()));
+    });
+
+    test("constant signal should work with different types", () {
+      final intConstant = ReadonlySignal(42);
+      expect(intConstant(), equals(42));
+
+      final stringConstant = ReadonlySignal("test");
+      expect(stringConstant(), equals("test"));
+
+      final listConstant = ReadonlySignal([1, 2, 3]);
+      expect(listConstant(), equals([1, 2, 3]));
+
+      final nullableConstant = ReadonlySignal<int?>(null);
+      expect(nullableConstant(), isNull);
+    });
+
+    test("constant signal should work in computed", () {
+      final constant = ReadonlySignal(5);
+      final computed = Computed<int>(() => constant.value * 2);
+      expect(computed.value, equals(10));
+    });
+
+    test("constant signal should work in effect", () {
+      final constant = ReadonlySignal("hello");
+      final values = <String>[];
+
+      Effect(() {
+        values.add(constant.value);
+      });
+
+      expect(values, equals(["hello"]));
+    });
+
+    test("constant signal should not trigger effect updates", () {
+      final constant = ReadonlySignal(1);
+      final values = <int>[];
+
+      Effect(() {
+        values.add(constant.value);
+      });
+
+      expect(values, equals([1]));
+
+      // Constant signal cannot change, so effect should not run again
+      // But we can't actually change it, so values should remain [1]
+      expect(values, equals([1]));
+    });
+
+    test("constant signal notify() should do nothing", () {
+      final constant = ReadonlySignal(42);
+      final values = <int>[];
+
+      Effect(() {
+        values.add(constant.value);
+      });
+
+      expect(values, equals([42]));
+
+      // Call notify() - it should do nothing for constant signals
+      // Since constant signal's notify() is empty, no effects should be triggered
+      constant.notify();
+
+      // Effect should not run again because constant signal's notify() does nothing
+      expect(values, equals([42]));
+    });
+
+    test("constant signal isDisposed should always be false", () {
+      final constant = ReadonlySignal(42);
+
+      // Before dispose
+      expect(constant.isDisposed, isFalse);
+
+      // After dispose
+      constant.dispose();
+      expect(constant.isDisposed, isFalse);
+
+      // Multiple disposes should still return false
+      constant.dispose();
+      expect(constant.isDisposed, isFalse);
+    });
+
+    test("constant signal dispose should not throw", () {
+      final constant = ReadonlySignal(42);
+      expect(() => constant.dispose(), returnsNormally);
     });
   });
 }

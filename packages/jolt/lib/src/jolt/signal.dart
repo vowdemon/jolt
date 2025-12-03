@@ -233,7 +233,7 @@ abstract interface class Signal<T>
 }
 
 class _ConstantSignalImpl<T> implements ReadonlySignal<T> {
-  _ConstantSignalImpl(this._value);
+  const _ConstantSignalImpl(this._value);
 
   final T _value;
 
@@ -252,8 +252,11 @@ class _ConstantSignalImpl<T> implements ReadonlySignal<T> {
   @override
   void notify() {}
 
+  // never called
+  // coverage:ignore-start
   @override
   void onDispose() {}
+  // coverage:ignore-end
 
   @pragma("vm:prefer-inline")
   @pragma("wasm:prefer-inline")

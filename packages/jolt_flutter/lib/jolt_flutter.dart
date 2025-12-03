@@ -36,4 +36,4 @@ export 'src/widgets/jolt_builder.dart';
 export 'src/widgets/jolt_selector.dart';
 export 'src/widgets/jolt_state.dart';
 
-export 'src/effect/flutter_effect.dart';
+export 'src/effect/flutter_effect.dart' show FlutterEffect;

@@ -213,6 +213,7 @@ class JoltSetupContext<T extends Widget> extends EffectScopeImpl {
     }
   }
 
+  // coverage:ignore-start
   /// Notifies all hooks that the widget has been activated.
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
@@ -222,6 +223,7 @@ class JoltSetupContext<T extends Widget> extends EffectScopeImpl {
       hook.activated();
     }
   }
+  // coverage:ignore-end
 
   /// Notifies all hooks that the widget has been deactivated.
   @pragma('vm:prefer-inline')

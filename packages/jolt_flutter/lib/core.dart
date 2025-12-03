@@ -6,3 +6,5 @@
 library;
 
 export 'package:jolt/core.dart';
+export 'package:jolt_flutter/src/effect/flutter_effect.dart'
+    show FlutterEffectImpl;

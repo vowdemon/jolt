@@ -468,6 +468,75 @@ void main() {
       expect(find.textContaining('Async:'), findsOneWidget);
     });
 
+    testWidgets('useSignal.async with initialValue AsyncSuccess',
+        (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final asyncSignal = useSignal.async(
+            () => FutureSource(
+                Future.delayed(const Duration(milliseconds: 100), () => 100)),
+            initialValue: () => AsyncSuccess(42),
+          );
+          return () => Text(
+              'Data: ${asyncSignal.value.map(success: (data) => data.toString(), loading: () => 'Loading', error: (_, __) => 'Error') ?? 'Unknown'}');
+        }),
+      ));
+
+      // Should start with initialValue (AsyncSuccess(42))
+      expect(find.textContaining('Data: 42'), findsOneWidget);
+
+      await tester.pumpAndSettle();
+
+      // After future completes, should update to new value (100)
+      expect(find.textContaining('Data: 100'), findsOneWidget);
+    });
+
+    testWidgets('useSignal.async with initialValue AsyncLoading',
+        (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final asyncSignal = useSignal.async(
+            () => FutureSource(
+                Future.delayed(const Duration(milliseconds: 100), () => 42)),
+            initialValue: () => AsyncLoading<int>(),
+          );
+          return () => Text(
+              'State: ${asyncSignal.value.map(loading: () => 'Loading', success: (data) => 'Success: $data', error: (_, __) => 'Error') ?? 'Unknown'}');
+        }),
+      ));
+
+      // Should start with initialValue (AsyncLoading)
+      expect(find.textContaining('State: Loading'), findsOneWidget);
+
+      await tester.pumpAndSettle();
+
+      // After future completes, should update to success
+      expect(find.textContaining('State: Success: 42'), findsOneWidget);
+    });
+
+    testWidgets('useSignal.async with initialValue AsyncError', (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final asyncSignal = useSignal.async(
+            () => FutureSource(
+                Future.delayed(const Duration(milliseconds: 100), () => 42)),
+            initialValue: () => AsyncError<int>(Exception('Initial error')),
+          );
+          return () => Text(
+              'State: ${asyncSignal.value.map(error: (error, _) => 'Error: $error', loading: () => 'Loading', success: (data) => 'Success: $data') ?? 'Unknown'}');
+        }),
+      ));
+
+      // Should start with initialValue (AsyncError)
+      expect(find.textContaining('Error: Exception: Initial error'),
+          findsOneWidget);
+
+      await tester.pumpAndSettle();
+
+      // After future completes, should update to success
+      expect(find.textContaining('State: Success: 42'), findsOneWidget);
+    });
+
     testWidgets('usePersistSignal creates persist signal', (tester) async {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {

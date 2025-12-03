@@ -174,8 +174,8 @@ abstract class JoltSignalHookCreator {
   /// loading, success, and error states. Perfect for API calls, data fetching, etc.
   ///
   /// Parameters:
-  /// - [source]: The async source that provides the data
-  /// - [initialValue]: Optional initial async state
+  /// - [source]: A function that returns an async source providing the data
+  /// - [initialValue]: Optional function that returns the initial async state
   /// - [onDebug]: Optional debug callback for reactive system debugging
   ///
   /// Returns: An [AsyncSignal] that manages async state transitions
@@ -184,7 +184,7 @@ abstract class JoltSignalHookCreator {
   /// ```dart
   /// setup(context, props) {
   ///   final userData = useSignal.async(
-  ///     FutureSource(() async {
+  ///     () => FutureSource(() async {
   ///       final response = await http.get('/api/user');
   ///       return User.fromJson(response.data);
   ///     }),
@@ -198,12 +198,14 @@ abstract class JoltSignalHookCreator {
   /// }
   /// ```
   AsyncSignal<T> async<T>(
-    AsyncSource<T> source, {
-    AsyncState<T>? initialValue,
+    AsyncSource<T> Function() source, {
+    AsyncState<T> Function()? initialValue,
     JoltDebugFn? onDebug,
   }) {
     return useAutoDispose(() => AsyncSignal(
-        source: source, initialValue: initialValue, onDebug: onDebug));
+        source: source(),
+        initialValue: initialValue?.call(),
+        onDebug: onDebug));
   }
 
   /// Creates a persistent signal hook that saves to external storage.

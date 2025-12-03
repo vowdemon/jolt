@@ -340,7 +340,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           final asyncSignal = useSignal.async(
-            FutureSource(Future.value(42)),
+            () => FutureSource(Future.value(42)),
           );
           return () => Text('Async: ${asyncSignal.value}');
         }),
@@ -525,7 +525,7 @@ void main() {
         await tester.pumpWidget(MaterialApp(
           home: SetupBuilder(setup: (context) {
             asyncSignal = useSignal.async(
-              FutureSource(Future.value(42)),
+              () => FutureSource(Future.value(42)),
             );
             return () => Text('Async');
           }),

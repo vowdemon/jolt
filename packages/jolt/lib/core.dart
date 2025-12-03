@@ -11,7 +11,7 @@ export 'src/jolt/shared.dart' show JFinalizer;
 export 'src/core/debug.dart'
     show JoltDebug, DebugNodeOperationType, JoltDebugFn;
 
-export "src/jolt/base.dart" show ReadonlyNodeMixin;
+export "src/jolt/base.dart" show ReadonlyNodeMixin, EffectNodeMixin;
 export "src/jolt/signal.dart" show SignalImpl;
 export "src/jolt/computed.dart" show ComputedImpl, WritableComputedImpl;
 export "src/jolt/effect.dart" show EffectImpl, EffectScopeImpl, WatcherImpl;

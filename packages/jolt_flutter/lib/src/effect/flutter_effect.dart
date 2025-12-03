@@ -25,7 +25,7 @@ import 'package:shared_interfaces/shared_interfaces.dart';
 /// // Effect executes once at end of frame with count.value = 3
 /// ```
 class FlutterEffectImpl extends EffectReactiveNode
-    with EffectNode, EffectCleanupMixin
+    with EffectNodeMixin, EffectCleanupMixin
     implements FlutterEffect, EffectScheduler {
   /// {@template flutter_effect_impl}
   /// Creates a new Flutter effect with the given function.

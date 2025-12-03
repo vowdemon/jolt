@@ -32,27 +32,13 @@ abstract interface class IMutableCollection<T> {}
 ///   }
 /// }
 /// ```
-mixin ReadonlyNodeMixin<T> implements ReadonlyNode<T> {
+mixin ReadonlyNodeMixin<T> implements ReadonlyNode<T>, ChainedDisposable {
   /// Whether this node has been disposed.
   @override
   bool get isDisposed => _isDisposed;
   @protected
   bool _isDisposed = false;
 
-  /// {@template jolt_dispose_node}
-  /// Disposes this node and cleans up resources.
-  ///
-  /// This method marks the node as disposed, invokes [onDispose] for custom
-  /// cleanup, and notifies the finalizer system so chained disposers can run.
-  ///
-  /// Example:
-  /// ```dart
-  /// final disposable = MyDisposableNode();
-  /// disposable.dispose(); // Cleanup happens automatically
-  /// ```
-  /// {@endtemplate}
-  ///
-  /// {@macro jolt_dispose_node}
   @override
   @mustCallSuper
   void dispose() {
@@ -64,6 +50,24 @@ mixin ReadonlyNodeMixin<T> implements ReadonlyNode<T> {
 
     JFinalizer.disposeObject(this);
   }
+
+  /// Called when the node is being disposed.
+  ///
+  /// Override this method to provide custom cleanup logic. This method
+  /// is called automatically by [dispose].
+  ///
+  /// Example:
+  /// ```dart
+  /// class MyNode<T> extends ReadonlyNode<T> {
+  ///   @override
+  ///   FutureOr<void> onDispose() {
+  ///     // Clean up resources
+  ///   }
+  /// }
+  /// ```
+  @override
+  @protected
+  void onDispose();
 
   @pragma("vm:prefer-inline")
   @pragma("wasm:prefer-inline")
@@ -85,28 +89,27 @@ mixin ReadonlyNodeMixin<T> implements ReadonlyNode<T> {
 /// print(doubled.value); // OK
 /// // doubled.value = 6; // Compile error
 /// ```
-abstract interface class ReadonlyNode<T>
-    implements Readonly<T>, ChainedDisposable {
+abstract interface class ReadonlyNode<T> implements Readonly<T>, Disposable {
   /// Whether this node has been disposed.
   bool get isDisposed;
 
-  /// Called when the node is being disposed.
+  /// {@template jolt_dispose_node}
+  /// Disposes this node and cleans up resources.
   ///
-  /// Override this method to provide custom cleanup logic. This method
-  /// is called automatically by [dispose].
+  /// This method marks the node as disposed, invokes [onDispose] for custom
+  /// cleanup, and notifies the finalizer system so chained disposers can run.
   ///
   /// Example:
   /// ```dart
-  /// class MyNode<T> extends ReadonlyNode<T> {
-  ///   @override
-  ///   FutureOr<void> onDispose() {
-  ///     // Clean up resources
-  ///   }
-  /// }
+  /// final disposable = MyDisposableNode();
+  /// disposable.dispose(); // Cleanup happens automatically
   /// ```
+  /// {@endtemplate}
+  ///
+  /// {@macro jolt_dispose_node}
+  @mustCallSuper
   @override
-  @protected
-  void onDispose();
+  void dispose();
 }
 
 /// Interface for writable reactive nodes.
@@ -137,13 +140,12 @@ abstract interface class WritableNode<T>
 ///   }
 /// }
 /// ```
-mixin EffectNode implements ChainedDisposable {
-  /// Whether this node has been disposed.
+mixin EffectNodeMixin implements EffectNode, ChainedDisposable {
+  @override
   bool get isDisposed => _isDisposed;
   @protected
   bool _isDisposed = false;
 
-  /// {@macro jolt_dispose_node}
   @override
   @mustCallSuper
   void dispose() {
@@ -158,4 +160,14 @@ mixin EffectNode implements ChainedDisposable {
   @override
   @protected
   void onDispose();
+}
+
+abstract interface class EffectNode implements Disposable {
+  /// Whether this node has been disposed.
+  bool get isDisposed;
+
+  /// {@macro jolt_dispose_node}
+  @mustCallSuper
+  @override
+  void dispose();
 }

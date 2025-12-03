@@ -252,12 +252,6 @@ class _ConstantSignalImpl<T> implements ReadonlySignal<T> {
   @override
   void notify() {}
 
-  // never called
-  // coverage:ignore-start
-  @override
-  void onDispose() {}
-  // coverage:ignore-end
-
   @pragma("vm:prefer-inline")
   @pragma("wasm:prefer-inline")
   @pragma("dart2js:prefer-inline")

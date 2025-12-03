@@ -118,8 +118,8 @@ class MySetupWidget extends SetupWidget<MySetupWidget> {
   final test = 1;
   @override
   setup(context, _) {
-    debugPrint(test.toString());
-    debugPrint(test.toString());
+    // debugPrint(test.toString());
+    // debugPrint(test.toString());
     return () => Text('My Setup Widget');
   }
 }

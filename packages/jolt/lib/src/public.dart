@@ -1,4 +1,4 @@
-export "jolt/base.dart" hide ReadonlyNodeMixin;
+export "jolt/base.dart" hide ReadonlyNodeMixin, EffectNodeMixin;
 export "jolt/signal.dart" hide SignalImpl;
 export "jolt/computed.dart" hide ComputedImpl, WritableComputedImpl;
 export "jolt/effect.dart" hide EffectImpl, EffectScopeImpl, WatcherImpl;

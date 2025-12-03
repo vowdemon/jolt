@@ -4,7 +4,7 @@ import "package:test/test.dart";
 
 // Custom effect that implements EffectScheduler for testing
 class _TestScheduledEffect extends EffectReactiveNode
-    with EffectNode
+    with EffectNodeMixin
     implements EffectScheduler {
   _TestScheduledEffect({
     required this.scheduleReturnValue,

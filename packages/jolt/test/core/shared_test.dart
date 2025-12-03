@@ -1,5 +1,5 @@
+import "package:jolt/core.dart";
 import "package:jolt/jolt.dart";
-import "package:jolt/src/jolt/shared.dart";
 import "package:test/test.dart";
 
 void main() {
@@ -113,7 +113,7 @@ void main() {
   });
 }
 
-class _TestEffectNode with EffectNode {
+class _TestEffectNode with EffectNodeMixin {
   _TestEffectNode() : super();
 
   @override

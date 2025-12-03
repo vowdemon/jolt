@@ -379,9 +379,6 @@ class PropsReadonlyNode<T extends Widget> extends CustomReactiveNode
 
   // coverage:ignore-start
   @override
-  void onDispose() {}
-
-  @override
   bool updateNode() {
     if (_dirty) {
       _dirty = false;

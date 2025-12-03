@@ -11,6 +11,49 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 Packages with breaking changes:
 
+ - [`jolt` - `v2.0.0`](#jolt---v200)
+ - [`jolt_flutter` - `v2.0.0`](#jolt_flutter---v200)
+ - [`jolt_flutter_hooks` - `v1.0.0`](#jolt_flutter_hooks---v100)
+ - [`jolt_hooks` - `v2.0.0`](#jolt_hooks---v200)
+ - [`jolt_lint` - `v2.0.0`](#jolt_lint---v200)
+ - [`jolt_surge` - `v2.0.0`](#jolt_surge---v200)
+
+Packages with other changes:
+
+ - There are no other changes in this release.
+
+Packages graduated to a stable release (see pre-releases prior to the stable version for changelog entries):
+
+ - `jolt` - `v2.0.0`
+ - `jolt_flutter` - `v2.0.0`
+ - `jolt_flutter_hooks` - `v1.0.0`
+ - `jolt_hooks` - `v2.0.0`
+ - `jolt_lint` - `v2.0.0`
+ - `jolt_surge` - `v2.0.0`
+
+---
+
+#### `jolt` - `v2.0.0`
+
+#### `jolt_flutter` - `v2.0.0`
+
+#### `jolt_flutter_hooks` - `v1.0.0`
+
+#### `jolt_hooks` - `v2.0.0`
+
+#### `jolt_lint` - `v2.0.0`
+
+#### `jolt_surge` - `v2.0.0`
+
+
+## 2025-12-04
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
  - There are no breaking changes in this release.
 
 Packages with other changes:

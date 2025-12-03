@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
+import 'package:jolt_flutter/setup.dart';
 
 void main() {
   runApp(const MyApp());
@@ -108,5 +109,17 @@ class _MyHomePageState extends State<MyHomePage> {
         child: const Icon(Icons.add),
       ),
     );
+  }
+}
+
+class MySetupWidget extends SetupWidget<MySetupWidget> {
+  const MySetupWidget({super.key});
+
+  final test = 1;
+  @override
+  setup(context, _) {
+    debugPrint(test.toString());
+    debugPrint(test.toString());
+    return () => Text('My Setup Widget');
   }
 }

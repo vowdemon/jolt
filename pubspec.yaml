@@ -15,7 +15,6 @@ workspace:
   - packages/jolt_flutter_hooks
   - packages/jolt_hooks/example
   - packages/jolt_surge/example
-  - packages/jolt_lint/example
 
 dev_dependencies:
   melos: ^7.3.0

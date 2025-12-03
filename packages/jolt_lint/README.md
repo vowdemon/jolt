@@ -187,8 +187,6 @@ This rule provides automatic fixes to quickly transform incorrect code into the 
 - 🔧 **Single Fix**: Place the cursor on the problematic code, press `Ctrl+.` (or `Cmd+.`) and select "Replace this with props()" or "Add props() to the member" to automatically fix it
 - 🔧 **Bulk Fix**: The fix menu also provides a "Fix all setup this issues" option to fix all related issues in the file at once
 
-⚠️ **Note**: Due to a bug in the `analysis_server_plugin` package, the multi-fix in file feature may not work properly. If you don't see the "Fix all setup this issues" option, you may need to apply a temporary workaround. See [fix_all_patch.md](fix_all_patch.md) for details.
-
 **Fix Example**:
 ```dart
 // Before

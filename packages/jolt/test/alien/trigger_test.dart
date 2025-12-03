@@ -51,5 +51,18 @@ void main() {
       });
       expect(triggers, 2);
     });
+    test('should not notify the trigger function sub', () {
+      final src1 = signal(<int>[]);
+      final src2 = computed(() => src1());
+
+      effect(() {
+        src1();
+        src2();
+      });
+      trigger(() {
+        src1();
+        src2();
+      });
+    });
   });
 }

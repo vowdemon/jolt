@@ -798,19 +798,21 @@ void purgeDeps(ReactiveNode sub) {
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
 T trigger<T>(T Function() fn) {
-  final sub = ReactiveNode(flags: ReactiveFlags.watching);
+  final sub = _DummyEffectNode(flags: ReactiveFlags.watching);
   final prevSub = setActiveSub(sub);
   try {
     return fn();
   } finally {
     activeSub = prevSub;
-    while (sub.deps != null) {
-      final link = sub.deps!;
+    var link = sub.deps;
+    while (link != null) {
       final dep = link.dep;
-      unlink(link, sub);
-      if (dep.subs != null) {
-        propagate(dep.subs!);
-        shallowPropagate(dep.subs!);
+      link = unlink(link, sub);
+      final subs = dep.subs;
+      if (subs != null) {
+        sub.flags = ReactiveFlags.none;
+        propagate(subs);
+        shallowPropagate(subs);
       }
     }
     if (batchDepth == 0) {
@@ -1038,6 +1040,26 @@ abstract class CustomReactiveNode<T> extends ReactiveNode {
 /// ```
 abstract interface class EffectBaseReactiveNode
     implements ReactiveNode, Disposable {}
+
+class _DummyEffectNode extends ReactiveNode implements EffectReactiveNode {
+  _DummyEffectNode({required super.flags});
+
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
+  @override
+  void dispose() {
+    disposeNode(this);
+  }
+
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
+  @override
+  void runEffect() {
+    defaultRunEffect(this, () {});
+  }
+}
 
 /// Interface for effects that provide custom scheduling behavior.
 ///

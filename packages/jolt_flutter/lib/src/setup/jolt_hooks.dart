@@ -4,6 +4,8 @@ import 'package:jolt/jolt.dart';
 import 'package:jolt/tricks.dart';
 import 'package:jolt_flutter/src/setup/framework.dart';
 
+import '../effect/flutter_effect.dart';
+
 /// Helper class for creating signal hooks in SetupWidget.
 abstract class JoltSignalHookCreator {
   /// {@template jolt_signal_hook_creator}
@@ -434,6 +436,89 @@ final class _JoltEffectHookCreatorImpl extends JoltEffectHookCreator {}
 
 /// {@macro jolt_effect_hook_creator}
 final useEffect = _JoltEffectHookCreatorImpl();
+
+/// Helper class for creating Flutter effect hooks in SetupWidget.
+abstract class JoltFlutterEffectHookCreator {
+  /// {@template jolt_flutter_effect_hook_creator}
+  /// Creates a Flutter effect hook that schedules execution at frame end.
+  ///
+  /// Flutter effects run automatically when their reactive dependencies change,
+  /// but execution is scheduled at the end of the current Flutter frame. This
+  /// batches multiple triggers within the same frame into a single execution,
+  /// which is useful for UI-related side effects that should not interfere
+  /// with frame rendering. Use [onEffectCleanup] inside the effect to register
+  /// cleanup functions.
+  ///
+  /// Parameters:
+  /// - [effect]: The effect function to execute
+  /// - [lazy]: Whether to run the effect immediately upon creation.
+  ///   If `true`, the effect will execute once immediately when created,
+  ///   then automatically re-run at frame end whenever its reactive dependencies change.
+  ///   If `false` (default), the effect will only run at frame end when dependencies change,
+  ///   not immediately upon creation.
+  /// - [onDebug]: Optional debug callback for reactive system debugging
+  ///
+  /// Returns: A [FlutterEffect] that tracks dependencies and runs at frame end
+  ///
+  /// Example:
+  /// ```dart
+  /// setup(context, props) {
+  ///   final count = useSignal(0);
+  ///
+  ///   useFlutterEffect(() {
+  ///     print('Count changed: ${count.value}'); // Executes at frame end
+  ///
+  ///     final timer = Timer.periodic(Duration(seconds: 1), (_) {
+  ///       count.value++;
+  ///     });
+  ///
+  ///     onEffectCleanup(() => timer.cancel());
+  ///   });
+  ///
+  ///   return () => Text('Count: ${count.value}');
+  /// }
+  /// ```
+  /// {@endtemplate}
+  FlutterEffect call(void Function() effect,
+      {bool lazy = false, JoltDebugFn? onDebug}) {
+    return useAutoDispose(
+        () => FlutterEffect(effect, lazy: lazy, onDebug: onDebug));
+  }
+
+  /// Creates a Flutter effect hook that runs immediately upon creation.
+  ///
+  /// This method is a convenience constructor for creating a Flutter effect
+  /// with [lazy] set to `true`. The effect will execute once immediately when
+  /// created, then automatically re-run at frame end whenever its reactive dependencies change.
+  ///
+  /// Parameters:
+  /// - [effect]: The effect function to execute
+  /// - [onDebug]: Optional debug callback for reactive system debugging
+  ///
+  /// Returns: A [FlutterEffect] that executes immediately
+  ///
+  /// Example:
+  /// ```dart
+  /// setup(context, props) {
+  ///   final count = useSignal(10);
+  ///
+  ///   useFlutterEffect.lazy(() {
+  ///     print('Count is: ${count.value}'); // Executes immediately
+  ///   });
+  ///
+  ///   return () => Text('Count: ${count.value}');
+  /// }
+  /// ```
+  FlutterEffect lazy(void Function() effect, {JoltDebugFn? onDebug}) {
+    return useAutoDispose(() => FlutterEffect.lazy(effect, onDebug: onDebug));
+  }
+}
+
+final class _JoltFlutterEffectHookCreatorImpl
+    extends JoltFlutterEffectHookCreator {}
+
+/// {@macro jolt_flutter_effect_hook_creator}
+final useFlutterEffect = _JoltFlutterEffectHookCreatorImpl();
 
 /// Helper class for creating watcher hooks in SetupWidget.
 abstract class JoltWatcherHookCreator {

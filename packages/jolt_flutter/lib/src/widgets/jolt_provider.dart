@@ -3,7 +3,7 @@ import 'package:jolt/core.dart';
 import 'package:jolt/jolt.dart';
 import 'package:shared_interfaces/shared_interfaces.dart';
 
-import '../shared.dart';
+import '../effect/flutter_effect.dart';
 import 'jolt_state.dart';
 
 /// A widget that provides reactive resource management with lifecycle callbacks.
@@ -208,15 +208,14 @@ class JoltProvider<T> extends Widget {
   }
 }
 
-class JoltProviderElement<T> extends ComponentElement
-    with JoltCommonEffectBuilder {
+class JoltProviderElement<T> extends ComponentElement {
   JoltProviderElement(JoltProvider<T> super.widget);
 
   @override
   JoltProvider<T> get widget => super.widget as JoltProvider<T>;
 
   EffectScope? _scope;
-  Effect? _effect;
+  FlutterEffect? _effect;
 
   T? _store;
   bool _didInitValue = false;
@@ -226,7 +225,7 @@ class JoltProviderElement<T> extends ComponentElement
   void mount(Element? parent, Object? newSlot) {
     _scope = EffectScope()
       ..run(() {
-        _effect = Effect.lazy(joltBuildTriggerEffect);
+        _effect = FlutterEffect.lazy(markNeedsBuild);
       });
 
     super.mount(parent, newSlot);

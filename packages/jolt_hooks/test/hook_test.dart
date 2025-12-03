@@ -289,8 +289,7 @@ void main() {
       );
 
       expect(find.text('Loading...'), findsOneWidget);
-
-      await tester.pump(const Duration(milliseconds: 150));
+      await tester.pumpAndSettle();
 
       expect(find.text('Data: 42'), findsOneWidget);
     });

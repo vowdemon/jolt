@@ -129,6 +129,17 @@ bool updateNode(ReactiveNode node) {
 @pragma('vm:unsafe:no-bounds-checks')
 void notifyEffect(ReactiveNode e) {
   EffectBaseReactiveNode? effect = e as EffectBaseReactiveNode;
+
+  // Check if effect implements custom scheduling
+  if (effect is EffectScheduler) {
+    final scheduler = effect as EffectScheduler;
+    if (scheduler.schedule()) {
+      // Custom scheduling handled, don't add to default queue
+      return;
+    }
+    // Custom scheduler returned false, continue with default behavior
+  }
+
   var insertIndex = queuedLength;
   var firstInsertedIndex = insertIndex;
 
@@ -1027,6 +1038,43 @@ abstract class CustomReactiveNode<T> extends ReactiveNode {
 /// ```
 abstract interface class EffectBaseReactiveNode
     implements ReactiveNode, Disposable {}
+
+/// Interface for effects that provide custom scheduling behavior.
+///
+/// Effects implementing this interface can customize how they are scheduled
+/// when their dependencies change, instead of being queued for immediate execution.
+///
+/// Example:
+/// ```dart
+/// class CustomScheduledEffect extends EffectReactiveNode implements EffectScheduler {
+///   @override
+///   bool schedule() {
+///     // Custom scheduling logic
+///     return true; // Custom scheduling handled
+///   }
+/// }
+/// ```
+abstract interface class EffectScheduler {
+  /// Schedules this effect for execution using a custom scheduling strategy.
+  ///
+  /// This method is called by the reactive system when the effect's dependencies
+  /// change. If this method returns `true`, the effect will not be added to the
+  /// default execution queue. If it returns `false`, the default scheduling
+  /// behavior will be used.
+  ///
+  /// Returns: `true` if custom scheduling was handled, `false` to use default scheduling
+  ///
+  /// Example:
+  /// ```dart
+  /// @override
+  /// bool schedule() {
+  ///   // Schedule for next frame
+  ///   scheduleForNextFrame();
+  ///   return true; // Custom scheduling handled
+  /// }
+  /// ```
+  bool schedule();
+}
 
 /// Reactive node that runs a side-effect callback when triggered.
 ///

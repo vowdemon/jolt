@@ -2,8 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:jolt/jolt.dart';
 import 'package:jolt/tricks.dart';
+import 'package:jolt_flutter/jolt_flutter.dart';
 import 'package:jolt_flutter/setup.dart';
 
 /// Helper InheritedWidget for testing useInherited
@@ -178,6 +178,124 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(effectCount, 1); // Runs when manually triggered
+    });
+
+    testWidgets('useFlutterEffect runs effect at frame end', (tester) async {
+      int effectCount = 0;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final signal = useSignal(1);
+          useFlutterEffect(() {
+            effectCount++;
+            signal.value; // Track dependency
+          });
+          return () => Text('Count: ${signal.value}');
+        }),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(effectCount, 1); // Runs at frame end when lazy=false
+    });
+
+    testWidgets(
+        'useFlutterEffect with lazy=false runs at frame end and on changes',
+        (tester) async {
+      int effectCount = 0;
+      late Signal<int> signal;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          signal = useSignal(1);
+          useFlutterEffect(() {
+            effectCount++;
+            signal.value; // Track dependency
+          }, lazy: false);
+          return () => Text('Count: ${signal.value}');
+        }),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(effectCount, 1); // Runs at frame end when lazy=false
+
+      // Change signal value
+      signal.value = 2;
+      await tester.pumpAndSettle(); // Wait for frame end
+
+      expect(effectCount, 2); // Runs again at frame end when dependency changes
+
+      // Multiple changes in same frame should batch
+      signal.value = 3;
+      signal.value = 4;
+      await tester.pumpAndSettle(); // Wait for frame end
+
+      expect(effectCount, 3); // Should execute only once per frame
+    });
+
+    testWidgets('useFlutterEffect.lazy does not run automatically',
+        (tester) async {
+      int effectCount = 0;
+      late FlutterEffect effect;
+      late Signal<int> signal;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          signal = useSignal(1);
+          effect = useFlutterEffect.lazy(() {
+            effectCount++;
+            signal.value; // Track dependency
+          });
+          return () => Text('Count: ${signal.value}');
+        }),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(effectCount, 0); // Does not run automatically when lazy=true
+
+      // Signal changes but effect doesn't run automatically
+      signal.value = 2;
+      await tester.pumpAndSettle();
+
+      expect(effectCount, 0); // Still doesn't run automatically
+
+      // Manually run the effect
+      effect.run();
+      await tester.pumpAndSettle();
+
+      expect(effectCount, 1); // Runs when manually triggered
+    });
+
+    testWidgets('useFlutterEffect batches multiple triggers in same frame',
+        (tester) async {
+      int effectCount = 0;
+      late Signal<int> signal;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          signal = useSignal(1);
+          useFlutterEffect(() {
+            effectCount++;
+            signal.value; // Track dependency
+          });
+          return () => Text('Count: ${signal.value}');
+        }),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(effectCount, 1); // Initial execution
+
+      // Multiple changes in same frame
+      signal.value = 2;
+      signal.value = 3;
+      signal.value = 4;
+
+      // Should not execute yet (before frame end)
+      expect(effectCount, 1);
+
+      await tester.pumpAndSettle(); // Wait for frame end
+
+      // Should execute only once with final value
+      expect(effectCount, 2);
     });
 
     testWidgets('useWatcher watches changes', (tester) async {
@@ -412,6 +530,30 @@ void main() {
       expect(disposed, isTrue);
     });
 
+    testWidgets('useFlutterEffect cleanup is called on unmount',
+        (tester) async {
+      bool disposed = false;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final signal = useSignal(1);
+          useFlutterEffect(() {
+            signal.value; // Track signal
+            onEffectCleanup(() => disposed = true);
+          });
+          return () => Text('Value: ${signal.value}');
+        }),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(disposed, isFalse);
+
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+      await tester.pumpAndSettle();
+
+      expect(disposed, isTrue);
+    });
+
     group('Hook disposal', () {
       testWidgets('useSignal is disposed on unmount', (tester) async {
         late Signal<int> signal;
@@ -628,6 +770,26 @@ void main() {
           home: SetupBuilder(setup: (context) {
             final signal = useSignal(1);
             effect = useEffect(() {
+              signal.value;
+            });
+            return () => Text('Value: ${signal.value}');
+          }),
+        ));
+        await tester.pumpAndSettle();
+
+        await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+        await tester.pumpAndSettle();
+
+        expect(effect.isDisposed, isTrue);
+      });
+
+      testWidgets('useFlutterEffect is disposed on unmount', (tester) async {
+        late FlutterEffect effect;
+
+        await tester.pumpWidget(MaterialApp(
+          home: SetupBuilder(setup: (context) {
+            final signal = useSignal(1);
+            effect = useFlutterEffect(() {
               signal.value;
             });
             return () => Text('Value: ${signal.value}');

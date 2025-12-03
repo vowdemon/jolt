@@ -1,11 +1,11 @@
 import 'dart:async';
 
-import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:jolt/core.dart';
 import 'package:jolt/jolt.dart';
-import 'package:jolt_flutter/src/shared.dart';
 import 'package:shared_interfaces/shared_interfaces.dart';
+
+import '../effect/flutter_effect.dart';
 
 part 'widget.dart';
 part 'hooks.dart';
@@ -52,7 +52,7 @@ class JoltSetupContext<T extends Widget> extends EffectScopeImpl {
   WidgetFunction<T>? setupBuilder;
 
   /// The effect that triggers widget rebuilds when reactive dependencies change.
-  Effect? renderer;
+  FlutterEffect? renderer;
 
   /// The list of hooks registered for this widget.
   final List<SetupHook> _hooks = [];

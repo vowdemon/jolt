@@ -1,6 +1,6 @@
-import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
-import 'package:jolt/jolt.dart' as jolt;
+
+import '../effect/flutter_effect.dart';
 
 /// A widget that rebuilds only when a specific selector function's result changes.
 ///
@@ -105,32 +105,20 @@ class JoltSelectorElement<T> extends ComponentElement {
   @override
   JoltSelector<T> get widget => super.widget as JoltSelector<T>;
 
-  jolt.Effect? _effect;
+  FlutterEffect? _effect;
 
   T? _state;
   bool _isFirstBuildEffect = true;
-  bool _isScheduled = false;
 
   @override
   void mount(Element? parent, Object? newSlot) {
-    _effect = jolt.Effect(() {
+    _effect = FlutterEffect(() {
       final oldState = _state;
       _state = widget.selector(_state);
 
       if (!_isFirstBuildEffect) {
         if (oldState != _state) {
-          if (SchedulerBinding.instance.schedulerPhase != SchedulerPhase.idle) {
-            if (_isScheduled) return;
-            _isScheduled = true;
-            SchedulerBinding.instance.endOfFrame.then((_) {
-              _isScheduled = false;
-              if (dirty) return;
-              markNeedsBuild();
-            });
-          } else {
-            if (dirty) return;
-            markNeedsBuild();
-          }
+          markNeedsBuild();
         }
       } else {
         _isFirstBuildEffect = false;

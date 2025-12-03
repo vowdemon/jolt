@@ -1,9 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:jolt/core.dart' as reactive;
-import 'package:jolt/jolt.dart' as jolt;
 import 'package:jolt_flutter/core.dart';
 
-import '../shared.dart';
+import '../effect/flutter_effect.dart';
 
 /// A widget that automatically rebuilds when any signal accessed in its builder changes.
 ///
@@ -73,17 +72,17 @@ class JoltBuilder extends StatelessWidget {
 ///
 /// This element creates an [EffectScope] to track dependencies and automatically
 /// triggers rebuilds when tracked signals change.
-class JoltBuilderElement extends StatelessElement with JoltCommonEffectBuilder {
+class JoltBuilderElement extends StatelessElement {
   JoltBuilderElement(JoltBuilder super.widget);
 
   @override
   JoltBuilder get widget => super.widget as JoltBuilder;
 
-  jolt.Effect? _effect;
+  FlutterEffect? _effect;
 
   @override
   void mount(Element? parent, Object? newSlot) {
-    _effect = jolt.Effect.lazy(joltBuildTriggerEffect);
+    _effect = FlutterEffect.lazy(markNeedsBuild);
 
     super.mount(parent, newSlot);
   }

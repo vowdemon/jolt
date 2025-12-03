@@ -162,8 +162,7 @@ abstract class SetupWidget<T extends SetupWidget<T>> extends Widget {
 /// - Mixes in [JoltCommonEffectBuilder] for [joltBuildTriggerEffect]
 /// - Uses [PropsReadonlyNode] for reactive property tracking
 /// - Leverages Element's [markNeedsBuild] for performance
-class SetupWidgetElement<T extends SetupWidget<T>> extends ComponentElement
-    with JoltCommonEffectBuilder {
+class SetupWidgetElement<T extends SetupWidget<T>> extends ComponentElement {
   SetupWidgetElement(SetupWidget<T> super.widget);
 
   /// The reactive node that tracks widget property changes.
@@ -215,7 +214,7 @@ class SetupWidgetElement<T extends SetupWidget<T>> extends ComponentElement
       // First build: initialize setup
       setupContext.run(() {
         setupContext.setupBuilder = widget.setup(this, _propsNode);
-        setupContext.renderer = Effect.lazy(joltBuildTriggerEffect);
+        setupContext.renderer = FlutterEffect.lazy(markNeedsBuild);
 
         for (var hook in setupContext._hooks) {
           hook.mount();

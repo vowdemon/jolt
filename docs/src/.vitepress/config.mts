@@ -109,7 +109,8 @@ export default defineConfig({
                   { text: 'Watcher', link: '/zh/jolt/core/watcher' },
                   { text: 'EffectScope', link: '/zh/jolt/core/effect-scope' },
                   { text: 'Batch', link: '/zh/jolt/core/batch' },
-                  { text: 'Untracked', link: '/zh/jolt/core/untracked' }
+                  { text: 'Track', link: '/zh/jolt/core/track' },
+                  { text: '扩展方法', link: '/zh/jolt/core/extensions' }
                 ]
               },
               {
@@ -120,15 +121,31 @@ export default defineConfig({
                   { text: '转换信号', link: '/zh/jolt/advanced/convert-computed' },
                   { text: '持久信号', link: '/zh/jolt/advanced/persist-signal' },
                   { text: '信号转流', link: '/zh/jolt/advanced/stream' },
-                  { text: '自定义系统', link: '/zh/jolt/advanced/custom-system' }
+                  { text: '扩展 Jolt', link: '/zh/jolt/advanced/extending-jolt' }
                 ]
               },
               {
                 text: 'Flutter',
                 items: [
                   { text: 'Widgets', link: '/zh/jolt/flutter/widgets' },
-                  { text: 'Hooks', link: '/zh/jolt/flutter/hooks' },
-                  { text: 'Surge', link: '/zh/jolt/flutter/surge' }
+                  { text: 'ValueNotifier 集成', link: '/zh/jolt/flutter/value-notifier' },
+                  { text: 'FlutterEffect', link: '/zh/jolt/flutter/flutter-effect' },
+                  { text: 'SetupWidget', link: '/zh/jolt/flutter/setup-widget' },
+                  { text: 'Flutter Hooks', link: '/zh/jolt/flutter/flutter-hooks' }
+                ]
+              },
+              {
+                text: 'Surge',
+                items: [
+                  { text: 'Surge', link: '/zh/jolt/surge/surge' },
+                  { text: 'Surge Widgets', link: '/zh/jolt/surge/widgets' },
+                  { text: 'SurgeObserver', link: '/zh/jolt/surge/observer' }
+                ]
+              },
+              {
+                text: '开发工具',
+                items: [
+                  { text: 'Jolt Lint', link: '/zh/jolt/lint/lint' }
                 ]
               }
             ]
@@ -215,7 +232,8 @@ export default defineConfig({
                   { text: 'Watcher', link: '/jolt/core/watcher' },
                   { text: 'EffectScope', link: '/jolt/core/effect-scope' },
                   { text: 'Batch', link: '/jolt/core/batch' },
-                  { text: 'Untracked', link: '/jolt/core/untracked' }
+                  { text: 'Track', link: '/jolt/core/track' },
+                  { text: 'Extensions', link: '/jolt/core/extensions' }
                 ]
               },
               {
@@ -223,18 +241,34 @@ export default defineConfig({
                 items: [
                   { text: 'Async Signal', link: '/jolt/advanced/async-signal' },
                   { text: 'Collection Signal', link: '/jolt/advanced/collection-signal' },
-                  { text: 'Convert Signal', link: '/jolt/advanced/convert-computed' },
+                  { text: 'Convert Computed', link: '/jolt/advanced/convert-computed' },
                   { text: 'Persist Signal', link: '/jolt/advanced/persist-signal' },
-                  { text: 'Signal to Stream', link: '/jolt/advanced/stream' },
-                  { text: 'Custom System', link: '/jolt/advanced/custom-system' }
+                  { text: 'Stream', link: '/jolt/advanced/stream' },
+                  { text: 'Extending Jolt', link: '/jolt/advanced/extending-jolt' }
                 ]
               },
               {
                 text: 'Flutter',
                 items: [
                   { text: 'Widgets', link: '/jolt/flutter/widgets' },
-                  { text: 'Hooks', link: '/jolt/flutter/hooks' },
-                  { text: 'Surge', link: '/jolt/flutter/surge' }
+                  { text: 'ValueNotifier Integration', link: '/jolt/flutter/value-notifier' },
+                  { text: 'FlutterEffect', link: '/jolt/flutter/flutter-effect' },
+                  { text: 'SetupWidget', link: '/jolt/flutter/setup-widget' },
+                  { text: 'Flutter Hooks', link: '/jolt/flutter/flutter-hooks' }
+                ]
+              },
+              {
+                text: 'Surge',
+                items: [
+                  { text: 'Surge', link: '/jolt/surge/surge' },
+                  { text: 'Surge Widgets', link: '/jolt/surge/widgets' },
+                  { text: 'SurgeObserver', link: '/jolt/surge/observer' }
+                ]
+              },
+              {
+                text: 'Development Tools',
+                items: [
+                  { text: 'Jolt Lint', link: '/jolt/lint/lint' }
                 ]
               }
             ]

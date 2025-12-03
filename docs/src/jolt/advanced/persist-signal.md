@@ -3,7 +3,7 @@
 
 # PersistSignal
 
-PersistSignal is used in the reactive system to create signals that automatically persist to storage. It automatically writes to storage when values change and loads values from storage when needed, suitable for saving user settings, theme preferences, cached data, and other scenarios requiring persistence.
+PersistSignal is used in the reactive system to create signals that automatically persist to storage. It automatically writes to storage when values change and loads values from storage when needed. Suitable for saving user settings, theme preferences, cached data, and other scenarios requiring persistence.
 
 ```dart
 import 'package:jolt/jolt.dart';
@@ -27,7 +27,7 @@ print(theme.value); // Outputs saved value
 
 ## Creation
 
-Use the `PersistSignal` constructor to create a persistent signal:
+Create a persistent signal using the `PersistSignal` constructor:
 
 ```dart
 final signal = PersistSignal(
@@ -40,15 +40,15 @@ final signal = PersistSignal(
 ```
 
 Parameter description:
-- `initialValue`: Function that returns the initial value
-- `read`: Async function that reads value from storage
-- `write`: Async function that writes value to storage
+- `initialValue`: Function to get initial value
+- `read`: Async function to read value from storage
+- `write`: Async function to write value to storage
 - `lazy`: Whether to lazy load (defaults to false, loads immediately)
 - `writeDelay`: Write debounce delay (optional)
 
 ## Lazy Loading
 
-By default, PersistSignal immediately loads values from storage. Using `lazy: true` delays value loading until first access:
+By default, PersistSignal immediately loads values from storage. Using `lazy: true` delays loading values until first access:
 
 ```dart
 // Immediate load (default)
@@ -86,9 +86,9 @@ text.value = 'abc';
 // Only writes 'abc' after waiting 500ms after the last change
 ```
 
-## Guaranteed Read
+## Ensured Read
 
-Use the `getEnsured()` method to ensure the value has been loaded from storage before returning:
+Using the `getEnsured()` method ensures the value has been loaded from storage before returning:
 
 ```dart
 final theme = PersistSignal(
@@ -98,14 +98,14 @@ final theme = PersistSignal(
   lazy: true, // Lazy load
 );
 
-// Ensure value is loaded from storage
+// Ensure value has been loaded from storage
 final value = await theme.getEnsured();
 print(value); // Guaranteed to be the value from storage
 ```
 
-## Guaranteed Write
+## Ensured Write
 
-Use the `setEnsured()` method to ensure the value is written to storage before returning. Can be used with the `optimistic` parameter:
+Using the `setEnsured()` method ensures the value is written to storage before returning. Can be used with the `optimistic` parameter:
 
 ```dart
 final theme = PersistSignal(
@@ -125,4 +125,3 @@ if (success) {
 // Wait for write to complete before updating value
 await theme.setEnsured('dark', optimistic: false);
 ```
-

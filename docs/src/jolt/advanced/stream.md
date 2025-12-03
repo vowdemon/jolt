@@ -3,7 +3,7 @@
 
 # Stream
 
-Stream provides bidirectional conversion functionality between signals and streams in the reactive system. You can convert signals to streams for integration with other streaming APIs, or convert streams to signals for use in the reactive system. Suitable for integration with StreamBuilder, stream-based data processing, event streams, and similar scenarios.
+Stream provides bidirectional conversion functionality between signals and streams in the reactive system. You can convert signals to streams for integration with other stream-based APIs, or convert streams to signals for use in the reactive system. Suitable for integration with StreamBuilder, stream-based data processing, event streams, and similar scenarios.
 
 ## Signal to Stream
 
@@ -29,7 +29,7 @@ final count = Signal(0);
 
 final subscription = count.listen(
   (value) => print('Value: $value'),
-  immediately: true, // Execute once immediately
+  immediately: true, // Execute immediately once
 );
 
 count.value = 1; // Output: "Value: 1"
@@ -52,7 +52,7 @@ StreamBuilder<int>(
 
 ## Stream to Signal
 
-Use `AsyncSignal.fromStream` to convert a stream to a signal:
+Using `AsyncSignal.fromStream` converts streams to signals:
 
 ```dart
 Stream<int> getDataStream() {
@@ -85,4 +85,3 @@ Effect(() {
   }
 });
 ```
-

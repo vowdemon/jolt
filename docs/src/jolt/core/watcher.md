@@ -3,7 +3,7 @@
 
 # Watcher
 
-Watcher is similar to Effect, but only collects dependencies from the `sources` function and executes side effects when the `sources` value changes. Unlike Effect, Watcher can control execution through a `when` condition, and the callback function receives both the new and old values as parameters.
+Watcher is similar to Effect, but only collects dependencies in the sources function and executes side effects only when the sources' values change. Unlike Effect, Watcher can control execution through the `when` condition, and the callback function receives new and old values as parameters.
 
 ```dart
 import 'package:jolt/jolt.dart';
@@ -12,7 +12,7 @@ void main() {
   // Create a signal
   final count = Signal(0);
   
-  // Watch for signal changes
+  // Watch signal changes
   final watcher = Watcher(
     () => count.value,
     (newValue, oldValue) {
@@ -30,27 +30,9 @@ void main() {
 
 ## Creation
 
-### Immediate Execution
+### Non-Immediate Execution (Default)
 
-Use `immediately: true` to make Watcher execute immediately upon creation:
-
-```dart
-final count = Signal(0);
-
-Watcher(
-  () => count.value,
-  (newValue, oldValue) {
-    print('Value: $newValue');
-  },
-  immediately: true,
-);
-
-count.value = 10;
-```
-
-### Non-Immediate Execution
-
-By default, Watcher does not execute immediately; it only executes when the `sources` value changes:
+By default, Watcher does not execute immediately and only executes when the sources' values change:
 
 ```dart
 final count = Signal(0);
@@ -62,12 +44,59 @@ Watcher(
   },
 );
 
-count.value = 10;
+count.value = 10; // Output: "Changed from 0 to 10"
 ```
 
-## Execution Condition
+### Immediate Execution
 
-By default, Watcher uses `==` equality comparison to determine whether to execute the side effect. It's recommended to use Record or direct objects with equality comparison as sources. You can also pass a custom `when` condition:
+Using `immediately: true` makes Watcher execute once immediately upon creation:
+
+```dart
+final count = Signal(0);
+
+Watcher(
+  () => count.value,
+  (newValue, oldValue) {
+    print('Value: $newValue');
+  },
+  immediately: true,
+); // Immediately outputs: "Value: 0"
+
+count.value = 10; // Output: "Value: 10"
+```
+
+You can also use the `Watcher.immediately` factory method:
+
+```dart
+final watcher = Watcher.immediately(
+  () => count.value,
+  (newValue, oldValue) {
+    print('Value: $newValue');
+  },
+);
+```
+
+### Auto-Dispose After One Execution
+
+Using `Watcher.once` creates a Watcher that automatically disposes after one execution:
+
+```dart
+final count = Signal(0);
+
+final watcher = Watcher.once(
+  () => count.value,
+  (newValue, oldValue) {
+    print('First change: $newValue');
+  },
+);
+
+count.value = 1; // Output: "First change: 1", then auto-disposes
+count.value = 2; // No longer responds
+```
+
+## Execution Conditions
+
+By default, Watcher uses `==` for equality comparison to decide whether to execute side effects. It's recommended to use Records or direct objects with equality comparison as sources. You can also pass `when` to customize conditions:
 
 ```dart
 final count = Signal(0);
@@ -85,7 +114,7 @@ count.value = 0; // No output (value decreased, condition not met)
 count.value = 2; // Output: "Value increased: 0 -> 2"
 ```
 
-**Note**: For mutable value signals (such as collection signals), Watcher's `when` may not work correctly because the collection object reference may not have changed. It's recommended to extract specific values from mutable values for comparison, or use `when: () => true` to allow any change:
+**Note**: For mutable value signals (such as collection signals), Watcher's `when` may not work correctly because the collection object reference may not have changed. It's recommended to extract specific values from mutable values for comparison, or directly use `when: (_, _) => true` to allow any changes:
 
 ```dart
 final items = ListSignal([1, 2, 3]);
@@ -95,29 +124,202 @@ Watcher(
   (newValue, oldValue) {
     print('List changed (any)');
   },
-  when: (_, _) => true, // Accept any change
+  when: (_, _) => true, // Accept any changes
 );
 
 Watcher(
-  () => items.length, // () => items.value.length
+  () => items.length, // Extract specific value
   (newValue, oldValue) {
-    print('List changed (length)');
+    print('List length changed: $oldValue -> $newValue');
   },
-)
+);
 
-Watcher(
-  () => items.value,
-  (newValue, oldValue) {
-    print('List cannot be watched');
-  },
-)
-
-items.add(4);
+items.add(4); // Both Watchers trigger
 ```
 
-## Disposal
+## Multiple Source Values
 
-When a Watcher is no longer needed, you should call the `dispose()` method to destroy it and clean up dependencies:
+Watcher can watch multiple source values using Records or Lists as sources:
+
+```dart
+final count = Signal(0);
+final name = Signal('Alice');
+
+Watcher(
+  () => (count.value, name.value), // Using Record
+  (newValues, oldValues) {
+    print('Count: ${newValues.$1}, Name: ${newValues.$2}');
+  },
+);
+
+Watcher(
+  () => [count.value, name.value], // Using List
+  (newValues, oldValues) {
+    print('Count: ${newValues[0]}, Name: ${newValues[1]}');
+  },
+);
+```
+
+## Manual Execution
+
+You can use the `run()` method to manually trigger Watcher checks:
+
+```dart
+final count = Signal(0);
+
+final watcher = Watcher(
+  () => count.value,
+  (newValue, oldValue) {
+    print('Value: $newValue');
+  },
+);
+
+watcher.run(); // Manually trigger check
+```
+
+## Pause and Resume
+
+Watcher supports pause and resume functionality to temporarily stop responding to changes:
+
+### pause
+
+Pause Watcher, stop responding to changes:
+
+```dart
+final count = Signal(0);
+
+final watcher = Watcher(
+  () => count.value,
+  (newValue, oldValue) {
+    print('Value: $newValue');
+  },
+);
+
+count.value = 1; // Output: "Value: 1"
+
+watcher.pause(); // Pause
+
+count.value = 2; // No longer responds
+count.value = 3; // No longer responds
+
+watcher.resume(); // Resume
+
+count.value = 4; // Output: "Value: 4"
+```
+
+### resume
+
+Resume Watcher, start responding to changes again:
+
+```dart
+watcher.resume(); // Only resume, don't execute immediately
+
+watcher.resume(tryRun: true); // Resume and try to execute immediately
+```
+
+### isPaused
+
+Check if Watcher is paused:
+
+```dart
+print(watcher.isPaused); // false
+
+watcher.pause();
+print(watcher.isPaused); // true
+
+watcher.resume();
+print(watcher.isPaused); // false
+```
+
+## Ignore Updates
+
+Using `ignoreUpdates()` can temporarily ignore updates—during function execution, Watcher won't respond to changes:
+
+```dart
+final count = Signal(0);
+
+final watcher = Watcher(
+  () => count.value,
+  (newValue, oldValue) {
+    print('Value: $newValue');
+  },
+);
+
+count.value = 1; // Output: "Value: 1"
+
+watcher.ignoreUpdates(() {
+  count.value = 2; // Callback not triggered
+  count.value = 3; // Callback not triggered
+});
+
+count.value = 4; // Output: "Value: 4"
+```
+
+**Note**: `ignoreUpdates()` only prevents callback execution—source values still update normally. Changes during the ignore period don't update `oldValue`, but `newValue` reflects the latest state.
+
+## Cleanup Functions
+
+Watcher supports registering cleanup functions that execute before Watcher re-runs or when it's disposed. This is very useful for cleaning up subscriptions, canceling timers, and similar scenarios.
+
+### onEffectCleanup
+
+Use `onEffectCleanup` to register cleanup functions:
+
+```dart
+Watcher(
+  () => count.value,
+  (newValue, oldValue) {
+    final timer = Timer.periodic(Duration(seconds: 1), (_) {
+      print('Tick: $newValue');
+    });
+    
+    // Register cleanup function, executes when Watcher re-runs or is disposed
+    onEffectCleanup(() => timer.cancel());
+  },
+);
+```
+
+Cleanup functions execute in the following situations:
+- Before Watcher re-runs (when sources values change)
+- When Watcher is disposed (when `dispose()` is called)
+
+**Note**: `onEffectCleanup` must be called in a synchronous context. If you need to use cleanup functions in async operations (such as `Future`, `async/await`), you should directly use the `watcher.onCleanUp()` method:
+
+```dart
+final watcher = Watcher(
+  () => count.value,
+  (newValue, oldValue) async {
+    final subscription = await someAsyncOperation();
+    
+    // In async context, directly use watcher.onCleanUp()
+    watcher.onCleanUp(() => subscription.cancel());
+  },
+);
+```
+
+### onCleanUp
+
+Directly use the Watcher instance's `onCleanUp()` method to register cleanup functions:
+
+```dart
+final watcher = Watcher(
+  () => count.value,
+  (newValue, oldValue) {
+    // Side effect logic
+  },
+);
+
+watcher.onCleanUp(() {
+  // Cleanup logic
+});
+```
+
+## Lifecycle Management
+
+Watcher implements the `EffectNode` interface and has lifecycle management capabilities:
+
+- **`dispose()`**: Dispose Watcher, clean up all dependencies and cleanup functions
+- **`isDisposed`**: Check if Watcher is disposed
 
 ```dart
 final count = Signal(0);
@@ -131,50 +333,79 @@ final watcher = Watcher(
 
 count.value = 10;
 
-watcher.dispose();
+watcher.dispose(); // Dispose Watcher
 
-count.value = 20;
+count.value = 20; // No longer responds
 ```
 
-A disposed Watcher will no longer respond to dependency changes.
+Disposed Watchers no longer respond to dependency changes.
 
-## Cleanup Functions
+## Use Cases
 
-Watcher supports registering cleanup functions that are executed before the Watcher re-runs or when it is disposed. This is useful for cleaning up subscriptions, canceling timers, and similar scenarios.
+### Value Change Monitoring
 
-### onEffectCleanup
-
-Use `onEffectCleanup` to register a cleanup function:
+Watcher is perfect for monitoring specific value changes:
 
 ```dart
+final user = Signal<User?>(null);
+
 Watcher(
-  () => count.value,
-  (newValue, oldValue) {
-    final timer = Timer.periodic(Duration(seconds: 1), (_) {
-      print('Tick: $newValue');
-    });
-    
-    // Register cleanup function, executed when Watcher re-runs or is disposed
-    onEffectCleanup(() => timer.cancel());
+  () => user.value?.id,
+  (newId, oldId) {
+    if (newId != null && newId != oldId) {
+      loadUserProfile(newId);
+    }
   },
 );
 ```
 
-Cleanup functions are executed in the following cases:
-- Before the Watcher re-runs (when sources value changes)
-- When the Watcher is disposed (when `dispose()` is called)
+### Conditional Triggering
 
-**Note**: `onEffectCleanup` must be called in a synchronous context. If you need to use cleanup functions in asynchronous operations (such as `Future`, `async/await`), you should directly use the `watcher.onCleanUp()` method:
+Using the `when` condition enables more precise trigger logic:
 
 ```dart
-final watcher = Watcher(
-  () => count.value,
-  (newValue, oldValue) async {
-    final subscription = await someAsyncOperation();
-    
-    // In async context, use watcher.onCleanUp() directly
-    watcher.onCleanUp(() => subscription.cancel());
+final score = Signal(0);
+
+Watcher(
+  () => score.value,
+  (newScore, oldScore) {
+    if (newScore >= 100) {
+      showAchievement('Perfect score!');
+    }
+  },
+  when: (newScore, oldScore) => newScore >= 100 && oldScore < 100,
+);
+```
+
+### One-Time Monitoring
+
+Using `Watcher.once` enables one-time monitoring:
+
+```dart
+final isLoading = Signal(true);
+
+Watcher.once(
+  () => isLoading.value,
+  (isLoading, _) {
+    if (!isLoading) {
+      showWelcomeMessage();
+    }
   },
 );
 ```
 
+## Important Notes
+
+1. **Equality Comparison**: Watcher uses `==` for equality comparison—ensure values returned by sources have correct equality implementation.
+
+2. **Mutable Values**: For mutable values (such as collections), it's recommended to extract specific values for comparison or use `when: (_, _) => true`.
+
+3. **Paused State**: Paused Watchers clear dependencies and re-collect them when resumed.
+
+4. **Ignore Updates**: `ignoreUpdates()` only prevents callback execution and does not prevent value updates.
+
+## Related APIs
+
+- [Effect](./effect.md) - Learn about side effect usage
+- [EffectScope](./effect-scope.md) - Effect scope management
+- [Signal](./signal.md) - Learn about signal usage

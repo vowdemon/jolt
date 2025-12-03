@@ -65,9 +65,28 @@ scope.run(() {
 });
 ```
 
-## 用法
+### 分离作用域
 
-### 上下文执行
+使用 `detach: true` 可以创建一个与父作用域分离的作用域，它不会被父作用域自动清理：
+
+```dart
+final parentScope = EffectScope()
+  ..run(() {
+    // 创建分离的作用域
+    final detachedScope = EffectScope(detach: true)
+      ..run(() {
+        Effect(() {
+          print('独立的作用域');
+        });
+      });
+    
+    // 父作用域销毁时，分离的作用域不会被自动清理
+  });
+
+parentScope.dispose(); // detachedScope 仍然存在
+```
+
+## 上下文执行
 
 可以使用 `scope.run()` 方法在作用域上下文中运行函数，在该上下文中创建的副作用和观察器会被作用域管理：
 
@@ -142,9 +161,28 @@ final scope = EffectScope()
   });
 ```
 
-## 销毁
+### onCleanUp
 
-当 EffectScope 不再需要时，应该调用 `dispose()` 方法销毁它，作用域内的所有副作用和观察器会被自动清理：
+直接使用 EffectScope 实例的 `onCleanUp()` 方法注册清理函数：
+
+```dart
+final scope = EffectScope();
+
+scope.onCleanUp(() {
+  // 清理逻辑
+});
+
+scope.run(() {
+  // 作用域内的代码
+});
+```
+
+## 生命周期管理
+
+EffectScope 实现了 `EffectNode` 接口，具有生命周期管理能力：
+
+- **`dispose()`**：销毁作用域，自动清理所有相关的副作用和清理函数
+- **`isDisposed`**：检查作用域是否已销毁
 
 ```dart
 final scope = EffectScope()
@@ -161,7 +199,117 @@ final scope = EffectScope()
     );
   });
 
-scope.dispose();
+scope.dispose(); // 所有副作用和清理函数都会被自动清理
 ```
 
 销毁后的作用域内的副作用和观察器不会再响应依赖的变化。
+
+## 使用场景
+
+### 组件生命周期
+
+EffectScope 非常适合用于管理组件的生命周期：
+
+```dart
+class MyComponent {
+  late final EffectScope scope;
+  
+  void mount() {
+    scope = EffectScope()
+      ..run(() {
+        // 组件内的所有副作用
+        final state = Signal(0);
+        
+        Effect(() {
+          print('State: ${state.value}');
+        });
+        
+        // 注册组件卸载时的清理逻辑
+        onScopeDispose(() {
+          print('Component unmounted');
+        });
+      });
+  }
+  
+  void unmount() {
+    scope.dispose(); // 清理所有副作用
+  }
+}
+```
+
+### 批量管理副作用
+
+EffectScope 可以批量管理多个相关的副作用：
+
+```dart
+void setupUserProfile(User user) {
+  final scope = EffectScope()
+    ..run(() {
+      // 用户相关的所有副作用
+      final profile = Signal(user.profile);
+      final settings = Signal(user.settings);
+      
+      Effect(() {
+        syncProfile(profile.value);
+      });
+      
+      Effect(() {
+        syncSettings(settings.value);
+      });
+      
+      Watcher(
+        () => profile.value.name,
+        (newName, oldName) {
+          updateDisplayName(newName);
+        },
+      );
+    });
+  
+  return scope;
+}
+
+// 用户退出时，清理所有相关副作用
+void cleanupUserProfile(EffectScope scope) {
+  scope.dispose();
+}
+```
+
+### 嵌套作用域
+
+EffectScope 支持嵌套使用，子作用域会自动链接到父作用域：
+
+```dart
+final parentScope = EffectScope()
+  ..run(() {
+    Effect(() {
+      print('Parent effect');
+    });
+    
+    final childScope = EffectScope()
+      ..run(() {
+        Effect(() {
+          print('Child effect');
+        });
+      });
+    
+    // 销毁父作用域时，子作用域也会被自动清理
+  });
+
+parentScope.dispose(); // 所有作用域都被清理
+```
+
+## 注意事项
+
+1. **自动链接**：在作用域内创建的子作用域会自动链接到父作用域，父作用域销毁时会自动清理子作用域。
+
+2. **分离作用域**：使用 `detach: true` 创建的作用域不会被父作用域自动清理，需要手动管理。
+
+3. **清理顺序**：清理函数按照注册的顺序执行，先注册的先执行。
+
+4. **资源管理**：在作用域内创建的资源应该通过清理函数释放，避免内存泄漏。
+
+## 相关 API
+
+- [Effect](./effect.md) - 了解副作用的使用
+- [Watcher](./watcher.md) - 了解观察器的使用
+- [Signal](./signal.md) - 了解信号的使用

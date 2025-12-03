@@ -1,9 +1,9 @@
 ---
 ---
 
-# Convert Signal
+# Convert Computed
 
-Convert signals are used in the reactive system for bidirectional conversion between signals of different types. Essentially, it is a WritableComputed used for bidirectional value conversion or type conversion. It provides a writable computed value that can encode and decode data transformations, suitable for scenarios like form inputs, API data conversion, etc., where conversions between different data representations are needed.
+Convert computed values are used in the reactive system for bidirectional conversion between different types of signals. It's essentially a WritableComputed for bidirectional value conversion or type conversion. It provides a writable computed value that can encode and decode data transformations, suitable for form inputs, API data conversion, and similar scenarios where conversion between different data representations is needed.
 
 ```dart
 import 'package:jolt/jolt.dart';
@@ -31,7 +31,7 @@ void main() {
 
 ## Creation
 
-Use the `ConvertComputed` constructor to create a converted computed value:
+Create a convert computed value using the `ConvertComputed` constructor:
 
 ```dart
 final source = Signal(0);
@@ -44,9 +44,9 @@ final converted = ConvertComputed(
 ```
 
 Parameter description:
-- `source`: The source signal
-- `decode`: Function that converts from source type to target type
-- `encode`: Function that converts from target type to source type
+- `source`: Source signal
+- `decode`: Function to convert from source type to target type
+- `encode`: Function to convert from target type to source type
 
 ## Basic Usage
 
@@ -105,4 +105,3 @@ textCount.value = "42"; // count automatically becomes 42
 // Write through source signal
 count.value = 100; // textCount automatically becomes "100"
 ```
-

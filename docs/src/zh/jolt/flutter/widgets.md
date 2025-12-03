@@ -3,19 +3,15 @@
 
 # Flutter Widgets
 
-在 Flutter 中构建响应式 UI 时，Jolt 提供了三个核心 Widget：`JoltBuilder`、`JoltSelector` 和 `JoltProvider`。这些 Widget 基于 Jolt 的响应式系统，通过在 Flutter 中创建 **Effect** 作用域来追踪依赖变化。
+在 Flutter 中构建响应式 UI 时，Jolt 提供了三个核心 Widget：`JoltBuilder`、`JoltSelector` 和 `JoltProvider`。这些 Widget 都基于 `FlutterEffect` 实现，同一帧内只会触发一次重建，自动追踪依赖变化，并在依赖改变时重建 Widget，让 UI 与数据状态保持同步。
 
-当你访问 `builder` 函数中的信号（Signal）、计算值（Computed）或响应式集合时，这些 Widget 会**自动建立依赖关系**。当被追踪的依赖发生改变时，内部的 Effect 会被触发，并通知 Flutter 框架进行 Widget 重建，从而让 UI 与数据状态保持同步。
+当你访问 `builder` 函数中的信号（Signal）、计算值（Computed）或响应式集合时，这些 Widget 会**自动建立依赖关系**。当被追踪的依赖发生改变时，Widget 会自动重建，从而让 UI 与数据状态保持同步。
 
 这种设计让开发者无需手动管理订阅和取消订阅，也无需关心何时需要重建 Widget。你只需要在 `builder` 中自然地访问响应式数据，剩下的工作都会自动完成。每个 Widget 都有其特定的使用场景，让我们逐一了解它们。
 
 ## JoltBuilder
 
 `JoltBuilder` 是最通用的响应式 Widget，它会自动追踪 `builder` 函数中访问的所有信号。当任何一个被追踪的信号发生变化时，Widget 就会自动重建。
-
-### 工作原理
-
-`JoltBuilder` 内部创建了一个 `EffectScope` 和 `Effect`，在 `builder` 函数执行时，所有被访问的信号都会被自动追踪。当这些信号的值发生改变时，Effect 会触发重建请求，确保 UI 始终反映最新的数据状态。多个信号的批量更新会被自动合并，保证每个帧只进行一次重建，从而优化性能。
 
 ### 基本用法
 
@@ -60,11 +56,7 @@ JoltBuilder(
 
 ## JoltSelector
 
-`JoltSelector` 提供更精细的重建控制，它使用一个 `selector` 函数来选择要追踪的值。只有当 `selector` 返回的值发生变化时，Widget 才会重建。这对于复杂对象或需要过滤数据的场景特别有用，可以避免不必要的重建，提升性能。
-
-### 工作原理
-
-`JoltSelector` 在内部同样使用 `EffectScope` 和 `Effect` 来追踪依赖。不同的是，它会在 `selector` 函数中执行依赖追踪，然后将 `selector` 的返回值与上一次的值进行比较。只有当返回值发生变化时（使用相等性比较），才会触发 Widget 重建。这样即使信号的其他属性改变了，只要选择的值没变，Widget 就不会重建。
+`JoltSelector` 提供更精细的重建控制，它使用一个 `selector` 函数来选择要追踪的值。只有当 `selector` 返回的值发生变化时（通过 `==` 比较），Widget 才会重建。这对于复杂对象或需要过滤数据的场景特别有用，可以避免不必要的重建，提升性能。
 
 ### 基本用法
 
@@ -93,15 +85,31 @@ JoltSelector(
 );
 ```
 
+### 使用前一个值
+
+`selector` 函数接收前一个选择的值（首次为 `null`），可以用于比较或优化：
+
+```dart
+JoltSelector(
+  selector: (prev) {
+    final current = computeValue();
+    // 如果值相同，返回同一个实例以避免重建
+    if (prev != null && prev == current) {
+      return prev;
+    }
+    return current;
+  },
+  builder: (context, value) => Text('$value'),
+);
+```
+
 ## JoltProvider
 
 `JoltProvider` 用于在 Widget 树中提供和管理响应式资源，支持完整的生命周期管理。它结合了依赖注入模式和响应式编程，让你可以在组件树中共享状态，同时自动处理资源的创建和销毁。
 
-### 工作原理
+### 使用 create
 
-`JoltProvider` 内部使用 `JoltBuilder` 来实现响应式更新，这意味着在 `builder` 中访问的信号会被自动追踪。同时，它还通过 `InheritedWidget` 将资源提供给整个子树，让后代 Widget 可以通过 `JoltProvider.of<T>(context)` 访问资源。如果资源实现了 `JoltState` 接口，`JoltProvider` 还会自动调用 `onMount` 和 `onUnmount` 生命周期回调，方便进行资源初始化和清理。
-
-### 基本用法
+使用 `create` 构造函数会自动管理资源的生命周期，当 Widget 卸载时会自动调用 `onUnmount` 和 `dispose()`：
 
 ```dart
 class MyStore extends JoltState {
@@ -120,6 +128,19 @@ class MyStore extends JoltState {
 
 JoltProvider<MyStore>(
   create: (context) => MyStore(),
+  builder: (context, store) => Text('${store.counter.value}'),
+);
+```
+
+### 使用 .value
+
+使用 `.value` 构造函数时，资源的生命周期需要手动管理，Provider 不会调用 `onMount`、`onUnmount` 或 `dispose()`：
+
+```dart
+final store = MyStore();
+
+JoltProvider<MyStore>.value(
+  value: store,
   builder: (context, store) => Text('${store.counter.value}'),
 );
 ```
@@ -151,3 +172,43 @@ if (store != null) {
 }
 ```
 
+## JoltState
+
+`JoltState` 是一个抽象类，用于需要生命周期管理的资源。当资源在 `JoltProvider` 中使用 `create` 构造函数时，如果资源实现了 `JoltState`，会自动调用生命周期回调。
+
+### 生命周期
+
+- **onMount**：在资源创建后、Widget 挂载后调用，用于初始化资源（如启动定时器、订阅流等）
+- **onUnmount**：在 Widget 卸载时或资源被替换时调用，用于清理资源（如取消定时器、取消订阅等）
+
+### 示例
+
+```dart
+class MyStore extends JoltState {
+  final counter = Signal(0);
+  Timer? _timer;
+
+  @override
+  void onMount(BuildContext context) {
+    super.onMount(context);
+    _timer = Timer.periodic(Duration(seconds: 1), (_) {
+      counter.value++;
+    });
+  }
+
+  @override
+  void onUnmount(BuildContext context) {
+    super.onUnmount(context);
+    _timer?.cancel();
+    _timer = null;
+  }
+}
+```
+
+如果资源不需要生命周期管理，可以不继承 `JoltState`：
+
+```dart
+class SimpleStore {
+  final counter = Signal(0);
+}
+```

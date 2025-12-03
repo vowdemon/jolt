@@ -205,7 +205,7 @@ Widget build(BuildContext context) {
 
 ## 相关 API
 
-- [Signal](../../core/signal.md) - 了解基础信号的使用
-- [Computed](../../core/computed.md) - 了解计算属性的使用
-- [Effect](../../core/effect.md) - 了解副作用的使用
+- [Signal](../core/signal.md) - 了解基础信号的使用
+- [Computed](../core/computed.md) - 了解计算属性的使用
+- [Effect](../core/effect.md) - 了解副作用的使用
 - [SetupWidget](./setup-widget.md) - 了解 SetupWidget 和 Flutter 资源 Hooks

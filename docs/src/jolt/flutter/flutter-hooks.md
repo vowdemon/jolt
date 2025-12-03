@@ -205,8 +205,8 @@ Widget build(BuildContext context) {
 
 ## Related APIs
 
-- [Signal](../../core/signal.md) - Learn about basic signal usage
-- [Computed](../../core/computed.md) - Learn about computed property usage
-- [Effect](../../core/effect.md) - Learn about side effect usage
+- [Signal](../core/signal.md) - Learn about basic signal usage
+- [Computed](../core/computed.md) - Learn about computed property usage
+- [Effect](../core/effect.md) - Learn about side effect usage
 - [SetupWidget](./setup-widget.md) - Learn about SetupWidget and Flutter resource Hooks
 

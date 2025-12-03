@@ -1,3 +1,10 @@
+## 2.0.0-beta.6
+
+ - **PERF**: improve base interface. ([58b0e706](https://github.com/vowdemon/jolt/commit/58b0e7060df2c9c9f52ab5546a4e40777c62f39b))
+ - **FIX**: add test coverage. ([b3e7bca7](https://github.com/vowdemon/jolt/commit/b3e7bca7566b9464f7d6ac31f76a278d520c39d7))
+ - **FIX**(jolt_flutter): fix useSignal.async function signature and implementation. ([5bfdb1e0](https://github.com/vowdemon/jolt/commit/5bfdb1e0bf0e5168c16b90d95e33a7995fef5e31))
+ - **FEAT**: add FlutterEffect for frame-end scheduling. ([9caccf58](https://github.com/vowdemon/jolt/commit/9caccf5832d177b7cb6725a6cc69f2ecfafbfd6b))
+
 ## 2.0.0-beta.5
 
  - **FIX**(jolt_flutter): prevent duplicate scheduled rebuilds. ([59d535df](https://github.com/vowdemon/jolt/commit/59d535df27db8f1c860fd48db6c7a558a8cde893))

@@ -3,6 +3,58 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-12-04
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`jolt` - `v2.0.0-beta.5`](#jolt---v200-beta5)
+ - [`jolt_flutter` - `v2.0.0-beta.6`](#jolt_flutter---v200-beta6)
+ - [`jolt_hooks` - `v2.0.0-beta.4`](#jolt_hooks---v200-beta4)
+ - [`jolt_lint` - `v2.0.0-beta.3`](#jolt_lint---v200-beta3)
+ - [`jolt_surge` - `v2.0.0-beta.4`](#jolt_surge---v200-beta4)
+ - [`jolt_flutter_hooks` - `v1.0.0-beta.4`](#jolt_flutter_hooks---v100-beta4)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `jolt_surge` - `v2.0.0-beta.4`
+ - `jolt_flutter_hooks` - `v1.0.0-beta.4`
+
+---
+
+#### `jolt` - `v2.0.0-beta.5`
+
+ - **PERF**: improve base interface. ([58b0e706](https://github.com/vowdemon/jolt/commit/58b0e7060df2c9c9f52ab5546a4e40777c62f39b))
+ - **FIX**: add test coverage. ([b3e7bca7](https://github.com/vowdemon/jolt/commit/b3e7bca7566b9464f7d6ac31f76a278d520c39d7))
+ - **FIX**: sync upstream's trigger. ([7ce8d459](https://github.com/vowdemon/jolt/commit/7ce8d45935e3f202d0ca0823654472abcc3f1f97))
+ - **FEAT**: add FlutterEffect for frame-end scheduling. ([9caccf58](https://github.com/vowdemon/jolt/commit/9caccf5832d177b7cb6725a6cc69f2ecfafbfd6b))
+
+#### `jolt_flutter` - `v2.0.0-beta.6`
+
+ - **PERF**: improve base interface. ([58b0e706](https://github.com/vowdemon/jolt/commit/58b0e7060df2c9c9f52ab5546a4e40777c62f39b))
+ - **FIX**: add test coverage. ([b3e7bca7](https://github.com/vowdemon/jolt/commit/b3e7bca7566b9464f7d6ac31f76a278d520c39d7))
+ - **FIX**(jolt_flutter): fix useSignal.async function signature and implementation. ([5bfdb1e0](https://github.com/vowdemon/jolt/commit/5bfdb1e0bf0e5168c16b90d95e33a7995fef5e31))
+ - **FEAT**: add FlutterEffect for frame-end scheduling. ([9caccf58](https://github.com/vowdemon/jolt/commit/9caccf5832d177b7cb6725a6cc69f2ecfafbfd6b))
+
+#### `jolt_hooks` - `v2.0.0-beta.4`
+
+ - **FEAT**: add FlutterEffect for frame-end scheduling. ([9caccf58](https://github.com/vowdemon/jolt/commit/9caccf5832d177b7cb6725a6cc69f2ecfafbfd6b))
+
+#### `jolt_lint` - `v2.0.0-beta.3`
+
+ - **PERF**: improve base interface. ([58b0e706](https://github.com/vowdemon/jolt/commit/58b0e7060df2c9c9f52ab5546a4e40777c62f39b))
+ - **FIX**(jolt_lint): fix URI reference path. ([cdc2b6e8](https://github.com/vowdemon/jolt/commit/cdc2b6e864414ea29ab111a4fe9b4f840a5cb63b))
+
+
 ## 2025-12-02
 
 ### Changes

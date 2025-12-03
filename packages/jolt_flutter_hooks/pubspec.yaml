@@ -11,7 +11,7 @@ topics:
   - hook
   - setup
 
-version: 1.0.0-beta.3
+version: 1.0.0-beta.4
 
 resolution: workspace
 
@@ -22,7 +22,7 @@ dependencies:
   flutter:
     sdk: flutter
 
-  jolt_flutter: ^2.0.0-beta.5
+  jolt_flutter: ^2.0.0-beta.6
 
 dev_dependencies:
   flutter_test:

@@ -1,3 +1,10 @@
+## 2.0.0-beta.5
+
+ - **PERF**: improve base interface. ([58b0e706](https://github.com/vowdemon/jolt/commit/58b0e7060df2c9c9f52ab5546a4e40777c62f39b))
+ - **FIX**: add test coverage. ([b3e7bca7](https://github.com/vowdemon/jolt/commit/b3e7bca7566b9464f7d6ac31f76a278d520c39d7))
+ - **FIX**: sync upstream's trigger. ([7ce8d459](https://github.com/vowdemon/jolt/commit/7ce8d45935e3f202d0ca0823654472abcc3f1f97))
+ - **FEAT**: add FlutterEffect for frame-end scheduling. ([9caccf58](https://github.com/vowdemon/jolt/commit/9caccf5832d177b7cb6725a6cc69f2ecfafbfd6b))
+
 ## 2.0.0-beta.4
 
  - **FEAT**(jolt): add ReadonlySignal factory constructor documentation and implementation. ([8b1be50e](https://github.com/vowdemon/jolt/commit/8b1be50ea00432b8a463a1a32a8df1972882f669))

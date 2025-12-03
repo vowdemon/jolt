@@ -1,3 +1,7 @@
+## 1.0.0-beta.4
+
+ - Update a dependency to the latest release.
+
 ## 1.0.0-beta.3
 
  - **REFACTOR**(hooks): migrate to new setup hook API. ([b857d225](https://github.com/vowdemon/jolt/commit/b857d2255432893e4e3477b4171b73d29896cfce))

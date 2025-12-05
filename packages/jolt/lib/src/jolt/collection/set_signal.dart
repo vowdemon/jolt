@@ -18,43 +18,11 @@ mixin SetSignalMixin<E>
   @override
   bool contains(Object? element) => value.contains(element);
 
-  /// Adds all elements from the given iterable to this set.
-  ///
-  /// Elements already present in the set are not added again.
-  /// Notifies subscribers if any elements were added.
-  @override
-  void addAll(Iterable<E> other) {
-    value.addAll(other);
-    notify();
-  }
-
   /// Returns a view of this set as having [R] elements.
   ///
   /// This is a non-mutating operation that returns a new view of the set.
   @override
   Set<R> cast<R>() => value.cast<R>();
-
-  /// Removes all elements from the set.
-  ///
-  /// Notifies subscribers of the change.
-  @override
-  void clear() {
-    value.clear();
-    notify();
-  }
-
-  /// Adds the given element to this set.
-  ///
-  /// Returns true if the element was added, false if it was already present.
-  /// Only notifies subscribers if the element was actually added.
-  @override
-  bool add(E element) {
-    final result = value.add(element);
-    if (result) {
-      notify();
-    }
-    return result;
-  }
 
   /// Applies the given function to each element in the set.
   ///
@@ -83,15 +51,6 @@ mixin SetSignalMixin<E>
       notify();
     }
     return result;
-  }
-
-  /// Removes all elements that satisfy the given test.
-  ///
-  /// Notifies subscribers after removal.
-  @override
-  void removeWhere(bool Function(E element) test) {
-    value.removeWhere(test);
-    notify();
   }
 
   /// The number of elements in this set.
@@ -209,33 +168,6 @@ mixin SetSignalMixin<E>
   @override
   Iterable<T> map<T>(T Function(E element) f) => value.map(f);
 
-  /// Removes all elements in [other] from this set.
-  ///
-  /// Notifies subscribers after removal.
-  @override
-  void removeAll(Iterable<Object?> other) {
-    value.removeAll(other);
-    notify();
-  }
-
-  /// Removes all elements not in [other] from this set.
-  ///
-  /// Notifies subscribers after removal.
-  @override
-  void retainAll(Iterable<Object?> other) {
-    value.retainAll(other);
-    notify();
-  }
-
-  /// Removes all elements that do not satisfy the given test.
-  ///
-  /// Notifies subscribers after removal.
-  @override
-  void retainWhere(bool Function(E element) test) {
-    value.retainWhere(test);
-    notify();
-  }
-
   /// Returns a new set containing the same elements as this set.
   ///
   /// This is a non-mutating operation that creates a new set.
@@ -296,6 +228,80 @@ mixin SetSignalMixin<E>
   /// This is a non-mutating operation that returns an iterable.
   @override
   Iterable<E> where(bool Function(E element) test) => value.where(test);
+
+  /// Adds the given element to this set.
+  ///
+  /// Returns true if the element was added, false if it was already present.
+  /// Only notifies subscribers if the element was actually added.
+  @override
+  bool add(E element) {
+    final result = peek.add(element);
+    if (result) {
+      notify();
+    }
+    return result;
+  }
+
+  /// Adds all elements from the given iterable to this set.
+  ///
+  /// Elements already present in the set are not added again.
+  /// Notifies subscribers if any elements were added.
+  @override
+  void addAll(Iterable<E> other) {
+    _checkLength(() => peek.addAll(other));
+  }
+
+  /// Removes all elements from the set.
+  ///
+  /// Notifies subscribers of the change.
+  @override
+  void clear() {
+    _checkLength(() => peek.clear());
+  }
+
+  /// Removes all elements that satisfy the given test.
+  ///
+  /// Notifies subscribers after removal.
+  @override
+  void removeWhere(bool Function(E element) test) {
+    _checkLength(() => peek.removeWhere(test));
+  }
+
+  /// Removes all elements in [other] from this set.
+  ///
+  /// Notifies subscribers after removal.
+  @override
+  void removeAll(Iterable<Object?> other) {
+    _checkLength(() => peek.removeAll(other));
+  }
+
+  /// Removes all elements that do not satisfy the given test.
+  ///
+  /// Notifies subscribers after removal.
+  @override
+  void retainWhere(bool Function(E element) test) {
+    _checkLength(() => peek.retainWhere(test));
+  }
+
+  /// Removes all elements not in [other] from this set.
+  ///
+  /// Notifies subscribers after removal.
+  @override
+  void retainAll(Iterable<Object?> other) {
+    _checkLength(() => peek.retainAll(other));
+  }
+
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
+  T _checkLength<T>(T Function() fn) {
+    final originLength = peek.length;
+    final result = fn();
+    if (originLength != peek.length) {
+      notify();
+    }
+    return result;
+  }
 }
 
 /// Implementation of [SetSignal] that automatically notifies subscribers when modified.

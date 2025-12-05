@@ -138,24 +138,6 @@ mixin ListSignalMixin<E>
   bool get isNotEmpty => value.isNotEmpty;
 
   @override
-  set first(E val) {
-    peek.first = val;
-    notify();
-  }
-
-  @override
-  set last(E val) {
-    peek.last = val;
-    notify();
-  }
-
-  @override
-  set length(int value) {
-    peek.length = value;
-    notify();
-  }
-
-  @override
   List<E> operator +(List<E> other) => value + other;
 
   @override
@@ -163,8 +145,11 @@ mixin ListSignalMixin<E>
 
   @override
   void operator []=(int index, E value) {
+    final oldValue = peek[index];
     peek[index] = value;
-    notify();
+    if (oldValue != value) {
+      notify();
+    }
   }
 
   @override
@@ -181,14 +166,26 @@ mixin ListSignalMixin<E>
 
   @override
   void clear() {
-    peek.clear();
-    notify();
+    if (peek.isNotEmpty) {
+      peek.clear();
+      notify();
+    }
   }
 
   @override
-  void fillRange(int start, int end, [E? fillValue]) {
-    peek.fillRange(start, end, fillValue);
-    notify();
+  void fillRange(int start, int end, [E? fill]) {
+    bool needNotify = false;
+    E value = fill as E;
+    RangeError.checkValidRange(start, end, peek.length);
+    for (int i = start; i < end; i++) {
+      if (!needNotify && peek[i] != value) {
+        needNotify = true;
+      }
+      peek[i] = value;
+    }
+    if (needNotify) {
+      notify();
+    }
   }
 
   @override
@@ -205,71 +202,162 @@ mixin ListSignalMixin<E>
 
   @override
   bool remove(Object? value) {
-    final result = peek.remove(value);
-    notify();
-    return result;
+    return _checkLength(() => peek.remove(value));
   }
 
   @override
   E removeAt(int index) {
-    final result = peek.removeAt(index);
-    notify();
-    return result;
+    return _checkLength(() => peek.removeAt(index));
   }
 
   @override
   E removeLast() {
-    final result = peek.removeLast();
-    notify();
-    return result;
+    return _checkLength(() => peek.removeLast());
   }
 
   @override
   void removeRange(int start, int end) {
-    peek.removeRange(start, end);
-    notify();
+    _checkLength(() => peek.removeRange(start, end));
   }
 
   @override
   void removeWhere(bool Function(E element) test) {
-    peek.removeWhere(test);
-    notify();
+    _checkLength(() => peek.removeWhere(test));
   }
 
   @override
   void replaceRange(int start, int end, Iterable<E> replacements) {
+    final oldLength = end - start;
+
+    final iter = replacements.iterator;
+
+    bool needNotify = false;
+    int i = 0;
+
+    while (i < oldLength && iter.moveNext()) {
+      if (peek[start + i] != iter.current) {
+        needNotify = true;
+        break;
+      }
+      i++;
+    }
+
+    if (!needNotify && i < oldLength) {
+      needNotify = true;
+    }
+
+    if (!needNotify && iter.moveNext()) {
+      needNotify = true;
+    }
+
     peek.replaceRange(start, end, replacements);
-    notify();
+
+    if (needNotify) notify();
   }
 
   @override
   void retainWhere(bool Function(E element) test) {
-    peek.retainWhere(test);
-    notify();
+    _checkLength(() => peek.retainWhere(test));
   }
 
   @override
   void setAll(int index, Iterable<E> iterable) {
+    final iter = iterable.iterator;
+    bool needNotify = false;
+
+    int i = index;
+
+    // First pass: compare
+    while (iter.moveNext()) {
+      if (!needNotify && peek[i] != iter.current) {
+        needNotify = true;
+        // DO NOT break, we must continue consuming iterator for alignment
+      }
+      i++;
+    }
+
+    // Second pass: perform mutation
     peek.setAll(index, iterable);
-    notify();
+
+    if (needNotify) notify();
   }
 
   @override
   void setRange(int start, int end, Iterable<E> iterable, [int skipCount = 0]) {
+    final iter = iterable.iterator;
+    bool changed = false;
+
+    for (int i = 0; i < skipCount; i++) {
+      if (!iter.moveNext()) {
+        break;
+      }
+    }
+
+    for (int i = start; i < end; i++) {
+      if (!iter.moveNext()) break;
+
+      if (!changed && peek[i] != iter.current) {
+        changed = true;
+      }
+    }
+
     peek.setRange(start, end, iterable, skipCount);
-    notify();
+
+    if (changed) notify();
   }
 
   @override
   void shuffle([Random? random]) {
-    peek.shuffle(random);
-    notify();
+    if (peek.isNotEmpty) {
+      peek.shuffle(random);
+      notify();
+    }
   }
 
   @override
   void sort([int Function(E a, E b)? compare]) {
-    peek.sort(compare);
-    notify();
+    if (peek.isNotEmpty) {
+      peek.sort(compare);
+      notify();
+    }
+  }
+
+  @override
+  set first(E val) {
+    final oldValue = peek.first;
+    if (oldValue != val) {
+      peek.first = val;
+      notify();
+    }
+  }
+
+  @override
+  set last(E val) {
+    final oldValue = peek.last;
+    if (oldValue != val) {
+      peek.last = val;
+      notify();
+    }
+  }
+
+  @override
+  set length(int value) {
+    if (peek.length != value) {
+      peek.length = value;
+      notify();
+    }
+  }
+
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
+  T _checkLength<T>(T Function() fn) {
+    final originLength = peek.length;
+    final result = fn();
+    if (originLength != peek.length) {
+      notify();
+    }
+    return result;
   }
 }
 

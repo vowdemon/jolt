@@ -18,50 +18,11 @@ mixin MapSignalMixin<K, V>
   @override
   V? operator [](Object? key) => value[key];
 
-  /// Sets the value associated with the given key.
-  ///
-  /// Updates the map with the key-value pair and notifies all subscribers.
-  /// This operation triggers reactive updates.
-  @override
-  void operator []=(K key, V value) {
-    this.value[key] = value;
-    notify();
-  }
-
-  /// Adds all key-value pairs from the given map to this map.
-  ///
-  /// All entries from [other] are added to this map, overwriting any
-  /// existing entries with the same keys. Notifies subscribers after update.
-  @override
-  void addAll(Map<K, V> other) {
-    value.addAll(other);
-    notify();
-  }
-
-  /// Adds all entries from the given iterable to this map.
-  ///
-  /// Each entry in [newEntries] is added to this map, overwriting any
-  /// existing entries with the same keys. Notifies subscribers after update.
-  @override
-  void addEntries(Iterable<MapEntry<K, V>> newEntries) {
-    value.addEntries(newEntries);
-    notify();
-  }
-
   /// Returns a view of this map as having [RK] keys and [RV] instances.
   ///
   /// This is a non-mutating operation that returns a new view of the map.
   @override
   Map<RK, RV> cast<RK, RV>() => value.cast<RK, RV>();
-
-  /// Removes all entries from the map.
-  ///
-  /// Clears all key-value pairs and notifies subscribers of the change.
-  @override
-  void clear() {
-    value.clear();
-    notify();
-  }
 
   /// Returns true if this map contains the given key.
   ///
@@ -97,65 +58,9 @@ mixin MapSignalMixin<K, V>
   @override
   Iterable<K> get keys => value.keys;
 
-  /// Look up the value of [key], or add a new entry if it isn't there.
-  ///
-  /// If [key] is present, returns its value. Otherwise, calls [ifAbsent]
-  /// to get a new value, adds the key-value pair, and returns the new value.
-  /// Notifies subscribers if a new entry is added.
-  @override
-  V putIfAbsent(K key, V Function() ifAbsent) {
-    final v = value.putIfAbsent(key, ifAbsent);
-    notify();
-    return v;
-  }
-
-  /// Removes the entry for the given key and returns its value.
-  ///
-  /// Returns the value associated with [key], or null if [key] is not present.
-  /// Notifies subscribers if an entry was removed.
-  @override
-  V? remove(Object? key) {
-    final v = value.remove(key);
-    notify();
-    return v;
-  }
-
   /// The number of key-value pairs in the map.
   @override
   int get length => value.length;
-
-  /// Updates the value for the given key.
-  ///
-  /// If [key] is present, updates its value by calling [update] with the
-  /// current value. If [key] is not present and [ifAbsent] is provided,
-  /// adds the key with the value returned by [ifAbsent].
-  /// Notifies subscribers after the update.
-  @override
-  V update(K key, V Function(V value) update, {V Function()? ifAbsent}) {
-    final v = value.update(key, update, ifAbsent: ifAbsent);
-    notify();
-    return v;
-  }
-
-  /// Updates all values in the map.
-  ///
-  /// Calls [update] for each key-value pair and updates the value with
-  /// the returned result. Notifies subscribers after all updates.
-  @override
-  void updateAll(V Function(K key, V value) update) {
-    value.updateAll(update);
-    notify();
-  }
-
-  /// Removes all entries that satisfy the given test.
-  ///
-  /// Calls [test] for each key-value pair and removes entries where
-  /// [test] returns true. Notifies subscribers after removal.
-  @override
-  void removeWhere(bool Function(K key, V value) test) {
-    value.removeWhere(test);
-    notify();
-  }
 
   /// The values of this map.
   ///
@@ -175,6 +80,163 @@ mixin MapSignalMixin<K, V>
   /// Returns an iterable of all key-value pairs as MapEntry objects.
   @override
   Iterable<MapEntry<K, V>> get entries => value.entries;
+
+  /// Sets the value associated with the given key.
+  ///
+  /// Updates the map with the key-value pair and notifies all subscribers.
+  /// This operation triggers reactive updates.
+  @override
+  void operator []=(K key, V value) {
+    if (peek.containsKey(key) && peek[key] == value) {
+      peek[key] = value;
+    } else {
+      peek[key] = value;
+      notify();
+    }
+  }
+
+  /// Adds all key-value pairs from the given map to this map.
+  ///
+  /// All entries from [other] are added to this map, overwriting any
+  /// existing entries with the same keys. Notifies subscribers after update.
+  @override
+  void addAll(Map<K, V> other) {
+    bool needNotify = false;
+    other.forEach((key, value) {
+      if (!needNotify && (!peek.containsKey(key) || peek[key] != value)) {
+        needNotify = true;
+      }
+      peek[key] = value;
+    });
+
+    if (needNotify) {
+      notify();
+    }
+  }
+
+  /// Adds all entries from the given iterable to this map.
+  ///
+  /// Each entry in [newEntries] is added to this map, overwriting any
+  /// existing entries with the same keys. Notifies subscribers after update.
+  @override
+  void addEntries(Iterable<MapEntry<K, V>> newEntries) {
+    bool needNotify = false;
+    for (var entry in newEntries) {
+      if (!needNotify &&
+          (!peek.containsKey(entry.key) || peek[entry.key] != entry.value)) {
+        needNotify = true;
+      }
+      peek[entry.key] = entry.value;
+    }
+
+    if (needNotify) {
+      notify();
+    }
+  }
+
+  /// Removes all entries from the map.
+  ///
+  /// Clears all key-value pairs and notifies subscribers of the change.
+  @override
+  void clear() {
+    if (peek.isEmpty) {
+      return;
+    } else {
+      peek.clear();
+      notify();
+    }
+  }
+
+  /// Look up the value of [key], or add a new entry if it isn't there.
+  ///
+  /// If [key] is present, returns its value. Otherwise, calls [ifAbsent]
+  /// to get a new value, adds the key-value pair, and returns the new value.
+  /// Notifies subscribers if a new entry is added.
+  @override
+  V putIfAbsent(K key, V Function() ifAbsent) {
+    if (peek.containsKey(key)) {
+      return peek[key] as V;
+    }
+    final result = peek[key] = ifAbsent();
+    notify();
+    return result;
+  }
+
+  /// Removes the entry for the given key and returns its value.
+  ///
+  /// Returns the value associated with [key], or null if [key] is not present.
+  /// Notifies subscribers if an entry was removed.
+  @override
+  V? remove(Object? key) {
+    if (peek.containsKey(key)) {
+      final v = peek.remove(key);
+      notify();
+      return v;
+    } else {
+      return peek.remove(key);
+    }
+  }
+
+  /// Updates the value for the given key.
+  ///
+  /// If [key] is present, updates its value by calling [update] with the
+  /// current value. If [key] is not present and [ifAbsent] is provided,
+  /// adds the key with the value returned by [ifAbsent].
+  /// Notifies subscribers after the update.
+  @override
+  V update(K key, V Function(V value) update, {V Function()? ifAbsent}) {
+    if (peek.containsKey(key)) {
+      final oldValue = peek[key];
+      final newValue = peek[key] = update(oldValue as V);
+      if (oldValue != newValue) {
+        notify();
+      }
+      return newValue;
+    }
+    if (ifAbsent != null) {
+      final result = peek[key] = ifAbsent();
+      notify();
+      return result;
+    }
+    throw ArgumentError.value(key, "key", "Key not in map.");
+  }
+
+  /// Updates all values in the map.
+  ///
+  /// Calls [update] for each key-value pair and updates the value with
+  /// the returned result. Notifies subscribers after all updates.
+  @override
+  void updateAll(V Function(K key, V value) update) {
+    bool needNotify = false;
+    for (var key in peek.keys) {
+      final oldValue = peek[key];
+      final newValue = peek[key] = update(key, oldValue as V);
+      if (!needNotify && oldValue != newValue) {
+        needNotify = true;
+      }
+    }
+    if (needNotify) {
+      notify();
+    }
+  }
+
+  /// Removes all entries that satisfy the given test.
+  ///
+  /// Calls [test] for each key-value pair and removes entries where
+  /// [test] returns true. Notifies subscribers after removal.
+  @override
+  void removeWhere(bool Function(K key, V value) test) {
+    var keysToRemove = <K>[];
+    for (var key in keys) {
+      if (test(key, peek[key] as V)) keysToRemove.add(key);
+    }
+    for (var key in keysToRemove) {
+      peek.remove(key);
+    }
+    if (keysToRemove.isNotEmpty) {
+      notify();
+    }
+  }
 }
 
 /// Implementation of [MapSignal] that automatically notifies subscribers when modified.

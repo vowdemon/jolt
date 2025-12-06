@@ -25,7 +25,7 @@ import "package:meta/meta.dart";
 /// ```
 class ComputedImpl<T> extends ComputedReactiveNode<T>
     with ReadonlyNodeMixin<T>
-    implements Computed<T> {
+    implements Computed<T>, ReadonlySignal<T> {
   /// Creates a new computed value with the given getter function.
   ///
   /// Parameters:
@@ -258,7 +258,7 @@ abstract interface class Computed<T> implements Readonly<T>, ReadonlyNode<T> {
 /// fullName.value = 'Jane Smith'; // Updates firstName and lastName
 /// ```
 class WritableComputedImpl<T> extends ComputedImpl<T>
-    implements WritableComputed<T> {
+    implements WritableComputed<T>, Signal<T> {
   /// Creates a new writable computed value.
   ///
   /// Parameters:

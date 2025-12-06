@@ -13,7 +13,17 @@ import "package:shared_interfaces/shared_interfaces.dart";
 /// class MutableListSignal<T> extends ListSignal<T>
 ///     implements IMutableCollection<T> {}
 /// ```
-abstract interface class IMutableCollection<T> {}
+abstract interface class IMutableCollection<T> {
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
+  static bool Function(dynamic, dynamic)? skipNode(dynamic target) =>
+      target is IMutableCollection ? _skip : null;
+
+  static bool _skip(newValue, oldValue) {
+    return true;
+  }
+}
 
 /// Mixin that provides base functionality for readonly reactive nodes.
 ///

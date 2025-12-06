@@ -443,6 +443,33 @@ void main() {
 
         effect.dispose();
       });
+
+      test("getCustom traverses subs chain when first sub doesn't match flags",
+          () {
+        final customNode = TestCustomNode();
+
+        final firstSub = ReactiveNode(flags: 0);
+
+        final secondSub = ReactiveNode(flags: ReactiveFlags.watching);
+
+        final link = Link(
+          version: cycle,
+          dep: customNode,
+          sub: secondSub,
+        );
+        firstSub.subs = link;
+
+        final prevSub = setActiveSub(firstSub);
+        try {
+          getCustom(customNode);
+
+          expect(customNode.subs, isNotNull);
+          expect(customNode.subs!.sub, equals(secondSub));
+          expect(customNode.subs!.dep, equals(customNode));
+        } finally {
+          setActiveSub(prevSub);
+        }
+      });
     });
   });
 }

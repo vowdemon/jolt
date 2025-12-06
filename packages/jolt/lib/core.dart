@@ -12,7 +12,8 @@ export 'src/core/debug.dart'
     show JoltDebug, DebugNodeOperationType, JoltDebugFn;
 
 export "src/jolt/base.dart" show ReadonlyNodeMixin, EffectNodeMixin;
-export "src/jolt/signal.dart" show SignalImpl;
+export "src/jolt/signal.dart"
+    show SignalImpl, ReadonlySignalImpl, ProxySignal, ProxyReadonlySignal;
 export "src/jolt/computed.dart" show ComputedImpl, WritableComputedImpl;
 export "src/jolt/effect.dart" show EffectImpl, EffectScopeImpl, WatcherImpl;
 export "src/jolt/async.dart" show AsyncSignalImpl;

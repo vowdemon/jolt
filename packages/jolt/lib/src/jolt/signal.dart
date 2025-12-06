@@ -171,6 +171,133 @@ class SignalImpl<T> extends SignalReactiveNode<T>
   }
 }
 
+/// Implementation of [Signal] that holds a value and notifies subscribers when it changes.
+/// Base implementation of read-only signal for storing state and tracking dependencies.
+class ReadonlySignalImpl<T> extends SignalReactiveNode<T>
+    with ReadonlyNodeMixin<T>
+    implements ReadonlySignal<T> {
+  /// Creates a new signal with the given initial value.
+  ///
+  /// Parameters:
+  /// - [value]: The initial value of the signal
+  /// - [onDebug]: Optional debug callback for reactive system debugging
+  ///
+  /// Example:
+  /// ```dart
+  /// final name = Signal('Alice');
+  /// final counter = Signal(0);
+  /// ```
+  ReadonlySignalImpl(T? value, {JoltDebugFn? onDebug})
+      : super(flags: ReactiveFlags.mutable, pendingValue: value) {
+    JoltDebug.create(this, onDebug);
+  }
+
+  /// Returns the current value without establishing a reactive dependency.
+  ///
+  /// Use this when you need to read the value without triggering reactivity,
+  /// such as in event handlers or side effects.
+  ///
+  /// Example:
+  /// ```dart
+  /// final counter = Signal(0);
+  /// print(counter.peek); // Doesn't create dependency
+  /// ```
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
+  @override
+  T get peek {
+    assert(!isDisposed, "Signal is disposed");
+    return pendingValue as T;
+  }
+
+  /// Returns the current value and establishes a reactive dependency.
+  ///
+  /// When accessed within a reactive context (like a Computed or Effect),
+  /// the context will be notified when this signal changes.
+  ///
+  /// Example:
+  /// ```dart
+  /// final counter = Signal(0);
+  /// final doubled = Computed(() => counter.value * 2); // Creates dependency
+  /// ```
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
+  @override
+  T get value => get();
+
+  /// Returns the current value and establishes a reactive dependency.
+  ///
+  /// This is equivalent to accessing the [value] getter.
+  ///
+  /// Returns: The current value of the signal
+  ///
+  /// Example:
+  /// ```dart
+  /// final current = counter.get();
+  /// ```
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
+  @override
+  T get() {
+    assert(!isDisposed, "Signal is disposed");
+
+    return getSignal(this);
+  }
+
+  /// Returns the current signal value (equivalent to `value`).
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
+  @override
+  T call() => get();
+
+  /// Manually notifies all subscribers that this signal has changed.
+  ///
+  /// This is typically called automatically when the value changes,
+  /// but can be called manually for custom notification scenarios.
+  ///
+  /// Example:
+  /// ```dart
+  /// counter.notify(); // Force downstream effects to run
+  /// ```
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
+  @override
+  void notify() {
+    assert(!isDisposed, "Signal is disposed");
+    notifySignal(this);
+  }
+
+  /// Disposes the signal and cleans up resources.
+  ///
+  /// Removes the signal from the reactive system and clears stored values.
+  ///
+  /// Example:
+  /// ```dart
+  /// counter.dispose();
+  /// ```
+  @override
+  @mustCallSuper
+  @protected
+  void onDispose() {
+    disposeNode(this);
+  }
+
+  /// {@macro jolt_signal_set}
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
+  @protected
+  T internalSet(T value) {
+    assert(!isDisposed, "Signal is disposed");
+    return setSignal(this, value);
+  }
+}
+
 /// A read-only interface for signals that prevents modification.
 ///
 /// This is useful for exposing signals publicly while maintaining
@@ -269,4 +396,47 @@ class _ConstantSignalImpl<T> implements ReadonlySignal<T> {
   @pragma("dart2js:prefer-inline")
   @override
   T call() => _value;
+}
+
+/// Base class for read-only proxy signals that delegate to other signals via custom getter.
+abstract class ProxyReadonlySignal<T> extends CustomReactiveNode
+    with ReadonlyNodeMixin<T>
+    implements ReadonlySignal<T> {
+  ProxyReadonlySignal({required super.flags, JoltDebugFn? onDebug}) {
+    JoltDebug.create(this, onDebug);
+  }
+
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
+  @override
+  get value => get();
+
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
+  @override
+  T call() => get();
+
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
+  @override
+  void notify() {
+    notifyCustom(this);
+  }
+
+  @pragma('vm:prefer-inline')
+  @pragma('wasm:prefer-inline')
+  @pragma('dart2js:prefer-inline')
+  @override
+  bool updateNode() {
+    return true;
+  }
+}
+
+/// Base class for writable proxy signals that delegate to other signals via custom getter/setter.
+abstract class ProxySignal<T> extends ProxyReadonlySignal<T>
+    implements Signal<T> {
+  ProxySignal({required super.flags, super.onDebug});
 }

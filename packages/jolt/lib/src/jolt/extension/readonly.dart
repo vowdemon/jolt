@@ -34,7 +34,7 @@ extension JoltReadonlyExtension<T> on ReadonlyNode<T> {
                 (newValue, __) {
                   s!.sink.add(newValue);
                 },
-                when: this is IMutableCollection ? (_, __) => true : null,
+                when: IMutableCollection.skipNode(this),
               )));
         },
         onCancel: () {

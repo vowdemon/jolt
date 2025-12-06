@@ -734,6 +734,23 @@ void notifyCustom<T>(ReactiveNode node) {
   JoltDebug.notify(node);
 }
 
+@pragma("vm:prefer-inline")
+@pragma("wasm:prefer-inline")
+@pragma("dart2js:prefer-inline")
+void getCustom(ReactiveNode node) {
+  var sub = activeSub;
+  while (sub != null) {
+    if (sub.flags & (ReactiveFlags.mutable | ReactiveFlags.watching) != 0) {
+      link(node, sub, cycle);
+
+      break;
+    }
+    sub = sub.subs?.sub;
+  }
+
+  JoltDebug.get(node);
+}
+
 /// Disposes any reactive node and detaches all dependencies/subscribers.
 ///
 /// Parameters:

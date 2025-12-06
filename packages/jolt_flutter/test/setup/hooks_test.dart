@@ -428,7 +428,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           final signal = useSignal(1);
-          final stream = useStream(signal);
+          final stream = useJoltStream(signal);
           expect(stream, isNotNull);
           return () => Text('Value: ${signal.value}');
         }),

@@ -8,7 +8,11 @@ import 'package:jolt/tricks.dart';
 
 import 'base.dart';
 
-abstract class JoltSignalHookCreator {
+/// Helper class for creating signal hooks.
+final class JoltSignalHookCreator {
+  /// Helper class for creating signal hooks.
+  const JoltSignalHookCreator._();
+
   /// {@template jolt_signal_hook_creator}
   /// Creates a reactive signal hook that holds a mutable value.
   ///
@@ -311,12 +315,14 @@ abstract class JoltSignalHookCreator {
   }
 }
 
-final class _JoltSignalHookCreatorImpl extends JoltSignalHookCreator {}
-
 /// {@macro jolt_signal_hook_creator}
-final useSignal = _JoltSignalHookCreatorImpl();
+const useSignal = JoltSignalHookCreator._();
 
-abstract class JoltComputedHookCreator {
+/// Helper class for creating computed hooks.
+final class JoltComputedHookCreator {
+  /// Helper class for creating computed hooks.
+  const JoltComputedHookCreator._();
+
   /// {@template jolt_computed_hook_creator}
   /// Creates a computed signal hook that derives its value from other signals.
   ///
@@ -446,12 +452,14 @@ abstract class JoltComputedHookCreator {
   }
 }
 
-final class _JoltComputedHookCreatorImpl extends JoltComputedHookCreator {}
-
 /// {@macro jolt_computed_hook_creator}
-final useComputed = _JoltComputedHookCreatorImpl();
+const useComputed = JoltComputedHookCreator._();
 
-abstract class JoltEffectHookCreator {
+/// Helper class for creating effect hooks.
+final class JoltEffectHookCreator {
+  /// Helper class for creating effect hooks.
+  const JoltEffectHookCreator._();
+
   /// {@template jolt_effect_hook_creator}
   /// Creates a reactive effect hook that runs when dependencies change.
   ///
@@ -539,12 +547,14 @@ abstract class JoltEffectHookCreator {
   }
 }
 
-final class _JoltEffectHookCreatorImpl extends JoltEffectHookCreator {}
-
 /// {@macro jolt_effect_hook_creator}
-final useJoltEffect = _JoltEffectHookCreatorImpl();
+final useJoltEffect = JoltEffectHookCreator._();
 
-abstract class JoltWatcherHookCreator {
+/// Helper class for creating watcher hooks.
+final class JoltWatcherHookCreator {
+  /// Helper class for creating watcher hooks.
+  const JoltWatcherHookCreator._();
+
   /// {@template jolt_watcher_hook_creator}
   /// Creates a watcher hook that observes changes with fine-grained control.
   ///
@@ -648,12 +658,14 @@ abstract class JoltWatcherHookCreator {
   }
 }
 
-final class _JoltWatcherHookCreatorImpl extends JoltWatcherHookCreator {}
-
 /// {@macro jolt_watcher_hook_creator}
-final useWatcher = _JoltWatcherHookCreatorImpl();
+final useWatcher = JoltWatcherHookCreator._();
 
-abstract class JoltEffectScopeHookCreator {
+/// Helper class for creating effect scope hooks.
+final class JoltEffectScopeHookCreator {
+  /// Helper class for creating effect scope hooks.
+  const JoltEffectScopeHookCreator._();
+
   /// {@template jolt_effect_scope_hook_creator}
   /// Creates an effect scope hook for managing effect lifecycles.
   ///
@@ -699,11 +711,8 @@ abstract class JoltEffectScopeHookCreator {
   }
 }
 
-final class _JoltEffectScopeHookCreatorImpl
-    extends JoltEffectScopeHookCreator {}
-
 /// {@macro jolt_effect_scope_hook_creator}
-final useEffectScope = _JoltEffectScopeHookCreatorImpl();
+final useEffectScope = JoltEffectScopeHookCreator._();
 
 /// Creates a stream hook from a reactive value.
 ///

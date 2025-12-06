@@ -7,7 +7,10 @@ import 'package:jolt_flutter/src/setup/framework.dart';
 import '../effect/flutter_effect.dart';
 
 /// Helper class for creating signal hooks in SetupWidget.
-abstract class JoltSignalHookCreator {
+final class JoltSignalHookCreator {
+  /// Helper class for creating signal hooks in SetupWidget.
+  const JoltSignalHookCreator._();
+
   /// {@template jolt_signal_hook_creator}
   /// Creates a reactive signal hook with an initial value.
   ///
@@ -252,13 +255,14 @@ abstract class JoltSignalHookCreator {
   }
 }
 
-final class _JoltSignalHookCreatorImpl extends JoltSignalHookCreator {}
-
 /// {@macro jolt_signal_hook_creator}
-final useSignal = _JoltSignalHookCreatorImpl();
+const useSignal = JoltSignalHookCreator._();
 
 /// Helper class for creating computed hooks in SetupWidget.
-abstract class JoltUseComputed {
+final class JoltUseComputed {
+  /// Helper class for creating computed hooks in SetupWidget.
+  const JoltUseComputed._();
+
   /// {@template jolt_computed_hook_creator}
   /// Creates a computed value hook that derives from reactive dependencies.
   ///
@@ -355,13 +359,14 @@ abstract class JoltUseComputed {
   }
 }
 
-final class _JoltUseComputedImpl extends JoltUseComputed {}
-
 /// {@macro jolt_computed_hook_creator}
-final useComputed = _JoltUseComputedImpl();
+final useComputed = JoltUseComputed._();
 
 /// Helper class for creating effect hooks in SetupWidget.
-abstract class JoltEffectHookCreator {
+final class JoltEffectHookCreator {
+  /// Helper class for creating effect hooks in SetupWidget.
+  const JoltEffectHookCreator._();
+
   /// {@template jolt_effect_hook_creator}
   /// Creates an effect hook that runs in response to reactive dependencies.
   ///
@@ -432,13 +437,14 @@ abstract class JoltEffectHookCreator {
   }
 }
 
-final class _JoltEffectHookCreatorImpl extends JoltEffectHookCreator {}
-
 /// {@macro jolt_effect_hook_creator}
-final useEffect = _JoltEffectHookCreatorImpl();
+final useEffect = JoltEffectHookCreator._();
 
 /// Helper class for creating Flutter effect hooks in SetupWidget.
-abstract class JoltFlutterEffectHookCreator {
+final class JoltFlutterEffectHookCreator {
+  /// Helper class for creating Flutter effect hooks in SetupWidget.
+  const JoltFlutterEffectHookCreator._();
+
   /// {@template jolt_flutter_effect_hook_creator}
   /// Creates a Flutter effect hook that schedules execution at frame end.
   ///
@@ -514,14 +520,14 @@ abstract class JoltFlutterEffectHookCreator {
   }
 }
 
-final class _JoltFlutterEffectHookCreatorImpl
-    extends JoltFlutterEffectHookCreator {}
-
 /// {@macro jolt_flutter_effect_hook_creator}
-final useFlutterEffect = _JoltFlutterEffectHookCreatorImpl();
+final useFlutterEffect = JoltFlutterEffectHookCreator._();
 
 /// Helper class for creating watcher hooks in SetupWidget.
-abstract class JoltWatcherHookCreator {
+final class JoltWatcherHookCreator {
+  /// Helper class for creating watcher hooks in SetupWidget.
+  const JoltWatcherHookCreator._();
+
   /// {@template jolt_watcher_hook_creator}
   /// Creates a watcher hook that observes specific reactive sources.
   ///
@@ -604,12 +610,14 @@ abstract class JoltWatcherHookCreator {
   }
 }
 
-final class _JoltWatcherHookCreatorImpl extends JoltWatcherHookCreator {}
-
 /// {@macro jolt_watcher_hook_creator}
-final useWatcher = _JoltWatcherHookCreatorImpl();
+final useWatcher = JoltWatcherHookCreator._();
 
-abstract class JoltEffectScopeHookCreator {
+/// Helper class for creating effect scope hooks in SetupWidget.
+final class JoltEffectScopeHookCreator {
+  /// Helper class for creating effect scope hooks in SetupWidget.
+  const JoltEffectScopeHookCreator._();
+
   /// {@template jolt_effect_scope_hook_creator}
   /// Creates an effect scope hook for managing groups of effects.
   ///
@@ -647,11 +655,8 @@ abstract class JoltEffectScopeHookCreator {
   }
 }
 
-final class _JoltEffectScopeHookCreatorImpl
-    extends JoltEffectScopeHookCreator {}
-
 /// {@macro jolt_effect_scope_hook_creator}
-final useEffectScope = _JoltEffectScopeHookCreatorImpl();
+final useEffectScope = JoltEffectScopeHookCreator._();
 
 /// Creates a stream hook from a reactive value.
 ///
@@ -667,7 +672,7 @@ final useEffectScope = _JoltEffectScopeHookCreatorImpl();
 /// ```dart
 /// setup(context, props) {
 ///   final count = useSignal(0);
-///   final stream = useStream(count);
+///   final stream = useJoltStream(count);
 ///
 ///   return () => StreamBuilder<int>(
 ///     stream: stream,
@@ -677,6 +682,6 @@ final useEffectScope = _JoltEffectScopeHookCreatorImpl();
 ///   );
 /// }
 /// ```
-Stream<T> useStream<T>(ReadonlyNode<T> value) {
+Stream<T> useJoltStream<T>(ReadonlyNode<T> value) {
   return useMemoized(() => value.stream);
 }

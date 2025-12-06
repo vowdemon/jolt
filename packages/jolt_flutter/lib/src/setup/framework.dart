@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/widgets.dart';
 import 'package:jolt/core.dart';
 import 'package:jolt/jolt.dart';
@@ -323,38 +321,18 @@ class JoltSetupContext<T extends Widget> extends EffectScopeImpl {
 /// - Implements [ReadonlyNode] for compatibility with Jolt's reactive system
 /// - Tracks dependencies automatically when accessed in reactive contexts
 /// - Disposed when the associated [BuildContext] is unmounted
-class PropsReadonlyNode<T extends Widget> extends CustomReactiveNode
-    implements ReadonlyNode<T> {
+class PropsReadonlyNode<T extends Widget> extends ProxyReadonlySignal<T> {
   PropsReadonlyNode(this._context) : super(flags: ReactiveFlags.mutable);
 
   final BuildContext _context;
 
-  bool _dirty = false;
-
-  @override
-  T get() {
-    var sub = activeSub;
-    while (sub != null) {
-      if (sub.flags & (ReactiveFlags.mutable | ReactiveFlags.watching) != 0) {
-        link(this, sub, cycle);
-
-        break;
-      }
-      sub = sub.subs?.sub;
-    }
-
-    return _context.widget as T;
-  }
-
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
-  T call() => get();
-
   @override
-  void notify() {
-    _dirty = true;
-    notifyCustom(this);
+  T get() {
+    getCustom(this);
+    return _context.widget as T;
   }
 
   @pragma('vm:prefer-inline')
@@ -363,28 +341,11 @@ class PropsReadonlyNode<T extends Widget> extends CustomReactiveNode
   @override
   T get peek => _context.widget as T;
 
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
-  @override
-  T get value => get();
-
-  @override
-  FutureOr<void> dispose() {
-    disposeNode(this);
-  }
-
   @override
   bool get isDisposed => !_context.mounted;
 
-  // coverage:ignore-start
   @override
-  bool updateNode() {
-    if (_dirty) {
-      _dirty = false;
-      return true;
-    }
-    return false;
+  void onDispose() {
+    // props needn't be disposed
   }
-  // coverage:ignore-end
 }

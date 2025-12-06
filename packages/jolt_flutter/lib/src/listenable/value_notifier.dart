@@ -1,14 +1,9 @@
-import 'package:flutter/foundation.dart';
-import 'package:jolt/jolt.dart' as jolt;
-import 'package:jolt_flutter/core.dart';
-import 'package:shared_interfaces/shared_interfaces.dart';
+part of 'listenable.dart';
 
-part 'value_listenable.dart';
-
-final _notifiers = Expando<_JoltValueNotifierBase<Object?>>();
+final _notifiers = Expando<JoltValueNotifier<Object?>>();
 
 /// Extension to convert Jolt values to Flutter ValueNotifiers.
-extension JoltValueNotifierExtension<T> on Readonly<T> {
+extension JoltValueNotifierExtension<T> on Writable<T> {
   /// Converts this Jolt value to a Flutter ValueNotifier.
   ///
   /// Returns a cached instance that stays synchronized with this Jolt value.
@@ -26,10 +21,12 @@ extension JoltValueNotifierExtension<T> on Readonly<T> {
   /// )
   /// ```
   JoltValueNotifier<T> get notifier {
-    JoltValueNotifier<T>? notifier = _notifiers[this] as JoltValueNotifier<T>?;
+    var notifier = _notifiers[this] as JoltValueNotifier<T>?;
+
     if (notifier == null) {
       _notifiers[this] = notifier = JoltValueNotifier(this);
     }
+
     return notifier;
   }
 }
@@ -51,75 +48,42 @@ extension JoltValueNotifierExtension<T> on Readonly<T> {
 ///   builder: (context, child) => Text('${notifier.value}'),
 /// )
 /// ```
-class JoltValueNotifier<T> extends _JoltValueNotifierBase<T>
-    implements ValueNotifier<T> {
+class JoltValueNotifier<T>
+    with _ValueNotifierMixin<T>
+    implements ValueNotifier<T>, Disposable {
   /// Creates a ValueNotifier that wraps a Jolt signal.
   ///
   /// Parameters:
   /// - [joltValue]: The Jolt reactive value to wrap
-  JoltValueNotifier(super.joltValue);
-}
-
-class _JoltValueNotifierBase<T> {
-  /// Creates a ValueNotifier that wraps a Jolt signal.
-  ///
-  /// Parameters:
-  /// - [joltValue]: The Jolt reactive value to wrap
-  ///
-  /// Automatically syncs with Jolt signal changes and notifies Flutter listeners.
-  _JoltValueNotifierBase(this.joltValue) {
-    _value = joltValue.value;
-    _disposer = jolt.Watcher(joltValue.get, (value, __) {
-      _value = value;
+  JoltValueNotifier(this.node) {
+    final watcher = Watcher(node.get, (value, __) {
       notifyListeners();
-    },
-            when: joltValue is jolt.IMutableCollection
-                ? (newValue, oldValue) => true
-                : null)
-        .dispose;
-    _disposerJolt = JFinalizer.attachToJoltAttachments(joltValue, dispose);
+    }, when: IMutableCollection.skipNode(node));
+
+    final finalizerDisposer = JFinalizer.attachToJoltAttachments(node, dispose);
+    _disposer = () {
+      watcher.dispose();
+      finalizerDisposer();
+    };
   }
 
-  /// The underlying Jolt value being wrapped.
-  final Readonly<T> joltValue;
+  final Writable<T> node;
+
+  @override
+  T get value => node.peek;
+
+  @override
+  set value(T newValue) {
+    node.set(newValue);
+  }
 
   Disposer? _disposer;
-  Disposer? _disposerJolt;
 
-  late T _value;
-
-  T get value => _value;
-
-  set value(T newValue) {
-    assert(joltValue is Writable<T>);
-
-    (joltValue as Writable<T>).set(newValue);
-  }
-
+  @override
   void dispose() {
     _disposer?.call();
     _disposer = null;
-    _disposerJolt?.call();
-    _disposerJolt = null;
-    _notifiers[joltValue] = null;
-  }
-
-  final _listeners = <VoidCallback>[];
-
-  void addListener(VoidCallback listener) {
-    _listeners.add(listener);
-  }
-
-  bool get hasListeners => _listeners.isNotEmpty;
-
-  void notifyListeners() {
-    for (final listener in _listeners) {
-      listener();
-    }
-  }
-
-  void removeListener(VoidCallback listener) {
-    _listeners.remove(listener);
+    _notifiers[node] = null;
   }
 }
 
@@ -143,35 +107,39 @@ extension JoltFlutterValueNotifierExtension<T> on ValueNotifier<T> {
   /// notifier.value = 1; // signal.value becomes 1
   /// signal.value = 2;   // notifier.value becomes 2
   /// ```
-  jolt.Signal<T> toNotifierSignal({JoltDebugFn? onDebug}) {
-    return _NotifierSignal(this, onDebug: onDebug);
+  Signal<T> toNotifierSignal({JoltDebugFn? onDebug}) {
+    if (this is JoltValueNotifier<T>) {
+      final node = (this as JoltValueNotifier<T>).node;
+      if (node is Signal<T>) {
+        return node;
+      }
+    }
+    return NotifierSignal(this, onDebug: onDebug);
   }
 }
 
-class _NotifierSignal<T> extends SignalImpl<T> {
-  _NotifierSignal(this._notifier, {super.onDebug}) : super(_notifier!.value) {
-    _listener = () {
-      final newValue = _notifier!.value;
+class NotifierSignal<T> extends SignalImpl<T> {
+  NotifierSignal(this._notifier, {super.onDebug}) : super(_notifier.value) {
+    void listener() {
+      final newValue = _notifier.value;
       if (newValue != peek) {
         super.set(newValue);
       }
-    };
+    }
 
-    _notifier!.addListener(_listener!);
+    _notifier.addListener(listener);
 
     JFinalizer.attachToJoltAttachments(this, () {
-      _notifier!.removeListener(_listener!);
-      _notifier = null;
+      _notifier.removeListener(listener);
     });
   }
 
-  VoidCallback? _listener;
-  ValueNotifier<T>? _notifier;
+  final ValueNotifier<T> _notifier;
 
   @override
   T set(T value) {
     if (isDisposed) return value;
-    _notifier?.value = value;
+    _notifier.value = value;
     return value;
   }
 }

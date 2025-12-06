@@ -242,7 +242,7 @@ void main() {
       expect(capturedPropsNode!.isDisposed, isFalse);
 
       // Dispose - should not throw
-      await capturedPropsNode!.dispose();
+      capturedPropsNode!.dispose();
       disposeCalled = true;
 
       expect(disposeCalled, isTrue);

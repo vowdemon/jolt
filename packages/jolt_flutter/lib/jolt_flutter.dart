@@ -29,7 +29,7 @@ library;
 
 export 'package:jolt/jolt.dart';
 
-export 'src/value_notifier.dart';
+export 'src/listenable/listenable.dart';
 
 export 'src/widgets/jolt_provider.dart';
 export 'src/widgets/jolt_builder.dart';

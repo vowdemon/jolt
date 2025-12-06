@@ -28,6 +28,7 @@ import "package:meta/meta.dart";
 class SignalImpl<T> extends SignalReactiveNode<T>
     with ReadonlyNodeMixin<T>
     implements Signal<T> {
+  /// {@template jolt_signal_impl}
   /// Creates a new signal with the given initial value.
   ///
   /// Parameters:
@@ -39,6 +40,7 @@ class SignalImpl<T> extends SignalReactiveNode<T>
   /// final name = Signal('Alice');
   /// final counter = Signal(0);
   /// ```
+  /// {@endtemplate}
   SignalImpl(T? value, {JoltDebugFn? onDebug})
       : super(flags: ReactiveFlags.mutable, pendingValue: value) {
     JoltDebug.create(this, onDebug);
@@ -350,7 +352,18 @@ abstract interface class Signal<T>
         WritableNode<T>,
         ReadonlyNode<T>,
         ReadonlySignal<T> {
+  /// {@macro jolt_signal_impl}
   factory Signal(T value, {JoltDebugFn? onDebug}) = SignalImpl;
+
+  /// Creates a new lazy signal.
+  ///
+  /// Parameters:
+  /// - [onDebug]: Optional debug callback for reactive system debugging
+  ///
+  /// Example:
+  /// ```dart
+  /// final name = Signal<String>.lazy();
+  /// ```
   factory Signal.lazy({JoltDebugFn? onDebug}) =>
       SignalImpl(null, onDebug: onDebug);
 

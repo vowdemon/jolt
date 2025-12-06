@@ -516,6 +516,156 @@ void main() {
     });
   });
 
+  group("Computed.withPrevious", () {
+    test("should pass null as previous value on first computation", () {
+      final signal = Signal(5);
+      int? previousValue;
+      final computed = Computed<int>.withPrevious((prev) {
+        previousValue = prev;
+        return signal.value * 2;
+      });
+
+      expect(computed.value, equals(10));
+      expect(previousValue, isNull);
+    });
+
+    test("should work with nullable types", () {
+      final signal = Signal<int?>(null);
+      final previousValues = <int?>[];
+      final computed = Computed<int?>.withPrevious((prev) {
+        previousValues.add(prev);
+        return signal.value;
+      });
+
+      expect(computed.value, isNull);
+      expect(previousValues, equals([null]));
+
+      signal.value = 42;
+      expect(computed.value, equals(42));
+      expect(previousValues, equals([null, null]));
+
+      signal.value = 100;
+      expect(computed.value, equals(100));
+      expect(previousValues, equals([null, null, 42]));
+    });
+
+    test("should work with complex calculations using previous value", () {
+      final signal = Signal(1);
+      final computed = Computed<int>.withPrevious((prev) {
+        if (prev == null) {
+          return signal.value;
+        } else {
+          return prev + signal.value;
+        }
+      });
+
+      expect(computed.value, equals(1));
+
+      signal.value = 2;
+      expect(computed.value, equals(3)); // 1 + 2
+
+      signal.value = 3;
+      expect(computed.value, equals(6)); // 3 + 3
+
+      signal.value = 4;
+      expect(computed.value, equals(10)); // 6 + 4
+    });
+
+    test("should remain stable when new object has same value as previous", () {
+      final signal = Signal<List<int>>([1, 2, 3]);
+      var computeCount = 0;
+      final effectValues = <List<int>>[];
+
+      final computed = Computed<List<int>>.withPrevious((prev) {
+        computeCount++;
+        final newList = List<int>.from(signal.value);
+
+        if (prev != null &&
+            prev.length == newList.length &&
+            prev.every((item) => newList.contains(item)) &&
+            newList.every((item) => prev.contains(item))) {
+          return prev;
+        }
+
+        return newList;
+      });
+
+      Effect(() {
+        effectValues.add(List<int>.from(computed.value));
+      });
+
+      expect(computeCount, equals(1));
+      expect(effectValues.length, equals(1));
+      expect(effectValues.last, equals([1, 2, 3]));
+
+      signal.value = [1, 2, 3];
+      expect(computeCount, equals(2));
+      expect(effectValues.length, equals(1));
+      expect(computed.value, equals([1, 2, 3]));
+
+      signal.value = [4, 5, 6];
+      expect(computeCount, equals(3));
+      expect(effectValues.length, equals(2));
+      expect(effectValues.last, equals([4, 5, 6]));
+
+      signal.value = [4, 5, 6];
+      expect(computeCount, equals(4));
+      expect(effectValues.length, equals(2));
+    });
+  });
+  group("WritableComputed.withPrevious", () {
+    test("should pass null as previous value on first computation", () {
+      final signal = Signal(5);
+      int? previousValue;
+      final writableComputed = WritableComputed<int>.withPrevious(
+        (prev) {
+          previousValue = prev;
+          return signal.value * 2;
+        },
+        (value) => signal.value = value ~/ 2,
+      );
+
+      expect(writableComputed.value, equals(10));
+      expect(previousValue, isNull);
+    });
+
+    test("should work with complex calculations using previous value", () {
+      final signal = Signal(1);
+      final previousValues = <int?>[];
+      final writableComputed = WritableComputed<int>.withPrevious(
+        (prev) {
+          previousValues.add(prev);
+          if (prev == null) {
+            return signal.value;
+          } else {
+            return prev + signal.value;
+          }
+        },
+        (value) {
+          // Simple setter: set signal to a fixed value
+          // This tests that setter works, even if the logic is simple
+          signal.value = 5;
+        },
+      );
+
+      expect(writableComputed.value, equals(1));
+      expect(previousValues, equals([null]));
+
+      signal.value = 2;
+      expect(writableComputed.value, equals(3)); // 1 + 2
+      expect(previousValues, equals([null, 1]));
+
+      signal.value = 3;
+      expect(writableComputed.value, equals(6)); // 3 + 3
+      expect(previousValues, equals([null, 1, 3]));
+
+      writableComputed.value = 10;
+      expect(signal.value, equals(5)); // Setter sets signal to 5
+      expect(writableComputed.value, equals(11)); // 6 + 5 = 11
+      expect(previousValues, equals([null, 1, 3, 6]));
+    });
+  });
+
   group("toString", () {
     test("should return value.toString() in toString", () {
       final signal = Signal(5);

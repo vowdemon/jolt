@@ -26,6 +26,7 @@ import "package:meta/meta.dart";
 class ComputedImpl<T> extends ComputedReactiveNode<T>
     with ReadonlyNodeMixin<T>
     implements Computed<T>, ReadonlySignal<T> {
+  /// {@template jolt_computed_impl}
   /// Creates a new computed value with the given getter function.
   ///
   /// Parameters:
@@ -38,11 +39,45 @@ class ComputedImpl<T> extends ComputedReactiveNode<T>
   /// final doubled = Computed(() => count.value * 2);
   /// final expensive = Computed(() => heavyCalculation(count.value));
   /// ```
+  /// {@endtemplate}
   ComputedImpl(
     super.getter, {
     JoltDebugFn? onDebug,
   }) : super(flags: ReactiveFlags.none) {
     JoltDebug.create(this, onDebug);
+  }
+
+  /// {@template jolt_computed_impl_with_previous}
+  /// Creates a computed value with a getter that receives the previous value.
+  ///
+  /// Parameters:
+  /// - [getter]: Function that computes the value, receiving the previous value
+  ///   (or `null` on first computation) as a parameter
+  /// - [onDebug]: Optional debug callback for reactive system debugging
+  ///
+  /// Example:
+  /// ```dart
+  /// final signal = Signal<List<int>>([1, 2, 3]);
+  /// final computed = Computed<List<int>>.withPrevious((prev) {
+  ///   final newList = List<int>.from(signal.value);
+  ///   if (prev != null &&
+  ///       prev.length == newList.length &&
+  ///       prev.every((item) => newList.contains(item))) {
+  ///     return prev; // Return previous to maintain stability
+  ///   }
+  ///   return newList;
+  /// });
+  /// ```
+  /// {@endtemplate}
+  factory ComputedImpl.withPrevious(
+    T Function(T?) getter, {
+    JoltDebugFn? onDebug,
+  }) {
+    late final ComputedImpl<T> computed;
+    T fn() => getter(computed.pendingValue);
+
+    computed = ComputedImpl(fn, onDebug: onDebug);
+    return computed;
   }
 
   /// Returns the current computed value without establishing a reactive dependency.
@@ -192,17 +227,14 @@ class ComputedImpl<T> extends ComputedReactiveNode<T>
 /// print(doubled.value); // 10
 /// ```
 abstract interface class Computed<T> implements Readonly<T>, ReadonlyNode<T> {
-  /// Creates a computed value with the given getter function.
-  ///
-  /// Parameters:
-  /// - [getter]: Function that computes the value based on dependencies
-  /// - [onDebug]: Optional debug callback for reactive system debugging
-  ///
-  /// Example:
-  /// ```dart
-  /// final computed = Computed(() => expensiveCalculation());
-  /// ```
+  /// {@macro jolt_computed_impl}
   factory Computed(T Function() getter, {JoltDebugFn? onDebug}) = ComputedImpl;
+
+  /// {@macro jolt_computed_impl_with_previous}
+  factory Computed.withPrevious(
+    T Function(T?) getter, {
+    JoltDebugFn? onDebug,
+  }) = ComputedImpl.withPrevious;
 
   /// Returns the cached computed value without establishing a reactive dependency.
   ///
@@ -259,6 +291,7 @@ abstract interface class Computed<T> implements Readonly<T>, ReadonlyNode<T> {
 /// ```
 class WritableComputedImpl<T> extends ComputedImpl<T>
     implements WritableComputed<T>, Signal<T> {
+  /// {@template jolt_writable_computed_impl}
   /// Creates a new writable computed value.
   ///
   /// Parameters:
@@ -274,7 +307,44 @@ class WritableComputedImpl<T> extends ComputedImpl<T>
   ///   (value) => count.value = value ~/ 2,
   /// );
   /// ```
+  /// {@endtemplate}
   WritableComputedImpl(super.getter, this.setter, {super.onDebug});
+
+  /// {@template jolt_writable_computed_impl_with_previous}
+  /// Creates a writable computed value with a getter that receives the previous value.
+  ///
+  /// Parameters:
+  /// - [getter]: Function that computes the value, receiving the previous value
+  ///   (or `null` on first computation) as a parameter
+  /// - [setter]: Function called when the computed value is set
+  /// - [onDebug]: Optional debug callback for reactive system debugging
+  ///
+  /// Example:
+  /// ```dart
+  /// final signal = Signal([5]);
+  /// final computed = WritableComputed<int>.withPrevious(
+  ///   (prev) {
+  ///     final newValue = signal.value[0] * 2;
+  ///     if (prev != null && prev == newValue) {
+  ///       return prev;
+  ///     }
+  ///     return newValue;
+  ///   },
+  ///   (value) => signal.value = [value ~/ 2],
+  /// );
+  /// ```
+  /// {@endtemplate}
+  factory WritableComputedImpl.withPrevious(
+    T Function(T?) getter,
+    void Function(T) setter, {
+    JoltDebugFn? onDebug,
+  }) {
+    late final WritableComputedImpl<T> computed;
+    T fn() => getter(computed.pendingValue);
+
+    computed = WritableComputedImpl(fn, setter, onDebug: onDebug);
+    return computed;
+  }
 
   /// The function called when this computed value is set.
   final void Function(T) setter;
@@ -336,25 +406,19 @@ class WritableComputedImpl<T> extends ComputedImpl<T>
 /// );
 /// ```
 abstract interface class WritableComputed<T> implements Computed<T>, Signal<T> {
-  /// Creates a writable computed value with the given getter and setter.
-  ///
-  /// Parameters:
-  /// - [getter]: Function that computes the value from dependencies
-  /// - [setter]: Function called when the computed value is set
-  /// - [onDebug]: Optional debug callback for reactive system debugging
-  ///
-  /// Example:
-  /// ```dart
-  /// final writableComputed = WritableComputed(
-  ///   () => count.value * 2,
-  ///   (value) => count.value = value ~/ 2,
-  /// );
-  /// ```
+  /// {@macro jolt_writable_computed_impl}
   factory WritableComputed(
     T Function() getter,
     void Function(T) setter, {
     JoltDebugFn? onDebug,
   }) = WritableComputedImpl<T>;
+
+  /// {@macro jolt_writable_computed_impl_with_previous}
+  factory WritableComputed.withPrevious(
+    T Function(T?) getter,
+    void Function(T) setter, {
+    JoltDebugFn? onDebug,
+  }) = WritableComputedImpl.withPrevious;
 
   /// Returns the current computed value (same as `value`).
   @override

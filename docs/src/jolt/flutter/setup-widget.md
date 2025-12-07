@@ -317,7 +317,9 @@ Setup Widget provides hooks for all Jolt reactive primitives:
 | Hook | Description |
 |------|-------------|
 | `useComputed(fn)` | Create computed value |
+| `useComputed.withPrevious(getter)` | Create computed value with access to previous value |
 | `useComputed.writable(getter, setter)` | Create writable computed value |
+| `useComputed.writableWithPrevious(getter, setter)` | Create writable computed value with access to previous value |
 | `useComputed.convert(source, decode, encode)` | Create type-converting computed value |
 
 ### Effect Hooks
@@ -348,7 +350,7 @@ Setup Widget provides hooks for all Jolt reactive primitives:
 | `useContext()` | Get BuildContext |
 | `useSetupContext()` | Get JoltSetupContext |
 | `useEffectScope()` | Create effect scope |
-| `useStream(value)` | Create stream from reactive value |
+| `useJoltStream(value)` | Create stream from reactive value |
 | `useMemoized(creator, [disposer])` | Memoize value with optional cleanup function |
 | `useAutoDispose(creator)` | Auto-dispose resource |
 | `useHook(hook)` | Use custom hook |

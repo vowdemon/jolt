@@ -289,6 +289,42 @@ final class JoltUseComputed {
     return useAutoDispose(() => Computed(getter, onDebug: onDebug));
   }
 
+  /// Creates a computed value hook with a getter that receives the previous value.
+  ///
+  /// The getter function receives the previous computed value (or `null` on first
+  /// computation) as a parameter, allowing you to implement custom logic based on
+  /// the previous state. This is useful for maintaining referential equality,
+  /// implementing incremental calculations, or optimizing list/map stability.
+  ///
+  /// Parameters:
+  /// - [getter]: Function that computes the value, receiving the previous value
+  ///   (or `null` on first computation) as a parameter
+  /// - [onDebug]: Optional debug callback for reactive system debugging
+  ///
+  /// Returns: A [Computed] that can access its previous value during computation
+  ///
+  /// Example:
+  /// ```dart
+  /// setup(context, props) {
+  ///   final signal = useSignal<List<int>>([1, 2, 3]);
+  ///   final computed = useComputed.withPrevious<List<int>>((prev) {
+  ///     final newList = List<int>.from(signal.value);
+  ///     if (prev != null &&
+  ///         prev.length == newList.length &&
+  ///         prev.every((item) => newList.contains(item))) {
+  ///       return prev; // Return previous to maintain stability
+  ///     }
+  ///     return newList;
+  ///   });
+  ///
+  ///   return () => Text('Items: ${computed.value.join(", ")}');
+  /// }
+  /// ```
+  Computed<T> withPrevious<T>(T Function(T?) getter, {JoltDebugFn? onDebug}) {
+    return useAutoDispose(
+        () => Computed.withPrevious(getter, onDebug: onDebug));
+  }
+
   /// Creates a writable computed hook that can be both read and written.
   ///
   /// When set, the setter function is called to update the underlying dependencies.
@@ -321,6 +357,48 @@ final class JoltUseComputed {
       {JoltDebugFn? onDebug}) {
     return useAutoDispose(
         () => WritableComputed(getter, setter, onDebug: onDebug));
+  }
+
+  /// Creates a writable computed hook with a getter that receives the previous value.
+  ///
+  /// The getter function receives the previous computed value (or `null` on first
+  /// computation) as a parameter, allowing you to implement custom logic based on
+  /// the previous state. When set, the setter function is called to update the
+  /// underlying dependencies. This is useful for maintaining referential equality,
+  /// implementing incremental calculations, or optimizing list/map stability while
+  /// still allowing writes.
+  ///
+  /// Parameters:
+  /// - [getter]: Function that computes the value, receiving the previous value
+  ///   (or `null` on first computation) as a parameter
+  /// - [setter]: Function called when the computed value is set
+  /// - [onDebug]: Optional debug callback for reactive system debugging
+  ///
+  /// Returns: A [WritableComputed] that can access its previous value during computation
+  ///
+  /// Example:
+  /// ```dart
+  /// setup(context, props) {
+  ///   final signal = useSignal([5]);
+  ///   final computed = useComputed.writableWithPrevious<int>(
+  ///     (prev) {
+  ///       final newValue = signal.value[0] * 2;
+  ///       if (prev != null && prev == newValue) {
+  ///         return prev; // Return previous to maintain stability
+  ///       }
+  ///       return newValue;
+  ///     },
+  ///     (value) => signal.value = [value ~/ 2],
+  ///   );
+  ///
+  ///   return () => Text('Value: ${computed.value}');
+  /// }
+  /// ```
+  WritableComputed<T> writableWithPrevious<T>(
+      T Function(T?) getter, void Function(T) setter,
+      {JoltDebugFn? onDebug}) {
+    return useAutoDispose(
+        () => WritableComputed.withPrevious(getter, setter, onDebug: onDebug));
   }
 
   /// Creates a type-converting computed hook.

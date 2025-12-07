@@ -87,6 +87,89 @@ void main() {
       expect(find.text('Computed: 10'), findsOneWidget);
     });
 
+    testWidgets('useComputed.withPrevious passes null on first computation',
+        (tester) async {
+      int? previousValue;
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final signal = useSignal(5);
+          final computed = useComputed.withPrevious<int>((prev) {
+            previousValue = prev;
+            return signal.value * 2;
+          });
+          return () => Text('Computed: ${computed.value}');
+        }),
+      ));
+
+      expect(find.text('Computed: 10'), findsOneWidget);
+      expect(previousValue, isNull);
+    });
+
+    testWidgets('useComputed.withPrevious receives previous value on updates',
+        (tester) async {
+      final previousValues = <int?>[];
+      late Signal<int> signal;
+      late Computed<int> computed;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          signal = useSignal(1);
+          computed = useComputed.withPrevious<int>((prev) {
+            previousValues.add(prev);
+            if (prev == null) {
+              return signal.value;
+            } else {
+              return prev + signal.value;
+            }
+          });
+          return () => Text('Computed: ${computed.value}');
+        }),
+      ));
+
+      expect(find.text('Computed: 1'), findsOneWidget);
+      expect(previousValues, equals([null]));
+
+      signal.value = 2;
+      await tester.pumpAndSettle();
+      expect(find.text('Computed: 3'), findsOneWidget); // 1 + 2
+      expect(previousValues, equals([null, 1]));
+
+      signal.value = 3;
+      await tester.pumpAndSettle();
+      expect(find.text('Computed: 6'), findsOneWidget); // 3 + 3
+      expect(previousValues, equals([null, 1, 3]));
+    });
+
+    testWidgets('useComputed.withPrevious works with nullable types',
+        (tester) async {
+      final previousValues = <int?>[];
+      late Signal<int?> signal;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          signal = useSignal<int?>(null);
+          final computed = useComputed.withPrevious<int?>((prev) {
+            previousValues.add(prev);
+            return signal.value;
+          });
+          return () => Text('Value: ${computed.value ?? 'null'}');
+        }),
+      ));
+
+      expect(find.text('Value: null'), findsOneWidget);
+      expect(previousValues, equals([null]));
+
+      signal.value = 42;
+      await tester.pumpAndSettle();
+      expect(find.text('Value: 42'), findsOneWidget);
+      expect(previousValues, equals([null, null]));
+
+      signal.value = 100;
+      await tester.pumpAndSettle();
+      expect(find.text('Value: 100'), findsOneWidget);
+      expect(previousValues, equals([null, null, 42]));
+    });
+
     testWidgets('useWritableComputed creates writable computed',
         (tester) async {
       await tester.pumpWidget(MaterialApp(
@@ -101,6 +184,76 @@ void main() {
       ));
 
       expect(find.text('Writable: 20'), findsOneWidget);
+    });
+
+    testWidgets(
+        'useComputed.writableWithPrevious passes null on first computation',
+        (tester) async {
+      int? previousValue;
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final signal = useSignal(5);
+          final writable = useComputed.writableWithPrevious<int>(
+            (prev) {
+              previousValue = prev;
+              return signal.value * 2;
+            },
+            (value) => signal.value = value ~/ 2,
+          );
+          return () => Text('Writable: ${writable.value}');
+        }),
+      ));
+
+      expect(find.text('Writable: 10'), findsOneWidget);
+      expect(previousValue, isNull);
+    });
+
+    testWidgets(
+        'useComputed.writableWithPrevious receives previous value and handles writes',
+        (tester) async {
+      final previousValues = <int?>[];
+      late Signal<int> signal;
+      late WritableComputed<int> writable;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          signal = useSignal(1);
+          writable = useComputed.writableWithPrevious<int>(
+            (prev) {
+              previousValues.add(prev);
+              if (prev == null) {
+                return signal.value;
+              } else {
+                return prev + signal.value;
+              }
+            },
+            (value) {
+              // Simple setter: set signal to a fixed value
+              signal.value = 5;
+            },
+          );
+          return () => Text('Writable: ${writable.value}');
+        }),
+      ));
+
+      expect(find.text('Writable: 1'), findsOneWidget);
+      expect(previousValues, equals([null]));
+
+      signal.value = 2;
+      await tester.pumpAndSettle();
+      expect(find.text('Writable: 3'), findsOneWidget); // 1 + 2
+      expect(previousValues, equals([null, 1]));
+
+      signal.value = 3;
+      await tester.pumpAndSettle();
+      expect(find.text('Writable: 6'), findsOneWidget); // 3 + 3
+      expect(previousValues, equals([null, 1, 3]));
+
+      writable.value = 10;
+      await tester.pumpAndSettle();
+      expect(signal.value, equals(5)); // Setter sets signal to 5
+      expect(find.text('Writable: 11'), findsOneWidget); // 6 + 5 = 11
+      expect(previousValues, equals([null, 1, 3, 6]));
     });
 
     testWidgets('useJoltEffect runs effect', (tester) async {
@@ -797,6 +950,49 @@ void main() {
             final source = useSignal(10);
             writable = useComputed.writable(
               () => source.value * 2,
+              (value) => source.value = value ~/ 2,
+            );
+            return () => Text('Writable: ${writable.value}');
+          }),
+        ));
+        await tester.pumpAndSettle();
+
+        await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+        await tester.pumpAndSettle();
+
+        expect(writable.isDisposed, isTrue);
+      });
+
+      testWidgets('useComputed.withPrevious is disposed on unmount',
+          (tester) async {
+        late Computed<int> computed;
+
+        await tester.pumpWidget(MaterialApp(
+          home: SetupBuilder(setup: (context) {
+            final signal = useSignal(5);
+            computed = useComputed.withPrevious<int>((prev) {
+              return signal.value * 2;
+            });
+            return () => Text('Computed: ${computed.value}');
+          }),
+        ));
+        await tester.pumpAndSettle();
+
+        await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+        await tester.pumpAndSettle();
+
+        expect(computed.isDisposed, isTrue);
+      });
+
+      testWidgets('useComputed.writableWithPrevious is disposed on unmount',
+          (tester) async {
+        late WritableComputed<int> writable;
+
+        await tester.pumpWidget(MaterialApp(
+          home: SetupBuilder(setup: (context) {
+            final source = useSignal(10);
+            writable = useComputed.writableWithPrevious<int>(
+              (prev) => source.value * 2,
               (value) => source.value = value ~/ 2,
             );
             return () => Text('Writable: ${writable.value}');

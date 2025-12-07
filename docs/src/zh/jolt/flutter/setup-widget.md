@@ -317,7 +317,9 @@ Setup Widget 为所有 Jolt 响应式原语提供 hooks：
 | Hook | 描述 |
 |------|------|
 | `useComputed(fn)` | 创建计算值 |
+| `useComputed.withPrevious(getter)` | 创建可访问前一个值的计算值 |
 | `useComputed.writable(getter, setter)` | 创建可写计算值 |
+| `useComputed.writableWithPrevious(getter, setter)` | 创建可访问前一个值的可写计算值 |
 | `useComputed.convert(source, decode, encode)` | 创建类型转换计算值 |
 
 ### Effect Hooks
@@ -348,7 +350,7 @@ Setup Widget 为所有 Jolt 响应式原语提供 hooks：
 | `useContext()` | 获取 BuildContext |
 | `useSetupContext()` | 获取 JoltSetupContext |
 | `useEffectScope()` | 创建 effect scope |
-| `useStream(value)` | 从响应式值创建流 |
+| `useJoltStream(value)` | 从响应式值创建流 |
 | `useMemoized(creator, [disposer])` | 记忆化值，带可选的清理函数 |
 | `useAutoDispose(creator)` | 自动清理资源 |
 | `useHook(hook)` | 使用自定义 hook |

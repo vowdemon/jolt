@@ -84,7 +84,8 @@ A reactive state container that manages state through Jolt Signals. It provides:
 
 Understanding tracking behavior is crucial for optimal performance:
 
-- **Non-tracked (untracked)**: `builder` and `listener` functions are executed within an untracked context, preventing unnecessary reactive dependencies
+- **Builder dependency tracking**: `builder` functions (in `SurgeBuilder`, `SurgeConsumer`, and `SurgeSelector`) are wrapped in `JoltBuilder`, allowing them to automatically track external signals, computed values, and other reactive dependencies accessed within the builder. When these dependencies change, the widget will automatically rebuild.
+- **Non-tracked (untracked)**: `listener` functions are executed within an untracked context, preventing unnecessary reactive dependencies
 - **Tracked by default**: `buildWhen`, `listenWhen`, and `selector` functions are tracked by default, allowing them to depend on external signals
 - **Opt-out**: To disable tracking, wrap your reads with `untracked(() => ...)` or use `peek` property
 
@@ -121,7 +122,7 @@ Jolt Surge provides **100% Cubit-compatible APIs**, making it a drop-in replacem
 
 3. **Signal Integration**
    - **Cubit**: Limited ability to integrate with other reactive systems
-   - **Surge**: Can depend on external Jolt signals in `buildWhen`, `listenWhen`, and `selector` functions
+   - **Surge**: Can depend on external Jolt signals in `builder`, `buildWhen`, `listenWhen`, and `selector` functions. Builder functions automatically track external dependencies via `JoltBuilder`.
 
 4. **Performance Optimizations**
    - **Cubit**: Relies on Stream-based updates
@@ -166,10 +167,16 @@ All widgets support Cubit-compatible API by default. Use `.full` constructors to
 ### SurgeConsumer
 
 ```dart
+final externalSignal = Signal<String>('initial');
+
 SurgeConsumer<CounterSurge, int>(
   buildWhen: (prev, next) => next.isEven, // tracked
   listenWhen: (prev, next) => next > prev, // tracked
-  builder: (context, state) => Text('count: $state'),
+  builder: (context, state) {
+    // Can access external signals - automatically tracked!
+    final external = externalSignal.value;
+    return Text('count: $state, external: $external');
+  },
   listener: (context, state) {
     // e.g., SnackBar or analytics
   },
@@ -181,16 +188,29 @@ SurgeConsumer<CounterSurge, int>.full(
 );
 ```
 
-**Tracking:** `builder` and `listener` are non-tracked. `buildWhen` and `listenWhen` are tracked by default.
+**Tracking:** 
+- `builder` automatically tracks external signals, computed values, and reactive dependencies (via `JoltBuilder`)
+- `listener` is non-tracked (executed in untracked context)
+- `buildWhen` and `listenWhen` are tracked by default
 
 ### SurgeBuilder
 
 ```dart
+final externalSignal = Signal<String>('initial');
+
 SurgeBuilder<CounterSurge, int>(
-  builder: (context, state) => Text('count: $state'),
-  buildWhen: (prev, next) => next.isEven, // optional
+  builder: (context, state) {
+    // Can access external signals - automatically tracked!
+    final external = externalSignal.value;
+    return Text('count: $state, external: $external');
+  },
+  buildWhen: (prev, next) => next.isEven, // optional, tracked by default
 );
 ```
+
+**Tracking:** 
+- `builder` automatically tracks external signals, computed values, and reactive dependencies (via `JoltBuilder`)
+- `buildWhen` is tracked by default
 
 ### SurgeListener
 
@@ -209,13 +229,21 @@ SurgeListener<CounterSurge, int>(
 Rebuild only when the selected value changes by equality.
 
 ```dart
+final externalSignal = Signal<String>('initial');
+
 SurgeSelector<CounterSurge, int, String>(
   selector: (state) => state.isEven ? 'even' : 'odd', // tracked by default
-  builder: (context, selected) => Text(selected),
+  builder: (context, selected) {
+    // Can access external signals - automatically tracked!
+    final external = externalSignal.value;
+    return Text('$selected, external: $external');
+  },
 );
 ```
 
-**Tracking:** `selector` is tracked by default. Disable with `untracked(() => ...)`.
+**Tracking:** 
+- `builder` automatically tracks external signals, computed values, and reactive dependencies (via `JoltBuilder`)
+- `selector` is tracked by default. Disable with `untracked(() => ...)`.
 
 ## Advanced Usage
 

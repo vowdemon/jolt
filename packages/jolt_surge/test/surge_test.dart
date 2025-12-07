@@ -1,7 +1,9 @@
-import 'package:jolt/jolt.dart';
+import 'package:jolt_flutter/jolt_flutter.dart';
 import 'package:flutter/widgets.dart';
 import 'package:jolt_surge/jolt_surge.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jolt_surge/observer.dart';
+import 'package:provider/provider.dart';
 
 import 'surges/counter_surge.dart';
 
@@ -232,7 +234,7 @@ void main() {
 
         // Update and verify builder rebuilds
         surge.emit(1);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('1'), findsOneWidget);
 
         // Unmount tree -> value constructor should NOT dispose provided instance
@@ -242,6 +244,188 @@ void main() {
 
         // Explicitly dispose to avoid leaks
         surge.dispose();
+      });
+    });
+
+    group('MultiSurgeProvider', () {
+      testWidgets('provides multiple Surge instances', (tester) async {
+        CounterSurge? counterCreated;
+        UserSurge? userCreated;
+
+        await tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: MultiSurgeProvider(
+              providers: [
+                SurgeProvider<CounterSurge>(
+                  create: (_) {
+                    counterCreated = CounterSurge();
+                    return counterCreated!;
+                  },
+                  lazy: false, // Create immediately
+                ),
+                SurgeProvider<UserSurge>(
+                  create: (_) {
+                    userCreated = UserSurge();
+                    return userCreated!;
+                  },
+                  lazy: false, // Create immediately
+                ),
+              ],
+              child: Builder(
+                builder: (context) {
+                  final counter = context.read<CounterSurge>();
+                  final user = context.read<UserSurge>();
+                  return Text('counter=${counter.state}, user=${user.state}');
+                },
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('counter=0, user=User(name: John, age: 25)'),
+            findsOneWidget);
+        expect(counterCreated, isNotNull);
+        expect(userCreated, isNotNull);
+        expect(counterCreated!.isDisposed, isFalse);
+        expect(userCreated!.isDisposed, isFalse);
+      });
+
+      testWidgets('disposes all Surge instances on unmount', (tester) async {
+        CounterSurge? counterCreated;
+        UserSurge? userCreated;
+
+        await tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: MultiSurgeProvider(
+              providers: [
+                SurgeProvider<CounterSurge>(
+                  create: (_) {
+                    counterCreated = CounterSurge();
+                    return counterCreated!;
+                  },
+                  lazy: false, // Create immediately
+                ),
+                SurgeProvider<UserSurge>(
+                  create: (_) {
+                    userCreated = UserSurge();
+                    return userCreated!;
+                  },
+                  lazy: false, // Create immediately
+                ),
+              ],
+              child: const SizedBox.shrink(),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(counterCreated, isNotNull);
+        expect(userCreated, isNotNull);
+        expect(counterCreated!.isDisposed, isFalse);
+        expect(userCreated!.isDisposed, isFalse);
+
+        // Unmount tree -> should trigger dispose for all providers
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
+
+        expect(counterCreated!.isDisposed, isTrue);
+        expect(userCreated!.isDisposed, isTrue);
+      });
+
+      testWidgets('allows accessing multiple Surge instances in builders',
+          (tester) async {
+        final counter = CounterSurge();
+        final user = UserSurge();
+
+        await tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: MultiSurgeProvider(
+              providers: [
+                SurgeProvider<CounterSurge>.value(
+                  value: counter,
+                ),
+                SurgeProvider<UserSurge>.value(
+                  value: user,
+                ),
+              ],
+              child: Column(
+                children: [
+                  SurgeBuilder<CounterSurge, int>.full(
+                    builder: (context, state, s) => Text('Counter: $state'),
+                  ),
+                  SurgeBuilder<UserSurge, User>.full(
+                    builder: (context, state, s) =>
+                        Text('User: ${state.name}, ${state.age}'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('Counter: 0'), findsOneWidget);
+        expect(find.text('User: John, 25'), findsOneWidget);
+
+        counter.emit(5);
+        user.emit(User(name: 'Jane', age: 30));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Counter: 5'), findsOneWidget);
+        expect(find.text('User: Jane, 30'), findsOneWidget);
+
+        counter.dispose();
+        user.dispose();
+      });
+
+      testWidgets('works with mixed create and value constructors',
+          (tester) async {
+        final counter = CounterSurge();
+        UserSurge? userCreated;
+
+        await tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: MultiSurgeProvider(
+              providers: [
+                SurgeProvider<CounterSurge>.value(
+                  value: counter,
+                ),
+                SurgeProvider<UserSurge>(
+                  create: (_) {
+                    userCreated = UserSurge();
+                    return userCreated!;
+                  },
+                ),
+              ],
+              child: Builder(
+                builder: (context) {
+                  final c = context.read<CounterSurge>();
+                  final u = context.read<UserSurge>();
+                  return Text('counter=${c.state}, user=${u.state}');
+                },
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('counter=0, user=User(name: John, age: 25)'),
+            findsOneWidget);
+        expect(counter.isDisposed, isFalse);
+        expect(userCreated, isNotNull);
+        expect(userCreated!.isDisposed, isFalse);
+
+        // Unmount tree -> should dispose user (created), but not counter (value)
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
+
+        expect(counter.isDisposed, isFalse);
+        expect(userCreated!.isDisposed, isTrue);
+
+        counter.dispose();
       });
     });
 
@@ -269,7 +453,7 @@ void main() {
         expect(buildCount, 1);
 
         surge.emit(1);
-        await tester.pump();
+        await tester.pumpAndSettle();
 
         expect(find.text('state=1'), findsOneWidget);
         expect(buildCount, 2);
@@ -300,19 +484,19 @@ void main() {
 
         // next=1 -> odd -> no rebuild expected
         surge.emit(1);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('state=0'), findsOneWidget);
         expect(buildCount, 1);
 
         // next=2 -> even -> rebuild expected
         surge.emit(2);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('state=2'), findsOneWidget);
         expect(buildCount, 2);
 
         // next=3 -> odd -> no rebuild
         surge.emit(3);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('state=2'), findsOneWidget);
         expect(buildCount, 2);
       });
@@ -340,17 +524,17 @@ void main() {
 
         // Switch provider to new instance; builder should pick up new surge
         await tester.pumpWidget(buildWithSurge(surge2));
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('id=${surge2.hashCode};state=0'), findsOneWidget);
 
         // Emit on surge2 and verify UI updates accordingly
         surge2.emit(5);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('id=${surge2.hashCode};state=5'), findsOneWidget);
 
         // Ensure surge1 changes do not affect UI after switch
         surge1.emit(7);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('id=${surge2.hashCode};state=5'), findsOneWidget);
 
         // Cleanup
@@ -499,7 +683,7 @@ void main() {
         expect(buildCount, 1);
 
         surge.emit(1);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('state=1'), findsOneWidget);
         expect(buildCount, 2);
       });
@@ -529,13 +713,13 @@ void main() {
 
         // odd -> no rebuild
         surge.emit(1);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('state=0'), findsOneWidget);
         expect(buildCount, 1);
 
         // even -> rebuild
         surge.emit(2);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('state=2'), findsOneWidget);
         expect(buildCount, 2);
       });
@@ -625,17 +809,17 @@ void main() {
 
         // Switch provider instance
         await tester.pumpWidget(buildWithSurge(surge2));
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('id=${surge2.hashCode};state=0'), findsOneWidget);
 
         // Emit on surge2 -> should reflect in UI
         surge2.emit(9);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('id=${surge2.hashCode};state=9'), findsOneWidget);
 
         // Changes on surge1 should not affect UI after switch
         surge1.emit(7);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('id=${surge2.hashCode};state=9'), findsOneWidget);
 
         // Cleanup
@@ -669,12 +853,12 @@ void main() {
 
         // Changing inner updates UI
         surgeInner.emit(10);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('id=${surgeInner.hashCode};state=10'), findsOneWidget);
 
         // Changing outer has no effect
         surgeOuter.emit(20);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('id=${surgeInner.hashCode};state=10'), findsOneWidget);
 
         surgeOuter.dispose();
@@ -697,7 +881,7 @@ void main() {
 
         expect(find.text('state=0'), findsOneWidget);
         surge.emit(1);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('state=1'), findsOneWidget);
 
         surge.dispose();
@@ -725,11 +909,11 @@ void main() {
         );
 
         surgeInner.emit(2); // should trigger
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(received, [2]);
 
         surgeOuter.emit(3); // should not trigger
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(received, [2]);
 
         surgeOuter.dispose();
@@ -787,14 +971,14 @@ void main() {
         expect(buildCount, 1);
 
         surgeInner.emit(6);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('id=${surgeInner.hashCode};state=6'), findsOneWidget);
         expect(received, [6]);
         expect(buildCount, 2);
 
         // Changing outer should not affect
         surgeOuter.emit(8);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('id=${surgeInner.hashCode};state=6'), findsOneWidget);
         expect(received, [6]);
         expect(buildCount, 2);
@@ -828,7 +1012,7 @@ void main() {
         expect(buildCount, 1);
 
         surge.emit(11);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('state=11'), findsOneWidget);
         expect(received, [11]);
         expect(buildCount, 2);
@@ -857,16 +1041,16 @@ void main() {
 
         // Switch surge param to surge2
         await tester.pumpWidget(buildWithSurge(surge2));
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('id=${surge2.hashCode};state=0'), findsOneWidget);
 
         surge2.emit(3);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('id=${surge2.hashCode};state=3'), findsOneWidget);
 
         // Old surge1 should not affect
         surge1.emit(5);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('id=${surge2.hashCode};state=3'), findsOneWidget);
 
         surge1.dispose();
@@ -987,7 +1171,7 @@ void main() {
         expect(buildCount, 1);
 
         surge.emit(1); // odd -> selection changes
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('sel=odd'), findsOneWidget);
         expect(buildCount, 2);
 
@@ -1020,13 +1204,13 @@ void main() {
 
         // state 2 is also even -> selector result stays true -> expect no rebuild
         surge.emit(2);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('even=true'), findsOneWidget);
         expect(buildCount, 1);
 
         // change parity -> selector result changes -> expect rebuild
         surge.emit(3);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('even=false'), findsOneWidget);
         expect(buildCount, 2);
 
@@ -1056,17 +1240,17 @@ void main() {
 
         // Switch provider instance
         await tester.pumpWidget(buildWithSurge(surge2));
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('id=${surge2.hashCode};0'), findsOneWidget);
 
         // Emit on surge2 -> selection should reflect new state
         surge2.emit(4);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('id=${surge2.hashCode};4'), findsOneWidget);
 
         // Emit on surge1 should not affect after switch
         surge1.emit(5);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('id=${surge2.hashCode};4'), findsOneWidget);
 
         surge1.dispose();
@@ -1091,7 +1275,7 @@ void main() {
 
         expect(find.text('state=0'), findsOneWidget);
         surge.emit(2);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('state=2'), findsOneWidget);
 
         surge.dispose();
@@ -1120,12 +1304,12 @@ void main() {
         expect(find.text('id=${surgeInner.hashCode};0'), findsOneWidget);
 
         surgeInner.emit(1);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('id=${surgeInner.hashCode};1'), findsOneWidget);
 
         // Outer changes should not affect
         surgeOuter.emit(3);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('id=${surgeInner.hashCode};1'), findsOneWidget);
 
         surgeOuter.dispose();
@@ -1148,7 +1332,7 @@ void main() {
 
         expect(find.text('state=0'), findsOneWidget);
         surge.emit(2);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('state=2'), findsOneWidget);
 
         surge.dispose();
@@ -1174,16 +1358,16 @@ void main() {
 
         // switch param to surge2
         await tester.pumpWidget(buildWithSurge(surge2));
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('id=${surge2.hashCode};0'), findsOneWidget);
 
         surge2.emit(6);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('id=${surge2.hashCode};6'), findsOneWidget);
 
         // surge1 should not affect now
         surge1.emit(7);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('id=${surge2.hashCode};6'), findsOneWidget);
 
         surge1.dispose();
@@ -1192,46 +1376,6 @@ void main() {
     });
 
     group('Side effects', () {
-      testWidgets('SurgeBuilder does not track external signals',
-          (tester) async {
-        final surge = CounterSurge();
-        final other = Signal<int>(0);
-        var buildCount = 0;
-
-        await tester.pumpWidget(
-          Directionality(
-            textDirection: TextDirection.ltr,
-            child: SurgeProvider<CounterSurge>.value(
-              value: surge,
-              child: SurgeBuilder<CounterSurge, int>.full(
-                builder: (context, state, s) {
-                  final ov = other.value;
-                  buildCount++;
-                  return Text('state=$state;ov=$ov');
-                },
-              ),
-            ),
-          ),
-        );
-
-        expect(find.text('state=0;ov=0'), findsOneWidget);
-        expect(buildCount, 1);
-
-        // Changing external signal should NOT rebuild
-        other.set(1);
-        await tester.pump();
-        expect(find.text('state=0;ov=0'), findsOneWidget);
-        expect(buildCount, 1);
-
-        // Changing surge should rebuild
-        surge.emit(1);
-        await tester.pump();
-        expect(find.text('state=1;ov=1'), findsOneWidget);
-        expect(buildCount, 2);
-
-        surge.dispose();
-      });
-
       testWidgets('buildWhen is tracked by external signals when provided',
           (tester) async {
         final surge = CounterSurge();
@@ -1262,13 +1406,13 @@ void main() {
 
         // Changing external signal should rebuild because buildWhen is evaluated in tracked context
         other.set(1);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('state=0'), findsOneWidget);
         expect(buildCount, 2);
 
         // State change also rebuilds
         surge.emit(1);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('state=1'), findsOneWidget);
         expect(buildCount, 3);
 
@@ -1299,12 +1443,12 @@ void main() {
 
         // Changing external signal should NOT trigger listener
         other.set(1);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(received, isEmpty);
 
         // State change triggers listener
         surge.emit(1);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(received, [1]);
 
         surge.dispose();
@@ -1377,13 +1521,13 @@ void main() {
 
         // Changing external signal should rebuild (tracked by default)
         other.set(1);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('state=0;ov=1'), findsOneWidget);
         expect(buildCount, 2);
 
         // State change should also rebuild
         surge.emit(2);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('state=2;ov=1'), findsOneWidget);
         expect(buildCount, 3);
 
@@ -1421,13 +1565,13 @@ void main() {
 
           // Changing external signal should NOT rebuild due to untracked
           other.set(1);
-          await tester.pump();
+          await tester.pumpAndSettle();
           expect(find.text('state=0'), findsOneWidget);
           expect(buildCount, 1);
 
           // State change triggers rebuild
           surge.emit(1);
-          await tester.pump();
+          await tester.pumpAndSettle();
           expect(find.text('state=1'), findsOneWidget);
           expect(buildCount, 2);
 
@@ -1500,13 +1644,13 @@ void main() {
 
           // Changing external signal should NOT rebuild due to untracked
           other.set(2);
-          await tester.pump();
+          await tester.pumpAndSettle();
           expect(find.text('state=0;ov=0'), findsOneWidget);
           expect(buildCount, 1);
 
           // State change triggers rebuild; selector reads current external value then
           surge.emit(3);
-          await tester.pump();
+          await tester.pumpAndSettle();
           expect(find.text('state=3;ov=2'), findsOneWidget);
           expect(buildCount, 2);
 
@@ -1617,7 +1761,7 @@ void main() {
           expect(buildCount, 1);
 
           surge.emit(1);
-          await tester.pump();
+          await tester.pumpAndSettle();
           expect(find.text('state=1'), findsOneWidget);
           expect(buildCount, 2);
 
@@ -1651,13 +1795,13 @@ void main() {
 
           // next=1 -> odd -> no rebuild expected
           surge.emit(1);
-          await tester.pump();
+          await tester.pumpAndSettle();
           expect(find.text('state=0'), findsOneWidget);
           expect(buildCount, 1);
 
           // next=2 -> even -> rebuild expected
           surge.emit(2);
-          await tester.pump();
+          await tester.pumpAndSettle();
           expect(find.text('state=2'), findsOneWidget);
           expect(buildCount, 2);
 
@@ -1693,7 +1837,7 @@ void main() {
           expect(received, isEmpty);
 
           surge.emit(1);
-          await tester.pump();
+          await tester.pumpAndSettle();
           expect(find.text('state=1'), findsOneWidget);
           expect(buildCount, 2);
           expect(received, [1]);
@@ -1732,21 +1876,21 @@ void main() {
 
           // next=1 -> odd -> no rebuild, but next > prev -> listen
           surge.emit(1);
-          await tester.pump();
+          await tester.pumpAndSettle();
           expect(find.text('state=0'), findsOneWidget);
           expect(buildCount, 1);
           expect(received, [1]);
 
           // next=2 -> even -> rebuild, and next > prev -> listen
           surge.emit(2);
-          await tester.pump();
+          await tester.pumpAndSettle();
           expect(find.text('state=2'), findsOneWidget);
           expect(buildCount, 2);
           expect(received, [1, 2]);
 
           // next=2 -> same state, no update triggered, no rebuild, no listen
           surge.emit(2);
-          await tester.pump();
+          await tester.pumpAndSettle();
           expect(find.text('state=2'), findsOneWidget);
           expect(buildCount, 2); // No rebuild because state didn't change
           expect(received, [1, 2]); // No listen because state didn't change
@@ -1852,7 +1996,7 @@ void main() {
           expect(buildCount, 1);
 
           surge.emit(1); // odd -> selection changes
-          await tester.pump();
+          await tester.pumpAndSettle();
           expect(find.text('sel=odd'), findsOneWidget);
           expect(buildCount, 2);
 
@@ -1886,18 +2030,266 @@ void main() {
 
           // state 2 is also even -> selector result stays true -> expect no rebuild
           surge.emit(2);
-          await tester.pump();
+          await tester.pumpAndSettle();
           expect(find.text('even=true'), findsOneWidget);
           expect(buildCount, 1);
 
           // change parity -> selector result changes -> expect rebuild
           surge.emit(3);
-          await tester.pump();
+          await tester.pumpAndSettle();
           expect(find.text('even=false'), findsOneWidget);
           expect(buildCount, 2);
 
           surge.dispose();
         });
+      });
+    });
+
+    group('SurgeBuilder dependency tracking in builder', () {
+      testWidgets('SurgeBuilder builder should track external signals',
+          (tester) async {
+        final surge = CounterSurge();
+        final externalSignal = Signal<String>('initial');
+        var buildCount = 0;
+
+        await tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: SurgeProvider<CounterSurge>.value(
+              value: surge,
+              child: SurgeBuilder<CounterSurge, int>.full(
+                builder: (context, state, s) {
+                  buildCount++;
+                  // Access external signal in builder - should be tracked
+                  final external = externalSignal.value;
+                  return Text('state=$state;external=$external');
+                },
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('state=0;external=initial'), findsOneWidget);
+        expect(buildCount, 1);
+
+        // Changing external signal should rebuild (tracked)
+        externalSignal.value = 'updated';
+        await tester.pumpAndSettle();
+        expect(find.text('state=0;external=updated'), findsOneWidget);
+        expect(buildCount, 2);
+
+        // Changing surge state should also rebuild
+        surge.emit(1);
+        await tester.pumpAndSettle();
+        expect(find.text('state=1;external=updated'), findsOneWidget);
+        expect(buildCount, 3);
+
+        surge.dispose();
+      });
+
+      testWidgets('SurgeBuilder builder should track computed values',
+          (tester) async {
+        final surge = CounterSurge();
+        final multiplier = Signal<int>(2);
+        final computed = Computed(() => multiplier.value * 10);
+        var buildCount = 0;
+
+        await tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: SurgeProvider<CounterSurge>.value(
+              value: surge,
+              child: SurgeBuilder<CounterSurge, int>.full(
+                builder: (context, state, s) {
+                  buildCount++;
+                  // Access computed value in builder - should be tracked
+                  final computedValue = computed.value;
+                  return Text('state=$state;computed=$computedValue');
+                },
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('state=0;computed=20'), findsOneWidget);
+        expect(buildCount, 1);
+
+        // Changing multiplier should rebuild (computed dependency)
+        multiplier.value = 3;
+        await tester.pumpAndSettle();
+        expect(find.text('state=0;computed=30'), findsOneWidget);
+        expect(buildCount, 2);
+
+        surge.dispose();
+      });
+
+      testWidgets('SurgeBuilder builder should track multiple external signals',
+          (tester) async {
+        final surge = CounterSurge();
+        final signal1 = Signal<String>('A');
+        final signal2 = Signal<int>(10);
+        var buildCount = 0;
+
+        await tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: SurgeProvider<CounterSurge>.value(
+              value: surge,
+              child: SurgeBuilder<CounterSurge, int>.full(
+                builder: (context, state, s) {
+                  buildCount++;
+                  // Access multiple external signals - all should be tracked
+                  final s1 = signal1.value;
+                  final s2 = signal2.value;
+                  return Text('state=$state;s1=$s1;s2=$s2');
+                },
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('state=0;s1=A;s2=10'), findsOneWidget);
+        expect(buildCount, 1);
+
+        // Changing signal1 should rebuild
+        signal1.value = 'B';
+        await tester.pumpAndSettle();
+        expect(find.text('state=0;s1=B;s2=10'), findsOneWidget);
+        expect(buildCount, 2);
+
+        // Changing signal2 should rebuild
+        signal2.value = 20;
+        await tester.pumpAndSettle();
+        expect(find.text('state=0;s1=B;s2=20'), findsOneWidget);
+        expect(buildCount, 3);
+
+        surge.dispose();
+      });
+    });
+
+    group('SurgeSelector dependency tracking in builder', () {
+      testWidgets('SurgeSelector builder should track external signals',
+          (tester) async {
+        final surge = CounterSurge();
+        final externalSignal = Signal<String>('initial');
+        var buildCount = 0;
+
+        await tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: SurgeProvider<CounterSurge>.value(
+              value: surge,
+              child: SurgeSelector<CounterSurge, int, String>.full(
+                selector: (state, s) => state.isEven ? 'even' : 'odd',
+                builder: (context, selected, s) {
+                  buildCount++;
+                  // Access external signal in builder - should be tracked
+                  final external = externalSignal.value;
+                  return Text('selected=$selected;external=$external');
+                },
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('selected=even;external=initial'), findsOneWidget);
+        expect(buildCount, 1);
+
+        // Changing external signal should rebuild (tracked)
+        externalSignal.value = 'updated';
+        await tester.pumpAndSettle();
+        expect(find.text('selected=even;external=updated'), findsOneWidget);
+        expect(buildCount, 2);
+
+        // Changing surge state (selector result changes) should also rebuild
+        surge.emit(1);
+        await tester.pumpAndSettle();
+        expect(find.text('selected=odd;external=updated'), findsOneWidget);
+        expect(buildCount, 3);
+
+        surge.dispose();
+      });
+
+      testWidgets('SurgeSelector builder should track computed values',
+          (tester) async {
+        final surge = CounterSurge();
+        final multiplier = Signal<int>(2);
+        final computed = Computed(() => multiplier.value * 10);
+        var buildCount = 0;
+
+        await tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: SurgeProvider<CounterSurge>.value(
+              value: surge,
+              child: SurgeSelector<CounterSurge, int, String>.full(
+                selector: (state, s) => state.isEven ? 'even' : 'odd',
+                builder: (context, selected, s) {
+                  buildCount++;
+                  // Access computed value in builder - should be tracked
+                  final computedValue = computed.value;
+                  return Text('selected=$selected;computed=$computedValue');
+                },
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('selected=even;computed=20'), findsOneWidget);
+        expect(buildCount, 1);
+
+        // Changing multiplier should rebuild (computed dependency)
+        multiplier.value = 3;
+        await tester.pumpAndSettle();
+        expect(find.text('selected=even;computed=30'), findsOneWidget);
+        expect(buildCount, 2);
+
+        surge.dispose();
+      });
+
+      testWidgets(
+          'SurgeSelector builder should track multiple external signals',
+          (tester) async {
+        final surge = CounterSurge();
+        final signal1 = Signal<String>('A');
+        final signal2 = Signal<int>(10);
+        var buildCount = 0;
+
+        await tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: SurgeProvider<CounterSurge>.value(
+              value: surge,
+              child: SurgeSelector<CounterSurge, int, String>.full(
+                selector: (state, s) => state.isEven ? 'even' : 'odd',
+                builder: (context, selected, s) {
+                  buildCount++;
+                  // Access multiple external signals - all should be tracked
+                  final s1 = signal1.value;
+                  final s2 = signal2.value;
+                  return Text('selected=$selected;s1=$s1;s2=$s2');
+                },
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('selected=even;s1=A;s2=10'), findsOneWidget);
+        expect(buildCount, 1);
+
+        // Changing signal1 should rebuild
+        signal1.value = 'B';
+        await tester.pumpAndSettle();
+        expect(find.text('selected=even;s1=B;s2=10'), findsOneWidget);
+        expect(buildCount, 2);
+
+        // Changing signal2 should rebuild
+        signal2.value = 20;
+        await tester.pumpAndSettle();
+        expect(find.text('selected=even;s1=B;s2=20'), findsOneWidget);
+        expect(buildCount, 3);
+
+        surge.dispose();
       });
     });
   });
@@ -1931,4 +2323,32 @@ class TestSurgeObserver extends SurgeObserver {
 
 class TestSurgeWithCreate extends Surge<int> {
   TestSurgeWithCreate(super.initialState, {super.creator});
+}
+
+class User {
+  final String name;
+  final int age;
+
+  User({required this.name, required this.age});
+
+  @override
+  String toString() => 'User(name: $name, age: $age)';
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is User &&
+          runtimeType == other.runtimeType &&
+          name == other.name &&
+          age == other.age;
+
+  @override
+  int get hashCode => name.hashCode ^ age.hashCode;
+}
+
+class UserSurge extends Surge<User> {
+  UserSurge() : super(User(name: 'John', age: 25));
+
+  void updateName(String name) => emit(User(name: name, age: state.age));
+  void updateAge(int age) => emit(User(name: state.name, age: age));
 }

@@ -1,28 +1,43 @@
 import 'package:flutter/widgets.dart';
-import 'package:jolt/jolt.dart';
+import 'package:jolt_flutter/jolt_flutter.dart';
 import 'package:provider/provider.dart';
 
 import '../surge.dart';
 
 /// A widget that provides fine-grained rebuild control using a selector function.
 ///
-/// SurgeSelector only rebuilds when the value returned by the [selector] function
-/// changes (determined by `==` comparison). This allows you to optimize rebuilds
-/// by selecting only the specific part of the state that your widget needs.
+/// SurgeSelector is a [StatefulWidget] that only rebuilds when the value returned
+/// by the [selector] function changes (determined by `==` comparison). It uses a
+/// [FlutterEffect] internally to track Surge state changes and compare selector results.
 ///
-/// The [selector] function is tracked by default, meaning it can depend on
-/// external signals. If you need to use external signals without tracking them,
-/// wrap the access in [untracked].
+/// **Key Implementation Details:**
+/// - Uses [FlutterEffect] to track Surge state changes (executes at frame end)
+/// - [selector] is called within the effect and is tracked by default
+/// - Only rebuilds when the selector result changes (using `==` comparison)
+/// - When [surge] is null, uses `context.select` to ensure rebuilds when the
+///   Provider instance changes
+/// - If the selector function itself changes (in didUpdateWidget), the selector
+///   value is recalculated immediately
+/// - **Builder function dependency tracking**: The [builder] function is wrapped
+///   in a [JoltBuilder], allowing it to automatically track external signals,
+///   computed values, and other reactive dependencies accessed within the builder.
+///   This provides the same dependency tracking capabilities as [JoltBuilder].
 ///
 /// Example:
 /// ```dart
+/// final externalSignal = Signal<String>('initial');
+///
 /// SurgeSelector<CounterSurge, int, String>(
 ///   selector: (state, s) => state.isEven ? 'even' : 'odd', // Default tracked
-///   builder: (context, selected, s) => Text(selected),
+///   builder: (context, selected, s) {
+///     // Can access external signals - automatically tracked!
+///     final external = externalSignal.value;
+///     return Text('$selected, external: $external');
+///   },
 /// );
 /// ```
 ///
-/// With untracked external signals:
+/// With untracked external signals in selector:
 /// ```dart
 /// SurgeSelector<CounterSurge, int, String>(
 ///   selector: (state, s) => untracked(() => externalSignal.valueAsLabel(state)),
@@ -34,6 +49,7 @@ import '../surge.dart';
 /// - [SurgeConsumer] for both builder and listener functionality
 /// - [SurgeBuilder] for builder-only functionality
 /// - [SurgeListener] for listener-only functionality
+/// - [JoltBuilder] for the underlying dependency tracking mechanism
 class SurgeSelector<T extends Surge<S>, S, C> extends StatefulWidget {
   /// Creates a SurgeSelector widget with full access to the Surge instance.
   ///
@@ -136,6 +152,29 @@ class SurgeSelector<T extends Surge<S>, S, C> extends StatefulWidget {
   ///
   /// This function is called whenever the value returned by [selector] changes
   /// (determined by `==` comparison).
+  ///
+  /// **Dependency Tracking:**
+  /// The builder function is wrapped in a [JoltBuilder], which means any external
+  /// signals, computed values, or reactive collections accessed within this builder
+  /// will be automatically tracked. When these tracked dependencies change, the
+  /// widget will automatically rebuild, just like [JoltBuilder].
+  ///
+  /// Example:
+  /// ```dart
+  /// final multiplier = Signal<int>(2);
+  /// final computed = Computed(() => multiplier.value * 10);
+  ///
+  /// SurgeSelector<CounterSurge, int, String>(
+  ///   selector: (state, s) => state.isEven ? 'even' : 'odd',
+  ///   builder: (context, selected, surge) {
+  ///     // These are automatically tracked:
+  ///     final mult = multiplier.value;
+  ///     final comp = computed.value;
+  ///     return Text('Selected: $selected, Mult: $mult, Computed: $comp');
+  ///   },
+  /// );
+  /// // Widget rebuilds when selector result changes OR when multiplier/computed changes
+  /// ```
   final Widget Function(BuildContext context, C state, T surge) builder;
 
   /// The selector function that extracts a value from the state.
@@ -165,18 +204,18 @@ class SurgeSelector<T extends Surge<S>, S, C> extends StatefulWidget {
 
   @override
   State<StatefulWidget> createState() {
-    return SurgeSelectorState<T, S, C>();
+    return _SurgeSelectorState<T, S, C>();
   }
 }
 
-class SurgeSelectorState<T extends Surge<S>, S, C>
+class _SurgeSelectorState<T extends Surge<S>, S, C>
     extends State<SurgeSelector<T, S, C>> {
-  SurgeSelectorState();
+  _SurgeSelectorState();
 
   late T _surge;
   late C _selectorValue;
 
-  Effect? _effect;
+  FlutterEffect? _effect;
 
   @override
   void initState() {
@@ -218,7 +257,7 @@ class SurgeSelectorState<T extends Surge<S>, S, C>
   }
 
   void _startEffect() {
-    _effect = Effect(() {
+    _effect = FlutterEffect(() {
       if (!mounted) return;
       final state = _surge.state;
 
@@ -246,6 +285,11 @@ class SurgeSelectorState<T extends Surge<S>, S, C>
     if (widget.surge == null) {
       context.select<T, bool>((surge) => identical(_surge, surge));
     }
+
+    return JoltBuilder(builder: _builder);
+  }
+
+  Widget _builder(BuildContext context) {
     return widget.builder(context, _selectorValue, _surge);
   }
 }

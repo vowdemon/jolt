@@ -1,4 +1,4 @@
-import 'package:jolt/jolt.dart';
+import 'package:jolt_flutter/jolt_flutter.dart';
 import 'package:shared_interfaces/shared_interfaces.dart';
 
 import 'observer.dart';

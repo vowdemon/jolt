@@ -1,4 +1,5 @@
 import 'package:jolt_surge/jolt_surge.dart';
+import 'package:jolt_surge/observer.dart';
 
 class CounterSurge extends Surge<int> {
   CounterSurge({this.onChangeCallback}) : super(0);

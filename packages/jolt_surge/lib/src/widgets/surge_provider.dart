@@ -1,4 +1,3 @@
-import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 
 import '../surge.dart';
@@ -74,12 +73,12 @@ class SurgeProvider<T extends Surge<dynamic>> extends InheritedProvider<T> {
     super.key,
     required Create<T> create,
     bool lazy = true,
-    required Widget child,
+    super.child,
   }) : super(
-            create: create,
-            dispose: (_, surge) => surge.dispose(),
-            lazy: lazy,
-            child: child);
+          create: create,
+          dispose: (_, surge) => surge.dispose(),
+          lazy: lazy,
+        );
 
   /// Creates a SurgeProvider with manual lifecycle management.
   ///
@@ -114,4 +113,23 @@ class SurgeProvider<T extends Surge<dynamic>> extends InheritedProvider<T> {
     bool super.lazy = true,
     super.child,
   }) : super.value();
+}
+
+/// {@template surge_multiple_provider}
+/// A convenience widget that provides multiple Surge instances to the widget tree.
+///
+/// MultiSurgeProvider is a utility widget that combines multiple [SurgeProvider]
+/// widgets into a single widget, making it easier to provide multiple Surge instances
+/// without deeply nesting providers.
+///
+/// See also:
+/// - [SurgeProvider] for providing a single Surge instance
+/// {@endtemplate}
+class MultiSurgeProvider extends MultiProvider {
+  /// {@macro surge_multiple_provider}
+  MultiSurgeProvider({
+    super.key,
+    required List<SurgeProvider> providers,
+    required super.child,
+  }) : super(providers: providers);
 }

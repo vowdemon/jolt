@@ -1,32 +1,39 @@
 import 'package:flutter/widgets.dart';
-import 'package:jolt/jolt.dart';
-import 'package:provider/provider.dart';
+import 'package:jolt_flutter/jolt_flutter.dart';
 
 import '../surge.dart';
+import 'surge_listener.dart';
+import 'surge_builder.dart';
 
 /// A unified widget that provides both builder and listener functionality.
 ///
-/// SurgeConsumer provides fine-grained control over when to rebuild the UI
-/// and when to execute side effects (listeners). It supports conditional
-/// rebuilding and listening through [buildWhen] and [listenWhen] callbacks.
+/// SurgeConsumer is a [StatelessWidget] that combines [SurgeBuilder] and
+/// [SurgeListener] to provide both UI building and side effect handling
+/// capabilities in a single widget.
 ///
-/// **Key Features:**
-/// - **builder**: Builds the UI, default behavior is untracked (doesn't create
-///   reactive dependencies), only rebuilds when [buildWhen] returns true
-/// - **listener**: Handles side effects (like showing SnackBar, sending analytics
-///   events, etc.), default behavior is untracked, only executes when [listenWhen]
-///   returns true
-/// - **buildWhen**: Controls whether to rebuild, default is tracked (can depend
-///   on external signals)
-/// - **listenWhen**: Controls whether to execute the listener, default is tracked
-///   (can depend on external signals)
+/// **Implementation:**
+/// - Internally wraps a [SurgeListener] around a [SurgeBuilder]
+/// - The listener handles side effects (executed in untracked context)
+/// - The builder handles UI rebuilding (using FlutterEffect)
+/// - Both [buildWhen] and [listenWhen] are tracked by default
+/// - **Builder function dependency tracking**: The [builder] function is wrapped
+///   in a [JoltBuilder] (via [SurgeBuilder]), allowing it to automatically track
+///   external signals, computed values, and other reactive dependencies accessed
+///   within the builder. This provides the same dependency tracking capabilities
+///   as [JoltBuilder].
 ///
 /// Example:
 /// ```dart
+/// final externalSignal = Signal<String>('initial');
+///
 /// SurgeConsumer<CounterSurge, int>(
 ///   buildWhen: (prev, next, s) => next.isEven, // Only rebuild when even
 ///   listenWhen: (prev, next, s) => next > prev, // Only listen when increasing
-///   builder: (context, state, s) => Text('count: $state'),
+///   builder: (context, state, s) {
+///     // Can access external signals - automatically tracked!
+///     final external = externalSignal.value;
+///     return Text('count: $state, external: $external');
+///   },
 ///   listener: (context, state, s) {
 ///     // Side effects: show SnackBar or send analytics events
 ///     ScaffoldMessenger.of(context).showSnackBar(
@@ -40,7 +47,8 @@ import '../surge.dart';
 /// - [SurgeBuilder] for builder-only functionality
 /// - [SurgeListener] for listener-only functionality
 /// - [SurgeSelector] for fine-grained rebuild control with selector
-class SurgeConsumer<T extends Surge<S>, S> extends StatefulWidget {
+/// - [JoltBuilder] for the underlying dependency tracking mechanism
+class SurgeConsumer<T extends Surge<S>, S> extends StatelessWidget {
   /// Creates a SurgeConsumer widget with full access to the Surge instance.
   ///
   /// This is the full-featured constructor that provides access to the Surge
@@ -153,6 +161,28 @@ class SurgeConsumer<T extends Surge<S>, S> extends StatefulWidget {
   /// Returns: The widget to build
   ///
   /// This function is called whenever the state changes and [buildWhen] returns true.
+  ///
+  /// **Dependency Tracking:**
+  /// The builder function is wrapped in a [JoltBuilder] (via [SurgeBuilder]), which
+  /// means any external signals, computed values, or reactive collections accessed
+  /// within this builder will be automatically tracked. When these tracked dependencies
+  /// change, the widget will automatically rebuild, just like [JoltBuilder].
+  ///
+  /// Example:
+  /// ```dart
+  /// final multiplier = Signal<int>(2);
+  /// final computed = Computed(() => multiplier.value * 10);
+  ///
+  /// SurgeConsumer<CounterSurge, int>(
+  ///   builder: (context, state, surge) {
+  ///     // These are automatically tracked:
+  ///     final mult = multiplier.value;
+  ///     final comp = computed.value;
+  ///     return Text('State: $state, Mult: $mult, Computed: $comp');
+  ///   },
+  /// );
+  /// // Widget rebuilds when state changes OR when multiplier/computed changes
+  /// ```
   final Widget Function(BuildContext context, S state, T surge) builder;
 
   /// Optional listener function for handling side effects.
@@ -208,104 +238,13 @@ class SurgeConsumer<T extends Surge<S>, S> extends StatefulWidget {
   final T? surge;
 
   @override
-  State<StatefulWidget> createState() {
-    return SurgeConsumerState<T, S>();
-  }
-}
-
-class SurgeConsumerState<T extends Surge<S>, S>
-    extends State<SurgeConsumer<T, S>> {
-  SurgeConsumerState();
-
-  late T _surge;
-  late S _state;
-
-  Effect? _effect;
-
-  @override
-  void initState() {
-    super.initState();
-    _surge = widget.surge ?? context.read<T>();
-    _state = _surge.state;
-    _startEffect();
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    _stopEffect();
-  }
-
-  @override
-  void didUpdateWidget(SurgeConsumer<T, S> oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    final oldSurge = oldWidget.surge ?? context.read<T>();
-    final currentSurge = widget.surge ?? oldSurge;
-    if (!identical(oldSurge, currentSurge)) {
-      _surge = currentSurge;
-      _state = _surge.state;
-      _restartEffect();
-    }
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final surge = widget.surge ?? context.read<T>();
-    if (!identical(_surge, surge)) {
-      _surge = surge;
-      _state = _surge.state;
-      _restartEffect();
-    }
-  }
-
-  void _startEffect() {
-    final allowNullSkip =
-        (widget.listenWhen == null || widget.listener == null) &&
-            widget.buildWhen == null;
-    bool firstEffect = true;
-    _effect = Effect(() {
-      if (!mounted) return;
-
-      final state = _surge.state;
-      final listenerTriggable = widget.listener != null &&
-          (widget.listenWhen?.call(_state, state, _surge) ?? true);
-      final builderTriggable =
-          widget.buildWhen?.call(_state, state, _surge) ?? true;
-
-      if ((_state == state && allowNullSkip) || firstEffect) {
-        firstEffect = false;
-        return;
-      }
-
-      if (listenerTriggable) {
-        untracked(() {
-          widget.listener!(context, state, _surge);
-        });
-      }
-      if (builderTriggable) {
-        (context as StatefulElement).markNeedsBuild();
-      }
-
-      _state = state;
-    });
-  }
-
-  void _stopEffect() {
-    _effect?.dispose();
-    _effect = null;
-  }
-
-  void _restartEffect() {
-    _stopEffect();
-    _startEffect();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    if (widget.surge == null) {
-      context.select<T, bool>((surge) => identical(_surge, surge));
-    }
-    return widget.builder(context, _state, _surge);
+    return SurgeListener.full(
+      listener: listener,
+      listenWhen: listenWhen,
+      surge: surge,
+      child: SurgeBuilder.full(
+          builder: builder, buildWhen: buildWhen, surge: surge),
+    );
   }
 }

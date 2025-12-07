@@ -1,3 +1,9 @@
+## 2.1.0
+
+ - **REFACTOR**(jolt): optimize fine-grained update detection for collection signals. ([26781582](https://github.com/vowdemon/jolt/commit/26781582536cef4a8b066169addc8f47c0c907c0))
+ - **FEAT**: add Computed.withPrevious(). ([87da01b4](https://github.com/vowdemon/jolt/commit/87da01b447f978cf5d2e0d8e104317b7fb9a22f1))
+ - **FEAT**(jolt): add ReadonlySignalImpl and ProxySignal implementations. ([fa6e9879](https://github.com/vowdemon/jolt/commit/fa6e9879fe45eace43810af240af34ca389f1ba4))
+
 ## 2.0.0
 
  - Graduate package to a stable release. See pre-releases prior to this version for changelog entries.

@@ -1,3 +1,7 @@
+## 2.0.1
+
+ - **REFACTOR**: use FlutterEffect, wrap builder and selector with JoltBuilder, add MultiSurgeProvider. ([afd17ef0](https://github.com/vowdemon/jolt/commit/afd17ef0b5078c3a1de256caec51853d5102e0b9))
+
 ## 2.0.0
 
  - Graduate package to a stable release. See pre-releases prior to this version for changelog entries.

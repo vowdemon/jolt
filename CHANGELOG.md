@@ -3,6 +3,54 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-12-07
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`jolt` - `v2.1.0`](#jolt---v210)
+ - [`jolt_flutter` - `v2.1.0`](#jolt_flutter---v210)
+ - [`jolt_flutter_hooks` - `v1.1.0`](#jolt_flutter_hooks---v110)
+ - [`jolt_hooks` - `v2.0.1`](#jolt_hooks---v201)
+ - [`jolt_surge` - `v2.0.1`](#jolt_surge---v201)
+
+---
+
+#### `jolt` - `v2.1.0`
+
+ - **REFACTOR**(jolt): optimize fine-grained update detection for collection signals. ([26781582](https://github.com/vowdemon/jolt/commit/26781582536cef4a8b066169addc8f47c0c907c0))
+ - **FEAT**: add Computed.withPrevious(). ([87da01b4](https://github.com/vowdemon/jolt/commit/87da01b447f978cf5d2e0d8e104317b7fb9a22f1))
+ - **FEAT**(jolt): add ReadonlySignalImpl and ProxySignal implementations. ([fa6e9879](https://github.com/vowdemon/jolt/commit/fa6e9879fe45eace43810af240af34ca389f1ba4))
+
+#### `jolt_flutter` - `v2.1.0`
+
+ - **REFACTOR**: rename lifecycle hook methods for consistency. ([25a6567e](https://github.com/vowdemon/jolt/commit/25a6567e07f36792666f315a2bfe01f39b0b473b))
+ - **REFACTOR**: replace abstract hook creators with final implementations. ([87314ba2](https://github.com/vowdemon/jolt/commit/87314ba29eaff94486445aa7d26101a945ba37e1))
+ - **PERF**: optimize listenable implementation with peek and code refactor. ([b36ec5d5](https://github.com/vowdemon/jolt/commit/b36ec5d5921baffe9f59140eef4c0fd86ded5e60))
+ - **FEAT**: add hooks withPrevious for computed values. ([6c3c3b04](https://github.com/vowdemon/jolt/commit/6c3c3b0494d8e1269d0951fd516468906a6868f3))
+
+#### `jolt_flutter_hooks` - `v1.1.0`
+
+ - **FEAT**: add more hooks. ([be34b78a](https://github.com/vowdemon/jolt/commit/be34b78a247f516a27f7fd2a849e9119414c22ee))
+ - **FEAT**: add async and stream hooks for reactive state management. ([3b258362](https://github.com/vowdemon/jolt/commit/3b258362acb4bc38fc4bcd17a64430997966dace))
+ - **FEAT**: add listenable hooks for Listenable. ([1f1f2a7b](https://github.com/vowdemon/jolt/commit/1f1f2a7b21b964c6430e611d0b365fd0dba7f933))
+
+#### `jolt_hooks` - `v2.0.1`
+
+ - **REFACTOR**: replace abstract hook creators with final implementations. ([87314ba2](https://github.com/vowdemon/jolt/commit/87314ba29eaff94486445aa7d26101a945ba37e1))
+
+#### `jolt_surge` - `v2.0.1`
+
+ - **REFACTOR**: use FlutterEffect, wrap builder and selector with JoltBuilder, add MultiSurgeProvider. ([afd17ef0](https://github.com/vowdemon/jolt/commit/afd17ef0b5078c3a1de256caec51853d5102e0b9))
+
+
 ## 2025-12-04
 
 ### Changes

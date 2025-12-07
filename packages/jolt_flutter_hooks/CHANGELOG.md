@@ -1,3 +1,9 @@
+## 1.1.0
+
+ - **FEAT**: add more hooks. ([be34b78a](https://github.com/vowdemon/jolt/commit/be34b78a247f516a27f7fd2a849e9119414c22ee))
+ - **FEAT**: add async and stream hooks for reactive state management. ([3b258362](https://github.com/vowdemon/jolt/commit/3b258362acb4bc38fc4bcd17a64430997966dace))
+ - **FEAT**: add listenable hooks for Listenable. ([1f1f2a7b](https://github.com/vowdemon/jolt/commit/1f1f2a7b21b964c6430e611d0b365fd0dba7f933))
+
 ## 1.0.0
 
  - Graduate package to a stable release. See pre-releases prior to this version for changelog entries.

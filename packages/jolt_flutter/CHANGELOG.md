@@ -1,3 +1,10 @@
+## 2.1.0
+
+ - **REFACTOR**: rename lifecycle hook methods for consistency. ([25a6567e](https://github.com/vowdemon/jolt/commit/25a6567e07f36792666f315a2bfe01f39b0b473b))
+ - **REFACTOR**: replace abstract hook creators with final implementations. ([87314ba2](https://github.com/vowdemon/jolt/commit/87314ba29eaff94486445aa7d26101a945ba37e1))
+ - **PERF**: optimize listenable implementation with peek and code refactor. ([b36ec5d5](https://github.com/vowdemon/jolt/commit/b36ec5d5921baffe9f59140eef4c0fd86ded5e60))
+ - **FEAT**: add hooks withPrevious for computed values. ([6c3c3b04](https://github.com/vowdemon/jolt/commit/6c3c3b0494d8e1269d0951fd516468906a6868f3))
+
 ## 2.0.0
 
  - Graduate package to a stable release. See pre-releases prior to this version for changelog entries.

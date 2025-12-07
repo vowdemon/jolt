@@ -20,7 +20,7 @@ abstract interface class IMutableCollection<T> {
   static bool Function(dynamic, dynamic)? skipNode(dynamic target) =>
       target is IMutableCollection ? _skip : null;
 
-  static bool _skip(newValue, oldValue) {
+  static bool _skip(dynamic newValue, dynamic oldValue) {
     return true;
   }
 }

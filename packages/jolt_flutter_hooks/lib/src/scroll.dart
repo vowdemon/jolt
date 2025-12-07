@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'package:jolt_flutter/setup.dart';
 import 'animation.dart';
+import 'listenable.dart';
 
 /// Creates a scroll controller
 ///
@@ -13,17 +13,29 @@ ScrollController useScrollController({
   ScrollControllerCallback? onAttach,
   ScrollControllerCallback? onDetach,
 }) {
-  final controller = useMemoized(
-      () => ScrollController(
-            initialScrollOffset: initialScrollOffset,
-            keepScrollOffset: keepScrollOffset,
-            debugLabel: debugLabel,
-            onAttach: onAttach,
-            onDetach: onDetach,
-          ),
-      (controller) => controller.dispose);
+  return useChangeNotifier(() => ScrollController(
+        initialScrollOffset: initialScrollOffset,
+        keepScrollOffset: keepScrollOffset,
+        debugLabel: debugLabel,
+        onAttach: onAttach,
+        onDetach: onDetach,
+      ));
+}
 
-  return controller;
+TrackingScrollController useTrackingScrollController({
+  double initialScrollOffset = 0.0,
+  bool keepScrollOffset = true,
+  String? debugLabel,
+  ScrollControllerCallback? onAttach,
+  ScrollControllerCallback? onDetach,
+}) {
+  return useChangeNotifier(() => TrackingScrollController(
+        initialScrollOffset: initialScrollOffset,
+        keepScrollOffset: keepScrollOffset,
+        debugLabel: debugLabel,
+        onAttach: onAttach,
+        onDetach: onDetach,
+      ));
 }
 
 /// Creates a Tab controller
@@ -38,16 +50,14 @@ TabController useTabController({
   TickerProvider? vsync,
   Duration? animationDuration,
 }) {
-  final controller = useMemoized(
-      () => TabController(
-            length: length,
-            initialIndex: initialIndex,
-            vsync: vsync ?? useSingleTickerProvider(),
-            animationDuration: animationDuration,
-          ),
-      (controller) => controller.dispose);
-
-  return controller;
+  return useChangeNotifier(
+    () => TabController(
+      length: length,
+      initialIndex: initialIndex,
+      vsync: vsync ?? useSingleTickerProvider(),
+      animationDuration: animationDuration,
+    ),
+  );
 }
 
 /// Creates a Page controller
@@ -59,17 +69,15 @@ PageController usePageController(
     double viewportFraction = 1.0,
     void Function(ScrollPosition)? onAttach,
     void Function(ScrollPosition)? onDetach}) {
-  final controller = useMemoized(
-      () => PageController(
-            initialPage: initialPage,
-            keepPage: keepPage,
-            viewportFraction: viewportFraction,
-            onAttach: onAttach,
-            onDetach: onDetach,
-          ),
-      (controller) => controller.dispose);
-
-  return controller;
+  return useChangeNotifier(
+    () => PageController(
+      initialPage: initialPage,
+      keepPage: keepPage,
+      viewportFraction: viewportFraction,
+      onAttach: onAttach,
+      onDetach: onDetach,
+    ),
+  );
 }
 
 /// Creates a fixed extent scroll controller
@@ -82,15 +90,21 @@ FixedExtentScrollController useFixedExtentScrollController({
   bool keepScrollOffset = true,
   String? debugLabel,
 }) {
-  final controller = useMemoized(
-      () => FixedExtentScrollController(
-            initialItem: initialItem,
-            onAttach: onAttach,
-            onDetach: onDetach,
-            keepScrollOffset: keepScrollOffset,
-            debugLabel: debugLabel,
-          ),
-      (controller) => controller.dispose);
+  return useChangeNotifier(
+    () => FixedExtentScrollController(
+      initialItem: initialItem,
+      onAttach: onAttach,
+      onDetach: onDetach,
+      keepScrollOffset: keepScrollOffset,
+      debugLabel: debugLabel,
+    ),
+  );
+}
 
-  return controller;
+DraggableScrollableController useDraggableScrollableController() {
+  return useChangeNotifier(() => DraggableScrollableController());
+}
+
+CarouselController useCarouselController({int initialItem = 0}) {
+  return useChangeNotifier(() => CarouselController(initialItem: initialItem));
 }

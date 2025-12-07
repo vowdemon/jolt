@@ -16,6 +16,33 @@ class _CustomNotifier extends ChangeNotifier {
   }
 }
 
+/// Helper widget that can trigger rebuilds for testing state maintenance
+class _RebuildTestWidget extends StatefulWidget {
+  const _RebuildTestWidget({
+    required this.child,
+    required this.onRebuild,
+  });
+
+  final Widget child;
+  final VoidCallback onRebuild;
+
+  @override
+  State<_RebuildTestWidget> createState() => _RebuildTestWidgetState();
+}
+
+class _RebuildTestWidgetState extends State<_RebuildTestWidget> {
+  void triggerRebuild() {
+    setState(() {
+      widget.onRebuild();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.child;
+  }
+}
+
 void main() {
   group('useValueNotifier', () {
     testWidgets('creates and disposes ValueNotifier', (tester) async {
@@ -261,6 +288,92 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(notifier.value, 25);
+    });
+  });
+
+  group('useChangeNotifier', () {
+    testWidgets('creates notifier', (tester) async {
+      _CustomNotifier? notifier;
+
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: SetupBuilder(setup: (context) {
+            notifier = useChangeNotifier(() => _CustomNotifier());
+            return () => Text('Value: ${notifier!.value}');
+          }),
+        ),
+      ));
+
+      expect(notifier, isNotNull);
+      expect(notifier!.value, 0);
+      expect(find.text('Value: 0'), findsOneWidget);
+    });
+
+    testWidgets('maintains state across rebuilds', (tester) async {
+      _CustomNotifier? notifierFromSetup;
+      _CustomNotifier? notifierFromBuild;
+      var setupCount = 0;
+      var buildCount = 0;
+
+      await tester.pumpWidget(MaterialApp(
+        home: _RebuildTestWidget(
+          onRebuild: () {
+            buildCount++;
+          },
+          child: Scaffold(
+            body: SetupBuilder(setup: (context) {
+              setupCount++;
+              notifierFromSetup = useChangeNotifier(() => _CustomNotifier());
+              return () {
+                buildCount++;
+                // Use the notifier from setup, don't call use hook in build
+                notifierFromBuild = notifierFromSetup;
+                return Text('Value: ${notifierFromSetup!.value}');
+              };
+            }),
+          ),
+        ),
+      ));
+
+      expect(setupCount, 1, reason: 'Setup should execute only once');
+      expect(buildCount, greaterThan(0), reason: 'Build should execute');
+      expect(notifierFromSetup, isNotNull);
+      expect(notifierFromBuild, isNotNull);
+      expect(identical(notifierFromSetup, notifierFromBuild), isTrue,
+          reason: 'Notifier from build should be the same instance from setup');
+
+      // Modify value
+      notifierFromSetup!.value = 42;
+      await tester.pump();
+
+      // Trigger rebuild
+      final state = tester
+          .state<_RebuildTestWidgetState>(find.byType(_RebuildTestWidget));
+      state.triggerRebuild();
+      await tester.pump();
+
+      expect(setupCount, 1, reason: 'Setup should still execute only once');
+      expect(buildCount, greaterThan(1),
+          reason: 'Build should execute multiple times');
+      expect(identical(notifierFromSetup, notifierFromBuild), isTrue,
+          reason: 'Notifier should remain the same after rebuild');
+      expect(notifierFromBuild!.value, 42,
+          reason: 'Modified value should persist');
+    });
+
+    testWidgets('disposes on unmount', (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: SetupBuilder(setup: (context) {
+            useChangeNotifier(() => _CustomNotifier());
+            return () => const Text('Test');
+          }),
+        ),
+      ));
+
+      // Unmount
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+      expect(tester.takeException(), isNull);
     });
   });
 }

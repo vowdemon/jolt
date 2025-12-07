@@ -28,13 +28,13 @@ import 'package:jolt_flutter/setup.dart';
 /// }
 /// ```
 AsyncSnapshotFutureSignal<T> useFuture<T>(Future<T>? future, {T? initialData}) {
-  return useMemoized<_AsyncSnapshotFutureSignalImpl<T>>(() {
+  return useAutoDispose<_AsyncSnapshotFutureSignalImpl<T>>(() {
     final signal = _AsyncSnapshotFutureSignalImpl<T>(
       future,
       initialData: initialData,
     );
     return signal;
-  }, (signal) => signal.dispose());
+  });
 }
 
 // ignore: must_be_immutable
@@ -146,13 +146,13 @@ abstract interface class AsyncSnapshotFutureSignal<T>
 /// controller.add(42);
 /// ```
 AsyncSnapshotStreamSignal<T> useStream<T>(Stream<T>? stream, {T? initialData}) {
-  return useMemoized<_AsyncSnapshotStreamSignalImpl<T>>(() {
+  return useAutoDispose<_AsyncSnapshotStreamSignalImpl<T>>(() {
     final signal = _AsyncSnapshotStreamSignalImpl<T>(
       stream,
       initialData: initialData,
     );
     return signal;
-  }, (signal) => signal.dispose());
+  });
 }
 
 // ignore: must_be_immutable

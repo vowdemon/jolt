@@ -5,8 +5,8 @@ import 'package:jolt_flutter/setup.dart';
 import 'package:jolt_flutter_hooks/jolt_flutter_hooks.dart';
 
 void main() {
-  group('Animation Hooks', () {
-    testWidgets('useSingleTickerProvider creates provider', (tester) async {
+  group('useSingleTickerProvider', () {
+    testWidgets('creates provider', (tester) async {
       TickerProvider? provider;
 
       await tester.pumpWidget(MaterialApp(
@@ -20,7 +20,7 @@ void main() {
       expect(provider, isA<TickerProvider>());
     });
 
-    testWidgets('useSingleTickerProvider disposes correctly', (tester) async {
+    testWidgets('disposes correctly', (tester) async {
       Ticker? ticker;
 
       await tester.pumpWidget(MaterialApp(
@@ -40,84 +40,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('useAnimationController creates controller', (tester) async {
-      AnimationController? controller;
-
-      await tester.pumpWidget(MaterialApp(
-        home: SetupBuilder(setup: (context) {
-          controller = useAnimationController(
-            duration: const Duration(seconds: 1),
-          );
-          return () => const Text('Test');
-        }),
-      ));
-
-      expect(controller, isNotNull);
-      expect(controller!.duration, const Duration(seconds: 1));
-    });
-
-    testWidgets('useAnimationController with parameters', (tester) async {
-      AnimationController? controller;
-
-      await tester.pumpWidget(MaterialApp(
-        home: SetupBuilder(setup: (context) {
-          final vsync = useSingleTickerProvider();
-          controller = useAnimationController(
-            vsync: vsync,
-            duration: const Duration(seconds: 2),
-            lowerBound: 0.5,
-            upperBound: 1.5,
-            value: 1.0,
-          );
-          return () => Text('Value: ${controller!.value}');
-        }),
-      ));
-
-      expect(controller!.value, 1.0);
-      expect(controller!.lowerBound, 0.5);
-      expect(controller!.upperBound, 1.5);
-    });
-
-    testWidgets('useAnimationController auto-disposes', (tester) async {
-      await tester.pumpWidget(MaterialApp(
-        home: SetupBuilder(setup: (context) {
-          final vsync = useSingleTickerProvider();
-          useAnimationController(
-            vsync: vsync,
-            duration: const Duration(seconds: 1),
-          );
-          return () => const Text('Test');
-        }),
-      ));
-
-      // Unmount widget
-      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
-
-      // Should have no exception (controller auto-disposed)
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('useAnimationController reactive rendering', (tester) async {
-      await tester.pumpWidget(MaterialApp(
-        home: SetupBuilder(setup: (context) {
-          final vsync = useSingleTickerProvider();
-          final controller = useAnimationController(
-            vsync: vsync,
-            duration: const Duration(milliseconds: 100),
-          );
-
-          return () => AnimatedBuilder(
-                animation: controller,
-                builder: (context, child) => Text('${controller.isAnimating}'),
-              );
-        }),
-      ));
-
-      expect(find.text('false'), findsOneWidget);
-    });
-
-    testWidgets('multiple useSingleTickerProvider work correctly',
-        (tester) async {
+    testWidgets('multiple instances work correctly', (tester) async {
       AnimationController? controller1;
       AnimationController? controller2;
 
@@ -150,8 +73,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('useSingleTickerProvider updates on dependency change',
-        (tester) async {
+    testWidgets('updates on dependency change', (tester) async {
       Ticker? ticker;
 
       final toTestWidget = SetupBuilder(setup: (context) {
@@ -189,9 +111,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets(
-        'useSingleTickerProvider updates ticker mode on TickerMode change',
-        (tester) async {
+    testWidgets('updates ticker mode on TickerMode change', (tester) async {
       Ticker? ticker;
       bool? initialMuted;
 
@@ -229,8 +149,7 @@ void main() {
       expect(ticker!.muted, isTrue);
     });
 
-    testWidgets(
-        'useSingleTickerProvider _update called on multiple dependency changes',
+    testWidgets('_update called on multiple dependency changes',
         (tester) async {
       Ticker? ticker;
 
@@ -263,6 +182,292 @@ void main() {
       // _update() should have been called on each dependency change
       // Ticker should still work correctly
       expect(ticker, isNotNull);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('useAnimationController', () {
+    testWidgets('creates controller', (tester) async {
+      AnimationController? controller;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          controller = useAnimationController(
+            duration: const Duration(seconds: 1),
+          );
+          return () => const Text('Test');
+        }),
+      ));
+
+      expect(controller, isNotNull);
+      expect(controller!.duration, const Duration(seconds: 1));
+    });
+
+    testWidgets('with parameters', (tester) async {
+      AnimationController? controller;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final vsync = useSingleTickerProvider();
+          controller = useAnimationController(
+            vsync: vsync,
+            duration: const Duration(seconds: 2),
+            lowerBound: 0.5,
+            upperBound: 1.5,
+            value: 1.0,
+          );
+          return () => Text('Value: ${controller!.value}');
+        }),
+      ));
+
+      expect(controller!.value, 1.0);
+      expect(controller!.lowerBound, 0.5);
+      expect(controller!.upperBound, 1.5);
+    });
+
+    testWidgets('auto-disposes', (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final vsync = useSingleTickerProvider();
+          useAnimationController(
+            vsync: vsync,
+            duration: const Duration(seconds: 1),
+          );
+          return () => const Text('Test');
+        }),
+      ));
+
+      // Unmount widget
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+
+      // Should have no exception (controller auto-disposed)
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('reactive rendering', (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final vsync = useSingleTickerProvider();
+          final controller = useAnimationController(
+            vsync: vsync,
+            duration: const Duration(milliseconds: 100),
+          );
+
+          return () => AnimatedBuilder(
+                animation: controller,
+                builder: (context, child) => Text('${controller.isAnimating}'),
+              );
+        }),
+      ));
+
+      expect(find.text('false'), findsOneWidget);
+    });
+  });
+
+  group('useTickerProvider', () {
+    testWidgets('creates provider', (tester) async {
+      TickerProvider? provider;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          provider = useTickerProvider();
+          return () => const Text('Test');
+        }),
+      ));
+
+      expect(provider, isNotNull);
+      expect(provider, isA<TickerProvider>());
+    });
+
+    testWidgets('can create multiple tickers', (tester) async {
+      Ticker? ticker1;
+      Ticker? ticker2;
+      Ticker? ticker3;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final provider = useTickerProvider();
+          ticker1 = provider.createTicker((_) {});
+          ticker2 = provider.createTicker((_) {});
+          ticker3 = provider.createTicker((_) {});
+          return () => const Text('Test');
+        }),
+      ));
+
+      expect(ticker1, isNotNull);
+      expect(ticker2, isNotNull);
+      expect(ticker3, isNotNull);
+      expect(ticker1!.isActive, isFalse);
+      expect(ticker2!.isActive, isFalse);
+      expect(ticker3!.isActive, isFalse);
+    });
+
+    testWidgets('disposes correctly', (tester) async {
+      Ticker? ticker;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final provider = useTickerProvider();
+          ticker = provider.createTicker((_) {});
+          return () => const Text('Test');
+        }),
+      ));
+
+      expect(ticker!.isActive, isFalse);
+
+      // Unmount widget
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+
+      // Ticker should be cleaned up
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('disposes multiple tickers correctly', (tester) async {
+      Ticker? ticker1;
+      Ticker? ticker2;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final provider = useTickerProvider();
+          ticker1 = provider.createTicker((_) {});
+          ticker2 = provider.createTicker((_) {});
+          return () => const Text('Test');
+        }),
+      ));
+
+      expect(ticker1!.isActive, isFalse);
+      expect(ticker2!.isActive, isFalse);
+
+      // Unmount widget
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+
+      // Both tickers should be cleaned up
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('works with multiple animation controllers', (tester) async {
+      AnimationController? controller1;
+      AnimationController? controller2;
+      AnimationController? controller3;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final vsync = useTickerProvider();
+          controller1 = useAnimationController(
+            vsync: vsync,
+            duration: const Duration(milliseconds: 100),
+          );
+          controller2 = useAnimationController(
+            vsync: vsync,
+            duration: const Duration(milliseconds: 200),
+          );
+          controller3 = useAnimationController(
+            vsync: vsync,
+            duration: const Duration(milliseconds: 300),
+          );
+          return () => Text('Test');
+        }),
+      ));
+
+      expect(controller1, isNotNull);
+      expect(controller2, isNotNull);
+      expect(controller3, isNotNull);
+      expect(controller1!.duration, const Duration(milliseconds: 100));
+      expect(controller2!.duration, const Duration(milliseconds: 200));
+      expect(controller3!.duration, const Duration(milliseconds: 300));
+
+      // All should be cleaned up correctly on unmount
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('updates ticker mode on TickerMode change', (tester) async {
+      Ticker? ticker1;
+      Ticker? ticker2;
+      bool? initialMuted1;
+      bool? initialMuted2;
+
+      final toTestWidget = SetupBuilder(setup: (context) {
+        final provider = useTickerProvider();
+        if (ticker1 == null) {
+          ticker1 = provider.createTicker((_) {});
+          ticker2 = provider.createTicker((_) {});
+          initialMuted1 = ticker1!.muted;
+          initialMuted2 = ticker2!.muted;
+        }
+        return () => const Text('Test');
+      });
+
+      await tester.pumpWidget(MaterialApp(
+        home: TickerMode(
+          enabled: true,
+          child: toTestWidget,
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(initialMuted1, isFalse);
+      expect(initialMuted2, isFalse);
+      expect(ticker1!.muted, isFalse);
+      expect(ticker2!.muted, isFalse);
+
+      // Change TickerMode to disabled - this should trigger _updateTickers()
+      await tester.pumpWidget(MaterialApp(
+        home: TickerMode(
+          enabled: false,
+          child: toTestWidget,
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      // _updateTickers() should have been called, all tickers should be muted when TickerMode is disabled
+      expect(ticker1, isNotNull);
+      expect(ticker2, isNotNull);
+      expect(ticker1!.muted, isTrue);
+      expect(ticker2!.muted, isTrue);
+    });
+
+    testWidgets('updates on dependency change', (tester) async {
+      Ticker? ticker1;
+      Ticker? ticker2;
+
+      final toTestWidget = SetupBuilder(setup: (context) {
+        // Access InheritedWidget to trigger dependency tracking
+        CounterInherited.of(context);
+        final provider = useTickerProvider();
+        ticker1 ??= provider.createTicker((_) {});
+        ticker2 ??= provider.createTicker((_) {});
+        return () => const Text('Test');
+      });
+
+      await tester.pumpWidget(MaterialApp(
+        home: CounterInherited(
+          value: 1,
+          child: toTestWidget,
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      // Initial state - tickers should not be muted
+      expect(ticker1, isNotNull);
+      expect(ticker2, isNotNull);
+      expect(ticker1!.muted, isFalse);
+      expect(ticker2!.muted, isFalse);
+
+      // Change InheritedWidget value to trigger didChangeDependencies
+      await tester.pumpWidget(MaterialApp(
+        home: CounterInherited(
+          value: 2,
+          child: toTestWidget,
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      // Tickers should still work correctly
+      expect(ticker1, isNotNull);
+      expect(ticker2, isNotNull);
+      expect(ticker1!.muted, isFalse);
+      expect(ticker2!.muted, isFalse);
       expect(tester.takeException(), isNull);
     });
   });

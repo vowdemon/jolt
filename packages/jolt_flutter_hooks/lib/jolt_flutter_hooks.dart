@@ -12,3 +12,5 @@ export './src/listenable.dart';
 export './src/async.dart';
 export './src/scroll.dart';
 export './src/text.dart';
+export './src/controller.dart';
+export './src/keep_alive.dart';

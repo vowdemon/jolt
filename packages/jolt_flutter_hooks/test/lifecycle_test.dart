@@ -4,9 +4,8 @@ import 'package:jolt_flutter/setup.dart';
 import 'package:jolt_flutter_hooks/jolt_flutter_hooks.dart';
 
 void main() {
-  group('Lifecycle Hooks', () {
-    testWidgets('useAppLifecycleState creates and gets initial state',
-        (tester) async {
+  group('useAppLifecycleState', () {
+    testWidgets('creates and gets initial state', (tester) async {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           final lifecycleState = useAppLifecycleState();
@@ -19,7 +18,7 @@ void main() {
       expect(find.textContaining('State:'), findsOneWidget);
     });
 
-    testWidgets('useAppLifecycleState cleans up correctly', (tester) async {
+    testWidgets('cleans up correctly', (tester) async {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           useAppLifecycleState();
@@ -32,7 +31,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('useAppLifecycleState reactive rendering', (tester) async {
+    testWidgets('reactive rendering', (tester) async {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           final lifecycleState = useAppLifecycleState();

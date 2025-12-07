@@ -4,8 +4,8 @@ import 'package:jolt_flutter/setup.dart';
 import 'package:jolt_flutter_hooks/jolt_flutter_hooks.dart';
 
 void main() {
-  group('Focus Hooks', () {
-    testWidgets('useFocusNode creates node', (tester) async {
+  group('useFocusNode', () {
+    testWidgets('creates node', (tester) async {
       FocusNode? focusNode;
 
       await tester.pumpWidget(MaterialApp(
@@ -19,7 +19,7 @@ void main() {
       expect(focusNode!.debugLabel, 'Test Node');
     });
 
-    testWidgets('useFocusNode auto-disposes', (tester) async {
+    testWidgets('auto-disposes', (tester) async {
       FocusNode? focusNode;
 
       await tester.pumpWidget(MaterialApp(
@@ -36,22 +36,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('useFocusScopeNode creates node', (tester) async {
-      FocusScopeNode? scopeNode;
-
-      await tester.pumpWidget(MaterialApp(
-        home: SetupBuilder(setup: (context) {
-          scopeNode = useFocusScopeNode(debugLabel: 'Scope');
-          return () => const Text('Test');
-        }),
-      ));
-
-      expect(scopeNode, isNotNull);
-      expect(scopeNode, isA<FocusScopeNode>());
-      expect(scopeNode!.debugLabel, 'Scope');
-    });
-
-    testWidgets('multiple FocusNodes managed independently', (tester) async {
+    testWidgets('multiple instances managed independently', (tester) async {
       FocusNode? node1;
       FocusNode? node2;
 
@@ -67,6 +52,23 @@ void main() {
       expect(node1!.debugLabel, 'Node 1');
       expect(node2!.debugLabel, 'Node 2');
       expect(node1, isNot(equals(node2)));
+    });
+  });
+
+  group('useFocusScopeNode', () {
+    testWidgets('creates node', (tester) async {
+      FocusScopeNode? scopeNode;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          scopeNode = useFocusScopeNode(debugLabel: 'Scope');
+          return () => const Text('Test');
+        }),
+      ));
+
+      expect(scopeNode, isNotNull);
+      expect(scopeNode, isA<FocusScopeNode>());
+      expect(scopeNode!.debugLabel, 'Scope');
     });
   });
 }

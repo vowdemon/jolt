@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-import 'package:jolt_flutter/setup.dart';
+import 'listenable.dart';
 
 /// Creates a focus node
 ///
@@ -13,18 +13,16 @@ FocusNode useFocusNode({
   bool descendantsAreFocusable = true,
   bool descendantsAreTraversable = true,
 }) {
-  final focusNode = useMemoized(
-      () => FocusNode(
-            debugLabel: debugLabel,
-            onKeyEvent: onKeyEvent,
-            skipTraversal: skipTraversal,
-            canRequestFocus: canRequestFocus,
-            descendantsAreFocusable: descendantsAreFocusable,
-            descendantsAreTraversable: descendantsAreTraversable,
-          ),
-      (focusNode) => focusNode.dispose);
-
-  return focusNode;
+  return useChangeNotifier(
+    () => FocusNode(
+      debugLabel: debugLabel,
+      onKeyEvent: onKeyEvent,
+      skipTraversal: skipTraversal,
+      canRequestFocus: canRequestFocus,
+      descendantsAreFocusable: descendantsAreFocusable,
+      descendantsAreTraversable: descendantsAreTraversable,
+    ),
+  );
 }
 
 /// Creates a focus scope node
@@ -40,16 +38,14 @@ FocusScopeNode useFocusScopeNode({
   TraversalEdgeBehavior directionalTraversalEdgeBehavior =
       TraversalEdgeBehavior.stop,
 }) {
-  final scopeNode = useMemoized(
-      () => FocusScopeNode(
-            debugLabel: debugLabel,
-            onKeyEvent: onKeyEvent,
-            skipTraversal: skipTraversal,
-            canRequestFocus: canRequestFocus,
-            traversalEdgeBehavior: traversalEdgeBehavior,
-            directionalTraversalEdgeBehavior: directionalTraversalEdgeBehavior,
-          ),
-      (scopeNode) => scopeNode.dispose);
-
-  return scopeNode;
+  return useChangeNotifier(
+    () => FocusScopeNode(
+      debugLabel: debugLabel,
+      onKeyEvent: onKeyEvent,
+      skipTraversal: skipTraversal,
+      canRequestFocus: canRequestFocus,
+      traversalEdgeBehavior: traversalEdgeBehavior,
+      directionalTraversalEdgeBehavior: directionalTraversalEdgeBehavior,
+    ),
+  );
 }

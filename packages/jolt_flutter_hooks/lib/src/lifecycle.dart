@@ -5,17 +5,22 @@ import 'package:jolt_flutter/setup.dart';
 /// Listens to application lifecycle state changes
 ///
 /// Returns a reactive Signal representing the current application lifecycle state
-ReadonlySignal<AppLifecycleState?> useAppLifecycleState([
+ReadonlySignal<AppLifecycleState?> useAppLifecycleState({
   AppLifecycleState? initialState,
-]) {
-  final observer = useHook(_AppLifecycleObserver());
+  void Function(AppLifecycleState state)? onChange,
+}) {
+  final observer = useHook(
+      _AppLifecycleObserver(initialState: initialState, onChange: onChange));
 
   return observer.readonly();
 }
 
 class _AppLifecycleObserver extends SetupHook<Signal<AppLifecycleState?>>
     with WidgetsBindingObserver {
-  _AppLifecycleObserver();
+  _AppLifecycleObserver({this.initialState, this.onChange});
+
+  final AppLifecycleState? initialState;
+  final void Function(AppLifecycleState state)? onChange;
 
   @override
   void mount() {
@@ -32,11 +37,13 @@ class _AppLifecycleObserver extends SetupHook<Signal<AppLifecycleState?>>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     this.state.value = state;
+    onChange?.call(state);
   }
   // coverage:ignore-end
 
   @override
   Signal<AppLifecycleState?> build() {
-    return Signal<AppLifecycleState?>(WidgetsBinding.instance.lifecycleState);
+    return Signal<AppLifecycleState?>(
+        initialState ?? WidgetsBinding.instance.lifecycleState);
   }
 }

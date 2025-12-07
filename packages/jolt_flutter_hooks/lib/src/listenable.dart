@@ -14,8 +14,9 @@ import 'package:jolt_flutter/setup.dart';
 /// notifier.value = 10; // Update value
 /// ```
 ValueNotifier<T> useValueNotifier<T>(T initialValue) {
-  return useMemoized(
-      () => ValueNotifier(initialValue), (notifier) => notifier.dispose());
+  return useChangeNotifier(
+    () => ValueNotifier(initialValue),
+  );
 }
 
 /// Subscribes to a ValueListenable and calls the listener when the value changes.
@@ -125,4 +126,24 @@ void useListenableSync<T, C extends Listenable>(Writable<T> node, C listenable,
 
     return disposer;
   }, (disposer) => disposer());
+}
+
+class _ChangeNotifierHook<T extends ChangeNotifier> extends SetupHook<T> {
+  _ChangeNotifierHook(this.creator);
+
+  final T Function() creator;
+  @override
+  T build() => creator();
+
+  @override
+  void unmount() {
+    state.dispose();
+  }
+}
+
+@pragma('vm:prefer-inline')
+@pragma('wasm:prefer-inline')
+@pragma('dart2js:prefer-inline')
+T useChangeNotifier<T extends ChangeNotifier>(T Function() creator) {
+  return useHook(_ChangeNotifierHook(creator));
 }

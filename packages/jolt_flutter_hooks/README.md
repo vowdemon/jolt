@@ -5,9 +5,7 @@
 [![jolt_flutter_hooks](https://img.shields.io/pub/v/jolt_flutter_hooks?label=jolt_flutter_hooks)](https://pub.dev/packages/jolt_flutter_hooks)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/vowdemon/jolt/blob/main/LICENSE)
 
-A collection of declarative hooks for Flutter widgets, built on top of [Jolt Flutter](https://pub.dev/packages/jolt_flutter) setup system. This package provides convenient hooks for managing common Flutter resources like controllers, focus nodes, and lifecycle states with automatic cleanup.
-
-⚠️ **Warning**: The tests in this package are currently unstable and may occasionally fail. This is a known issue that we're working to resolve.
+Declarative hooks for Flutter widgets built on top of the [Jolt Flutter](https://pub.dev/packages/jolt_flutter) setup system. These hooks help manage common Flutter resources such as controllers, focus nodes, and lifecycle states with automatic cleanup.
 
 ## Quick Start
 
@@ -34,113 +32,81 @@ class MyWidget extends SetupWidget {
 
 ## API Reference
 
+### Listenable Hooks
+| Hook | Description | Returns |
+|------|-------------|---------|
+| `useValueNotifier<T>(initialValue)` | Creates a value notifier | `ValueNotifier<T>` |
+| `useValueListenable<T>(...)` | Listens to a value notifier and triggers rebuilds | `void` |
+| `useListenable<T>(...)` | Listens to any listenable and triggers rebuilds | `void` |
+| `useListenableSync<T, C>(...)` | Bidirectional sync between Signal and Listenable | `void` |
+| `useChangeNotifier<T>(creator)` | Generic ChangeNotifier hook | `T extends ChangeNotifier` |
+
+### Animation Hooks
 | Hook | Description | Returns |
 |------|-------------|---------|
 | `useSingleTickerProvider()` | Creates a single ticker provider | `TickerProvider` |
+| `useTickerProvider()` | Creates a ticker provider that supports multiple tickers | `TickerProvider` |
+| `useAnimationController({...})` | Creates an animation controller | `AnimationController` |
+
+### Focus Hooks
+| Hook | Description | Returns |
+|------|-------------|---------|
 | `useFocusNode({...})` | Creates a focus node | `FocusNode` |
 | `useFocusScopeNode({...})` | Creates a focus scope node | `FocusScopeNode` |
+
+### Lifecycle Hooks
+| Hook | Description | Returns |
+|------|-------------|---------|
 | `useAppLifecycleState([initialState])` | Listens to app lifecycle state | `ReadonlySignal<AppLifecycleState?>` |
+
+### Scroll Hooks
+| Hook | Description | Returns |
+|------|-------------|---------|
 | `useScrollController({...})` | Creates a scroll controller | `ScrollController` |
-| `usePageController({...})` | Creates a page controller | `PageController` |
+| `useTrackingScrollController({...})` | Creates a tracking scroll controller | `TrackingScrollController` |
 | `useTabController({...})` | Creates a tab controller | `TabController` |
+| `usePageController({...})` | Creates a page controller | `PageController` |
 | `useFixedExtentScrollController({...})` | Creates a fixed extent scroll controller | `FixedExtentScrollController` |
+| `useDraggableScrollableController()` | Creates a draggable scrollable controller | `DraggableScrollableController` |
+| `useCarouselController({...})` | Creates a carousel controller | `CarouselController` |
+
+### Text Hooks
+| Hook | Description | Returns |
+|------|-------------|---------|
 | `useTextEditingController([text])` | Creates a text editing controller | `TextEditingController` |
 | `useTextEditingController.fromValue([value])` | Creates a text editing controller from value | `TextEditingController` |
+| `useRestorableTextEditingController([value])` | Creates a restorable text editing controller | `RestorableTextEditingController` |
+| `useSearchController()` | Creates a search controller | `SearchController` |
+| `useUndoHistoryController({...})` | Creates an undo history controller | `UndoHistoryController` |
 
-## Important Notes
+### Controller Hooks
+| Hook | Description | Returns |
+|------|-------------|---------|
+| `useTransformationController([value])` | Creates a transformation controller | `TransformationController` |
+| `useWidgetStatesController([value])` | Creates a widget states controller | `WidgetStatesController` |
+| `useExpansibleController()` | Creates an expansible controller | `ExpansibleController` |
+| `useTreeSliverController()` | Creates a tree sliver controller | `TreeSliverController` |
+| `useOverlayPortalController({...})` | Creates an overlay portal controller | `OverlayPortalController` |
+| `useSnapshotController({...})` | Creates a snapshot controller | `SnapshotController` |
+| `useCupertinoTabController({...})` | Creates a Cupertino tab controller | `CupertinoTabController` |
+| `useContextMenuController({...})` | Creates a context menu controller | `ContextMenuController` |
+| `useMenuController()` | Creates a menu controller | `MenuController` |
+| `useMagnifierController({...})` | Creates a magnifier controller | `MagnifierController` |
 
-### Automatic Cleanup
 
-All hooks in this package automatically dispose their resources when the widget is unmounted. This ensures proper memory management and prevents leaks.
+### Async Hooks
+| Hook | Description | Returns |
+|------|-------------|---------|
+| `useFuture<T>(future, {...})` | Creates a reactive future signal | `AsyncSnapshotFutureSignal<T>` |
+| `useStream<T>(stream, {...})` | Creates a reactive stream signal | `AsyncSnapshotStreamSignal<T>` |
+| `useStreamController<T>(...)` | Creates a stream controller | `StreamController<T>` |
+| `useStreamSubscription<T>(...)` | Manages a stream subscription | `void` |
 
-```dart
-class MyWidget extends SetupWidget {
-  @override
-  Widget build(BuildContext context) {
-    final controller = useScrollController();
-    // Controller is automatically disposed when MyWidget is removed from tree
-    return ListView(controller: controller);
-  }
-}
-```
+### Keep Alive Hook
+| Hook | Description | Returns |
+|------|-------------|---------|
+| `useAutomaticKeepAlive(wantKeepAlive)` | Manages automatic keep alive with reactive signal | `void` |
 
-### SetupWidget Integration
-
-This package is designed to work with `SetupWidget` from `jolt_flutter`. The hooks rely on the lifecycle callbacks (`onMounted`, `onUnmounted`, etc.) provided by the setup system.
-
-```dart
-// Correct usage
-class MyWidget extends SetupWidget {
-  @override
-  Widget build(BuildContext context) {
-    final controller = useScrollController();
-    return ListView(controller: controller);
-  }
-}
-
-// Incorrect - hooks won't work without SetupWidget
-class MyWidget extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final controller = useScrollController(); // Error: hooks require SetupWidget
-    return ListView(controller: controller);
-  }
-}
-```
-
-### Multiple Tickers
-
-If you need multiple tickers for different animation controllers, call `useSingleTickerProvider()` multiple times:
-
-```dart
-class MultiAnimationWidget extends SetupWidget {
-  @override
-  Widget build(BuildContext context) {
-    final ticker1 = useSingleTickerProvider();
-    final ticker2 = useSingleTickerProvider();
-    
-    final controller1 = AnimationController(vsync: ticker1);
-    final controller2 = AnimationController(vsync: ticker2);
-    
-    return Column(
-      children: [
-        FadeTransition(opacity: controller1, child: Text('First')),
-        FadeTransition(opacity: controller2, child: Text('Second')),
-      ],
-    );
-  }
-}
-```
-
-### Lifecycle State Reactivity
-
-The `useAppLifecycleState` hook returns a reactive signal, allowing you to build reactive UI based on app lifecycle changes:
-
-```dart
-class LifecycleWidget extends SetupWidget {
-  @override
-  Widget build(BuildContext context) {
-    final lifecycleState = useAppLifecycleState();
-    
-    return JoltBuilder(
-      builder: (context) {
-        switch (lifecycleState.value) {
-          case AppLifecycleState.resumed:
-            return Text('App is active');
-          case AppLifecycleState.paused:
-            return Text('App is paused');
-          case AppLifecycleState.inactive:
-            return Text('App is inactive');
-          case AppLifecycleState.detached:
-            return Text('App is detached');
-          case null:
-            return Text('Unknown state');
-        }
-      },
-    );
-  }
-}
-```
 
 ## Related Packages
 

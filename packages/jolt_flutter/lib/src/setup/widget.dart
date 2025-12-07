@@ -251,13 +251,13 @@ class SetupWidgetElement<T extends SetupWidget<T>> extends ComponentElement {
   @override
   void activate() {
     super.activate();
-    setupContext.notifyActivated();
+    setupContext.notifyActivate();
   }
   // coverage:ignore-end
 
   @override
   void deactivate() {
-    setupContext.notifyDeactivated();
+    setupContext.notifyDeactivate();
     super.deactivate();
   }
 

@@ -216,9 +216,9 @@ class JoltSetupContext<T extends Widget> extends EffectScopeImpl {
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
-  void notifyActivated() {
+  void notifyActivate() {
     for (var hook in _hooks) {
-      hook.activated();
+      hook.activate();
     }
   }
   // coverage:ignore-end
@@ -227,9 +227,9 @@ class JoltSetupContext<T extends Widget> extends EffectScopeImpl {
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
-  void notifyDeactivated() {
+  void notifyDeactivate() {
     for (var hook in _hooks.reversed) {
-      hook.deactivated();
+      hook.deactivate();
     }
   }
 

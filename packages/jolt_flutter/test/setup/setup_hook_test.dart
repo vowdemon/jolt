@@ -42,13 +42,13 @@ class _TestLifecycleHook extends SetupHook<String> {
   }
 
   @override
-  void activated() {
+  void activate() {
     tracker.activatedCount++;
     tracker.activatedOrder.add('activated');
   }
 
   @override
-  void deactivated() {
+  void deactivate() {
     tracker.deactivatedCount++;
     tracker.deactivatedOrder.add('deactivated');
   }

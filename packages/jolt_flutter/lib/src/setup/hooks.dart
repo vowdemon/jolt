@@ -154,7 +154,7 @@ class _OnActivatedHook extends _LifeCycleHook {
 
   // coverage:ignore-start
   @override
-  void activated() {
+  void activate() {
     callback();
   }
   // coverage:ignore-end
@@ -187,7 +187,7 @@ class _OnDeactivatedHook extends _LifeCycleHook {
 
   // coverage:ignore-start
   @override
-  void deactivated() {
+  void deactivate() {
     callback();
   }
   // coverage:ignore-end
@@ -307,8 +307,8 @@ T useHook<T>(SetupHook<T> hook) => JoltSetupContext.current!._useHook(hook);
 /// - [unmount]: Called when the hook is being removed (on dispose or hot reload mismatch)
 /// - [didUpdateWidget]: Called when the widget is updated with new properties
 /// - [didChangeDependencies]: Called when the widget's dependencies change
-/// - [activated]: Called when the widget is reactivated (e.g., after being in a navigator stack)
-/// - [deactivated]: Called when the widget is deactivated
+/// - [activate]: Called when the widget is reactivated (e.g., after being in a navigator stack)
+/// - [deactivate]: Called when the widget is deactivated
 /// - [reassemble]: Called during hot reload when the hook is reused
 ///
 /// ## Hot Reload Behavior
@@ -394,10 +394,10 @@ abstract class SetupHook<T> {
   void didChangeDependencies() {}
 
   /// Called when the widget is reactivated.
-  void activated() {}
+  void activate() {}
 
   /// Called when the widget is deactivated.
-  void deactivated() {}
+  void deactivate() {}
   // coverage:ignore-end
 }
 

@@ -173,14 +173,14 @@ mixin SetupMixin<T extends StatefulWidget> on State<T> {
   @mustCallSuper
   void activate() {
     super.activate();
-    setupContext.notifyActivated();
+    setupContext.notifyActivate();
   }
   // coverage:ignore-end
 
   @override
   @mustCallSuper
   void deactivate() {
-    setupContext.notifyDeactivated();
+    setupContext.notifyDeactivate();
     super.deactivate();
   }
 

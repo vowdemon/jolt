@@ -1,3 +1,8 @@
+## 2.1.1
+
+ - **FIX**: mark ReadonlySignal factory as const. ([66e6f692](https://github.com/vowdemon/jolt/commit/66e6f69259c2d705f5468894143c0867936b518d))
+ - **FIX**: type hints. ([9d6cc8c3](https://github.com/vowdemon/jolt/commit/9d6cc8c3427e78e29f26cf2bef7cff8773db4166))
+
 ## 2.1.0
 
  - **REFACTOR**(jolt): optimize fine-grained update detection for collection signals. ([26781582](https://github.com/vowdemon/jolt/commit/26781582536cef4a8b066169addc8f47c0c907c0))

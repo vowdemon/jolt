@@ -333,7 +333,7 @@ abstract interface class ReadonlySignal<T>
   /// final constant = ReadonlySignal(42);
   /// print(constant.value); // Always 42
   /// ```
-  factory ReadonlySignal(T value) = _ConstantSignalImpl<T>;
+  const factory ReadonlySignal(T value) = _ConstantSignalImpl<T>;
 }
 
 /// A writable interface for signals that allows modification.

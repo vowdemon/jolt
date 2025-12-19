@@ -838,6 +838,45 @@ T trigger<T>(T Function() fn) {
   }
 }
 
+/// Interface for readable reactive values.
+///
+/// Readable provides a readable interface to reactive values, allowing
+/// access to the current value without modification. It supports both
+/// tracked and untracked access patterns.
+///
+/// Example:
+/// ```dart
+/// Readable<int> count = Signal(0).readonly();
+/// print(count.value); // Tracked access
+/// print(count.peek); // Untracked access
+/// ```
+abstract interface class Readable<T> {
+  /// Gets the current value and establishes a reactive dependency.
+  ///
+  /// When accessed within a reactive context, the context will be
+  /// notified when this value changes.
+  ///
+  /// Example:
+  /// ```dart
+  /// final Readable<int> readable = Signal(0).readable();
+  /// final computed = Computed(() => readable.value * 2);
+  /// ```
+  T get value;
+
+  /// Gets the current value without establishing a reactive dependency.
+  ///
+  /// Use this when you need to read the value without triggering reactivity.
+  ///
+  /// Returns: The current value
+  ///
+  /// Example:
+  /// ```dart
+  /// final Readable<int> readable = Signal(0).readable();
+  /// final value = readable.peek; // Doesn't create dependency
+  /// ```
+  T get peek;
+}
+
 /// Interface for readonly reactive values.
 ///
 /// Readonly provides a read-only interface to reactive values, allowing
@@ -850,19 +889,8 @@ T trigger<T>(T Function() fn) {
 /// print(count.value); // Tracked access
 /// print(count.peek); // Untracked access
 /// ```
-abstract interface class Readonly<T> {
-  /// Gets the current value and establishes a reactive dependency.
-  ///
-  /// When accessed within a reactive context, the context will be
-  /// notified when this value changes.
-  ///
-  /// Example:
-  /// ```dart
-  /// final Readonly<int> readonly = Signal(0).readonly();
-  /// final computed = Computed(() => readonly.value * 2);
-  /// ```
-  T get value;
-
+@Deprecated("use Readable<T> instead")
+abstract interface class Readonly<T> implements Readable<T> {
   /// Gets the current value and establishes a reactive dependency.
   ///
   /// This is equivalent to accessing the [value] getter.
@@ -875,19 +903,6 @@ abstract interface class Readonly<T> {
   /// final value = readonly.get();
   /// ```
   T get();
-
-  /// Gets the current value without establishing a reactive dependency.
-  ///
-  /// Use this when you need to read the value without triggering reactivity.
-  ///
-  /// Returns: The current value
-  ///
-  /// Example:
-  /// ```dart
-  /// final Readonly<int> readonly = Signal(0).readonly();
-  /// final value = readonly.peek; // Doesn't create dependency
-  /// ```
-  T get peek;
 
   /// Manually notifies all subscribers that this value has changed.
   ///
@@ -913,7 +928,7 @@ abstract interface class Readonly<T> {
 /// count.value = 42; // Can modify
 /// print(count.value); // Can read
 /// ```
-abstract interface class Writable<T> implements Readonly<T> {
+abstract interface class Writable<T> implements Readable<T>, Readonly<T> {
   /// Sets a new value for this reactive value.
   ///
   /// This will notify all subscribers if the value has changed.

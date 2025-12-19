@@ -42,10 +42,57 @@ abstract interface class IMutableCollection<T> {
 ///   }
 /// }
 /// ```
-mixin ReadonlyNodeMixin<T> implements ReadonlyNode<T>, ChainedDisposable {
+mixin ReadableNodeMixin<T> implements ReadableNode<T>, ChainedDisposable {
   /// Whether this node has been disposed.
   @override
   bool get isDisposed => _isDisposed;
+  @protected
+  bool _isDisposed = false;
+
+  @override
+  @mustCallSuper
+  void dispose() {
+    if (_isDisposed) return;
+    _isDisposed = true;
+    // allow unawaited futures
+    // ignore: discarded_futures
+    onDispose();
+
+    JFinalizer.disposeObject(this);
+  }
+
+  /// Called when the node is being disposed.
+  ///
+  /// Override this method to provide custom cleanup logic. This method
+  /// is called automatically by [dispose].
+  ///
+  /// Example:
+  /// ```dart
+  /// class MyNode<T> extends ReadonlyNode<T> {
+  ///   @override
+  ///   FutureOr<void> onDispose() {
+  ///     // Clean up resources
+  ///   }
+  /// }
+  /// ```
+  @override
+  @protected
+  void onDispose();
+
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
+  @override
+  String toString() => value.toString();
+}
+
+@Deprecated("use ReadableNodeMixin<T> instead")
+mixin ReadonlyNodeMixin<T> implements ReadableNodeMixin<T>, ReadonlyNode<T> {
+  /// Whether this node has been disposed.
+  @override
+  bool get isDisposed => _isDisposed;
+
+  @override
   @protected
   bool _isDisposed = false;
 
@@ -99,7 +146,7 @@ mixin ReadonlyNodeMixin<T> implements ReadonlyNode<T>, ChainedDisposable {
 /// print(doubled.value); // OK
 /// // doubled.value = 6; // Compile error
 /// ```
-abstract interface class ReadonlyNode<T> implements Readonly<T>, Disposable {
+abstract interface class ReadableNode<T> implements Readable<T>, Disposable {
   /// Whether this node has been disposed.
   bool get isDisposed;
 
@@ -122,6 +169,23 @@ abstract interface class ReadonlyNode<T> implements Readonly<T>, Disposable {
   void dispose();
 }
 
+/// Interface for readonly reactive nodes.
+///
+/// ReadonlyNode represents a reactive value that can be read and tracked
+/// as a dependency, but cannot be modified. It provides lifecycle management
+/// through disposal.
+///
+/// Example:
+/// ```dart
+/// final count = Signal(0);
+/// ReadonlyNode<int> doubled = Computed(() => count.value * 2);
+/// print(doubled.value); // OK
+/// // doubled.value = 6; // Compile error
+/// ```
+@Deprecated("use ReadableNode<T> instead")
+abstract interface class ReadonlyNode<T>
+    implements ReadableNode<T>, Readonly<T> {}
+
 /// Interface for writable reactive nodes.
 ///
 /// WritableNode extends ReadonlyNode to provide write access, allowing
@@ -134,7 +198,7 @@ abstract interface class ReadonlyNode<T> implements Readonly<T>, Disposable {
 /// print(count.value); // Can read
 /// ```
 abstract interface class WritableNode<T>
-    implements ReadonlyNode<T>, Writable<T> {}
+    implements Writable<T>, ReadableNode<T>, ReadonlyNode<T> {}
 
 /// Mixin that provides base functionality for effect nodes.
 ///

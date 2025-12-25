@@ -11,7 +11,7 @@ import "package:jolt/src/jolt/signal.dart";
 /// This mixin implements all List operations while maintaining reactivity.
 /// Any modification to the list will automatically notify subscribers.
 mixin ListSignalMixin<E>
-    implements ListBase<E>, Readonly<List<E>>, IMutableCollection {
+    implements ListBase<E>, Readable<List<E>>, IMutableCollection, Notifiable {
   @override
   int get length => value.length;
 

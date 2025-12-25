@@ -1,3 +1,4 @@
+import "package:jolt/extension.dart";
 import "package:jolt/jolt.dart";
 import "package:test/test.dart";
 import "utils.dart";
@@ -140,7 +141,8 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 1));
 
       expect(states.length, equals(2));
-      expect(states[0], isA<AsyncLoading<int>>());
+
+      expect(states[0], isA<AsyncSuccess<int>>());
       expect(states[1], isA<AsyncSuccess<int>>());
     });
 

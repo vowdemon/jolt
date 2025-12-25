@@ -1,5 +1,5 @@
+import "package:jolt/core.dart";
 import "package:jolt/jolt.dart";
-import "package:jolt/src/jolt/computed.dart";
 
 /// Implementation of [ConvertComputed] that converts between different types.
 ///
@@ -40,7 +40,7 @@ class ConvertComputedImpl<T, U> extends WritableComputedImpl<T>
         );
 
   /// The source signal to convert from.
-  final WritableNode<U> source;
+  final Writable<U> source;
 
   /// Function to convert from source type to target type.
   final T Function(U value) decode;

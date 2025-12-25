@@ -318,25 +318,56 @@ print(count.value); // 42
 
 ### Persistent Signals
 
-Signals that automatically persist to storage:
+Signals that automatically persist to storage with efficient write queuing and throttling:
 
 ```dart
 import 'package:jolt/tricks.dart';
 
-final theme = PersistSignal(
-  initialValue: () => 'light',
-  read: () => SharedPreferences.getInstance()
-    .then((prefs) => prefs.getString('theme') ?? 'light'),
-  write: (value) => SharedPreferences.getInstance()
-    .then((prefs) => prefs.setString('theme', value)),
+// Async persistent signal (for SharedPreferences, etc.)
+final theme = PersistSignal.async(
+  read: () async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('theme') ?? 'light';
+  },
+  write: (value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('theme', value);
+  },
+  initialValue: () => 'light', // Show while loading
   lazy: false, // Load immediately
-  writeDelay: Duration(milliseconds: 100), // Debounce writes
+  throttle: Duration(milliseconds: 100), // Debounce writes
 );
 
 theme.value = 'dark'; // Automatically saved to storage
+
+// Wait for write to complete
+await theme.ensureWrite();
+
+// Sync persistent signal (for in-memory storage, etc.)
+final counter = PersistSignal.sync(
+  read: () => storage.getInt('counter') ?? 0,
+  write: (value) => storage.setInt('counter', value),
+);
+
+// Lazy initialization - load only when accessed
+final settings = PersistSignal.lazySync(
+  read: () => loadSettings(),
+  write: (value) => saveSettings(value),
+);
+
+// Check initialization status
+if (settings.isInitialized) {
+  print('Settings loaded: ${settings.value}');
+}
 ```
 
 ## Important Notes
+
+### Extension Methods
+- Import `package:jolt/extension.dart` to use convenience methods
+- `call()`, `get()`, `derived()` work on any `Readable<T>`
+- `update()`, `set()` work on any `Writable<T>`
+- `readonly()` creates type-safe read-only views
 
 ### Collection Signals
 - Collection signals automatically notify on mutations
@@ -362,6 +393,7 @@ theme.value = 'dark'; // Automatically saved to storage
 - Computed values are cached and only recompute when dependencies change
 - Use `peekCached` to access cached value without recomputing
 - Use `peek` to recompute without creating dependencies
+- Use `derived()` extension method for concise computed creation
 
 ## Related Packages
 

@@ -1,5 +1,6 @@
 import "dart:async";
 
+import "package:jolt/extension.dart";
 import "package:jolt/jolt.dart";
 import "package:jolt/src/core/reactive.dart" as reactive;
 import "package:jolt/src/core/reactive.dart";
@@ -75,12 +76,11 @@ class DebouncedSignal<T> extends SignalImpl<T> {
   Timer? _timer;
 
   @override
-  T set(T value) {
+  set value(T value) {
     _timer?.cancel();
     _timer = Timer(delay, () {
-      super.set(value);
+      super.value = value;
     });
-    return value;
   }
 
   @override

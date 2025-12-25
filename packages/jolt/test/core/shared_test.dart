@@ -113,16 +113,6 @@ void main() {
   });
 }
 
-class _TestEffectNode with EffectNodeMixin {
+class _TestEffectNode with DisposableNodeMixin implements EffectNode {
   _TestEffectNode() : super();
-
-  @override
-  bool get isDisposed => _disposed;
-
-  bool _disposed = false;
-
-  @override
-  void onDispose() {
-    _disposed = true;
-  }
 }

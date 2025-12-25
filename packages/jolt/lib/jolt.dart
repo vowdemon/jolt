@@ -24,4 +24,16 @@
 /// ```
 library;
 
-export "src/public.dart" hide ConvertComputed, PersistSignal;
+export "src/jolt/base.dart" hide DisposableNodeMixin;
+export "src/jolt/signal.dart" hide SignalImpl, ReadonlySignalImpl;
+export "src/jolt/computed.dart" hide ComputedImpl, WritableComputedImpl;
+export "src/jolt/effect.dart" hide EffectImpl, EffectScopeImpl, WatcherImpl;
+export "src/jolt/async.dart" hide AsyncSignalImpl;
+export "src/jolt/batch.dart";
+export "src/jolt/track.dart";
+export "src/jolt/collection/iterable_signal.dart" hide IterableSignalImpl;
+export "src/jolt/collection/list_signal.dart" hide ListSignalImpl;
+export "src/jolt/collection/map_signal.dart" hide MapSignalImpl;
+export "src/jolt/collection/set_signal.dart" hide SetSignalImpl;
+
+export "src/core/debug.dart" show DebugNodeOperationType, JoltDebugFn;

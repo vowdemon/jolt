@@ -1,6 +1,7 @@
+import 'package:jolt/core.dart';
 import 'package:jolt/jolt.dart';
 
-extension JoltWritableExtension<T> on WritableNode<T> {
+extension JoltUtilsWritableExtension<T> on Writable<T> {
   /// Updates the value using an updater function based on the current value.
   ///
   /// This method reads the current value using [peek] (without establishing
@@ -32,7 +33,23 @@ extension JoltWritableExtension<T> on WritableNode<T> {
   @pragma("vm:prefer-inline")
   @pragma("wasm:prefer-inline")
   @pragma("dart2js:prefer-inline")
-  T update(T Function(T value) updater) => set(updater(peek));
+  T update(T Function(T value) updater) => value = updater(peek);
+
+  /// Sets the value.
+  ///
+  /// Same as assigning to [value] property.
+  ///
+  /// Parameters:
+  /// - [value]: The new value to set
+  ///
+  /// Returns: The value that was set
+  ///
+  /// Example:
+  /// ```dart
+  /// final count = Signal(5);
+  /// count.set(10); // Same as count.value = 10
+  /// ```
+  T set(T value) => this.value = value;
 }
 
 /// Extension methods for WritableComputed to provide additional functionality.
@@ -52,7 +69,45 @@ extension JoltWritableComputedExtension<T> on WritableComputed<T> {
   /// print(readonlyComputed.value); // OK
   /// // readonlyComputed.value = 1; // Compile error
   /// ```
-  Computed<T> readonly() => this;
+  Computed<T> readonly() {
+    return _ComputedWrapperImpl(this);
+  }
+}
+
+class _ComputedWrapperImpl<T> implements Computed<T> {
+  _ComputedWrapperImpl(this.root);
+
+  final WritableComputed<T> root;
+
+  @override
+  T get peek => root.peek;
+
+  @override
+  T get value => root.value;
+
+  @override
+  String toString() => value.toString();
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other is _ComputedWrapperImpl<T> && root == other.root);
+  }
+
+  @override
+  int get hashCode => Object.hashAll(['computedView', root.hashCode]);
+
+  @override
+  void dispose() => root.dispose();
+
+  @override
+  bool get isDisposed => root.isDisposed;
+
+  @override
+  void notify() => root.notify();
+
+  @override
+  T get peekCached => root.peekCached;
 }
 
 /// Extension methods for Signal to provide additional functionality.
@@ -72,5 +127,40 @@ extension JoltSignalExtension<T> on Signal<T> {
   /// print(readonlyCounter.value); // OK
   /// // readonlyCounter.value = 1; // Compile error
   /// ```
-  ReadonlySignal<T> readonly() => this;
+  ReadonlySignal<T> readonly() {
+    return _ReadonlySignalWrapperImpl(this);
+  }
+}
+
+class _ReadonlySignalWrapperImpl<T> implements ReadonlySignal<T> {
+  _ReadonlySignalWrapperImpl(this.root);
+
+  final Signal<T> root;
+
+  @override
+  T get peek => root.peek;
+
+  @override
+  T get value => root.value;
+
+  @override
+  String toString() => value.toString();
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other is _ReadonlySignalWrapperImpl<T> && root == other.root);
+  }
+
+  @override
+  int get hashCode => Object.hashAll(['readonlySignalView', root.hashCode]);
+
+  @override
+  void dispose() => root.dispose();
+
+  @override
+  bool get isDisposed => root.isDisposed;
+
+  @override
+  void notify() => root.notify();
 }

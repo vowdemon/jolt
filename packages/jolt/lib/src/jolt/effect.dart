@@ -73,7 +73,7 @@ mixin EffectCleanupMixin {
 /// scope.dispose();
 /// ```
 class EffectScopeImpl extends EffectScopeReactiveNode
-    with EffectNodeMixin, EffectCleanupMixin
+    with DisposableNodeMixin, EffectCleanupMixin
     implements EffectScope {
   /// Creates a new effect scope.
   ///
@@ -223,7 +223,7 @@ abstract class EffectScope implements EffectNode {
 /// effect.dispose(); // Stop the effect
 /// ```
 class EffectImpl extends EffectReactiveNode
-    with EffectNodeMixin, EffectCleanupMixin
+    with DisposableNodeMixin, EffectCleanupMixin
     implements Effect {
   /// {@template jolt_effect_impl}
   /// Creates a new effect with the given function.
@@ -448,7 +448,7 @@ typedef WhenFn<T> = bool Function(T newValue, T oldValue);
 /// name.value = 'Bob'; // Triggers watcher
 /// ```
 class WatcherImpl<T> extends EffectReactiveNode
-    with EffectNodeMixin, EffectCleanupMixin
+    with DisposableNodeMixin, EffectCleanupMixin
     implements Watcher<T> {
   /// {@template jolt_watcher_impl}
   /// Creates a new watcher with the given sources and callback.

@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
+import 'package:jolt_flutter/legacy.dart';
 
 void main() {
   runApp(const MainApp());

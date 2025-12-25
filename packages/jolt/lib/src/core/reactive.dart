@@ -840,26 +840,26 @@ T trigger<T>(T Function() fn) {
 
 /// Interface for readable reactive values.
 ///
-/// Readable provides a readable interface to reactive values, allowing
-/// access to the current value without modification. It supports both
-/// tracked and untracked access patterns.
+/// Provides read-only access to reactive values with both tracked and
+/// untracked access patterns.
 ///
 /// Example:
 /// ```dart
-/// Readable<int> count = Signal(0).readonly();
-/// print(count.value); // Tracked access
-/// print(count.peek); // Untracked access
+/// final count = Signal(0);
+/// Readable<int> readonly = count.readonly();
+/// print(readonly.value); // Tracked access
+/// print(readonly.peek); // Untracked access
 /// ```
 abstract interface class Readable<T> {
   /// Gets the current value and establishes a reactive dependency.
   ///
-  /// When accessed within a reactive context, the context will be
-  /// notified when this value changes.
+  /// When accessed within a reactive context (Effect, Computed, etc.),
+  /// the context will be notified when this value changes.
   ///
   /// Example:
   /// ```dart
-  /// final Readable<int> readable = Signal(0).readable();
-  /// final computed = Computed(() => readable.value * 2);
+  /// final count = Signal(0);
+  /// final doubled = Computed(() => count.value * 2);
   /// ```
   T get value;
 
@@ -871,90 +871,61 @@ abstract interface class Readable<T> {
   ///
   /// Example:
   /// ```dart
-  /// final Readable<int> readable = Signal(0).readable();
-  /// final value = readable.peek; // Doesn't create dependency
+  /// final count = Signal(0);
+  /// final value = count.peek; // Doesn't create dependency
   /// ```
   T get peek;
 }
 
-/// Interface for readonly reactive values.
+/// Interface for reactive values that can be manually notified.
 ///
-/// Readonly provides a read-only interface to reactive values, allowing
-/// access to the current value without modification. It supports both
-/// tracked and untracked access patterns.
+/// Allows triggering change notifications without modifying the value.
+/// Useful for in-place mutations or when you want to force subscribers
+/// to re-evaluate.
 ///
 /// Example:
 /// ```dart
-/// Readonly<int> count = Signal(0).readonly();
-/// print(count.value); // Tracked access
-/// print(count.peek); // Untracked access
+/// final list = ListSignal([1, 2, 3]);
+/// list.value.add(4); // Mutation doesn't auto-notify
+/// list.notify(); // Manually trigger notification
 /// ```
-@Deprecated("use Readable<T> instead")
-abstract interface class Readonly<T> implements Readable<T> {
-  /// Gets the current value and establishes a reactive dependency.
+abstract interface class Notifiable {
+  /// Triggers a change notification without modifying the value.
   ///
-  /// This is equivalent to accessing the [value] getter.
-  ///
-  /// Returns: The current value
+  /// Notifies all subscribers that they should re-evaluate, even if
+  /// the underlying value hasn't changed (e.g., in-place mutations).
   ///
   /// Example:
   /// ```dart
-  /// final Readonly<int> readonly = Signal(0).readonly();
-  /// final value = readonly.get();
-  /// ```
-  T get();
-
-  /// Manually notifies all subscribers that this value has changed.
-  ///
-  /// This is typically called automatically when the value changes,
-  /// but can be called manually for custom notification scenarios.
-  ///
-  /// Example:
-  /// ```dart
-  /// final Readonly<int> readonly = Signal(0).readonly();
-  /// readonly.notify(); // Trigger subscribers manually
+  /// final list = ListSignal([1, 2, 3]);
+  /// list.value.add(4);
+  /// list.notify(); // Force subscribers to update
   /// ```
   void notify();
 }
 
 /// Interface for writable reactive values.
 ///
-/// Writable extends Readonly to provide write access, allowing values
-/// to be both read and modified reactively.
+/// Extends [Readable] to provide write access, allowing values to be
+/// both read and modified reactively.
 ///
 /// Example:
 /// ```dart
-/// Writable<int> count = Signal(0);
+/// final count = Signal(0);
 /// count.value = 42; // Can modify
 /// print(count.value); // Can read
 /// ```
-abstract interface class Writable<T> implements Readable<T>, Readonly<T> {
-  /// Sets a new value for this reactive value.
+abstract interface class Writable<T> implements Readable<T> {
+  /// Sets a new value and notifies subscribers if changed.
   ///
-  /// This will notify all subscribers if the value has changed.
+  /// Automatically notifies all subscribers when the value changes.
   ///
   /// Example:
   /// ```dart
-  /// final Writable<int> writable = Signal(0);
-  /// writable.value = newValue; // Notifies subscribers
+  /// final count = Signal(0);
+  /// count.value = 10; // Notifies subscribers
   /// ```
   set value(T value);
-
-  /// Sets a new value for this reactive value.
-  ///
-  /// Parameters:
-  /// - [value]: The new value to set
-  ///
-  /// Returns: The value that was set
-  ///
-  /// This will notify all subscribers if the value has changed.
-  ///
-  /// Example:
-  /// ```dart
-  /// final Writable<int> writable = Signal(0);
-  /// writable.set(newValue); // Notifies subscribers
-  /// ```
-  T set(T value);
 }
 
 /// Base reactive node for computed values.

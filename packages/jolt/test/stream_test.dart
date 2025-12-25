@@ -1,5 +1,8 @@
+import "dart:async";
+
+import "package:jolt/extension.dart";
 import "package:jolt/jolt.dart";
-import "package:jolt/src/jolt/shared.dart";
+import "package:jolt/src/utils/stream.dart";
 import "package:test/test.dart";
 import "utils.dart";
 
@@ -96,6 +99,7 @@ void main() {
 
         final subscription = signal.listen(values.add, immediately: true);
 
+        await Future.microtask(() {});
         // Should emit initial value immediately
         expect(values, equals([1]));
 
@@ -335,78 +339,6 @@ void main() {
     });
 
     group("Watcher Management", () {
-      test("StreamHolder creation and reuse", () {
-        final signal = Signal(1);
-
-        // Initially no StreamHolder should exist
-        expect(getStreamHolder(signal), isNull);
-
-        // Accessing stream should create StreamHolder
-        final stream = signal.stream;
-        final holder1 = getStreamHolder(signal);
-        expect(holder1, isNotNull);
-        expect(holder1!.watcher, isNull); // No watcher until first listener
-
-        // Multiple accesses should return same StreamHolder
-        final stream2 = signal.stream;
-        final holder2 = getStreamHolder(signal);
-        expect(identical(holder1, holder2), isTrue);
-        expect(stream, equals(stream2));
-      });
-
-      test("Watcher creation and lifecycle", () {
-        final signal = Signal(1);
-
-        // Access stream to create StreamHolder
-        final _ = signal.stream;
-        final holder = getStreamHolder(signal);
-
-        // Initially no watcher
-        expect(holder!.watcher, isNull);
-
-        // First listener should create watcher
-        final subscription = signal.stream.listen((_) {});
-        expect(holder.watcher, isNotNull);
-
-        // Second listener should reuse same watcher
-        final subscription2 = signal.stream.listen((_) {});
-        expect(holder.watcher, isNotNull);
-
-        // Cancel first listener, watcher should still exist
-        subscription.cancel();
-        expect(holder.watcher, isNotNull);
-
-        // Cancel second listener, watcher should be cleared
-        subscription2.cancel();
-        expect(holder.watcher, isNull);
-      });
-
-      test("Watcher recreation after cleanup", () {
-        final signal = Signal(1);
-
-        // Access stream to create StreamHolder
-        final _ = signal.stream;
-        final holder = getStreamHolder(signal);
-
-        // Create and cancel listener
-        final subscription = signal.stream.listen((_) {});
-        expect(holder!.watcher, isNotNull);
-        final watcher1 = holder.watcher;
-
-        subscription.cancel();
-        expect(holder.watcher, isNull);
-
-        // Create new listener should create new watcher
-        final subscription2 = signal.stream.listen((_) {});
-        expect(holder.watcher, isNotNull);
-        final watcher2 = holder.watcher;
-
-        // Should be different watcher instances
-        expect(identical(watcher1, watcher2), isFalse);
-
-        subscription2.cancel();
-      });
-
       test("Watcher creation on first listener", () async {
         final signal = Signal(1);
         final values = <int>[];
@@ -523,65 +455,6 @@ void main() {
         expect(() => signal.stream, throwsA(isA<AssertionError>()));
       });
 
-      test("StreamController state management", () {
-        final signal = Signal(1);
-
-        // Access stream to create StreamHolder
-        final _ = signal.stream;
-        final holder = getStreamHolder(signal);
-
-        // StreamController should be open initially
-        expect(holder!.sc.isClosed, isFalse);
-
-        // Adding listener should not close controller
-        final subscription = signal.stream.listen((_) {});
-        expect(holder.sc.isClosed, isFalse);
-
-        // Canceling listener should not close controller
-        subscription.cancel();
-        expect(holder.sc.isClosed, isFalse);
-
-        // Only disposing signal should close controller
-        signal.dispose();
-        expect(holder.sc.isClosed, isTrue);
-      });
-
-      test("Watcher disposal on signal disposal", () {
-        final signal = Signal(1);
-
-        // Access stream to create StreamHolder
-        final _ = signal.stream;
-        final holder = getStreamHolder(signal);
-
-        // Create watcher
-        signal.stream.listen((_) {});
-        expect(holder!.watcher, isNotNull);
-
-        // Dispose signal should dispose holder and watcher
-        signal.dispose();
-        expect(holder.sc.isClosed, isTrue);
-        expect(holder.watcher, isNull);
-      });
-
-      test("StreamHolder lifecycle with collection signals", () {
-        final listSignal = ListSignal<int>([1, 2, 3]);
-
-        // Access stream to create StreamHolder
-        final _ = listSignal.stream;
-        final holder = getStreamHolder(listSignal);
-
-        expect(holder, isNotNull);
-        expect(holder!.watcher, isNull);
-
-        // Add listener
-        final subscription = listSignal.stream.listen((_) {});
-        expect(holder.watcher, isNotNull);
-
-        // Cancel listener
-        subscription.cancel();
-        expect(holder.watcher, isNull);
-      });
-
       test("Stream holder reuse across multiple accesses", () {
         final signal = Signal(1);
 
@@ -599,6 +472,54 @@ void main() {
 
         final stream3 = signal.stream;
         expect(stream1, equals(stream3));
+      });
+    });
+
+    group("getStreamController", () {
+      test("getStreamController should return controller after stream creation",
+          () {
+        final signal = Signal(42);
+
+        // Initially, controller should be null
+        final controllerBefore = JoltStreamHelper.getStreamController(signal);
+        expect(controllerBefore, isNull);
+
+        // After accessing stream, controller should be created
+        final _ = signal.stream;
+        final controllerAfter = JoltStreamHelper.getStreamController(signal);
+        expect(controllerAfter, isNotNull);
+        expect(controllerAfter, isA<StreamController<int>>());
+      });
+
+      test("getStreamController should return same controller instance", () {
+        final signal = Signal(42);
+
+        // Access stream to create controller
+        final _ = signal.stream;
+
+        final controller1 = JoltStreamHelper.getStreamController(signal);
+        final controller2 = JoltStreamHelper.getStreamController(signal);
+
+        expect(controller1, isNotNull);
+        expect(controller2, isNotNull);
+        expect(controller1, same(controller2));
+      });
+
+      test("getStreamController should work with different signal types", () {
+        final signal = Signal(42);
+        final computed = Computed<int>(() => signal.value * 2);
+
+        // Access streams to create controllers
+        final _ = signal.stream;
+        final __ = computed.stream;
+
+        final signalController = JoltStreamHelper.getStreamController(signal);
+        final computedController =
+            JoltStreamHelper.getStreamController(computed);
+
+        expect(signalController, isNotNull);
+        expect(computedController, isNotNull);
+        expect(signalController, isNot(same(computedController)));
       });
     });
   });

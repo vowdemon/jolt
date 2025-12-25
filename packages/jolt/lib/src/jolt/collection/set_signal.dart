@@ -11,7 +11,7 @@ import "package:jolt/src/jolt/signal.dart";
 /// Any modification to the set will automatically notify subscribers.
 /// All mutating operations trigger change notifications.
 mixin SetSignalMixin<E>
-    implements SetBase<E>, Readonly<Set<E>>, IMutableCollection {
+    implements SetBase<E>, Readable<Set<E>>, IMutableCollection, Notifiable {
   /// Returns true if the set contains the given element.
   ///
   /// This is a non-mutating query operation.

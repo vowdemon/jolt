@@ -1,3 +1,4 @@
+import "package:jolt/extension.dart";
 import "package:jolt/jolt.dart";
 import "package:meta/meta.dart";
 import "package:test/test.dart";
@@ -403,42 +404,87 @@ void main() {
       expect(values, equals([1]));
     });
 
-    test("constant signal notify() should do nothing", () {
+    test("constant signal toString should return value.toString()", () {
       final constant = ReadonlySignal(42);
-      final values = <int>[];
+      expect(constant.toString(), equals("42"));
+      expect(constant.toString(), equals(constant.value.toString()));
 
-      Effect(() {
-        values.add(constant.value);
-      });
+      final stringConstant = ReadonlySignal("hello");
+      expect(stringConstant.toString(), equals("hello"));
+      expect(stringConstant.toString(), equals(stringConstant.value));
 
-      expect(values, equals([42]));
-
-      // Call notify() - it should do nothing for constant signals
-      // Since constant signal's notify() is empty, no effects should be triggered
-      constant.notify();
-
-      // Effect should not run again because constant signal's notify() does nothing
-      expect(values, equals([42]));
+      final nullConstant = ReadonlySignal<int?>(null);
+      expect(nullConstant.toString(), equals("null"));
+      expect(nullConstant.toString(), equals(nullConstant.value.toString()));
     });
 
-    test("constant signal isDisposed should always be false", () {
+    test("constant signal dispose should be noop", () {
       final constant = ReadonlySignal(42);
 
       // Before dispose
+      expect(constant.isDisposed, isFalse);
+      expect(constant.value, equals(42));
+
+      // Call dispose
+      constant.dispose();
+
+      // After dispose - should still work normally
+      expect(constant.isDisposed, isFalse,
+          reason: "isDisposed should remain false after dispose");
+      expect(constant.value, equals(42),
+          reason: "value should still be accessible after dispose");
+      expect(constant.peek, equals(42),
+          reason: "peek should still work after dispose");
+
+      // Can call dispose multiple times without error
+      constant.dispose();
+      constant.dispose();
+      expect(constant.isDisposed, isFalse);
+    });
+
+    test("constant signal isDisposed should always be false", () {
+      final constant = ReadonlySignal(100);
+
       expect(constant.isDisposed, isFalse);
 
       // After dispose
       constant.dispose();
       expect(constant.isDisposed, isFalse);
 
-      // Multiple disposes should still return false
+      // Multiple disposes
+      constant.dispose();
       constant.dispose();
       expect(constant.isDisposed, isFalse);
     });
 
-    test("constant signal dispose should not throw", () {
-      final constant = ReadonlySignal(42);
-      expect(() => constant.dispose(), returnsNormally);
+    test("constant signal notify should be noop and not trigger updates", () {
+      final constant = ReadonlySignal(5);
+      final values = <int>[];
+
+      // Create an effect that tracks the constant
+      final effect = Effect(() {
+        values.add(constant.value);
+      });
+
+      expect(values, equals([5]));
+
+      // Call notify - should not trigger any updates
+      constant.notify();
+
+      // Effect should not run again (constant signals don't trigger reactivity)
+      expect(values, equals([5]),
+          reason: "notify should not trigger effect updates");
+
+      // Can call notify multiple times without error
+      constant.notify();
+      constant.notify();
+      expect(values, equals([5]));
+
+      // Verify value is still accessible
+      expect(constant.value, equals(5));
+      expect(constant.isDisposed, isFalse);
+
+      effect.dispose();
     });
   });
 }

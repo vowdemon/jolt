@@ -327,7 +327,7 @@ class AsyncSignalImpl<T> extends SignalImpl<AsyncState<T>>
     _sourceDisposer = null;
 
     void emit(AsyncState<T> state) {
-      if (!isDisposed) set(state);
+      if (!isDisposed) value = state;
     }
 
     final future = source.subscribe(emit);

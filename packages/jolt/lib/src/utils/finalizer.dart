@@ -1,9 +1,6 @@
-import "dart:async";
-
-import "package:jolt/src/jolt/base.dart";
-import "package:jolt/src/jolt/effect.dart";
-import "package:meta/meta.dart";
-import "package:shared_interfaces/shared_interfaces.dart";
+import 'package:jolt/src/jolt/base.dart';
+import 'package:meta/meta.dart';
+import 'package:shared_interfaces/shared_interfaces.dart';
 
 /// A finalizer utility for managing disposers attached to Jolt objects.
 ///
@@ -61,7 +58,7 @@ abstract final class JFinalizer {
   /// ```
   static Disposer attachToJoltAttachments(Object target, Disposer disposer) {
     assert(() {
-      if (target is ReadonlyNode) {
+      if (target is ReadableNode) {
         return !target.isDisposed;
       }
       if (target is EffectNode) {
@@ -156,102 +153,3 @@ abstract final class JFinalizer {
     disposers.clear();
   }
 }
-
-final streamHolders = Expando<StreamHolder<Object?>>();
-
-/// Internal class for holding stream controller and watcher for reactive values.
-///
-/// StreamHolder manages the lifecycle of a broadcast stream controller and
-/// its associated watcher for converting reactive values to streams.
-@internal
-class StreamHolder<T> implements Disposable {
-  /// Creates a stream holder with the given callbacks.
-  ///
-  /// Parameters:
-  /// - [onListen]: Optional callback called when the stream is first listened to
-  /// - [onCancel]: Optional callback called when the stream subscription is cancelled
-  ///
-  /// This constructor creates a broadcast stream controller that will be used
-  /// to emit values from reactive values to stream subscribers.
-  StreamHolder({
-    void Function()? onListen,
-    void Function()? onCancel,
-  }) : sc = StreamController<T>.broadcast(
-          onListen: onListen,
-          onCancel: onCancel,
-        );
-
-  /// The broadcast stream controller for this holder.
-  ///
-  /// This controller is used to emit values to stream subscribers.
-  final StreamController<T> sc;
-
-  /// The watcher that monitors the reactive value for changes.
-  ///
-  /// This watcher is set when the stream is first listened to and is used
-  /// to track changes in the reactive value and emit them to stream subscribers.
-  Watcher? watcher;
-
-  /// The broadcast stream that emits values when the reactive value changes.
-  ///
-  /// Returns: A broadcast stream that can be listened to by multiple subscribers
-  Stream<T> get stream => sc.stream;
-
-  /// The sink for adding values to the stream.
-  ///
-  /// Returns: A stream sink that can be used to manually add values to the stream
-  StreamSink<T> get sink => sc.sink;
-
-  /// Sets the watcher that monitors the reactive value for changes.
-  ///
-  /// Parameters:
-  /// - [watcher]: The watcher to set
-  ///
-  /// This method is called when the stream is first listened to to set up
-  /// automatic value emission when the reactive value changes.
-  void setWatcher(Watcher watcher) {
-    this.watcher = watcher;
-  }
-
-  /// Clears the watcher and disposes it.
-  ///
-  /// This method disposes the current watcher (if any) and sets it to null.
-  /// This is typically called when the stream subscription is cancelled.
-  void clearWatcher() {
-    watcher?.dispose();
-    watcher = null;
-  }
-
-  /// Disposes this stream holder and cleans up resources.
-  ///
-  /// This method clears the watcher and closes the stream controller,
-  /// preventing further values from being emitted.
-  @override
-  void dispose() {
-    clearWatcher();
-    sc.close().ignore();
-  }
-}
-
-/// Gets the stream holder for the given reactive value.
-///
-/// Parameters:
-/// - [value]: The reactive value to get the stream holder for
-///
-/// Returns: The stream holder for the value, or null if no stream holder exists
-///
-/// This function is primarily intended for internal use and testing purposes.
-/// It retrieves the stream holder that manages the stream conversion for a
-/// reactive value.
-///
-/// Example:
-/// ```dart
-/// final signal = Signal(0);
-/// final stream = signal.stream; // Creates a stream holder
-/// final holder = getStreamHolder(signal);
-/// expect(holder, isNotNull);
-/// ```
-@internal
-@visibleForTesting
-StreamHolder<T>? getStreamHolder<T>(ReadonlyNode<T> value) =>
-    streamHolders[value] as StreamHolder<T>?;

@@ -24,8 +24,8 @@ import "package:meta/meta.dart";
 /// print(fullName.value); // "Jane Doe" - automatically updated
 /// ```
 class ComputedImpl<T> extends ComputedReactiveNode<T>
-    with ReadonlyNodeMixin<T>
-    implements Computed<T>, ReadonlySignal<T> {
+    with DisposableNodeMixin
+    implements Computed<T>, ReadableNode<T>, ReadonlySignal<T> {
   /// {@template jolt_computed_impl}
   /// Creates a new computed value with the given getter function.
   ///
@@ -148,31 +148,7 @@ class ComputedImpl<T> extends ComputedReactiveNode<T>
   @pragma("wasm:prefer-inline")
   @pragma("dart2js:prefer-inline")
   @override
-  T get value => get();
-
-  /// Returns the current computed value (same as `value`).
-  @pragma("vm:prefer-inline")
-  @pragma("wasm:prefer-inline")
-  @pragma("dart2js:prefer-inline")
-  @override
-  T call() => get();
-
-  /// Returns the current computed value and establishes a reactive dependency.
-  ///
-  /// This method ensures the computed value is up-to-date by recalculating
-  /// if any dependencies have changed since the last computation.
-  ///
-  /// Returns: The current computed value
-  ///
-  /// Example:
-  /// ```dart
-  /// final snapshot = computed.get();
-  /// ```
-  @pragma("vm:prefer-inline")
-  @pragma("wasm:prefer-inline")
-  @pragma("dart2js:prefer-inline")
-  @override
-  T get() {
+  T get value {
     assert(!isDisposed, "Computed is disposed");
 
     return getComputed(this);
@@ -210,6 +186,9 @@ class ComputedImpl<T> extends ComputedReactiveNode<T>
   void onDispose() {
     disposeNode(this);
   }
+
+  @override
+  String toString() => value.toString();
 }
 
 /// Interface for computed reactive values.
@@ -226,7 +205,7 @@ class ComputedImpl<T> extends ComputedReactiveNode<T>
 /// count.value = 5;
 /// print(doubled.value); // 10
 /// ```
-abstract interface class Computed<T> implements Readonly<T>, ReadonlyNode<T> {
+abstract interface class Computed<T> implements ReadableNode<T> {
   /// {@macro jolt_computed_impl}
   factory Computed(T Function() getter, {JoltDebugFn? onDebug}) = ComputedImpl;
 
@@ -258,9 +237,6 @@ abstract interface class Computed<T> implements Readonly<T>, ReadonlyNode<T> {
   /// print(computed.peekCached); // Returns cached value immediately if available
   /// ```
   T get peekCached;
-
-  /// Returns the current computed value (same as `value`).
-  T call();
 }
 
 /// Implementation of [WritableComputed] that can be both read and written.
@@ -368,17 +344,11 @@ class WritableComputedImpl<T> extends ComputedImpl<T>
   @pragma("wasm:prefer-inline")
   @pragma("dart2js:prefer-inline")
   @override
-  set value(T newValue) => set(newValue);
-
-  /// {@macro jolt_writable_computed_set}
-  @override
-  T set(T newValue) {
+  set value(T newValue) {
     assert(!isDisposed, "WritableComputed is disposed");
     startBatch();
     try {
       setter(newValue);
-
-      return newValue;
     } finally {
       endBatch();
     }
@@ -419,8 +389,4 @@ abstract interface class WritableComputed<T> implements Computed<T>, Signal<T> {
     void Function(T) setter, {
     JoltDebugFn? onDebug,
   }) = WritableComputedImpl.withPrevious;
-
-  /// Returns the current computed value (same as `value`).
-  @override
-  T call();
 }

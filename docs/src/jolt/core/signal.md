@@ -140,9 +140,9 @@ processConfig(Config.apiVersion); // OK
 
 ## Reading Values
 
-### `.value` / `.get()` / `call()`
+### `.value`
 
-Use the `.value` property, `.get()` method, or call the signal object directly to read values—**this creates reactive dependencies**. When the signal's value changes, any reactive nodes that access it through these methods will automatically update.
+Use the `.value` property to read values—**this creates reactive dependencies**. When the signal's value changes, any reactive nodes that access it will automatically update.
 
 ```dart
 final count = Signal(0);
@@ -151,18 +151,20 @@ Effect(() {
   print(count.value); // Using .value
 });
 
-Effect(() {
-  print(count.get()); // Using .get()
-});
-
-Effect(() {
-  print(count()); // Direct call, equivalent to .value
-});
-
-count.value = 10; // All Effects will update
+count.value = 10; // Effect will update
 ```
 
-These three methods are completely equivalent—choose based on your coding style.
+You can also use the `call()` extension method for a function-like syntax:
+
+```dart
+final count = Signal(0);
+
+Effect(() {
+  print(count()); // Using call() extension, equivalent to .value
+});
+
+count.value = 10; // Effect will update
+```
 
 ### `.peek`
 
@@ -203,18 +205,16 @@ button.onTap = () {
 
 ## Writing Values
 
-### `.value` / `.set()`
+### `.value`
 
-Assign directly to the `.value` property or use the `.set()` method to update the signal's value. Both methods update the value and notify all subscribers.
+Assign directly to the `.value` property to update the signal's value. This updates the value and notifies all subscribers.
 
 ```dart
 final count = Signal(0);
 
-count.value = 10;  // Using assignment
-count.set(20);      // Using .set() method
+count.value = 10;  // Update value
+count.value = 20;  // Update value again
 ```
-
-Both methods are completely equivalent—choose based on your coding style.
 
 ### Update Function
 
@@ -229,8 +229,8 @@ count.update((value) => value * 2); // count.value is now 12
 This is equivalent to:
 
 ```dart
-count.set(count.peek + 1);
-count.set(count.peek * 2);
+count.value = count.peek + 1;
+count.value = count.peek * 2;
 ```
 
 ## Manual Notification
@@ -374,7 +374,7 @@ class AppConfig {
 
 ## Important Notes
 
-1. **Reactive Dependencies**: Using `.value`, `.get()`, or `call()` in reactive contexts (such as `Computed`, `Effect`) establishes dependencies. Using `.peek` does not establish dependencies.
+1. **Reactive Dependencies**: Using `.value` or `call()` in reactive contexts (such as `Computed`, `Effect`) establishes dependencies. Using `.peek` does not establish dependencies.
 
 2. **Lifecycle**: Signals that are no longer used should call `dispose()` to release resources and avoid memory leaks.
 

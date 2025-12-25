@@ -3,11 +3,11 @@
 
 # 扩展方法
 
-Jolt 提供了丰富的扩展方法，让响应式编程更加便捷。这些扩展方法可以让你轻松地操作响应式值，或者将普通值转换为响应式信号。
+Jolt 提供了丰富的扩展方法，让响应式编程更加便捷。这些扩展方法可以让你轻松地操作响应式值，并与 Flutter 集成。
 
-## Readonly 扩展方法
+## Readable 扩展方法
 
-`Readonly<T>` 接口的扩展方法，适用于所有只读响应式值（如 `Signal`、`Computed` 等）。
+`Readable<T>` 接口的扩展方法，适用于所有只读响应式值（如 `Signal`、`Computed` 等）。
 
 ### stream
 
@@ -85,8 +85,8 @@ count.update((value) => value * 2); // count.value 现在是 12
 这等价于：
 
 ```dart
-count.set(count.peek + 1);
-count.set(count.peek * 2);
+count.value = count.peek + 1;
+count.value = count.peek * 2;
 ```
 
 ### readonly
@@ -111,107 +111,74 @@ print(readonlyComputed.value); // OK
 // readonlyComputed.value = 1; // 编译错误
 ```
 
-## 转换信号方法
+### untilWhen
 
-将普通值转换为响应式信号的扩展方法。
-
-### toSignal
-
-将任何对象转换为响应式信号。
+等待响应式值满足某个条件，可以访问前一个值。
 
 ```dart
-import 'package:jolt/jolt.dart';
+final count = Signal(0);
 
-final nameSignal = 'Alice'.toSignal();
-final countSignal = 42.toSignal();
-final listSignal = [1, 2, 3].toSignal();
+// 等待 count 达到 5，同时追踪前一个值
+final future = count.untilWhen((value, previous) => value >= 5);
+
+count.value = 1; // 仍在等待，previous 是 0
+count.value = 3; // 仍在等待，previous 是 1
+count.value = 5; // Future 完成，值为 5，previous 是 3
+
+final result = await future; // result 是 5
 ```
 
-### 集合转换方法
+### call
 
-#### toListSignal
-
-将普通列表转换为响应式列表信号。
+将 Readable 作为函数调用以获取其值（创建响应式依赖）。
 
 ```dart
-final normalList = [1, 2, 3];
-final reactiveList = normalList.toListSignal();
+final counter = Signal(0);
 
-Effect(() => print('Length: ${reactiveList.length}'));
-
-reactiveList.add(4); // 触发更新
+// 这些是等价的：
+final value1 = counter.value;
+final value2 = counter(); // 使用 call 扩展
 ```
 
-#### toSetSignal
+### get
 
-将普通集合转换为响应式集合信号。
+获取 Readable 的值（创建响应式依赖）。
 
 ```dart
-final normalSet = {'dart', 'flutter'};
-final reactiveSet = normalSet.toSetSignal();
+final counter = Signal(0);
 
-Effect(() => print('Tags: ${reactiveSet.join(', ')}'));
-
-reactiveSet.add('reactive'); // 触发更新
+// 这些是等价的：
+final value1 = counter.value;
+final value2 = counter.get(); // 使用 get 扩展
 ```
 
-#### toMapSignal
+### derived
 
-将普通映射转换为响应式映射信号。
+从此 Readable 创建一个计算值。
 
 ```dart
-final normalMap = {'name': 'Alice', 'age': 30};
-final reactiveMap = normalMap.toMapSignal();
+final count = Signal(5);
+final doubled = count.derived((value) => value * 2);
 
-Effect(() => print('User: ${reactiveMap['name']}'));
-
-reactiveMap['name'] = 'Bob'; // 触发更新
+print(doubled.value); // 10
+count.value = 6;
+print(doubled.value); // 12
 ```
 
-#### toIterableSignal
+## Flutter 扩展方法
 
-将普通迭代器转换为响应式迭代器信号。
+### watch (仅限 Flutter)
 
-```dart
-final range = Iterable.generate(5).toIterableSignal();
-
-Effect(() => print('Items: ${range.toList()}'));
-```
-
-### 异步转换方法
-
-#### toAsyncSignal
-
-将 Future 转换为响应式异步信号。
+创建一个在此 Readable 值改变时重建的 Widget。此扩展在 `jolt_flutter` 包中可用。
 
 ```dart
-Future<String> fetchUser() async {
-  await Future.delayed(Duration(seconds: 1));
-  return 'John Doe';
-}
+import 'package:jolt_flutter/jolt_flutter.dart';
+import 'package:jolt_flutter/extension.dart';
 
-final signal = fetchUser().toAsyncSignal();
+final counter = Signal(0);
 
-Effect(() {
-  if (signal.value.isSuccess) {
-    print('Data: ${signal.data}');
-  }
-});
-```
-
-#### toStreamSignal
-
-将 Stream 转换为响应式异步信号。
-
-```dart
-final stream = Stream.periodic(Duration(seconds: 1), (i) => i);
-final signal = stream.toStreamSignal();
-
-Effect(() {
-  if (signal.value.isSuccess) {
-    print('Data: ${signal.data}');
-  }
-});
+// 使用 watch 扩展创建响应式 Widget
+counter.watch((value) => Text('Count: $value'))
 ```
 
 ## 注意事项

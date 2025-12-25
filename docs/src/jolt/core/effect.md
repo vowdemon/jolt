@@ -254,7 +254,7 @@ Effect(() {
 
 3. **Async Operations**: Effect functions can be async, but you need to pay attention to how cleanup functions are registered.
 
-4. **Dependency Tracking**: Effect automatically tracks reactive values accessed through `.value`, `.get()`, or `call()` in the function.
+4. **Dependency Tracking**: Effect automatically tracks reactive values accessed through `.value` or `call()` in the function.
 
 ## Related APIs
 

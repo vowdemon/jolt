@@ -3,7 +3,7 @@
 
 # Flutter Widgets
 
-在 Flutter 中构建响应式 UI 时，Jolt 提供了三个核心 Widget：`JoltBuilder`、`JoltSelector` 和 `JoltProvider`。这些 Widget 都基于 `FlutterEffect` 实现，同一帧内只会触发一次重建，自动追踪依赖变化，并在依赖改变时重建 Widget，让 UI 与数据状态保持同步。
+在 Flutter 中构建响应式 UI 时，Jolt 提供了核心 Widget：`JoltBuilder`、`JoltSelector` 和 `JoltWatchBuilder`。这些 Widget 都基于 `FlutterEffect` 实现，同一帧内只会触发一次重建，自动追踪依赖变化，并在依赖改变时重建 Widget，让 UI 与数据状态保持同步。
 
 当你访问 `builder` 函数中的信号（Signal）、计算值（Computed）或响应式集合时，这些 Widget 会**自动建立依赖关系**。当被追踪的依赖发生改变时，Widget 会自动重建，从而让 UI 与数据状态保持同步。
 
@@ -103,9 +103,89 @@ JoltSelector(
 );
 ```
 
+## JoltWatchBuilder
+
+`JoltWatchBuilder` 是一个响应式 Widget，它追踪单个 `Readable` 值，并在该值改变时重建。当你想要监听特定的信号或计算值时特别有用。
+
+### 基本用法
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:jolt_flutter/jolt_flutter.dart';
+
+final counter = Signal(0);
+
+class MyWidget extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return JoltWatchBuilder<int>(
+      readable: counter,
+      builder: (context, value) => Text('Count: $value'),
+    );
+  }
+}
+```
+
+### 使用 watch 扩展方法
+
+为了方便，你可以直接在 `Readable` 上使用 `watch` 扩展方法：
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:jolt_flutter/jolt_flutter.dart';
+import 'package:jolt_flutter/extension.dart';
+
+final counter = Signal(0);
+
+class MyWidget extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        counter.watch((value) => Text('Count: $value')),
+        ElevatedButton(
+          onPressed: () => counter.value++,
+          child: Text('Increment'),
+        ),
+      ],
+    );
+  }
+}
+```
+
+### 何时使用 JoltWatchBuilder vs JoltBuilder
+
+- **JoltWatchBuilder**：当你想要追踪单个特定的 `Readable` 值时使用。更明确，更容易理解依赖关系。
+- **JoltBuilder**：当你想要追踪多个信号或依赖关系复杂且动态时使用。
+
 ## JoltProvider
 
-`JoltProvider` 用于在 Widget 树中提供和管理响应式资源，支持完整的生命周期管理。它结合了依赖注入模式和响应式编程，让你可以在组件树中共享状态，同时自动处理资源的创建和销毁。
+> **⚠️ 已废弃**：`JoltProvider` 已废弃，将在未来版本中移除。对于依赖注入，请使用 Flutter 的内置解决方案，如 `Provider`、`Riverpod` 或其他 DI 包。
+
+`JoltProvider` 曾用于在 Widget 树中提供和管理响应式资源，支持完整的生命周期管理。它结合了依赖注入模式和响应式编程，让你可以在组件树中共享状态，同时自动处理资源的创建和销毁。
+
+### 迁移指南
+
+使用 Flutter 的依赖注入解决方案替换 `JoltProvider`：
+
+```dart
+// 之前
+JoltProvider<MyStore>(
+  create: (context) => MyStore(),
+  builder: (context, store) => Text('${store.counter.value}'),
+)
+
+// 之后 - 使用 Provider 包
+Provider<MyStore>(
+  create: (_) => MyStore(),
+  child: Builder(
+    builder: (context) {
+      final store = Provider.of<MyStore>(context);
+      return Text('${store.counter.value}');
+    },
+  ),
+)
+```
 
 ### 使用 create
 

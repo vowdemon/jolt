@@ -3,7 +3,7 @@
 
 # Flutter Widgets
 
-When building reactive UIs in Flutter, Jolt provides three core Widgets: `JoltBuilder`, `JoltSelector`, and `JoltProvider`. These Widgets are all implemented based on `FlutterEffect`, triggering only one rebuild per frame, automatically tracking dependency changes, and rebuilding Widgets when dependencies change, keeping the UI synchronized with data state.
+When building reactive UIs in Flutter, Jolt provides core Widgets: `JoltBuilder`, `JoltSelector`, and `JoltWatchBuilder`. These Widgets are all implemented based on `FlutterEffect`, triggering only one rebuild per frame, automatically tracking dependency changes, and rebuilding Widgets when dependencies change, keeping the UI synchronized with data state.
 
 When you access signals (Signal), computed values (Computed), or reactive collections in the `builder` function, these Widgets **automatically establish dependencies**. When tracked dependencies change, Widgets automatically rebuild, keeping the UI synchronized with data state.
 
@@ -103,9 +103,89 @@ JoltSelector(
 );
 ```
 
+## JoltWatchBuilder
+
+`JoltWatchBuilder` is a reactive Widget that tracks a single `Readable` value and rebuilds when that value changes. It's particularly useful when you want to watch a specific signal or computed value.
+
+### Basic Usage
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:jolt_flutter/jolt_flutter.dart';
+
+final counter = Signal(0);
+
+class MyWidget extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return JoltWatchBuilder<int>(
+      readable: counter,
+      builder: (context, value) => Text('Count: $value'),
+    );
+  }
+}
+```
+
+### Using the watch Extension
+
+For convenience, you can use the `watch` extension method directly on a `Readable`:
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:jolt_flutter/jolt_flutter.dart';
+import 'package:jolt_flutter/extension.dart';
+
+final counter = Signal(0);
+
+class MyWidget extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        counter.watch((value) => Text('Count: $value')),
+        ElevatedButton(
+          onPressed: () => counter.value++,
+          child: Text('Increment'),
+        ),
+      ],
+    );
+  }
+}
+```
+
+### When to Use JoltWatchBuilder vs JoltBuilder
+
+- **JoltWatchBuilder**: Use when you want to track a single specific `Readable` value. More explicit and easier to understand dependencies.
+- **JoltBuilder**: Use when you want to track multiple signals or when dependencies are complex and dynamic.
+
 ## JoltProvider
 
-`JoltProvider` is used to provide and manage reactive resources in the Widget tree, supporting complete lifecycle management. It combines dependency injection patterns with reactive programming, allowing you to share state in the component tree while automatically handling resource creation and disposal.
+> **⚠️ Deprecated**: `JoltProvider` is deprecated and will be removed in a future version. For dependency injection, use Flutter's built-in solutions like `Provider`, `Riverpod`, or other DI packages.
+
+`JoltProvider` was used to provide and manage reactive resources in the Widget tree, supporting complete lifecycle management. It combined dependency injection patterns with reactive programming, allowing you to share state in the component tree while automatically handling resource creation and disposal.
+
+### Migration Guide
+
+Replace `JoltProvider` with Flutter's dependency injection solutions:
+
+```dart
+// Before
+JoltProvider<MyStore>(
+  create: (context) => MyStore(),
+  builder: (context, store) => Text('${store.counter.value}'),
+)
+
+// After - Using Provider package
+Provider<MyStore>(
+  create: (_) => MyStore(),
+  child: Builder(
+    builder: (context) {
+      final store = Provider.of<MyStore>(context);
+      return Text('${store.counter.value}');
+    },
+  ),
+)
+```
 
 ### Using create
 

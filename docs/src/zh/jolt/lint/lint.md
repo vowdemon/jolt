@@ -82,6 +82,8 @@ JoltBuilder(builder: (context) => Text('Hello'))
 
 ### 使用 JoltProvider 包装
 
+> **⚠️ 已废弃**：`JoltProvider` 已废弃。对于依赖注入，请使用 Flutter 的内置解决方案，如 `Provider`、`Riverpod` 或其他 DI 包。
+
 使用 `JoltProvider` 包装 Widget，在 Widget 树中提供响应式状态。
 
 **使用场景**：当你需要在 Widget 树中提供共享的响应式状态时。
@@ -91,10 +93,16 @@ JoltBuilder(builder: (context) => Text('Hello'))
 // 转换前
 MyWidget()
 
-// 转换后
+// 转换后（已废弃）
 JoltProvider(
   create: (context) => null,  // 填入实际的创建逻辑
   builder: (context, provider) => MyWidget()
+)
+
+// 推荐：使用 Provider 或 Riverpod 代替
+Provider(
+  create: (_) => MyStore(),
+  child: MyWidget(),
 )
 ```
 

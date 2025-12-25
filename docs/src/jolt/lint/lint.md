@@ -82,6 +82,8 @@ JoltBuilder(builder: (context) => Text('Hello'))
 
 ### Wrap with JoltProvider
 
+> **⚠️ Deprecated**: `JoltProvider` is deprecated. For dependency injection, use Flutter's built-in solutions like `Provider`, `Riverpod`, or other DI packages.
+
 Wrap Widget with `JoltProvider` to provide reactive state in the Widget tree.
 
 **Use Case**: When you need to provide shared reactive state in the Widget tree.
@@ -91,10 +93,16 @@ Wrap Widget with `JoltProvider` to provide reactive state in the Widget tree.
 // Before conversion
 MyWidget()
 
-// After conversion
+// After conversion (deprecated)
 JoltProvider(
   create: (context) => null,  // Fill in actual creation logic
   builder: (context, provider) => MyWidget()
+)
+
+// Recommended: Use Provider or Riverpod instead
+Provider(
+  create: (_) => MyStore(),
+  child: MyWidget(),
 )
 ```
 

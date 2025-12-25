@@ -7,13 +7,13 @@ Jolt provides rich extensibility, allowing you to create your own utility tools,
 
 ## Understanding Core Interfaces
 
-### ReadonlyNode Basics
+### ReadableNode Basics
 
-`Signal`, `Computed`, etc. are all implementations of `ReadonlyNode`. Understanding `ReadonlyNode` is the foundation for extending Jolt.
+`Signal`, `Computed`, etc. are all implementations of `ReadableNode`. Understanding `ReadableNode` is the foundation for extending Jolt.
 
 ```dart
-abstract interface class ReadonlyNode<T>
-    implements Readonly<T>, Disposable {
+abstract interface class ReadableNode<T>
+    implements Readable<T>, Disposable {
   /// Whether disposed
   bool get isDisposed;
 
@@ -23,20 +23,20 @@ abstract interface class ReadonlyNode<T>
 }
 ```
 
-The `ReadonlyNode` interface provides the following core capabilities:
+The `ReadableNode` interface provides the following core capabilities:
 
-- **`.value` / `.get()`**: Read value and establish reactive dependencies (from `Readonly<T>`)
-- **`.peek`**: Read value without establishing dependencies (from `Readonly<T>`)
-- **`.notify()`**: Manually notify subscribers (from `Readonly<T>`)
+- **`.value`**: Read value and establish reactive dependencies (from `Readable<T>`)
+- **`.peek`**: Read value without establishing dependencies (from `Readable<T>`)
+- **`.notify()`**: Manually notify subscribers (from `Readable<T>`)
 - **`.isDisposed`**: Check if disposed
 - **`.dispose()`**: Release resources
 
-### ReadonlyNodeMixin
+### DisposableNodeMixin
 
-If you need to implement `ReadonlyNode` and require custom cleanup logic, you can use `ReadonlyNodeMixin`:
+If you need to implement `ReadableNode` and require custom cleanup logic, you can use `DisposableNodeMixin`:
 
 ```dart
-mixin ReadonlyNodeMixin<T> implements ReadonlyNode<T>, ChainedDisposable {
+mixin DisposableNodeMixin<T> implements ReadableNode<T>, ChainedDisposable {
   @override
   bool get isDisposed => _isDisposed;
   @protected
@@ -56,14 +56,14 @@ mixin ReadonlyNodeMixin<T> implements ReadonlyNode<T>, ChainedDisposable {
 }
 ```
 
-When using `ReadonlyNodeMixin`, you can override the `onDispose()` method to customize cleanup logic.
+When using `DisposableNodeMixin`, you can override the `onDispose()` method to customize cleanup logic.
 
-### Readonly Interface
+### Readable Interface
 
-The `Readonly<T>` interface defines basic operations for read-only reactive values:
+The `Readable<T>` interface defines basic operations for read-only reactive values:
 
 ```dart
-abstract interface class Readonly<T> {
+abstract interface class Readable<T> {
   T get value;
   T get();
   T get peek;
@@ -73,10 +73,10 @@ abstract interface class Readonly<T> {
 
 ### Writable Interface
 
-The `Writable<T>` interface extends `Readonly<T>`, adding write capabilities:
+The `Writable<T>` interface extends `Readable<T>`, adding write capabilities:
 
 ```dart
-abstract interface class Writable<T> implements Readonly<T> {
+abstract interface class Writable<T> implements Readable<T> {
   set value(T value);
   T set(T value);
 }
@@ -86,16 +86,16 @@ abstract interface class Writable<T> implements Readonly<T> {
 
 ### Accepting Arbitrary Reactive Values
 
-When you need to create a function or class that receives arbitrary reactive values, you should use `ReadonlyNode<T>` or `Readonly<T>` as the parameter type:
+When you need to create a function or class that receives arbitrary reactive values, you should use `ReadableNode<T>` or `Readable<T>` as the parameter type:
 
 ```dart
 // ✅ Correct: Accept arbitrary reactive values
-void processReactiveValue(ReadonlyNode<int> value) {
+void processReactiveValue(ReadableNode<int> value) {
   print('Value: ${value.value}');
 }
 
-// ✅ Can also use Readonly<T>
-void processReactiveValue2(Readonly<int> value) {
+// ✅ Can also use Readable<T>
+void processReactiveValue2(Readable<int> value) {
   print('Value: ${value.value}');
 }
 
@@ -112,8 +112,8 @@ processReactiveValue(computed);  // OK
 If you need to write generic extensions for `Computed` or `Signal`, you should define them on their common interface:
 
 ```dart
-// ✅ Correct: Define extension on ReadonlyNode
-extension MyExtension<T> on ReadonlyNode<T> {
+// ✅ Correct: Define extension on ReadableNode
+extension MyExtension<T> on ReadableNode<T> {
   String get displayValue => 'Value: ${value}';
 }
 
@@ -124,7 +124,7 @@ extension SignalExtension<T> on Signal<T> {
 
 // ✅ Correct: Define extension on Computed
 extension ComputedExtension<T> on Computed<T> {
-  ReadonlyNode<T> get readonly => this;
+  ReadableNode<T> get readonly => this;
 }
 ```
 
@@ -139,7 +139,7 @@ extension ComputedExtension<T> on Computed<T> {
 
 ### Method 1: Extending SignalImpl
 
-`SignalImpl` uses `ReadonlyNodeMixin`, so classes extending `SignalImpl` can override `onDispose()` to customize cleanup logic.
+`SignalImpl` uses `DisposableNodeMixin`, so classes extending `SignalImpl` can override `onDispose()` to customize cleanup logic.
 
 ```dart
 import 'package:jolt/jolt.dart';
@@ -166,7 +166,7 @@ class DebouncedSignal<T> extends SignalImpl<T> {
     return value;
   }
 
-  // SignalImpl uses ReadonlyNodeMixin, so can override onDispose()
+  // SignalImpl uses DisposableNodeMixin, so can override onDispose()
   @override
   void onDispose() {
     _timer?.cancel();
@@ -197,7 +197,7 @@ import 'package:jolt/src/jolt/base.dart';
 
 /// Custom Signal implementation
 class CustomSignal<T> extends SignalReactiveNode<T>
-    with ReadonlyNodeMixin<T>
+    with DisposableNodeMixin<T>
     implements Signal<T> {
   CustomSignal(T? value, {super.onDebug})
       : super(flags: ReactiveFlags.mutable, pendingValue: value);
@@ -298,7 +298,7 @@ countText.value = "100"; // count.value becomes 100
 In SetupWidget, `useAutoDispose` is a key Hook for automatically managing resource lifecycles. All resources created through `useAutoDispose` will automatically call `dispose()` when the Widget is unmounted:
 
 ```dart
-import 'package:jolt_flutter/setup.dart';
+import 'package:jolt_setup/jolt_setup.dart';
 
 setup(context, props) {
   // useAutoDispose automatically calls dispose() when Widget is unmounted
@@ -314,7 +314,7 @@ setup(context, props) {
 `useSignal` is actually an instance of `JoltSignalHookCreator`. You can extend this class to add your own signal creation methods:
 
 ```dart
-import 'package:jolt_flutter/setup.dart';
+import 'package:jolt_setup/jolt_setup.dart';
 import 'package:jolt/jolt.dart';
 import 'package:jolt/src/jolt/signal.dart';
 import 'dart:async';
@@ -583,7 +583,7 @@ age.value = 200; // Validation failed, value remains 25
 ### Example 4: Extending useSignal to Add Throttle Method
 
 ```dart
-import 'package:jolt_flutter/setup.dart';
+import 'package:jolt_setup/jolt_setup.dart';
 
 extension ThrottledSignalExtension on JoltSignalHookCreator {
   /// Create throttled signal Hook
@@ -619,7 +619,7 @@ setup(context, props) {
 You can also create completely custom Hooks:
 
 ```dart
-import 'package:jolt_flutter/setup.dart';
+import 'package:jolt_setup/jolt_setup.dart';
 
 /// Custom Hook: auto-refreshing data
 class AutoRefreshHook<T> extends SetupHook<Signal<T>> {
@@ -710,10 +710,10 @@ class CustomDebouncedSignal extends SignalImpl<T> {
 
 ### 2. Implement Necessary Lifecycle Methods
 
-If you use `ReadonlyNodeMixin` or extend from a class that uses `ReadonlyNodeMixin` (such as `SignalImpl`), you can override `onDispose()` to clean up resources. `onDispose()` is of type `void` and is automatically called in the `dispose()` method:
+If you use `DisposableNodeMixin` or extend from a class that uses `DisposableNodeMixin` (such as `SignalImpl`), you can override `onDispose()` to clean up resources. `onDispose()` is of type `void` and is automatically called in the `dispose()` method:
 
 ```dart
-// Extend SignalImpl (which uses ReadonlyNodeMixin)
+// Extend SignalImpl (which uses DisposableNodeMixin)
 class MySignal<T> extends SignalImpl<T> {
   Timer? _timer;
   
@@ -725,8 +725,8 @@ class MySignal<T> extends SignalImpl<T> {
   }
 }
 
-// Or use ReadonlyNodeMixin
-class MyNode<T> with ReadonlyNodeMixin<T> implements ReadonlyNode<T> {
+// Or use DisposableNodeMixin
+class MyNode<T> with DisposableNodeMixin<T> implements ReadableNode<T> {
   Timer? _timer;
   
   @override
@@ -741,8 +741,8 @@ class MyNode<T> with ReadonlyNodeMixin<T> implements ReadonlyNode<T> {
 ```
 
 **Note**:
-- The `ReadonlyNode` interface itself does not have an `onDispose()` method
-- You can only override `onDispose()` when using `ReadonlyNodeMixin`
+- The `ReadableNode` interface itself does not have an `onDispose()` method
+- You can only override `onDispose()` when using `DisposableNodeMixin`
 - `onDispose()` is a synchronous method. If you need async cleanup, you should start async operations in `onDispose()` but not wait for them to complete
 
 ### 3. Maintain Type Safety

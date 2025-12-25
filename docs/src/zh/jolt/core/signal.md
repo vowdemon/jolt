@@ -140,9 +140,9 @@ processConfig(Config.apiVersion); // OK
 
 ## 读取值
 
-### `.value` / `.get()` / `call()`
+### `.value`
 
-使用 `.value` 属性、`.get()` 方法或直接调用信号对象来读取值，**这会创建响应式依赖**。当信号的值改变时，任何通过这些方式访问它的响应式节点都会自动更新。
+使用 `.value` 属性来读取值，**这会创建响应式依赖**。当信号的值改变时，任何访问它的响应式节点都会自动更新。
 
 ```dart
 final count = Signal(0);
@@ -151,18 +151,20 @@ Effect(() {
   print(count.value); // 使用 .value
 });
 
-Effect(() {
-  print(count.get()); // 使用 .get()
-});
-
-Effect(() {
-  print(count()); // 直接调用，等价于 .value
-});
-
-count.value = 10; // 所有 Effect 都会更新
+count.value = 10; // Effect 会更新
 ```
 
-这三种方式完全等价，选择哪种取决于你的编码风格。
+你也可以使用 `call()` 扩展方法，获得类似函数调用的语法：
+
+```dart
+final count = Signal(0);
+
+Effect(() {
+  print(count()); // 使用 call() 扩展，等价于 .value
+});
+
+count.value = 10; // Effect 会更新
+```
 
 ### `.peek`
 
@@ -203,18 +205,16 @@ button.onTap = () {
 
 ## 写入值
 
-### `.value` / `.set()`
+### `.value`
 
-直接给 `.value` 属性赋值或使用 `.set()` 方法来更新信号的值。两种方式都会更新值并通知所有订阅者。
+直接给 `.value` 属性赋值来更新信号的值。这会更新值并通知所有订阅者。
 
 ```dart
 final count = Signal(0);
 
-count.value = 10;  // 使用赋值
-count.set(20);      // 使用 .set() 方法
+count.value = 10;  // 更新值
+count.value = 20;  // 再次更新值
 ```
-
-两种方式完全等价，选择哪种取决于你的编码风格。
 
 ### 更新函数
 
@@ -229,8 +229,8 @@ count.update((value) => value * 2); // count.value 现在是 12
 这等价于：
 
 ```dart
-count.set(count.peek + 1);
-count.set(count.peek * 2);
+count.value = count.peek + 1;
+count.value = count.peek * 2;
 ```
 
 ## 手动通知
@@ -374,7 +374,7 @@ class AppConfig {
 
 ## 注意事项
 
-1. **响应式依赖**：在响应式上下文（如 `Computed`、`Effect`）中使用 `.value`、`.get()` 或 `call()` 会建立依赖关系。使用 `.peek` 不会建立依赖。
+1. **响应式依赖**：在响应式上下文（如 `Computed`、`Effect`）中使用 `.value` 或 `call()` 会建立依赖关系。使用 `.peek` 不会建立依赖。
 
 2. **生命周期**：不再使用的信号应该调用 `dispose()` 释放资源，避免内存泄漏。
 

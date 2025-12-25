@@ -3,11 +3,11 @@
 
 # Extension Methods
 
-Jolt provides rich extension methods that make reactive programming more convenient. These extension methods allow you to easily manipulate reactive values or convert regular values to reactive signals.
+Jolt provides rich extension methods that make reactive programming more convenient. These extension methods allow you to easily manipulate reactive values and integrate with Flutter.
 
-## Readonly Extension Methods
+## Readable Extension Methods
 
-Extension methods for the `Readonly<T>` interface, applicable to all read-only reactive values (such as `Signal`, `Computed`, etc.).
+Extension methods for the `Readable<T>` interface, applicable to all read-only reactive values (such as `Signal`, `Computed`, etc.).
 
 ### stream
 
@@ -85,8 +85,8 @@ count.update((value) => value * 2); // count.value is now 12
 This is equivalent to:
 
 ```dart
-count.set(count.peek + 1);
-count.set(count.peek * 2);
+count.value = count.peek + 1;
+count.value = count.peek * 2;
 ```
 
 ### readonly
@@ -111,107 +111,74 @@ print(readonlyComputed.value); // OK
 // readonlyComputed.value = 1; // Compile error
 ```
 
-## Signal Conversion Methods
+### untilWhen
 
-Extension methods for converting regular values to reactive signals.
-
-### toSignal
-
-Convert any object to a reactive signal.
+Wait for a reactive value to satisfy a condition, with access to the previous value.
 
 ```dart
-import 'package:jolt/jolt.dart';
+final count = Signal(0);
 
-final nameSignal = 'Alice'.toSignal();
-final countSignal = 42.toSignal();
-final listSignal = [1, 2, 3].toSignal();
+// Wait for count to reach 5, with previous value tracking
+final future = count.untilWhen((value, previous) => value >= 5);
+
+count.value = 1; // Still waiting, previous is 0
+count.value = 3; // Still waiting, previous is 1
+count.value = 5; // Future completes, value is 5, previous is 3
+
+final result = await future; // result is 5
 ```
 
-### Collection Conversion Methods
+### call
 
-#### toListSignal
-
-Convert a regular list to a reactive list signal.
+Call a Readable as a function to get its value (creates reactive dependency).
 
 ```dart
-final normalList = [1, 2, 3];
-final reactiveList = normalList.toListSignal();
+final counter = Signal(0);
 
-Effect(() => print('Length: ${reactiveList.length}'));
-
-reactiveList.add(4); // Triggers update
+// These are equivalent:
+final value1 = counter.value;
+final value2 = counter(); // Using call extension
 ```
 
-#### toSetSignal
+### get
 
-Convert a regular set to a reactive set signal.
+Get the value of a Readable (creates reactive dependency).
 
 ```dart
-final normalSet = {'dart', 'flutter'};
-final reactiveSet = normalSet.toSetSignal();
+final counter = Signal(0);
 
-Effect(() => print('Tags: ${reactiveSet.join(', ')}'));
-
-reactiveSet.add('reactive'); // Triggers update
+// These are equivalent:
+final value1 = counter.value;
+final value2 = counter.get(); // Using get extension
 ```
 
-#### toMapSignal
+### derived
 
-Convert a regular map to a reactive map signal.
+Create a computed value derived from this Readable.
 
 ```dart
-final normalMap = {'name': 'Alice', 'age': 30};
-final reactiveMap = normalMap.toMapSignal();
+final count = Signal(5);
+final doubled = count.derived((value) => value * 2);
 
-Effect(() => print('User: ${reactiveMap['name']}'));
-
-reactiveMap['name'] = 'Bob'; // Triggers update
+print(doubled.value); // 10
+count.value = 6;
+print(doubled.value); // 12
 ```
 
-#### toIterableSignal
+## Flutter Extension Methods
 
-Convert a regular iterable to a reactive iterable signal.
+### watch (Flutter only)
 
-```dart
-final range = Iterable.generate(5).toIterableSignal();
-
-Effect(() => print('Items: ${range.toList()}'));
-```
-
-### Async Conversion Methods
-
-#### toAsyncSignal
-
-Convert a Future to a reactive async signal.
+Create a widget that rebuilds when this Readable value changes. This extension is available in the `jolt_flutter` package.
 
 ```dart
-Future<String> fetchUser() async {
-  await Future.delayed(Duration(seconds: 1));
-  return 'John Doe';
-}
+import 'package:jolt_flutter/jolt_flutter.dart';
+import 'package:jolt_flutter/extension.dart';
 
-final signal = fetchUser().toAsyncSignal();
+final counter = Signal(0);
 
-Effect(() {
-  if (signal.value.isSuccess) {
-    print('Data: ${signal.data}');
-  }
-});
-```
-
-#### toStreamSignal
-
-Convert a Stream to a reactive async signal.
-
-```dart
-final stream = Stream.periodic(Duration(seconds: 1), (i) => i);
-final signal = stream.toStreamSignal();
-
-Effect(() {
-  if (signal.value.isSuccess) {
-    print('Data: ${signal.data}');
-  }
-});
+// Use watch extension to create a reactive widget
+counter.watch((value) => Text('Count: $value'))
 ```
 
 ## Important Notes

@@ -40,9 +40,9 @@ Computed is lazy—it only computes when accessed. If there are no subscribers, 
 
 ## Reading Values
 
-### `.value` / `.get()` / `call()`
+### `.value`
 
-Use the `.value` property, `.get()` method, or call the computed object directly to read values—**this creates reactive dependencies and triggers computation**. If dependencies have changed, it recomputes; otherwise, it returns the cached value.
+Use the `.value` property to read values—**this creates reactive dependencies and triggers computation**. If dependencies have changed, it recomputes; otherwise, it returns the cached value.
 
 ```dart
 final count = Signal(0);
@@ -50,14 +50,23 @@ final doubled = Computed(() => count.value * 2);
 
 Effect(() {
   print(doubled.value); // Using .value
-  print(doubled.get()); // Using .get()
-  print(doubled()); // Direct call
 });
 
-count.value = 5; // All methods trigger recomputation
+count.value = 5; // Triggers recomputation
 ```
 
-These three methods are completely equivalent—choose based on your coding style.
+You can also use the `call()` extension method for a function-like syntax:
+
+```dart
+final count = Signal(0);
+final doubled = Computed(() => count.value * 2);
+
+Effect(() {
+  print(doubled()); // Using call() extension, equivalent to .value
+});
+
+count.value = 5; // Triggers recomputation
+```
 
 ### `.peek`
 
@@ -169,11 +178,6 @@ Effect(() {
 doubled.value = 10; // Output: "Count: 5, Doubled: 10"
 ```
 
-You can also write using the `.set()` method with the same effect:
-
-```dart
-doubled.set(20); // Same as doubled.value = 20
-```
 
 ### Batch Execution
 
@@ -285,7 +289,7 @@ print(processed.value); // Recomputes
 
 2. **Caching Mechanism**: Computed automatically caches computation results and only recomputes when dependencies change.
 
-3. **Dependency Tracking**: Using `.value`, `.get()`, or `call()` in the getter function to access other reactive values establishes dependencies. Using `.peek` does not establish dependencies.
+3. **Dependency Tracking**: Using `.value` or `call()` in the getter function to access other reactive values establishes dependencies. Using `.peek` does not establish dependencies.
 
 4. **`peek` vs `peekCached`**:
    - Use `peek` when you need the latest value but don't want to establish dependencies

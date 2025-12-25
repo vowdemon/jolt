@@ -26,7 +26,7 @@ The core idea of `SetupWidget` is to separate Widget build logic into two parts:
 `SetupBuilder` is the simplest way to use Setup Widget, suitable for rapid prototyping, simple components, or inline reactive Widgets:
 
 ```dart
-import 'package:jolt_flutter/setup.dart';
+import 'package:jolt_setup/jolt_setup.dart';
 
 SetupBuilder(
   setup: (context) {
@@ -113,7 +113,7 @@ class CounterWidget extends SetupWidget<CounterWidget> {
   - `props`: `PropsReadonlyNode<YourWidgetType>`, provides reactive access to Widget instance
 
 - **Props Access Methods:**
-  - `props()` / `props.value` / `props.get()` - Reactive access, establishes dependencies
+  - `props()` / `props.value` - Reactive access, establishes dependencies
   - `props.peek` - Non-reactive access, used for one-time initialization
 
 - **Similar to `StatelessWidget`**: Widget class should be immutable, should not hold mutable state or define instance methods
@@ -390,10 +390,10 @@ setup: (context) {
 
 ### Flutter Resource Hooks
 
-You can use Hooks provided by the `jolt_flutter_hooks` package:
+You can use Hooks provided by the `jolt_setup` package:
 
 ```dart
-import 'package:jolt_flutter_hooks/jolt_flutter_hooks.dart';
+import 'package:jolt_setup/hooks.dart';
 
 setup(context, props) {
   final controller = useTextEditingController('Initial text');

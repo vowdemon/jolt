@@ -145,26 +145,25 @@ Effect(() {
 });
 ```
 
-#### 扩展方法和转换工具
+#### 扩展方法
 
-- **toSignal / toListSignal / toMapSignal / toSetSignal**：将普通值转换为响应式信号
-- **toAsyncSignal / toStreamSignal**：将异步源转换为响应式信号
 - **stream / listen**：将响应式值转换为流
-- **until**：等待响应式值满足条件
+- **until / untilWhen**：等待响应式值满足条件
 - **readonly**：获取只读视图
 - **update**：使用更新函数修改值
+- **derived**：从 Readable 创建计算值
+- **call / get**：读取值的替代语法
 
 ```dart
-// 转换普通值
-final nameSignal = 'Alice'.toSignal();
-final listSignal = [1, 2, 3].toListSignal();
-
 // 转换为流
 final stream = counter.stream;
 stream.listen((value) => print(value));
 
 // 等待条件满足
 final data = await isLoading.until((value) => !value);
+
+// 创建派生计算值
+final doubled = count.derived((value) => value * 2);
 ```
 
 #### 高级工具
@@ -199,15 +198,15 @@ final theme = PersistSignal(
 
 - **JoltBuilder**：自动响应式 UI 更新
 - **JoltSelector**：细粒度选择器更新
-- **JoltProvider**：资源管理和生命周期回调
+- **JoltWatchBuilder**：监听单个 Readable 值并重建
 - **JoltValueNotifier**：与 Flutter ValueNotifier 系统集成
-- **SetupWidget / SetupBuilder**：组合式 API
+- **SetupWidget / SetupBuilder**：组合式 API（来自 `jolt_setup` 包）
 - **FlutterEffect**：Flutter 特定的副作用，帧结束时执行
 
 #### Hooks 支持
 
 - **jolt_hooks**：基于 flutter_hooks 的 Hooks API
-- **jolt_flutter_hooks**：Flutter 资源 Hooks（控制器、焦点节点等）
+- **jolt_setup**：Setup Widget API，包含 Flutter 资源 Hooks（控制器、焦点节点等）
 
 #### Surge 模式
 
@@ -245,7 +244,7 @@ Jolt 只有三个核心概念：Signal（状态）、Computed（计算值）、E
 
 ### 跨平台支持
 
-纯 Dart 核心，可以在 Dart CLI 和 Flutter 中使用。Flutter 深度集成，提供 `JoltBuilder`、`JoltProvider`、`SetupWidget` 等专门的 Widget，以及 `FlutterEffect` 等 Flutter 特定的功能。
+纯 Dart 核心，可以在 Dart CLI 和 Flutter 中使用。Flutter 深度集成，提供 `JoltBuilder`、`JoltWatchBuilder`、`SetupWidget`（来自 `jolt_setup` 包）等专门的 Widget，以及 `FlutterEffect` 等 Flutter 特定的功能。
 
 ### 适用于各种规模
 

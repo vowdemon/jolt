@@ -26,7 +26,7 @@
 `SetupBuilder` 是使用 Setup Widget 的最简单方式，适合快速原型、简单组件或内联响应式 Widget：
 
 ```dart
-import 'package:jolt_flutter/setup.dart';
+import 'package:jolt_setup/jolt_setup.dart';
 
 SetupBuilder(
   setup: (context) {
@@ -113,7 +113,7 @@ class CounterWidget extends SetupWidget<CounterWidget> {
   - `props`：`PropsReadonlyNode<YourWidgetType>`，提供对 Widget 实例的响应式访问
 
 - **Props 访问方法：**
-  - `props()` / `props.value` / `props.get()` - 响应式访问，建立依赖关系
+  - `props()` / `props.value` - 响应式访问，建立依赖关系
   - `props.peek` - 非响应式访问，用于一次性初始化
 
 - **类似 `StatelessWidget`**：Widget 类应该是不可变的，不应持有可变状态或定义实例方法
@@ -390,10 +390,10 @@ setup: (context) {
 
 ### Flutter 资源 Hooks
 
-可以使用 `jolt_flutter_hooks` 包提供的 Hooks：
+可以使用 `jolt_setup` 包提供的 Hooks：
 
 ```dart
-import 'package:jolt_flutter_hooks/jolt_flutter_hooks.dart';
+import 'package:jolt_setup/hooks.dart';
 
 setup(context, props) {
   final controller = useTextEditingController('Initial text');

@@ -7,13 +7,13 @@ Jolt 提供了丰富的扩展能力，让你可以基于核心接口创建自己
 
 ## 核心接口理解
 
-### ReadonlyNode 基础
+### ReadableNode 基础
 
-`Signal`、`Computed` 等都是 `ReadonlyNode` 的实现。理解 `ReadonlyNode` 是扩展 Jolt 的基础。
+`Signal`、`Computed` 等都是 `ReadableNode` 的实现。理解 `ReadableNode` 是扩展 Jolt 的基础。
 
 ```dart
-abstract interface class ReadonlyNode<T>
-    implements Readonly<T>, Disposable {
+abstract interface class ReadableNode<T>
+    implements Readable<T>, Disposable {
   /// 是否已释放
   bool get isDisposed;
 
@@ -23,20 +23,20 @@ abstract interface class ReadonlyNode<T>
 }
 ```
 
-`ReadonlyNode` 接口提供了以下核心能力：
+`ReadableNode` 接口提供了以下核心能力：
 
-- **`.value` / `.get()`**: 读取值并建立响应式依赖（来自 `Readonly<T>`）
-- **`.peek`**: 读取值但不建立依赖（来自 `Readonly<T>`）
-- **`.notify()`**: 手动通知订阅者（来自 `Readonly<T>`）
+- **`.value`**: 读取值并建立响应式依赖（来自 `Readable<T>`）
+- **`.peek`**: 读取值但不建立依赖（来自 `Readable<T>`）
+- **`.notify()`**: 手动通知订阅者（来自 `Readable<T>`）
 - **`.isDisposed`**: 检查是否已释放
 - **`.dispose()`**: 释放资源
 
-### ReadonlyNodeMixin
+### DisposableNodeMixin
 
-如果你需要实现 `ReadonlyNode` 并需要自定义清理逻辑，可以使用 `ReadonlyNodeMixin`：
+如果你需要实现 `ReadableNode` 并需要自定义清理逻辑，可以使用 `DisposableNodeMixin`：
 
 ```dart
-mixin ReadonlyNodeMixin<T> implements ReadonlyNode<T>, ChainedDisposable {
+mixin DisposableNodeMixin<T> implements ReadableNode<T>, ChainedDisposable {
   @override
   bool get isDisposed => _isDisposed;
   @protected
@@ -56,16 +56,15 @@ mixin ReadonlyNodeMixin<T> implements ReadonlyNode<T>, ChainedDisposable {
 }
 ```
 
-使用 `ReadonlyNodeMixin` 时，你可以重写 `onDispose()` 方法来自定义清理逻辑。
+使用 `DisposableNodeMixin` 时，你可以重写 `onDispose()` 方法来自定义清理逻辑。
 
-### Readonly 接口
+### Readable 接口
 
-`Readonly<T>` 接口定义了只读响应式值的基本操作：
+`Readable<T>` 接口定义了只读响应式值的基本操作：
 
 ```dart
-abstract interface class Readonly<T> {
+abstract interface class Readable<T> {
   T get value;
-  T get();
   T get peek;
   void notify();
 }
@@ -73,12 +72,11 @@ abstract interface class Readonly<T> {
 
 ### Writable 接口
 
-`Writable<T>` 接口扩展了 `Readonly<T>`，添加了写入能力：
+`Writable<T>` 接口扩展了 `Readable<T>`，添加了写入能力：
 
 ```dart
-abstract interface class Writable<T> implements Readonly<T> {
+abstract interface class Writable<T> implements Readable<T> {
   set value(T value);
-  T set(T value);
 }
 ```
 
@@ -86,16 +84,16 @@ abstract interface class Writable<T> implements Readonly<T> {
 
 ### 接受任意响应式值
 
-当你需要创建一个函数或类，接收任意响应式值时，应该使用 `ReadonlyNode<T>` 或 `Readonly<T>` 作为参数类型：
+当你需要创建一个函数或类，接收任意响应式值时，应该使用 `ReadableNode<T>` 或 `Readable<T>` 作为参数类型：
 
 ```dart
 // ✅ 正确：接受任意响应式值
-void processReactiveValue(ReadonlyNode<int> value) {
+void processReactiveValue(ReadableNode<int> value) {
   print('Value: ${value.value}');
 }
 
-// ✅ 也可以使用 Readonly<T>
-void processReactiveValue2(Readonly<int> value) {
+// ✅ 也可以使用 Readable<T>
+void processReactiveValue2(Readable<int> value) {
   print('Value: ${value.value}');
 }
 
@@ -112,8 +110,8 @@ processReactiveValue(computed);  // OK
 如果需要对 `Computed` 或 `Signal` 写通用扩展，应该在它们共同的接口上定义：
 
 ```dart
-// ✅ 正确：在 ReadonlyNode 上定义扩展
-extension MyExtension<T> on ReadonlyNode<T> {
+// ✅ 正确：在 ReadableNode 上定义扩展
+extension MyExtension<T> on ReadableNode<T> {
   String get displayValue => 'Value: ${value}';
 }
 
@@ -124,7 +122,7 @@ extension SignalExtension<T> on Signal<T> {
 
 // ✅ 正确：在 Computed 上定义扩展
 extension ComputedExtension<T> on Computed<T> {
-  ReadonlyNode<T> get readonly => this;
+  ReadableNode<T> get readonly => this;
 }
 ```
 
@@ -139,7 +137,7 @@ extension ComputedExtension<T> on Computed<T> {
 
 ### 方式一：继承 SignalImpl
 
-`SignalImpl` 使用了 `ReadonlyNodeMixin`，所以继承 `SignalImpl` 的类可以重写 `onDispose()` 来自定义清理逻辑。
+`SignalImpl` 使用了 `DisposableNodeMixin`，所以继承 `SignalImpl` 的类可以重写 `onDispose()` 来自定义清理逻辑。
 
 ```dart
 import 'package:jolt/jolt.dart';
@@ -166,7 +164,7 @@ class DebouncedSignal<T> extends SignalImpl<T> {
     return value;
   }
 
-  // SignalImpl 使用了 ReadonlyNodeMixin，所以可以重写 onDispose()
+  // SignalImpl 使用了 DisposableNodeMixin，所以可以重写 onDispose()
   @override
   void onDispose() {
     _timer?.cancel();
@@ -197,7 +195,7 @@ import 'package:jolt/src/jolt/base.dart';
 
 /// 自定义 Signal 实现
 class CustomSignal<T> extends SignalReactiveNode<T>
-    with ReadonlyNodeMixin<T>
+    with DisposableNodeMixin<T>
     implements Signal<T> {
   CustomSignal(T? value, {super.onDebug})
       : super(flags: ReactiveFlags.mutable, pendingValue: value);
@@ -298,7 +296,7 @@ countText.value = "100"; // count.value 变为 100
 在 SetupWidget 中，`useAutoDispose` 是一个关键 Hook，用于自动管理资源的生命周期。所有通过 `useAutoDispose` 创建的资源会在 Widget 卸载时自动调用 `dispose()`：
 
 ```dart
-import 'package:jolt_flutter/setup.dart';
+import 'package:jolt_setup/jolt_setup.dart';
 
 setup(context, props) {
   // useAutoDispose 会在 Widget 卸载时自动调用 dispose()
@@ -314,7 +312,7 @@ setup(context, props) {
 `useSignal` 实际上是 `JoltSignalHookCreator` 的实例。你可以通过扩展这个类来添加自己的信号创建方法：
 
 ```dart
-import 'package:jolt_flutter/setup.dart';
+import 'package:jolt_setup/jolt_setup.dart';
 import 'package:jolt/jolt.dart';
 import 'package:jolt/src/jolt/signal.dart';
 import 'dart:async';
@@ -583,7 +581,7 @@ age.value = 200; // 验证失败，值保持为 25
 ### 示例 4：扩展 useSignal 添加节流方法
 
 ```dart
-import 'package:jolt_flutter/setup.dart';
+import 'package:jolt_setup/jolt_setup.dart';
 
 extension ThrottledSignalExtension on JoltSignalHookCreator {
   /// 创建节流信号 Hook
@@ -619,7 +617,7 @@ setup(context, props) {
 你也可以创建完全自定义的 Hook：
 
 ```dart
-import 'package:jolt_flutter/setup.dart';
+import 'package:jolt_setup/jolt_setup.dart';
 
 /// 自定义 Hook：自动刷新的数据
 class AutoRefreshHook<T> extends SetupHook<Signal<T>> {
@@ -710,10 +708,10 @@ class CustomDebouncedSignal extends SignalImpl<T> {
 
 ### 2. 实现必要的生命周期方法
 
-如果你使用 `ReadonlyNodeMixin` 或继承自使用了 `ReadonlyNodeMixin` 的类（如 `SignalImpl`），可以重写 `onDispose()` 来清理资源。`onDispose()` 是 `void` 类型，在 `dispose()` 方法中自动调用：
+如果你使用 `DisposableNodeMixin` 或继承自使用了 `DisposableNodeMixin` 的类（如 `SignalImpl`），可以重写 `onDispose()` 来清理资源。`onDispose()` 是 `void` 类型，在 `dispose()` 方法中自动调用：
 
 ```dart
-// 继承 SignalImpl（它使用了 ReadonlyNodeMixin）
+// 继承 SignalImpl（它使用了 DisposableNodeMixin）
 class MySignal<T> extends SignalImpl<T> {
   Timer? _timer;
   
@@ -725,8 +723,8 @@ class MySignal<T> extends SignalImpl<T> {
   }
 }
 
-// 或者使用 ReadonlyNodeMixin
-class MyNode<T> with ReadonlyNodeMixin<T> implements ReadonlyNode<T> {
+// 或者使用 DisposableNodeMixin
+class MyNode<T> with DisposableNodeMixin<T> implements ReadableNode<T> {
   Timer? _timer;
   
   @override
@@ -741,8 +739,8 @@ class MyNode<T> with ReadonlyNodeMixin<T> implements ReadonlyNode<T> {
 ```
 
 **注意**：
-- `ReadonlyNode` 接口本身没有 `onDispose()` 方法
-- 只有使用 `ReadonlyNodeMixin` 时才能重写 `onDispose()`
+- `ReadableNode` 接口本身没有 `onDispose()` 方法
+- 只有使用 `DisposableNodeMixin` 时才能重写 `onDispose()`
 - `onDispose()` 是同步方法，如果需要异步清理，应该在 `onDispose()` 中启动异步操作，但不等待其完成
 
 ### 3. 保持类型安全

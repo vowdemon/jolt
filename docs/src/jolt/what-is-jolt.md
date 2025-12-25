@@ -144,26 +144,25 @@ Effect(() {
 });
 ```
 
-#### Extension Methods and Conversion Tools
+#### Extension Methods
 
-- **toSignal / toListSignal / toMapSignal / toSetSignal**: Convert regular values to reactive signals
-- **toAsyncSignal / toStreamSignal**: Convert async sources to reactive signals
 - **stream / listen**: Convert reactive values to streams
-- **until**: Wait for reactive values to satisfy conditions
+- **until / untilWhen**: Wait for reactive values to satisfy conditions
 - **readonly**: Get read-only views
 - **update**: Modify values using update functions
+- **derived**: Create computed values from Readable
+- **call / get**: Alternative syntax for reading values
 
 ```dart
-// Convert regular values
-final nameSignal = 'Alice'.toSignal();
-final listSignal = [1, 2, 3].toListSignal();
-
 // Convert to streams
 final stream = counter.stream;
 stream.listen((value) => print(value));
 
 // Wait for condition to be satisfied
 final data = await isLoading.until((value) => !value);
+
+// Create derived computed
+final doubled = count.derived((value) => value * 2);
 ```
 
 #### Advanced Tools
@@ -198,15 +197,15 @@ final theme = PersistSignal(
 
 - **JoltBuilder**: Automatic reactive UI updates
 - **JoltSelector**: Fine-grained selector updates
-- **JoltProvider**: Resource management with lifecycle callbacks
+- **JoltWatchBuilder**: Watch a single Readable value and rebuild
 - **JoltValueNotifier**: Integration with Flutter's ValueNotifier system
-- **SetupWidget / SetupBuilder**: Composition-based API
+- **SetupWidget / SetupBuilder**: Composition-based API (from `jolt_setup` package)
 - **FlutterEffect**: Flutter-specific side effects that execute at frame end
 
 #### Hooks Support
 
 - **jolt_hooks**: Hooks API based on flutter_hooks
-- **jolt_flutter_hooks**: Flutter resource Hooks (controllers, focus nodes, etc.)
+- **jolt_setup**: Setup Widget API with Flutter resource Hooks (controllers, focus nodes, etc.)
 
 #### Surge Pattern
 
@@ -244,7 +243,7 @@ You can gradually migrate existing code without rewriting the entire application
 
 ### Cross-Platform Support
 
-Pure Dart core that works in both Dart CLI and Flutter. Deep Flutter integration provides specialized Widgets like `JoltBuilder`, `JoltProvider`, `SetupWidget`, and Flutter-specific features like `FlutterEffect`.
+Pure Dart core that works in both Dart CLI and Flutter. Deep Flutter integration provides specialized Widgets like `JoltBuilder`, `JoltWatchBuilder`, `SetupWidget` (from `jolt_setup` package), and Flutter-specific features like `FlutterEffect`.
 
 ### Suitable for All Scales
 

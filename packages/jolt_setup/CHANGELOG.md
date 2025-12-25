@@ -1,3 +1,7 @@
+## 3.0.0
+
+ - **REFACTOR**: extract setup functionality to separate package and optimize hooks. ([cb9c4705](https://github.com/vowdemon/jolt/commit/cb9c47058c5ffde0ccf3bdc716ed63b55f7212b5))
+
 ## 2.1.0
 
  - **REFACTOR**: rename lifecycle hook methods for consistency. ([25a6567e](https://github.com/vowdemon/jolt/commit/25a6567e07f36792666f315a2bfe01f39b0b473b))

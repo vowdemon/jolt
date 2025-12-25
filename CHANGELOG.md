@@ -3,6 +3,51 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-12-25
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`jolt` - `v3.0.0`](#jolt---v300)
+ - [`jolt_flutter` - `v3.0.0`](#jolt_flutter---v300)
+ - [`jolt_flutter_hooks` - `v2.0.0`](#jolt_flutter_hooks---v200)
+ - [`jolt_hooks` - `v3.0.0`](#jolt_hooks---v300)
+ - [`jolt_setup` - `v3.0.0`](#jolt_setup---v300)
+ - [`jolt_surge` - `v3.0.0`](#jolt_surge---v300)
+
+---
+
+#### `jolt` - `v3.0.0`
+
+ - **REFACTOR**: simplify API by removing native methods and toSignal extensions. ([6ed87fa3](https://github.com/vowdemon/jolt/commit/6ed87fa31a478440df7bc8000f4b9cb956ee4c50))
+ - **REFACTOR**: rename Readonly to Readable and update related interfaces. ([daeafdd5](https://github.com/vowdemon/jolt/commit/daeafdd597492160e7d70121d9ed15c971121f0c))
+
+#### `jolt_flutter` - `v3.0.0`
+
+ - **REFACTOR**(jolt_flutter): extract setup, deprecate JoltProvider, add JoltWatchBuilder. ([99cb936c](https://github.com/vowdemon/jolt/commit/99cb936cb4744d931736b4cd78739f0d2d6523b1))
+
+#### `jolt_flutter_hooks` - `v2.0.0`
+
+ - **REFACTOR**: deprecate jolt_flutter_hooks and redirect to jolt_setup. ([26c7a1c6](https://github.com/vowdemon/jolt/commit/26c7a1c6f3897db10432ea7cd7ec1df25509b69e))
+
+#### `jolt_hooks` - `v3.0.0`
+
+ - **REFACTOR**(jolt_hooks): remove tricks methods and update type names. ([611ed474](https://github.com/vowdemon/jolt/commit/611ed4742874696be76251c6ca188631513d178e))
+
+#### `jolt_setup` - `v3.0.0`
+
+ - **REFACTOR**: extract setup functionality to separate package and optimize hooks. ([cb9c4705](https://github.com/vowdemon/jolt/commit/cb9c47058c5ffde0ccf3bdc716ed63b55f7212b5))
+
+#### `jolt_surge` - `v3.0.0`
+
+
 ## 2025-12-16
 
 ### Changes

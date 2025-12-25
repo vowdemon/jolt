@@ -1,3 +1,8 @@
+## 3.0.0
+
+ - **REFACTOR**: simplify API by removing native methods and toSignal extensions. ([6ed87fa3](https://github.com/vowdemon/jolt/commit/6ed87fa31a478440df7bc8000f4b9cb956ee4c50))
+ - **REFACTOR**: rename Readonly to Readable and update related interfaces. ([daeafdd5](https://github.com/vowdemon/jolt/commit/daeafdd597492160e7d70121d9ed15c971121f0c))
+
 ## 2.1.1
 
  - **FIX**: mark ReadonlySignal factory as const. ([66e6f692](https://github.com/vowdemon/jolt/commit/66e6f69259c2d705f5468894143c0867936b518d))

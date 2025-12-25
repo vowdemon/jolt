@@ -1,3 +1,7 @@
+## 3.0.0
+
+ - **REFACTOR**(jolt_hooks): remove tricks methods and update type names. ([611ed474](https://github.com/vowdemon/jolt/commit/611ed4742874696be76251c6ca188631513d178e))
+
 ## 2.0.1
 
  - **REFACTOR**: replace abstract hook creators with final implementations. ([87314ba2](https://github.com/vowdemon/jolt/commit/87314ba29eaff94486445aa7d26101a945ba37e1))

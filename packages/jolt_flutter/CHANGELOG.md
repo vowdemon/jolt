@@ -1,3 +1,7 @@
+## 3.0.0
+
+ - **REFACTOR**(jolt_flutter): extract setup, deprecate JoltProvider, add JoltWatchBuilder. ([99cb936c](https://github.com/vowdemon/jolt/commit/99cb936cb4744d931736b4cd78739f0d2d6523b1))
+
 ## 2.1.0
 
  - **REFACTOR**: rename lifecycle hook methods for consistency. ([25a6567e](https://github.com/vowdemon/jolt/commit/25a6567e07f36792666f315a2bfe01f39b0b473b))

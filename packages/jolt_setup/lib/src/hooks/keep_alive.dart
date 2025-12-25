@@ -6,7 +6,7 @@ import 'package:jolt_setup/jolt_setup.dart';
 ///
 /// Provides two ways to control widget keep-alive behavior:
 /// - [call]: Accepts a boolean value directly
-/// - [value]: Accepts a reactive ReadableNode<bool>
+/// - [value]: Accepts a reactive ReadableNode
 class _UseAutomaticKeepAliveCreator {
   const _UseAutomaticKeepAliveCreator._();
 
@@ -38,7 +38,7 @@ class _UseAutomaticKeepAliveCreator {
   /// The keep-alive state will automatically update when the reactive value changes.
   ///
   /// Parameters:
-  /// - [wantKeepAlive]: A reactive ReadableNode<bool> that controls keep-alive
+  /// - [wantKeepAlive]: A reactive ReadableNode that controls keep-alive
   ///
   /// Example:
   /// ```dart

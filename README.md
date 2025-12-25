@@ -33,7 +33,6 @@ The foundation of Jolt, providing reactive primitives for Dart and Flutter:
 Flutter-specific widgets and utilities for reactive UI:
 - `JoltBuilder` - Automatic reactive UI updates
 - `JoltSelector` - Fine-grained selector updates
-- `JoltProvider` - Resource management with lifecycle callbacks
 - `JoltValueNotifier` - Integration with Flutter's ValueNotifier system
 
 ### [jolt_hooks](packages/jolt_hooks/) - Flutter Hooks Integration

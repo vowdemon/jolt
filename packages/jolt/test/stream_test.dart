@@ -1,6 +1,5 @@
 import "dart:async";
 
-import "package:jolt/extension.dart";
 import "package:jolt/jolt.dart";
 import "package:jolt/src/utils/stream.dart";
 import "package:test/test.dart";
@@ -510,8 +509,8 @@ void main() {
         final computed = Computed<int>(() => signal.value * 2);
 
         // Access streams to create controllers
-        final _ = signal.stream;
-        final __ = computed.stream;
+        signal.stream;
+        computed.stream;
 
         final signalController = JoltStreamHelper.getStreamController(signal);
         final computedController =

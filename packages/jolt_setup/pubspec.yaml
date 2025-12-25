@@ -1,6 +1,6 @@
 name: jolt_setup
-description: "Flutter library for jolt reactive signals library that builds reactive widgets from signals, automatically updating UI when signals change."
-version: 2.1.0
+description: "Setup Widget API and Flutter hooks for building reactive widgets with Jolt signals, featuring automatic resource cleanup and lifecycle management."
+version: 3.0.0
 
 repository: https://github.com/vowdemon/jolt
 homepage: https://jolt.vowdemon.com
@@ -19,7 +19,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  jolt_flutter: ^2.1.0
+  jolt_flutter: ^3.0.0
   meta: ^1.0.0
   shared_interfaces: ^0.0.2
 

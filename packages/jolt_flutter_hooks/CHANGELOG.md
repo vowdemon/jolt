@@ -1,3 +1,7 @@
+## 2.0.0
+
+ - **REFACTOR**: deprecate jolt_flutter_hooks and redirect to jolt_setup. ([26c7a1c6](https://github.com/vowdemon/jolt/commit/26c7a1c6f3897db10432ea7cd7ec1df25509b69e))
+
 ## 1.1.0
 
  - **FEAT**: add more hooks. ([be34b78a](https://github.com/vowdemon/jolt/commit/be34b78a247f516a27f7fd2a849e9119414c22ee))

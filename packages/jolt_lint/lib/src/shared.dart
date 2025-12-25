@@ -308,8 +308,8 @@ String ensureSetupPropsName(AstNode node, DartFileEditBuilder builder) {
 }
 
 const flutterWidgetUri = 'package:flutter/src/widgets/framework.dart';
-const joltSetupWidgetSrcUri = 'package:jolt_flutter/src/setup/framework.dart';
-const joltFlutterSetupUri = 'package:jolt_flutter/setup.dart';
+const joltSetupWidgetSrcUri = 'package:jolt_setup/src/setup/framework.dart';
+const joltFlutterSetupUri = 'package:jolt_setup/jolt_setup.dart';
 const joltFlutterUri = 'package:jolt_flutter/jolt_flutter.dart';
 const joltSurgeUri = 'package:jolt_surge/jolt_surge.dart';
 const joltUri = 'package:jolt/jolt.dart';

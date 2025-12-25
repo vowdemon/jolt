@@ -55,7 +55,6 @@ class JoltLintPlugin extends Plugin {
     );
 
     registry.registerAssist(WrapBuilderAssist.joltBuilder);
-    registry.registerAssist(WrapBuilderAssist.joltProvider);
     registry.registerAssist(WrapBuilderAssist.joltSelector);
     registry.registerAssist(WrapBuilderAssist.setupBuilder);
 

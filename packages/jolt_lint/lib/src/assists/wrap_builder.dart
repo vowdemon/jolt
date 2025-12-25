@@ -88,14 +88,6 @@ class WrapBuilderAssist extends ResolvedCorrectionProducer {
     assistKind: JoltAssist.wrapJoltBuilder,
   );
 
-  factory WrapBuilderAssist.joltProvider({
-    required CorrectionProducerContext context,
-  }) => WrapBuilderAssist(
-    context: context,
-    builder: _wrapJoltProviderBuilder,
-    assistKind: JoltAssist.wrapJoltProvider,
-  );
-
   factory WrapBuilderAssist.joltSelector({
     required CorrectionProducerContext context,
   }) => WrapBuilderAssist(
@@ -124,25 +116,6 @@ void _wrapJoltBuilder(
     SourceRange(node.offset, node.length),
     'JoltBuilder(builder: (context) => $content)',
   );
-}
-
-void _wrapJoltProviderBuilder(
-  DartFileEditBuilder builder,
-  AstNode node,
-  ResolvedUnitResult unitResult,
-) {
-  final content = unitResult.content.substring(node.offset, node.end);
-  builder.importLibrary(Uri.parse(joltFlutterUri));
-  builder.addReplacement(SourceRange(node.offset, node.length), (edit) {
-    edit.write('JoltProvider(');
-    edit.write('create: (context) => ');
-    edit.addSimpleLinkedEdit('CREATE_EXPR', 'null');
-    edit.write(', ');
-    edit.write('builder: (context, ');
-    edit.addSimpleLinkedEdit('STATE_NAME', 'provider');
-    edit.write(') => $content');
-    edit.write(')');
-  });
 }
 
 void _wrapJoltSelectorBuilder(

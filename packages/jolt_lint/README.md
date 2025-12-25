@@ -84,22 +84,6 @@ Text('Hello')
 JoltBuilder(builder: (context) => Text('Hello'))
 ```
 
-#### Wrap with JoltProvider
-
-Wrap a widget with `JoltProvider` to provide reactive state in the widget tree.
-
-**Use case**: When you need to provide shared reactive state in the widget tree.
-
-**Example**:
-```dart
-// Before
-MyWidget()
-
-// After
-JoltProvider(
-  create: (context) => null,  // Fill in the actual creation logic
-  builder: (context, provider) => MyWidget()
-)
 ```
 
 #### Wrap with JoltSelector

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:jolt/tricks.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
 
 import 'package:jolt_hooks/jolt_hooks.dart';
@@ -140,120 +139,6 @@ void main() {
 
       expect(find.text('Signal: 25'), findsOneWidget);
       expect(find.text('Computed: 50'), findsOneWidget);
-    });
-  });
-
-  group('useConvertComputed', () {
-    testWidgets('useConvertComputed: type conversion', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        HookBuilder(
-          builder: (context) {
-            final source = useSignal(123);
-            final converted = useComputed.convert(
-              source,
-              (int value) => 'Number: $value',
-              (String value) => int.parse(value.split(': ')[1]),
-            );
-
-            return Column(
-              children: [
-                JoltBuilder(
-                  builder: (context) {
-                    return Text(
-                      'Source: ${source.value}',
-                      textDirection: TextDirection.ltr,
-                    );
-                  },
-                ),
-                JoltBuilder(
-                  builder: (context) {
-                    return Text(
-                      'Converted: ${converted.value}',
-                      textDirection: TextDirection.ltr,
-                    );
-                  },
-                ),
-                GestureDetector(
-                  onTap: () => converted.value = 'Number: 999',
-                  child: Container(
-                    width: 100,
-                    height: 50,
-                    color: Colors.green,
-                    child: const Text(
-                      'Set to 999',
-                      textDirection: TextDirection.ltr,
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-      );
-
-      expect(find.text('Source: 123'), findsOneWidget);
-      expect(find.text('Converted: Number: 123'), findsOneWidget);
-
-      await tester.tap(find.byType(Container));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Source: 999'), findsOneWidget);
-      expect(find.text('Converted: Number: 999'), findsOneWidget);
-    });
-  });
-
-  group('usePersistSignal', () {
-    testWidgets('usePersistSignal: persistence functionality', (
-      WidgetTester tester,
-    ) async {
-      int storedValue = 0;
-
-      await tester.pumpWidget(
-        HookBuilder(
-          builder: (context) {
-            final persistSignal = useSignal.persist(
-              () => 100,
-              () async => storedValue,
-              (value) async => storedValue = value,
-            );
-
-            return Column(
-              children: [
-                JoltBuilder(
-                  builder: (context) {
-                    return Text(
-                      'Value: ${persistSignal.value}',
-                      textDirection: TextDirection.ltr,
-                    );
-                  },
-                ),
-                GestureDetector(
-                  onTap: () => persistSignal.value = 200,
-                  child: Container(
-                    width: 100,
-                    height: 50,
-                    color: Colors.orange,
-                    child: const Text(
-                      'Set to 200',
-                      textDirection: TextDirection.ltr,
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-      );
-
-      expect(find.text('Value: 100'), findsOneWidget);
-
-      await tester.tap(find.byType(Container));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Value: 200'), findsOneWidget);
-      expect(storedValue, equals(200));
     });
   });
 
@@ -1496,31 +1381,6 @@ void main() {
       expect(asyncSignal.isDisposed, isTrue);
     });
 
-    testWidgets('useSignal.persist is disposed on unmount', (tester) async {
-      late PersistSignal<int> persist;
-
-      await tester.pumpWidget(
-        HookBuilder(
-          builder: (context) {
-            persist = useSignal.persist(
-              () => 0,
-              () => 42,
-              (value) async {},
-            );
-            return Text('Persist: ${persist.value}',
-                textDirection: TextDirection.ltr);
-          },
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
-      await tester.pumpAndSettle();
-
-      expect(persist.isDisposed, isTrue);
-    });
-
     testWidgets('useComputed is disposed on unmount', (tester) async {
       late Computed<int> computed;
 
@@ -1566,32 +1426,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(writable.isDisposed, isTrue);
-    });
-
-    testWidgets('useComputed.convert is disposed on unmount', (tester) async {
-      late ConvertComputed<int, String> converted;
-
-      await tester.pumpWidget(
-        HookBuilder(
-          builder: (context) {
-            final source = useSignal('123');
-            converted = useComputed.convert<int, String>(
-              source,
-              (value) => int.parse(value),
-              (value) => value.toString(),
-            );
-            return Text('Converted: ${converted.value}',
-                textDirection: TextDirection.ltr);
-          },
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
-      await tester.pumpAndSettle();
-
-      expect(converted.isDisposed, isTrue);
     });
 
     testWidgets('useJoltEffect is disposed on unmount', (tester) async {

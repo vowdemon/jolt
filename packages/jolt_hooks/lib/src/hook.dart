@@ -3,8 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:jolt/core.dart';
+import 'package:jolt/extension.dart';
 import 'package:jolt/jolt.dart';
-import 'package:jolt/tricks.dart';
 
 import 'base.dart';
 
@@ -253,66 +254,6 @@ final class JoltSignalHookCreator {
       ),
     );
   }
-
-  /// Creates a persistent signal hook that automatically saves and loads data.
-  ///
-  /// A persist signal automatically persists its value to storage and restores
-  /// it when the hook is recreated, useful for user preferences, form data, etc.
-  ///
-  /// Parameters:
-  /// - [initialValue]: Function that provides the initial value if no persisted data exists
-  /// - [read]: Function that reads the persisted value from storage
-  /// - [write]: Function that writes the value to storage
-  /// - [writeDelay]: Delay before writing to storage to batch rapid changes
-  /// - [lazy]: Whether to load the value lazily (default is false)
-  /// - [keys]: Optional keys for hook memoization
-  /// - [onDebug]: Optional debug callback for reactive system debugging
-  ///
-  /// Returns: A [PersistSignal] with automatic persistence
-  ///
-  /// Example:
-  /// ```dart
-  /// Widget build(BuildContext context) {
-  ///   final theme = useSignal.persist(
-  ///     () => 'light',
-  ///     () async => await storage.read('theme') ?? 'light',
-  ///     (value) async => await storage.write('theme', value),
-  ///   );
-  ///
-  ///   return MaterialApp(
-  ///     theme: theme.value == 'dark' ? ThemeData.dark() : ThemeData.light(),
-  ///     home: Scaffold(
-  ///       body: Switch(
-  ///         value: theme.value == 'dark',
-  ///         onChanged: (value) => theme.value = value ? 'dark' : 'light',
-  ///       ),
-  ///     ),
-  ///   );
-  /// }
-  /// ```
-  PersistSignal<T> persist<T>(
-    T Function() initialValue,
-    FutureOr<T> Function() read,
-    FutureOr<void> Function(T value) write, {
-    Duration writeDelay = Duration.zero,
-    List<Object?>? keys,
-    bool lazy = false,
-    JoltDebugFn? onDebug,
-  }) {
-    return use(
-      JoltHook(
-        () => PersistSignal(
-          initialValue: initialValue,
-          read: read,
-          write: write,
-          writeDelay: writeDelay,
-          onDebug: onDebug,
-          lazy: lazy,
-        ),
-        keys: keys,
-      ),
-    );
-  }
 }
 
 /// {@macro jolt_signal_hook_creator}
@@ -398,56 +339,6 @@ final class JoltComputedHookCreator {
     return use(
       JoltHook(() => WritableComputed(getter, setter, onDebug: onDebug),
           keys: keys),
-    );
-  }
-
-  /// Creates a computed signal hook that converts between different types.
-  ///
-  /// A convert computed signal provides two-way conversion between different
-  /// data types, useful for form inputs, API data transformation, etc.
-  ///
-  /// Parameters:
-  /// - [source]: The source signal to convert from
-  /// - [decode]: Function that converts from source type to target type
-  /// - [encode]: Function that converts from target type back to source type
-  /// - [keys]: Optional keys for hook memoization
-  /// - [onDebug]: Optional debug callback for reactive system debugging
-  ///
-  /// Returns: A [ConvertComputed] with type conversion capabilities
-  ///
-  /// Example:
-  /// ```dart
-  /// Widget build(BuildContext context) {
-  ///   final count = useSignal(42);
-  ///   final countText = useComputed.convert(
-  ///     count,
-  ///     (int value) => 'Count: $value',
-  ///     (String value) => int.parse(value.split(': ')[1]),
-  ///   );
-  ///
-  ///   return Column(
-  ///     children: [
-  ///       Text(countText.value),
-  ///       TextField(
-  ///         onChanged: (value) => countText.value = value,
-  ///       ),
-  ///     ],
-  ///   );
-  /// }
-  /// ```
-  ConvertComputed<T, U> convert<T, U>(
-    Signal<U> source,
-    T Function(U value) decode,
-    U Function(T value) encode, {
-    List<Object?>? keys,
-    JoltDebugFn? onDebug,
-  }) {
-    return use(
-      JoltHook(
-        () => ConvertComputed(source,
-            decode: decode, encode: encode, onDebug: onDebug),
-        keys: keys,
-      ),
     );
   }
 }
@@ -739,7 +630,7 @@ final useEffectScope = JoltEffectScopeHookCreator._();
 ///   );
 /// }
 /// ```
-Stream<T> useJoltStream<T>(ReadonlyNode<T> value, {List<Object?>? keys}) {
+Stream<T> useJoltStream<T>(Readable<T> value, {List<Object?>? keys}) {
   final stream = useMemoized(() => value.stream, keys ?? const []);
 
   return stream;

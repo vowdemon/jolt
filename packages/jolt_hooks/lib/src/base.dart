@@ -12,7 +12,7 @@ import 'package:jolt/jolt.dart';
 /// Type parameters:
 /// - [T]: The type of the reactive value
 /// - [S]: The specific reactive value type (extends [JReadonlyValue<T>])
-class JoltHook<T, S extends ReadonlyNode<T>> extends Hook<S> {
+class JoltHook<T, S extends ReadableNode<T>> extends Hook<S> {
   /// Creates a Jolt hook with the given reactive value.
   ///
   /// Parameters:
@@ -31,7 +31,7 @@ class JoltHook<T, S extends ReadonlyNode<T>> extends Hook<S> {
 ///
 /// Manages the lifecycle of the wrapped reactive value, ensuring proper
 /// disposal when the hook is removed from the widget tree.
-class JoltHookState<T, S extends ReadonlyNode<T>>
+class JoltHookState<T, S extends ReadableNode<T>>
     extends HookState<S, JoltHook<T, S>> {
   late final _instance = hook.jolt();
 

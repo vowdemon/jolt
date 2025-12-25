@@ -3,14 +3,7 @@
 /// This library provides convenient hooks for managing common Flutter resources
 /// like controllers, focus nodes, and lifecycle states with automatic cleanup.
 /// Designed to work with SetupWidget from jolt_flutter.
+@Deprecated('jolt_flutter_hooks is deprecated. Use jolt_setup instead.')
 library;
 
-export './src/animation.dart';
-export './src/focus.dart';
-export './src/lifecycle.dart';
-export './src/listenable.dart';
-export './src/async.dart';
-export './src/scroll.dart';
-export './src/text.dart';
-export './src/controller.dart';
-export './src/keep_alive.dart';
+export 'package:jolt_setup/hooks.dart';

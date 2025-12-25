@@ -22,7 +22,7 @@ dependencies:
   flutter:
     sdk: flutter
 
-  jolt_flutter: ^2.1.0
+  jolt_setup: ^2.1.0
 
 dev_dependencies:
   flutter_test:

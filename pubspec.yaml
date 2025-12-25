@@ -13,6 +13,7 @@ workspace:
   - packages/jolt_surge
   - packages/jolt_lint
   - packages/jolt_flutter_hooks
+  - packages/jolt_setup
   - packages/jolt_hooks/example
   - packages/jolt_surge/example
 
@@ -28,7 +29,7 @@ melos:
       - packages/jolt_flutter
       - packages/jolt_hooks
       - packages/jolt_surge
-      - packages/jolt_flutter_hooks
+      - packages/jolt_setup
   ide:
     intellij:
       enabled: false

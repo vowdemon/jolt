@@ -1,3 +1,4 @@
+import 'package:jolt_flutter/extension.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
 import 'package:flutter/widgets.dart';
 import 'package:jolt_surge/jolt_surge.dart';

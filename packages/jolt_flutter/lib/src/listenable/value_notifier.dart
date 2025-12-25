@@ -2,19 +2,18 @@ part of 'listenable.dart';
 
 final _notifiers = Expando<JoltValueNotifier<Object?>>();
 
-/// Extension to convert Jolt values to Flutter ValueNotifiers.
+/// Extension for converting Jolt Writable values to Flutter ValueNotifier.
 extension JoltValueNotifierExtension<T> on Writable<T> {
   /// Converts this Jolt value to a Flutter ValueNotifier.
   ///
-  /// Returns a cached instance that stays synchronized with this Jolt value.
-  /// Multiple calls return the same instance.
+  /// Returns a cached instance synchronized with this value.
+  /// Multiple calls return the same instance. Supports bidirectional sync.
   ///
   /// Example:
   /// ```dart
   /// final counter = Signal(0);
   /// final notifier = counter.notifier;
   ///
-  /// // Use with Flutter widgets
   /// ValueListenableBuilder<int>(
   ///   valueListenable: notifier,
   ///   builder: (context, value, child) => Text('$value'),
@@ -31,18 +30,16 @@ extension JoltValueNotifierExtension<T> on Writable<T> {
   }
 }
 
-/// A ValueNotifier that bridges Jolt signals with Flutter's ValueNotifier.
+/// A ValueNotifier that wraps a Jolt Writable value.
 ///
-/// This class wraps a Jolt reactive value and provides Flutter's ValueNotifier
-/// interface, allowing seamless integration with Flutter widgets and state
-/// management.
+/// Provides Flutter's ValueNotifier interface with bidirectional sync.
+/// Changes to either the Jolt value or ValueNotifier are synchronized.
 ///
 /// Example:
 /// ```dart
 /// final signal = Signal(42);
-/// final notifier = JoltValueNotifier(signal);
+/// final notifier = signal.notifier;
 ///
-/// // Use with AnimatedBuilder
 /// AnimatedBuilder(
 ///   animation: notifier,
 ///   builder: (context, child) => Text('${notifier.value}'),
@@ -51,12 +48,12 @@ extension JoltValueNotifierExtension<T> on Writable<T> {
 class JoltValueNotifier<T>
     with _ValueNotifierMixin<T>
     implements ValueNotifier<T>, Disposable {
-  /// Creates a ValueNotifier that wraps a Jolt signal.
+  /// Creates a ValueNotifier from a Jolt Writable.
   ///
   /// Parameters:
-  /// - [joltValue]: The Jolt reactive value to wrap
+  /// - [node]: The Jolt Writable value to wrap
   JoltValueNotifier(this.node) {
-    final watcher = Watcher(node.get, (value, __) {
+    final watcher = Watcher(() => node.value, (value, __) {
       notifyListeners();
     }, when: IMutableCollection.skipNode(node));
 
@@ -67,6 +64,7 @@ class JoltValueNotifier<T>
     };
   }
 
+  /// The wrapped Jolt Writable value.
   final Writable<T> node;
 
   @override
@@ -74,7 +72,7 @@ class JoltValueNotifier<T>
 
   @override
   set value(T newValue) {
-    node.set(newValue);
+    node.value = newValue;
   }
 
   Disposer? _disposer;
@@ -84,62 +82,5 @@ class JoltValueNotifier<T>
     _disposer?.call();
     _disposer = null;
     _notifiers[node] = null;
-  }
-}
-
-/// Extension methods for integrating Flutter ValueNotifier with Jolt signals.
-extension JoltFlutterValueNotifierExtension<T> on ValueNotifier<T> {
-  /// Converts this ValueNotifier to a reactive Signal with bidirectional sync.
-  ///
-  /// Creates a bridge between Flutter's ValueNotifier and Jolt signals.
-  /// Changes to either the original ValueNotifier or the returned Signal
-  /// will be synchronized.
-  ///
-  /// Parameters:
-  /// - [onDebug]: Optional debug callback for reactive system debugging
-  ///
-  /// Example:
-  /// ```dart
-  /// final notifier = ValueNotifier(0);
-  /// final signal = notifier.toNotifierSignal();
-  ///
-  /// // Changes sync bidirectionally
-  /// notifier.value = 1; // signal.value becomes 1
-  /// signal.value = 2;   // notifier.value becomes 2
-  /// ```
-  Signal<T> toNotifierSignal({JoltDebugFn? onDebug}) {
-    if (this is JoltValueNotifier<T>) {
-      final node = (this as JoltValueNotifier<T>).node;
-      if (node is Signal<T>) {
-        return node;
-      }
-    }
-    return NotifierSignal(this, onDebug: onDebug);
-  }
-}
-
-class NotifierSignal<T> extends SignalImpl<T> {
-  NotifierSignal(this._notifier, {super.onDebug}) : super(_notifier.value) {
-    void listener() {
-      final newValue = _notifier.value;
-      if (newValue != peek) {
-        super.set(newValue);
-      }
-    }
-
-    _notifier.addListener(listener);
-
-    JFinalizer.attachToJoltAttachments(this, () {
-      _notifier.removeListener(listener);
-    });
-  }
-
-  final ValueNotifier<T> _notifier;
-
-  @override
-  T set(T value) {
-    if (isDisposed) return value;
-    _notifier.value = value;
-    return value;
   }
 }

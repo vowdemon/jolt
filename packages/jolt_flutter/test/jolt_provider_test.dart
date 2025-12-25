@@ -1,6 +1,9 @@
+// ignore_for_file: deprecated_member_use_from_same_package, deprecated_export_use
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
+import 'package:jolt_flutter/legacy.dart';
 import 'package:shared_interfaces/shared_interfaces.dart';
 
 // Test store class

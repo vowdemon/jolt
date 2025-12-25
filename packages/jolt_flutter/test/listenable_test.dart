@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jolt_flutter/extension.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
 
 void main() {
@@ -287,6 +288,167 @@ void main() {
       // Multiple calls should return the same instance
       expect(identical(signal1, signal2), true);
       expect(identical(signal, signal1), true);
+    });
+
+    test(
+        'ValueListenable.toListenableSignal - multiple signals from same notifier share delegated and refcount works correctly',
+        () async {
+      final notifier = ValueNotifier(0);
+
+      // 创建多个 signal，它们应该共享同一个 delegated
+      final signal1 = notifier.toListenableSignal();
+      final signal2 = notifier.toListenableSignal();
+      final signal3 = notifier.toListenableSignal();
+
+      // 验证所有 signal 都能正常工作
+      expect(signal1.value, 0);
+      expect(signal2.value, 0);
+      expect(signal3.value, 0);
+
+      // 验证同步
+      notifier.value = 1;
+      expect(signal1.value, 1);
+      expect(signal2.value, 1);
+      expect(signal3.value, 1);
+
+      // 验证它们共享同一个 delegated（通过检查行为）
+      // 如果它们共享同一个 delegated，dispose 一个后，其他应该仍然工作
+      // 并且当所有都被 dispose 后，再次创建应该创建新的 delegated
+
+      // 异步 dispose signal1
+      signal1.dispose();
+
+      // 等待异步清理完成（JFinalizer 可能异步执行）
+      await Future.delayed(Duration(milliseconds: 10));
+
+      // signal1 应该已经被标记为 disposed
+      expect(signal1.isDisposed, true);
+
+      // signal2 和 signal3 应该仍然可以正常工作（因为 delegated 还有引用）
+      notifier.value = 2;
+      expect(signal2.value, 2);
+      expect(signal3.value, 2);
+
+      // signal1 的 value 可能仍然可以访问（因为 delegated.source 仍然有效）
+      // 但 isDisposed 应该为 true
+      expect(signal1.isDisposed, true);
+
+      // 异步 dispose signal2
+      signal2.dispose();
+      await Future.delayed(Duration(milliseconds: 10));
+      expect(signal2.isDisposed, true);
+
+      // signal3 应该仍然可以正常工作
+      notifier.value = 3;
+      expect(signal3.value, 3);
+      expect(signal3.isDisposed, false);
+
+      // 异步 dispose signal3（最后一个）
+      signal3.dispose();
+      await Future.delayed(Duration(milliseconds: 10));
+      expect(signal3.isDisposed, true);
+
+      // 现在所有 signal 都被 dispose 了，delegated 应该也被清理
+      // 再次创建新的 signal 应该会创建新的 delegated
+      final signal4 = notifier.toListenableSignal();
+      expect(signal4.isDisposed, false);
+      expect(signal4.value, 3); // 应该能读取当前值
+
+      // 验证新的 signal 可以正常工作
+      notifier.value = 4;
+      expect(signal4.value, 4);
+
+      // 验证 signal4 是新的实例（不是之前的任何一个）
+      expect(identical(signal1, signal4), false);
+      expect(identical(signal2, signal4), false);
+      expect(identical(signal3, signal4), false);
+
+      // 清理
+      signal4.dispose();
+      notifier.dispose();
+    });
+
+    test(
+        'ValueListenable.toListenableSignal - dispose one signal should not dispose delegated when others still exist',
+        () async {
+      final notifier = ValueNotifier(0);
+
+      // 创建多个 signal，它们应该共享同一个 delegated
+      final signal1 = notifier.toListenableSignal();
+      final signal2 = notifier.toListenableSignal();
+      final signal3 = notifier.toListenableSignal();
+
+      // 验证所有 signal 都能正常工作
+      expect(signal1.value, 0);
+      expect(signal2.value, 0);
+      expect(signal3.value, 0);
+
+      // 验证同步
+      notifier.value = 1;
+      expect(signal1.value, 1);
+      expect(signal2.value, 1);
+      expect(signal3.value, 1);
+
+      // Dispose signal1
+      signal1.dispose();
+      expect(signal1.isDisposed, true);
+
+      // 等待可能的异步清理
+      await Future.delayed(Duration(milliseconds: 10));
+
+      // signal2 和 signal3 应该仍然可以正常工作
+      // 如果 delegated 被过早 dispose，这里会失败
+      notifier.value = 2;
+      expect(signal2.value, 2,
+          reason: 'signal2 should still work after signal1 is disposed');
+      expect(signal3.value, 2,
+          reason: 'signal3 should still work after signal1 is disposed');
+
+      // 再次更新，确保 delegated 仍然有效
+      notifier.value = 3;
+      expect(signal2.value, 3, reason: 'signal2 should still work');
+      expect(signal3.value, 3, reason: 'signal3 should still work');
+
+      // 清理
+      signal2.dispose();
+      signal3.dispose();
+      notifier.dispose();
+    });
+
+    test(
+        'ValueListenable.toListenableSignal - multiple dispose calls should not cause double release',
+        () async {
+      final notifier = ValueNotifier(0);
+
+      // 创建多个 signal
+      final signal1 = notifier.toListenableSignal();
+      final signal2 = notifier.toListenableSignal();
+
+      // 验证初始状态
+      expect(signal1.value, 0);
+      expect(signal2.value, 0);
+
+      // 多次调用 dispose（虽然不应该这样做，但应该安全处理）
+      signal1.dispose();
+      expect(signal1.isDisposed, true);
+
+      // 再次调用 dispose 应该被忽略
+      signal1.dispose();
+      expect(signal1.isDisposed, true);
+
+      // 等待可能的异步清理
+      await Future.delayed(Duration(milliseconds: 10));
+
+      // signal2 应该仍然可以正常工作
+      // 如果 release 被多次调用导致 refCount 错误，这里会失败
+      notifier.value = 1;
+      expect(signal2.value, 1,
+          reason:
+              'signal2 should still work after signal1 is disposed multiple times');
+
+      // 清理
+      signal2.dispose();
+      notifier.dispose();
     });
   });
 

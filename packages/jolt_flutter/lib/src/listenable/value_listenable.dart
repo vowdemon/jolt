@@ -2,10 +2,11 @@ part of 'listenable.dart';
 
 final _listenables = Expando<JoltValueListenable<Object?>>();
 
-extension JoltValueListenableExtension<T> on Readonly<T> {
+/// Extension for converting Jolt values to Flutter ValueListenable.
+extension JoltValueListenableExtension<T> on Readable<T> {
   /// Converts this Jolt value to a Flutter ValueListenable.
   ///
-  /// Returns a cached instance that stays synchronized with this Jolt value.
+  /// Returns a cached instance synchronized with this value.
   /// Multiple calls return the same instance.
   ///
   /// Example:
@@ -13,7 +14,6 @@ extension JoltValueListenableExtension<T> on Readonly<T> {
   /// final signal = Signal(42);
   /// final listenable = signal.listenable;
   ///
-  /// // Use with ValueListenableBuilder
   /// ValueListenableBuilder<int>(
   ///   valueListenable: listenable,
   ///   builder: (context, value, child) => Text('$value'),
@@ -30,11 +30,26 @@ extension JoltValueListenableExtension<T> on Readonly<T> {
   }
 }
 
+/// A ValueListenable that wraps a Jolt Readable value.
+///
+/// Provides Flutter's ValueListenable interface for Jolt reactive values.
+/// Automatically synchronizes with the underlying Jolt value.
+///
+/// Example:
+/// ```dart
+/// final signal = Signal(42);
+/// final listenable = signal.listenable;
+/// listenable.addListener(() => print('Changed'));
+/// ```
 class JoltValueListenable<T>
     with _ValueNotifierMixin<T>
     implements ValueListenable<T>, Disposable {
+  /// Creates a ValueListenable from a Jolt Readable.
+  ///
+  /// Parameters:
+  /// - [node]: The Jolt Readable value to wrap
   JoltValueListenable(this.node) {
-    final watcher = Watcher(node.get, (value, __) {
+    final watcher = Watcher(() => node.value, (value, __) {
       notifyListeners();
     }, when: IMutableCollection.skipNode(node));
 
@@ -45,7 +60,8 @@ class JoltValueListenable<T>
     };
   }
 
-  final Readonly<T> node;
+  /// The wrapped Jolt Readable value.
+  final Readable<T> node;
 
   Disposer? _disposer;
 
@@ -57,51 +73,5 @@ class JoltValueListenable<T>
     _disposer?.call();
     _disposer = null;
     _listenables[node] = null;
-  }
-}
-
-extension JoltFlutterListenableExtension<T> on ValueListenable<T> {
-  /// Converts this ValueListenable to a read-only Signal.
-  ///
-  /// Creates a unidirectional bridge from Flutter's ValueListenable to Jolt.
-  /// Changes to the original ValueListenable will be synchronized to the Signal,
-  /// but the Signal cannot be modified.
-  ///
-  /// Parameters:
-  /// - [onDebug]: Optional debug callback for reactive system debugging
-  ///
-  /// Example:
-  /// ```dart
-  /// final notifier = ValueNotifier(0);
-  /// final signal = notifier.toListenableSignal();
-  ///
-  /// // Only notifier changes sync to signal
-  /// notifier.value = 1; // signal.value becomes 1
-  /// // signal.value = 2; // This would throw an error
-  /// ```
-  ReadonlySignal<T> toListenableSignal({JoltDebugFn? onDebug}) {
-    if (this is JoltValueListenable<T>) {
-      final node = (this as JoltValueListenable<T>).node;
-      if (node is ReadonlySignal<T>) {
-        return node;
-      }
-    }
-    return ValueListenableSignal(this, onDebug: onDebug);
-  }
-}
-
-class ValueListenableSignal<T> extends ReadonlySignalImpl<T>
-    implements SignalReactiveNode<T> {
-  ValueListenableSignal(ValueListenable<T> listenable, {super.onDebug})
-      : super(listenable.value) {
-    void listener() {
-      setSignal(this, listenable.value);
-    }
-
-    listenable.addListener(listener);
-
-    JFinalizer.attachToJoltAttachments(this, () {
-      listenable.removeListener(listener);
-    });
   }
 }

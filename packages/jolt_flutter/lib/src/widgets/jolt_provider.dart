@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use_from_same_package
+
 import 'package:flutter/widgets.dart';
 import 'package:jolt/core.dart';
 import 'package:jolt/jolt.dart';
@@ -110,6 +112,7 @@ import 'jolt_state.dart';
 ///   },
 /// )
 /// ```
+
 class JoltProvider<T> extends Widget {
   /// Creates a [JoltProvider] that creates and manages a resource.
   ///

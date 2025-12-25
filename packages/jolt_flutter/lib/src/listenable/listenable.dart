@@ -4,8 +4,14 @@ import 'package:jolt_flutter/core.dart';
 import 'package:shared_interfaces/shared_interfaces.dart';
 
 part 'value_listenable.dart';
+part 'value_listenable_signal.dart';
 part 'value_notifier.dart';
+part 'value_notifier_signal.dart';
 
+/// Mixin providing ValueNotifier-like listener management.
+///
+/// Manages a list of listeners and provides methods to add, remove,
+/// and notify them. Used internally by JoltValueListenable and JoltValueNotifier.
 mixin _ValueNotifierMixin<T> {
   final _listeners = <VoidCallback>[];
 
@@ -24,4 +30,36 @@ mixin _ValueNotifierMixin<T> {
       listener();
     }
   }
+}
+
+/// Creates a delegated signal helper from a ValueListenable.
+///
+/// Parameters:
+/// - [notifier]: The ValueListenable to wrap
+/// - [onDebug]: Optional debug callback
+/// - [expando]: Expando for caching the helper
+///
+/// Returns: A DelegatedRefCountHelper managing the signal
+DelegatedRefCountHelper<SignalImpl<T>> _createDelegatedSignalImpl<T>(
+    ValueListenable<T> notifier,
+    {JoltDebugFn? onDebug,
+    required Expando<dynamic> expando}) {
+  final source = SignalImpl<T>(notifier.value, onDebug: onDebug);
+  Disposer? watcherDisposer;
+
+  return DelegatedRefCountHelper(source, onCreate: (source) {
+    void listener() {
+      source.value = notifier.value;
+    }
+
+    notifier.addListener(listener);
+
+    watcherDisposer = () {
+      notifier.removeListener(listener);
+    };
+  }, onDispose: (source) {
+    watcherDisposer?.call();
+    watcherDisposer = null;
+    expando[notifier] = null;
+  }, autoDispose: true);
 }

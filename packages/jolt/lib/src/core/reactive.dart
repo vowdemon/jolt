@@ -506,13 +506,21 @@ void defaultRunEffect(EffectReactiveNode e, void Function() fn) {
 @pragma("vm:align-loops")
 @pragma('vm:unsafe:no-bounds-checks')
 void flushEffects() {
-  while (notifyIndex < queuedLength) {
-    final effect = queued[notifyIndex]!;
-    queued[notifyIndex++] = null;
-    effect.runEffect();
+  try {
+    while (notifyIndex < queuedLength) {
+      final effect = queued[notifyIndex]!;
+      queued[notifyIndex++] = null;
+      effect.runEffect();
+    }
+  } finally {
+    while (notifyIndex < queuedLength) {
+      final effect = queued[notifyIndex]!;
+      queued[notifyIndex++] = null;
+      effect.flags |= ReactiveFlags.watching | ReactiveFlags.recursed;
+    }
+    notifyIndex = 0;
+    queuedLength = 0;
   }
-  notifyIndex = 0;
-  queuedLength = 0;
 }
 
 /// Returns the current value of a computed node, recomputing it when dirty and

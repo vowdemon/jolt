@@ -283,4 +283,47 @@ void main() {
 
     expect(triggers, 6);
   });
+
+  test(
+      'should not execute skipped effects from previous failed flush when updating unrelated signal',
+      () {
+    final a = signal(0);
+    final b = signal(0);
+    final c = signal(0);
+    final d = computed(() => (c(), 0));
+
+    var effect3Executed = false;
+
+    effect(() {
+      a();
+    });
+    effect(() {
+      if (a() == 2) {
+        throw Exception('Error in effect 2');
+      }
+    });
+    effect(() {
+      a();
+      d();
+      effect3Executed = true;
+    });
+    effect(() {
+      b();
+    });
+
+    a(1, true);
+
+    effect3Executed = false;
+    try {
+      a(2, true);
+    } catch (e) {
+      expect(e.toString(), equals('Exception: Error in effect 2'));
+    }
+
+    expect(effect3Executed, isFalse);
+    b(1, true);
+    expect(effect3Executed, isFalse);
+    c(1, true);
+    expect(effect3Executed, isTrue);
+  });
 }

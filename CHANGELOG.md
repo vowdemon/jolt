@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-12-26
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`jolt` - `v3.0.1`](#jolt---v301)
+
+---
+
+#### `jolt` - `v3.0.1`
+
+ - **FIX**(jolt): sync upstream fix for effect flush error handling. ([39ad65d9](https://github.com/vowdemon/jolt/commit/39ad65d9f860227dad52a030b1766a6f8e325549))
+
+
 ## 2025-12-25
 
 ### Changes

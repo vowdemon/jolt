@@ -19,7 +19,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  jolt: ^3.0.0
+  jolt: ^3.0.1
   meta: ^1.0.0
   shared_interfaces: ^0.0.2
 

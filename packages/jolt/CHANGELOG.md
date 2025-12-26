@@ -1,6 +1,75 @@
+## 3.0.1
+
+ - **FIX**(jolt): sync upstream fix for effect flush error handling. ([39ad65d9](https://github.com/vowdemon/jolt/commit/39ad65d9f860227dad52a030b1766a6f8e325549))
+
 ## 3.0.0
 
- - **REFACTOR**: simplify API by removing native methods and toSignal extensions. ([6ed87fa3](https://github.com/vowdemon/jolt/commit/6ed87fa31a478440df7bc8000f4b9cb956ee4c50))
+ - **REFACTOR**: simplify API by removing native methods and toSignal extensions. ([6ed87fa3](https://github.com/vowdemon/jolt/commit/434a2e9d325f35dbcf36f2a11f6bf3dfe611c90c))
+
+- Refactor base interfaces
+  - Remove ReadonlyNodeMixin, replace with DisposableNodeMixin
+  - Simplify interface hierarchy (ReadableNode, WritableNode, DisposableNode)
+  - Move disposal logic to finalizer utilities
+
+- Refactor persist signal implementation
+  - Introduce write queue management mixin
+  - Implement 2-element write queue for efficient writes
+  - Add throttling support with trailing write behavior
+  - Split into sync and async implementations
+
+- Add extension methods
+  - Add .get() and .call() extensions for readable nodes
+  - Add .set() and .update() extensions for writable nodes
+  - Add delegated, stream, until, finalizer extensions
+
+- Remove native methods from classes
+  - Remove .get(), .set(), .call() methods from Signal, Computed, etc.
+  - Classes now only use .value property
+  - Methods moved to extension methods for better API consistency
+
+- Remove toSignal extension methods
+  - Remove all conversion extension methods
+
+Migration Guide:
+
+1. Replace .get() with .value:
+  ```dart
+  // Before
+  signal.get()
+  // After
+  signal.value
+  ```
+
+2. Replace .set(value) with .value = value:
+  ```dart
+  // Before
+  signal.set(10)
+  // After
+  signal.value = 10
+  ```
+
+3. Replace .call() with .value:
+  ```dart
+  // Before
+  readonly.call()
+  // After
+  readonly.value
+  ```
+
+4. Remove toSignal() and similar conversion methods:
+  ```dart
+  // Before
+  final signal = someValue.toSignal()
+  // After
+  final signal = Signal(someValue)
+  ```
+
+5. Import extension methods if needed:
+  ```dart
+  // If you need .get()/.set()/.call() as extension methods
+  import 'package:jolt/extension.dart';
+  ```
+
  - **REFACTOR**: rename Readonly to Readable and update related interfaces. ([daeafdd5](https://github.com/vowdemon/jolt/commit/daeafdd597492160e7d70121d9ed15c971121f0c))
 
 ## 2.1.1

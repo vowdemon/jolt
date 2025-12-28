@@ -14,6 +14,7 @@ import 'package:jolt_lint/src/assists/convert_stateless_to_setup_widget.dart';
 import 'package:jolt_lint/src/assists/convert_to_signal.dart';
 import 'package:jolt_lint/src/assists/wrap_builder.dart';
 import 'package:jolt_lint/src/fixes/fix_setup_this.dart';
+import 'package:jolt_lint/src/fixes/fix_setup_this_multi.dart';
 import 'package:jolt_lint/src/rules/no_mutable_collection_value_operation.dart';
 import 'package:jolt_lint/src/rules/no_setup_this.dart';
 import 'package:jolt_lint/src/shared.dart';
@@ -58,6 +59,23 @@ class JoltLintPlugin extends Plugin {
     registry.registerFixForRule(
       JoltCode.setupThisAssignable,
       FixSetupThisAssignable.new,
+    );
+
+    registry.registerFixForRule(
+      JoltCode.setupThisExplicit,
+      FixSetupThisMulti.new,
+    );
+    registry.registerFixForRule(
+      JoltCode.setupThisImplicit,
+      FixSetupThisMulti.new,
+    );
+    registry.registerFixForRule(
+      JoltCode.setupThisAssign,
+      FixSetupThisMulti.new,
+    );
+    registry.registerFixForRule(
+      JoltCode.setupThisAssignable,
+      FixSetupThisMulti.new,
     );
 
     registry.registerAssist(WrapBuilderAssist.joltBuilder);

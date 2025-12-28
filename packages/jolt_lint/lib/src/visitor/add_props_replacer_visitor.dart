@@ -129,8 +129,9 @@ class AddPropsReplacerVisitor extends RecursiveAstVisitor<void> {
     DartFileEditBuilder builder,
     AddPropsReplacerVisitor visitor, {
     bool useCall = true,
+    String props = 'props',
   }) {
-    final propsName = useCall ? 'props()' : 'props';
+    final propsName = useCall ? '$props()' : props;
     // Replace nodes with "props()"
     for (final node in visitor.toReplaceWithProps) {
       builder.addSimpleReplacement(

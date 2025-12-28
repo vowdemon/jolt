@@ -40,7 +40,7 @@ class FixSetupThisAssignable extends ResolvedCorrectionProducer
 mixin FixableSetupThis on ResolvedCorrectionProducer {
   @override
   CorrectionApplicability get applicability =>
-      CorrectionApplicability.acrossSingleFile;
+      CorrectionApplicability.singleLocation;
 
   @override
   FixKind? get multiFixKind => JoltFix.setupThisMulti;

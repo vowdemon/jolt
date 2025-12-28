@@ -30,7 +30,7 @@ Find the `FixInFileProcessor` class and add the field:
 final class FixInFileProcessor {
   final DartFixContext _fixContext;
   final Set<String>? alreadyCalculated;
-  final List<Diagnostic>? _additionalDiagnostics;  // ← New field
+  final List<Diagnostic>? additionalDiagnostics;  // ← New field
 ```
 
 #### 1.2 Modify Constructor

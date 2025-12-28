@@ -5,7 +5,7 @@
 [![jolt_lint](https://img.shields.io/pub/v/jolt_lint?label=jolt_lint)](https://pub.dev/packages/jolt_lint)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/vowdemon/jolt/blob/main/LICENSE)
 
-A lint tool designed for the Jolt reactive state management ecosystem, providing code transformation assists and rule checks.
+A lint tool designed for the Jolt reactive state management ecosystem, providing code transformation assists, quick fixes, and rule checks.
 
 ## Installation
 
@@ -13,12 +13,8 @@ Add to `analysis_options.yaml`:
 
 ```yaml
 plugins:
-  jolt_lint: ^2.0.0-beta.1
+  jolt_lint: ^3.0.0
 ```
-
-## Requirements
-
-⚠️ **Version Requirement**: This lint tool only supports Jolt version 2.0 and above.
 
 ## Features
 
@@ -38,10 +34,11 @@ Quickly convert a regular variable to a `Signal`. This feature will:
 ```dart
 // Before
 int count = 0;
+print(count);
 
 // After
 Signal<int> count = Signal(0);
-// All references to count are automatically changed to count.value
+print(count.value);
 ```
 
 #### Convert from Signal
@@ -65,6 +62,139 @@ int count = 0;
 print(count);
 ```
 
+#### Convert StatelessWidget to SetupWidget
+
+Convert a `StatelessWidget` to a `SetupWidget` using Jolt's Setup pattern. This feature will:
+
+- Change the class to extend `SetupWidget` instead of `StatelessWidget`
+- Convert the `build` method to a `setup` method with `props` parameter
+- Replace `this` and implicit instance member accesses with `props()` calls
+- Add necessary imports
+
+**Use case**: When you want to migrate a `StatelessWidget` to use Jolt's reactive Setup pattern.
+
+**Example**:
+```dart
+// Before
+class MyWidget extends StatelessWidget {
+  final int count;
+  
+  const MyWidget({required this.count});
+  
+  @override
+  Widget build(BuildContext context) {
+    return Text(count.toString());
+  }
+}
+
+// After
+class MyWidget extends SetupWidget<MyWidget> {
+  final int count;
+  
+  const MyWidget({required this.count});
+  
+  @override
+  setup(context, props) {
+    return () {
+      return Text(props().count.toString());
+    }
+  }
+}
+```
+
+#### Convert SetupWidget to StatelessWidget
+
+Convert a `SetupWidget` back to a standard `StatelessWidget`. This feature will:
+
+- Change the class to extend `StatelessWidget` instead of `SetupWidget`
+- Convert the `setup` method to a `build` method
+- Replace `props()` calls with direct instance member accesses
+- Remove unnecessary imports
+
+**Use case**: When you want to migrate away from the Setup pattern back to standard Flutter widgets.
+
+**Example**:
+```dart
+// Before
+class MyWidget extends SetupWidget<MyWidget> {
+  final int count;
+  
+  const MyWidget({required this.count});
+  
+  @override
+  setup(context, props) {
+    return () => Text(props().count.toString());
+  }
+}
+
+// After
+class MyWidget extends StatelessWidget {
+  final int count;
+  
+  const MyWidget({required this.count});
+  
+  @override
+  Widget build(BuildContext context) {
+    return Text(count.toString());
+  }
+}
+```
+
+#### Convert StatefulWidget to SetupMixin
+
+Convert a `StatefulWidget` to use `SetupMixin`. This feature will:
+
+- Add `SetupMixin<WidgetClass>` to the `State` class
+- Convert the `build` method to a `setup` method
+- Wrap the build body to return a function that returns the widget
+- Add necessary imports
+
+**Use case**: When you want to migrate a `StatefulWidget` to use Jolt's Setup pattern while keeping stateful behavior.
+
+**Example**:
+```dart
+// Before
+class MyWidget extends StatefulWidget {
+  @override
+  State<MyWidget> createState() => _MyWidgetState();
+}
+
+class _MyWidgetState extends State<MyWidget> {
+  @override
+  Widget build(BuildContext context) {
+    return Text('Hello');
+  }
+}
+
+// After
+class MyWidget extends StatefulWidget {
+  @override
+  State<MyWidget> createState() => _MyWidgetState();
+}
+
+class _MyWidgetState extends State<MyWidget> with SetupMixin<MyWidget> {
+  @override
+  setup(BuildContext context) {
+    return () {
+      return Text('Hello');
+    };
+  }
+}
+
+```
+
+#### Convert SetupMixin to StatefulWidget
+
+Convert a `State` class using `SetupMixin` back to a standard `StatefulWidget`. This feature will:
+
+- Remove `SetupMixin` from the `State` class
+- Convert the `setup` method back to a `build` method
+- Unwrap the setup body (remove the function wrapper)
+- Replace `props()` calls with `widget` references
+- Remove unnecessary imports
+
+**Use case**: When you want to migrate away from `SetupMixin` back to standard Flutter stateful widgets.
+
 ### 📦 Widget Wrapping Assists
 
 Multiple quick-assist features to wrap widgets, helping you rapidly integrate Jolt's reactive components.
@@ -82,8 +212,6 @@ Text('Hello')
 
 // After
 JoltBuilder(builder: (context) => Text('Hello'))
-```
-
 ```
 
 #### Wrap with JoltSelector
@@ -116,7 +244,7 @@ Wrap a widget with `SetupBuilder` to use Jolt's Setup pattern.
 MyWidget()
 
 // After
-SetupBuilder(setup: (context) { return ()=> MyWidget()})
+SetupBuilder(setup: (context) { return () => MyWidget(); })
 ```
 
 ### ⚠️ Lint Rules
@@ -137,13 +265,13 @@ This rule ensures that instance members can only be accessed through the `props`
 
 **Correct Example**:
 ```dart
-class MyWidget extends SetupWidget {
+class MyWidget extends SetupWidget<MyWidget> {
   int count = 0;
   
   @override
-  Widget setup(BuildContext context, MyWidget props) {
+  setup(context, props) {
     // ✅ Access instance members through props()
-    return Text(props().count.toString());
+    return () => Text(props().count.toString());
   }
 }
 ```
@@ -154,45 +282,107 @@ class MyWidget extends SetupWidget {
   int count = 0;
   
   @override
-  Widget setup(BuildContext context, MyWidget props) {
+  setup(context, props) {
     // ❌ Cannot directly access this.count
-    return Text(this.count.toString());
+    return () => Text(this.count.toString());
     
     // ❌ Cannot implicitly access count
-    return Text(count.toString());
+    return () => Text(count.toString());
   }
 }
 ```
 
-**Quick Fix Support**:
 
-This rule provides automatic fixes to quickly transform incorrect code into the correct form:
 
-- 🔧 **Single Fix**: Place the cursor on the problematic code, press `Ctrl+.` (or `Cmd+.`) and select "Replace this with props()" or "Add props() to the member" to automatically fix it
-- 🔧 **Bulk Fix**: The fix menu also provides a "Fix all setup this issues" option to fix all related issues in the file at once
+#### no_mutable_collection_value_operation
 
-**Fix Example**:
+Warns against dangerous mutation operations on mutable collection signals' `.value` property.
+
+**Rule Description**:
+
+This rule detects when you're performing mutation operations (other than direct assignment or simple reads) on the `.value` property of signals that implement `IMutableCollection`. These operations are dangerous because they mutate the collection without triggering reactivity.
+
+**Checks**:
+- ⚠️ Method calls on `.value` (e.g., `list.value.add()`, `map.value.clear()`)
+- ⚠️ Property access mutations on `.value` (e.g., `list.value.length = 5`)
+- ⚠️ Index mutations on `.value` (e.g., `list.value[0] = item`)
+- ⚠️ `.get()` method calls on mutable collection signals
+- ⚠️ Function call operator `()` on mutable collection signals
+
+**Correct Example**:
 ```dart
-// Before
-Widget setup(BuildContext context, MyWidget props) {
-  return Text(this.count.toString());
-  // or
-  return Text(count.toString());
-}
+final list = ListSignal<int>([1, 2, 3]);
 
-// After
-Widget setup(BuildContext context, MyWidget props) {
-  return Text(props().count.toString());
+// ✅ Direct assignment (allowed)
+list.value = [4, 5, 6];
+
+// ✅ Simple read (allowed)
+print(list.value);
+
+// ✅ Use signal's mutation methods
+list.add(4);
+list.remove(2);
+```
+
+**Incorrect Example**:
+```dart
+final list = ListSignal<int>([1, 2, 3]);
+
+// ⚠️ Dangerous: Mutating collection directly
+list.value.add(4);        // Won't trigger reactivity
+list.value[0] = 10;       // Won't trigger reactivity
+list.value.clear();       // Won't trigger reactivity
+list.get().add(5);        // Won't trigger reactivity
+```
+
+#### no_invalid_hook_call
+
+Enforces correct placement of hook calls (useXXX and lifecycle hooks like onMounted, onUnmounted) within `setup` functions and `SetupBuilder`.
+
+**Rule Description**:
+
+This rule ensures that hook calls are only placed in valid locations:
+- Inside `setup` methods (but not inside the returned function)
+- Inside `SetupBuilder`'s `setup` parameter method (but not inside the returned function)
+- As arguments to other hook calls
+
+**Checks**:
+- ❌ Hook calls inside the returned function from `setup`
+- ✅ Hook calls in `setup` method body (outside the return statement)
+- ✅ Hook calls in `SetupBuilder`'s `setup` parameter method body (outside the return statement)
+- ✅ Hook calls as arguments to other hook calls
+
+**Correct Example**:
+```dart
+// ✅ In SetupWidget's setup method
+class MyWidget extends SetupWidget<MyWidget> {
+  @override
+  setup(context, props) {
+    // ✅ Top-level hook calls in setup method body
+    final count = useSignal(0);
+    final computed = useComputed(() => count.value + 1);
+    return () => Text(computed.value.toString());
+  }
 }
 ```
 
+**Incorrect Example**:
+```dart
+class MyWidget extends SetupWidget<MyWidget> {
+  @override
+  setup(context, props) {
+    // ❌ Hook call inside returned function
+    return () {
+      final count = useSignal(0);
+      return Text(count.value.toString());
+    };
+  }
+}
+```
 
 ## Usage
 
 After configuration, your IDE (e.g., VS Code, Android Studio) will automatically provide:
-
-- **Code Assists**: Place the cursor on a variable or widget, press `Ctrl+.` (or `Cmd+.`) to view available transformation options
-- **Real-time Checks**: Code that violates the `no_setup_this` rule will display error hints and automatic fix suggestions
 
 ## License
 

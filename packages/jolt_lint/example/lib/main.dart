@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
-import 'package:jolt_flutter/setup.dart';
+import 'package:jolt_setup/jolt_setup.dart';
 
 void main() {
   runApp(const MyApp());

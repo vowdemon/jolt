@@ -1,3 +1,7 @@
+## 3.0.1
+
+ - **FIX**(jolt_setup): provide clean Props interface. ([e5234541](https://github.com/vowdemon/jolt/commit/e52345419f1d841b45341f551ccc8cdab66efdc7))
+
 ## 3.0.0
 
  - **REFACTOR**: extract setup functionality to separate package and optimize hooks. ([cb9c4705](https://github.com/vowdemon/jolt/commit/cb9c47058c5ffde0ccf3bdc716ed63b55f7212b5))

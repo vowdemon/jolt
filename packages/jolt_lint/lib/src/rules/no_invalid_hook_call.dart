@@ -35,7 +35,8 @@ class _HookCallVisitor extends SimpleAstVisitor<void> {
     // useXXX() - method call()
     if (node.function is SimpleIdentifier) {
       final identifier = node.function as SimpleIdentifier;
-      if (!_isHookName(identifier.name)) {
+      if (!_isHookName(identifier.name) &&
+          !_isLifecycleHookName(identifier.name)) {
         return;
       }
 
@@ -52,11 +53,8 @@ class _HookCallVisitor extends SimpleAstVisitor<void> {
     // Check if this is a hook call
     // useXXX() - function call, check method name
     // useXXX.yyy() - method call, check target
-    if (!_isHookCall(node)) return;
-
-    var a = <Type>[];
-    for (AstNode? n = node; n != null; n = n.parent) {
-      a.add(n.runtimeType);
+    if (!_isHookCall(node) && !_isLifecycleHookName(node.methodName.name)) {
+      return;
     }
 
     if (_isValidCallInFunctionBody(node)) {
@@ -78,9 +76,23 @@ class _HookCallVisitor extends SimpleAstVisitor<void> {
   }
 
   bool _isHookName(String name) {
-    return name.startsWith('use') &&
+    return (name.startsWith('use') &&
         name.length > 3 &&
-        name[3].toUpperCase() == name[3];
+        name[3].toUpperCase() == name[3]);
+  }
+
+  static const _lifecycleHookNames = {
+    'onMounted',
+    'onUnmounted',
+    'onDidUpdateWidget',
+    'onDidUpdateWidgetAt',
+    'onDidChangeDependencies',
+    'onActivated',
+    'onDeactivated',
+  };
+
+  bool _isLifecycleHookName(String name) {
+    return (name.startsWith('on') && _lifecycleHookNames.contains(name));
   }
 
   bool _isValidCallInSetupMethod(MethodDeclaration method, AstNode node) {

@@ -21,8 +21,8 @@ class ConvertToSignalAssist extends ResolvedCorrectionProducer {
   @override
   Future<void> compute(ChangeBuilder builder) async {
     if (node is! VariableDeclaration) return;
-    final readonlyNode = await sessionHelper.getClass(joltUri, 'ReadonlyNode');
-    if (readonlyNode == null) return;
+    final readable = await sessionHelper.getClass(joltCoreUri, 'Readable');
+    if (readable == null) return;
     final variable = node as VariableDeclaration;
     final initializer = variable.initializer;
     final declList = variable.parent as VariableDeclarationList;
@@ -30,10 +30,9 @@ class ConvertToSignalAssist extends ResolvedCorrectionProducer {
 
     final typeDartType = type?.type;
     final initializerDartType = initializer?.staticType;
-    if ((typeDartType != null &&
-            typeDartType.asInstanceOf(readonlyNode) != null) ||
+    if ((typeDartType != null && typeDartType.asInstanceOf(readable) != null) ||
         (initializerDartType != null &&
-            initializerDartType.asInstanceOf(readonlyNode) != null)) {
+            initializerDartType.asInstanceOf(readable) != null)) {
       return;
     }
 
@@ -101,7 +100,7 @@ class _ScopeVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitSimpleIdentifier(SimpleIdentifier node) {
-    final element = node.element;
+    final element = node.element?.nonSynthetic;
 
     if (element == target && !node.inDeclarationContext()) {
       edits.add(node);

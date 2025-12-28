@@ -313,3 +313,4 @@ const joltFlutterSetupUri = 'package:jolt_setup/jolt_setup.dart';
 const joltFlutterUri = 'package:jolt_flutter/jolt_flutter.dart';
 const joltSurgeUri = 'package:jolt_surge/jolt_surge.dart';
 const joltUri = 'package:jolt/jolt.dart';
+const joltCoreUri = 'package:jolt/core.dart';

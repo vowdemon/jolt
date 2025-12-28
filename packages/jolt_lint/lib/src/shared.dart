@@ -45,6 +45,15 @@ abstract final class JoltCode {
     correctionMessage: 'Avoid assigning this to a variable in setup.',
     severity: DiagnosticSeverity.ERROR,
   );
+
+  /// Mutating a mutable collection signal's value
+  static const mutableCollectionValueOperation = LintCode(
+    'no_mutable_collection_value_operation',
+    'Mutating operations on mutable collection signal\'s value are dangerous.',
+    correctionMessage:
+        'Avoid mutating the collection returned by .value. Use the signal\'s mutation methods directly or update the entire value.',
+    severity: DiagnosticSeverity.WARNING,
+  );
 }
 
 abstract final class JoltFix {

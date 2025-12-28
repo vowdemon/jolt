@@ -6,7 +6,11 @@ library;
 
 import 'package:analysis_server_plugin/plugin.dart';
 import 'package:analysis_server_plugin/registry.dart';
+import 'package:jolt_lint/src/assists/convert_stateless_from_setup_widget.dart';
 import 'package:jolt_lint/src/assists/convert_from_signal.dart';
+import 'package:jolt_lint/src/assists/convert_stateful_to_setup_mixin.dart';
+import 'package:jolt_lint/src/assists/convert_stateful_from_setup_mixin.dart';
+import 'package:jolt_lint/src/assists/convert_stateless_to_setup_widget.dart';
 import 'package:jolt_lint/src/assists/convert_to_signal.dart';
 import 'package:jolt_lint/src/assists/wrap_builder.dart';
 import 'package:jolt_lint/src/fixes/fix_setup_this.dart';
@@ -60,6 +64,10 @@ class JoltLintPlugin extends Plugin {
 
     registry.registerAssist(ConvertToSignalAssist.new);
     registry.registerAssist(ConvertFromSignalAssist.new);
+    registry.registerAssist(ConvertStatelessWidgetToSetupWidgetAssist.new);
+    registry.registerAssist(ConvertStatelessWidgetFromSetupWidgetAssist.new);
+    registry.registerAssist(ConvertStatefulToSetupMixinAssist.new);
+    registry.registerAssist(ConvertStatefulFromSetupMixinAssist.new);
   }
 
   /// The name of this plugin.

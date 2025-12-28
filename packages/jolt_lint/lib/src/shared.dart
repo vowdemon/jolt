@@ -27,6 +27,15 @@ abstract final class JoltCode {
         'Avoid mutating the collection returned by .value. Use the signal\'s mutation methods directly or update the entire value.',
     severity: DiagnosticSeverity.WARNING,
   );
+
+  /// Invalid hook call location
+  static const invalidHookCall = LintCode(
+    'no_invalid_hook_call',
+    'Hook calls (useXXX) must be at the top level of setup or inside other hook calls.',
+    correctionMessage:
+        'Move the hook call to the top level of the setup function, or inside another hook call\'s callback.',
+    severity: DiagnosticSeverity.ERROR,
+  );
 }
 
 abstract final class JoltFix {

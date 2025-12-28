@@ -15,6 +15,7 @@ import 'package:jolt_lint/src/assists/convert_to_signal.dart';
 import 'package:jolt_lint/src/assists/wrap_builder.dart';
 import 'package:jolt_lint/src/fixes/fix_setup_this.dart';
 import 'package:jolt_lint/src/fixes/fix_setup_this_multi.dart';
+import 'package:jolt_lint/src/rules/no_invalid_hook_call.dart';
 import 'package:jolt_lint/src/rules/no_mutable_collection_value_operation.dart';
 import 'package:jolt_lint/src/rules/no_setup_this.dart';
 import 'package:jolt_lint/src/shared.dart';
@@ -44,6 +45,7 @@ class JoltLintPlugin extends Plugin {
     // Register diagnostics, quick fixes, and assists.
     registry.registerWarningRule(NoSetupThisRule());
     registry.registerWarningRule(NoMutableCollectionValueOperationRule());
+    registry.registerWarningRule(NoInvalidHookCallRule());
     registry.registerFixForRule(JoltCode.setupThis, FixSetupThis.new);
     registry.registerFixForRule(JoltCode.setupThis, FixSetupThisMulti.new);
 

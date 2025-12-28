@@ -20,7 +20,7 @@ class SetupUsageVisitor extends RecursiveAstVisitor<void> {
     // this.xxx, (this..xx).xx
 
     if (node.target is ThisExpression || node.realTarget is ThisExpression) {
-      rule.reportAtNode(node, diagnosticCode: JoltCode.setupThisExplicit);
+      rule.reportAtNode(node, diagnosticCode: JoltCode.setupThis);
     }
     super.visitPropertyAccess(node);
   }
@@ -29,7 +29,7 @@ class SetupUsageVisitor extends RecursiveAstVisitor<void> {
   void visitMethodInvocation(MethodInvocation node) {
     // this.xxx(), (this..xx).xx()
     if (node.target is ThisExpression || node.realTarget is ThisExpression) {
-      rule.reportAtNode(node, diagnosticCode: JoltCode.setupThisExplicit);
+      rule.reportAtNode(node, diagnosticCode: JoltCode.setupThis);
     }
 
     super.visitMethodInvocation(node);
@@ -52,13 +52,13 @@ class SetupUsageVisitor extends RecursiveAstVisitor<void> {
     if (element == null) {
       if (node.isAssignable &&
           instanceMembers.any((e) => e.name == node.name)) {
-        rule.reportAtNode(node, diagnosticCode: JoltCode.setupThisAssignable);
+        rule.reportAtNode(node, diagnosticCode: JoltCode.setupThis);
       }
       super.visitSimpleIdentifier(node);
     } else if (((element.enclosingElement == classNode &&
             instanceMembers.any((e) => e.name == element.name)) ||
         instanceMembers.contains(element))) {
-      rule.reportAtNode(node, diagnosticCode: JoltCode.setupThisImplicit);
+      rule.reportAtNode(node, diagnosticCode: JoltCode.setupThis);
     }
 
     super.visitSimpleIdentifier(node);
@@ -69,7 +69,7 @@ class SetupUsageVisitor extends RecursiveAstVisitor<void> {
     // var that1 = that2 = this;
     final right = node.rightHandSide;
     if (right is ThisExpression) {
-      rule.reportAtNode(node, diagnosticCode: JoltCode.setupThisAssign);
+      rule.reportAtNode(node, diagnosticCode: JoltCode.setupThis);
     }
 
     // [this.]setter = xxx;
@@ -84,7 +84,7 @@ class SetupUsageVisitor extends RecursiveAstVisitor<void> {
     // var that = this;
     final initializer = node.initializer;
     if (initializer is ThisExpression) {
-      rule.reportAtNode(node, diagnosticCode: JoltCode.setupThisAssign);
+      rule.reportAtNode(node, diagnosticCode: JoltCode.setupThis);
     }
     super.visitVariableDeclaration(node);
   }

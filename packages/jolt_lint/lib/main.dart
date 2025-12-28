@@ -44,39 +44,8 @@ class JoltLintPlugin extends Plugin {
     // Register diagnostics, quick fixes, and assists.
     registry.registerWarningRule(NoSetupThisRule());
     registry.registerWarningRule(NoMutableCollectionValueOperationRule());
-    registry.registerFixForRule(
-      JoltCode.setupThisExplicit,
-      FixSetupThisExplicit.new,
-    );
-    registry.registerFixForRule(
-      JoltCode.setupThisImplicit,
-      FixSetupThisImplicit.new,
-    );
-    registry.registerFixForRule(
-      JoltCode.setupThisAssign,
-      FixSetupThisAssign.new,
-    );
-    registry.registerFixForRule(
-      JoltCode.setupThisAssignable,
-      FixSetupThisAssignable.new,
-    );
-
-    registry.registerFixForRule(
-      JoltCode.setupThisExplicit,
-      FixSetupThisMulti.new,
-    );
-    registry.registerFixForRule(
-      JoltCode.setupThisImplicit,
-      FixSetupThisMulti.new,
-    );
-    registry.registerFixForRule(
-      JoltCode.setupThisAssign,
-      FixSetupThisMulti.new,
-    );
-    registry.registerFixForRule(
-      JoltCode.setupThisAssignable,
-      FixSetupThisMulti.new,
-    );
+    registry.registerFixForRule(JoltCode.setupThis, FixSetupThis.new);
+    registry.registerFixForRule(JoltCode.setupThis, FixSetupThisMulti.new);
 
     registry.registerAssist(WrapBuilderAssist.joltBuilder);
     registry.registerAssist(WrapBuilderAssist.joltSelector);

@@ -5,39 +5,12 @@ import 'package:analyzer_plugin/utilities/change_builder/change_builder_core.dar
 import 'package:analyzer_plugin/utilities/fixes/fixes.dart';
 import 'package:jolt_lint/src/shared.dart';
 
-class FixSetupThisExplicit extends ResolvedCorrectionProducer
-    with FixableSetupThis {
-  FixSetupThisExplicit({required super.context});
+class FixSetupThis extends ResolvedCorrectionProducer {
+  FixSetupThis({required super.context});
 
   @override
-  FixKind get fixKind => JoltFix.setupThisExplicit;
-}
+  FixKind get fixKind => JoltFix.setupThis;
 
-class FixSetupThisImplicit extends ResolvedCorrectionProducer
-    with FixableSetupThis {
-  FixSetupThisImplicit({required super.context});
-
-  @override
-  FixKind get fixKind => JoltFix.setupThisImplicit;
-}
-
-class FixSetupThisAssign extends ResolvedCorrectionProducer
-    with FixableSetupThis {
-  FixSetupThisAssign({required super.context});
-
-  @override
-  FixKind get fixKind => JoltFix.setupThisAssign;
-}
-
-class FixSetupThisAssignable extends ResolvedCorrectionProducer
-    with FixableSetupThis {
-  FixSetupThisAssignable({required super.context});
-
-  @override
-  FixKind get fixKind => JoltFix.setupThisAssignable;
-}
-
-mixin FixableSetupThis on ResolvedCorrectionProducer {
   @override
   CorrectionApplicability get applicability =>
       CorrectionApplicability.singleLocation;
@@ -76,22 +49,30 @@ mixin FixableSetupThis on ResolvedCorrectionProducer {
       case AssignmentExpression():
         await builder.addDartFileEdit(file, (builder) {
           final propsName = ensureSetupPropsName(node, builder);
-          if (this is FixSetupThisAssign) {
-            final rightHandSide = (node as AssignmentExpression).rightHandSide;
+          final assignment = node as AssignmentExpression;
+          final leftHandSide = assignment.leftHandSide;
+          final rightHandSide = assignment.rightHandSide;
+
+          if (rightHandSide is ThisExpression) {
+            // Assigning this to something: var x = this;
             builder.addSimpleReplacement(
               SourceRange(rightHandSide.offset, rightHandSide.length),
               '$propsName()',
             );
-          } else if (this is FixSetupThisAssignable) {
-            final leftHandSide = (node as AssignmentExpression).leftHandSide;
-            builder.addSimpleInsertion(leftHandSide.offset, '$propsName()');
+          } else if (leftHandSide is SimpleIdentifier) {
+            // Assigning to an instance member setter: field = value;
+            final element = leftHandSide.element;
+            if (element == null) {
+              builder.addSimpleInsertion(leftHandSide.offset, '$propsName().');
+            }
           }
         });
 
       case VariableDeclaration():
         await builder.addDartFileEdit(file, (builder) {
           final propsName = ensureSetupPropsName(node, builder);
-          final initializer = (node as VariableDeclaration).initializer;
+          final variable = node as VariableDeclaration;
+          final initializer = variable.initializer;
           if (initializer == null) return;
           builder.addSimpleReplacement(
             SourceRange(initializer.offset, initializer.length),

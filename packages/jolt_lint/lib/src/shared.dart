@@ -10,39 +10,12 @@ import 'package:analyzer_plugin/utilities/change_builder/change_builder_dart.dar
 import 'package:analyzer_plugin/utilities/fixes/fixes.dart';
 
 abstract final class JoltCode {
-  /// Accessing instance members via this
-  static const setupThisExplicit = LintCode(
-    'no_setup_this_explicit',
-
-    'Accessing instance fields or methods via this is not allowed in setup.',
+  /// Accessing instance members or using this in setup is not allowed
+  static const setupThis = LintCode(
+    'no_setup_this',
+    'Accessing instance members or using this in setup is not allowed.',
     correctionMessage:
-        'Avoid directly using this to access instance members in setup.',
-    severity: DiagnosticSeverity.ERROR,
-  );
-
-  /// Implicit access to instance members (bare identifier like 'a' or 'a()')
-  static const setupThisImplicit = LintCode(
-    'no_setup_this_implicit',
-
-    'Implicit access to instance fields or methods is not allowed in setup.',
-    correctionMessage:
-        'Do not directly use instance field/method names in setup. Consider passing them as parameters or through other objects.',
-    severity: DiagnosticSeverity.ERROR,
-  );
-
-  /// Assigning this to a variable (creating an alias)
-  static const setupThisAssign = LintCode(
-    'no_setup_this_assign',
-    'Assigning this to a variable is not allowed in setup.',
-    correctionMessage:
-        'Avoid creating alias variables for this in setup, such as `that = this`.',
-    severity: DiagnosticSeverity.ERROR,
-  );
-
-  static const setupThisAssignable = LintCode(
-    'no_setup_this_assignable',
-    'Assigning this to a setter is not allowed in setup.',
-    correctionMessage: 'Avoid assigning this to a variable in setup.',
+        'Use props() instead of this to access instance members in setup.',
     severity: DiagnosticSeverity.ERROR,
   );
 
@@ -62,23 +35,8 @@ abstract final class JoltFix {
     DartFixKindPriority.standard + 10,
     "Fix all setup this issues",
   );
-  static const setupThisImplicit = FixKind(
-    'jolt.fix.setupThis.implicit',
-    DartFixKindPriority.standard + 1,
-    "Add props() to the member",
-  );
-  static const setupThisAssign = FixKind(
-    'jolt.fix.setupThis.assign',
-    DartFixKindPriority.standard + 1,
-    "Replace this with props()",
-  );
-  static const setupThisAssignable = FixKind(
-    'jolt.fix.setupThis.assignable',
-    DartFixKindPriority.standard + 1,
-    "Replace this with props()",
-  );
-  static const setupThisExplicit = FixKind(
-    'jolt.fix.setupThis.explicit',
+  static const setupThis = FixKind(
+    'jolt.fix.setupThis',
     DartFixKindPriority.standard + 1,
     "Replace this with props()",
   );

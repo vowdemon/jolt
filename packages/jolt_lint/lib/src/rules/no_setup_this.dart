@@ -21,10 +21,5 @@ class NoSetupThisRule extends MultiAnalysisRule {
   }
 
   @override
-  List<DiagnosticCode> get diagnosticCodes => [
-    JoltCode.setupThisExplicit,
-    JoltCode.setupThisImplicit,
-    JoltCode.setupThisAssign,
-    JoltCode.setupThisAssignable,
-  ];
+  List<DiagnosticCode> get diagnosticCodes => [JoltCode.setupThis];
 }

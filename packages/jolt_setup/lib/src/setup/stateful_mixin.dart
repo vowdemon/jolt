@@ -71,7 +71,7 @@ part of 'framework.dart';
 /// - You want the simplest API
 /// - Element's lifecycle is sufficient
 mixin SetupMixin<T extends StatefulWidget> on State<T> {
-  late final Props<T> _propsNode = Props<T>(context);
+  late final Props<T> _propsNode = _PropsImpl<T>(context);
   late final JoltSetupContext<T> setupContext =
       JoltSetupContext<T>(context, _propsNode);
 

@@ -320,8 +320,9 @@ class JoltSetupContext<T extends Widget> extends EffectScopeImpl {
 /// - Implements [ReadonlySignal] for compatibility with Jolt's reactive system
 /// - Tracks dependencies automatically when accessed in reactive contexts
 /// - Disposed when the associated [BuildContext] is unmounted
-class Props<T extends Widget> extends ReadonlySignalImpl<T> {
-  Props(this._context) : super(null);
+class _PropsImpl<T extends Widget> extends ReadonlySignalImpl<T>
+    implements Props<T> {
+  _PropsImpl(this._context) : super(null);
 
   final BuildContext _context;
 
@@ -343,6 +344,7 @@ class Props<T extends Widget> extends ReadonlySignalImpl<T> {
   @override
   bool get isDisposed => !_context.mounted;
 
+  @override
   T call() {
     return value;
   }
@@ -351,4 +353,38 @@ class Props<T extends Widget> extends ReadonlySignalImpl<T> {
   void onDispose() {
     disposeNode(this);
   }
+}
+
+/// A reactive interface for accessing widget properties in setup functions.
+///
+/// [Props] extends [ReadableNode] to provide reactive access to widget instances.
+/// It allows setup functions to track widget property changes and rebuild
+/// reactive computations when properties are updated.
+///
+/// The [call] method enables function-like syntax for accessing the widget,
+/// making it convenient to use in setup functions: `final widget = props();`
+///
+/// ## Usage
+///
+/// In setup functions, [Props] is passed as a parameter and can be used
+/// reactively in computed values or effects:
+///
+/// ```dart
+/// @override
+/// setup(context, props) {
+///   // Access widget properties reactively
+///   final displayName = useComputed(() => 'Hello ${props().name}');
+///   return () => Text(displayName.value);
+/// }
+/// ```
+///
+/// When the widget is updated with new properties, the [Props] node automatically
+/// notifies its subscribers, triggering recomputation of dependent reactive values.
+abstract class Props<T extends Widget> implements ReadableNode<T> {
+  /// Returns the current widget instance.
+  ///
+  /// This method enables function-like syntax for accessing the widget.
+  /// It's equivalent to accessing [ReadableNode.value], but provides a more
+  /// convenient call-site API.
+  T call();
 }

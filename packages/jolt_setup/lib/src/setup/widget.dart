@@ -166,7 +166,7 @@ class SetupWidgetElement<T extends SetupWidget<T>> extends ComponentElement {
   SetupWidgetElement(SetupWidget<T> super.widget);
 
   /// The reactive node that tracks widget property changes.
-  late final _propsNode = Props<T>(this);
+  late final _propsNode = _PropsImpl<T>(this);
 
   /// The setup context that manages hooks and reactive state.
   late final JoltSetupContext<T> setupContext =

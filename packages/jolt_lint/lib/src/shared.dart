@@ -34,7 +34,7 @@ abstract final class JoltCode {
     'Hook calls (useXXX) must be at the top level of setup or inside other hook calls.',
     correctionMessage:
         'Move the hook call to the top level of the setup function, or inside another hook call\'s callback.',
-    severity: DiagnosticSeverity.ERROR,
+    severity: DiagnosticSeverity.WARNING,
   );
 }
 

@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-01-01
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`jolt_lint` - `v3.0.1`](#jolt_lint---v301)
+
+---
+
+#### `jolt_lint` - `v3.0.1`
+
+ - **FIX**(lint): change severity of hook call diagnostic from ERROR to WARNING. ([85a0b4d6](https://github.com/vowdemon/jolt/commit/85a0b4d68f0d7925ea2df72a33c0e5cf67eba217))
+
+
 ## 2025-12-29
 
 ### Changes

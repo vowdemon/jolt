@@ -1,3 +1,7 @@
+## 3.0.1
+
+ - **FIX**(lint): change severity of hook call diagnostic from ERROR to WARNING. ([85a0b4d6](https://github.com/vowdemon/jolt/commit/85a0b4d68f0d7925ea2df72a33c0e5cf67eba217))
+
 ## 3.0.0
 
  - **REFACTOR**(lint): unify setup this diagnostic codes into single code. ([f91f5a46](https://github.com/vowdemon/jolt/commit/f91f5a46b586d31e916cad57af041dcef32e0b7b))

@@ -3,6 +3,35 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-01-09
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`jolt_lint` - `v3.0.2`](#jolt_lint---v302)
+ - [`jolt_setup` - `v3.1.0`](#jolt_setup---v310)
+
+---
+
+#### `jolt_lint` - `v3.0.2`
+
+ - **REFACTOR**: use annotation to mark hook functions instead of naming convention check. ([f25bdad9](https://github.com/vowdemon/jolt/commit/f25bdad98a6b57816188435ea19c5a6449905401))
+ - **FIX**(lint): change severity of hook call diagnostic from ERROR to WARNING. ([85a0b4d6](https://github.com/vowdemon/jolt/commit/85a0b4d68f0d7925ea2df72a33c0e5cf67eba217))
+
+#### `jolt_setup` - `v3.1.0`
+
+ - **REFACTOR**: use annotation to mark hook functions instead of naming convention check. ([f25bdad9](https://github.com/vowdemon/jolt/commit/f25bdad98a6b57816188435ea19c5a6449905401))
+ - **FIX**(jolt_setup): fix hook state not being reused during hot reload. ([84de46b8](https://github.com/vowdemon/jolt/commit/84de46b8206df0021f0bb173ff8767112900fef4))
+ - **FEAT**(jolt_setup): pass new hook config to reassemble during hot reload. ([c9aa7ff6](https://github.com/vowdemon/jolt/commit/c9aa7ff6c02c6d83ddfd12045311e2e0a98ac14e))
+
+
 ## 2026-01-01
 
 ### Changes

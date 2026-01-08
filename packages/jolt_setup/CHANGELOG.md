@@ -1,3 +1,9 @@
+## 3.1.0
+
+ - **REFACTOR**: use annotation to mark hook functions instead of naming convention check. ([f25bdad9](https://github.com/vowdemon/jolt/commit/f25bdad98a6b57816188435ea19c5a6449905401))
+ - **FIX**(jolt_setup): fix hook state not being reused during hot reload. ([84de46b8](https://github.com/vowdemon/jolt/commit/84de46b8206df0021f0bb173ff8767112900fef4))
+ - **FEAT**(jolt_setup): pass new hook config to reassemble during hot reload. ([c9aa7ff6](https://github.com/vowdemon/jolt/commit/c9aa7ff6c02c6d83ddfd12045311e2e0a98ac14e))
+
 ## 3.0.1
 
  - **FIX**(jolt_setup): provide clean Props interface. ([e5234541](https://github.com/vowdemon/jolt/commit/e52345419f1d841b45341f551ccc8cdab66efdc7))

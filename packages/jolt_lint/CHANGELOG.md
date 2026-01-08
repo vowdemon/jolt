@@ -1,3 +1,8 @@
+## 3.0.2
+
+ - **REFACTOR**: use annotation to mark hook functions instead of naming convention check. ([f25bdad9](https://github.com/vowdemon/jolt/commit/f25bdad98a6b57816188435ea19c5a6449905401))
+ - **FIX**(lint): change severity of hook call diagnostic from ERROR to WARNING. ([85a0b4d6](https://github.com/vowdemon/jolt/commit/85a0b4d68f0d7925ea2df72a33c0e5cf67eba217))
+
 ## 3.0.1
 
  - **FIX**(lint): change severity of hook call diagnostic from ERROR to WARNING. ([85a0b4d6](https://github.com/vowdemon/jolt/commit/85a0b4d68f0d7925ea2df72a33c0e5cf67eba217))

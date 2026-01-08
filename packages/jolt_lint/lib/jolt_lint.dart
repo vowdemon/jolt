@@ -1,0 +1,3 @@
+library;
+
+export 'main.dart';

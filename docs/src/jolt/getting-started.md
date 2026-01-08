@@ -21,6 +21,13 @@ For Flutter projects, it's recommended to install `jolt_flutter`:
 flutter pub add jolt_flutter
 ```
 
+For the Composition API and Setup Widget pattern, install `jolt_setup`:
+
+```bash
+# Composition API with automatic resource cleanup
+flutter pub add jolt_setup
+```
+
 If using Flutter Hooks, you can install `jolt_hooks`:
 
 ```bash

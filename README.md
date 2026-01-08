@@ -4,6 +4,7 @@
 [![codecov](https://codecov.io/gh/vowdemon/jolt/graph/badge.svg?token=CBL7C4ZRZD)](https://codecov.io/gh/vowdemon/jolt)
 [![jolt](https://img.shields.io/pub/v/jolt?label=jolt)](https://pub.dev/packages/jolt)
 [![jolt_flutter](https://img.shields.io/pub/v/jolt_flutter?label=jolt_flutter)](https://pub.dev/packages/jolt_flutter)
+[![jolt_setup](https://img.shields.io/pub/v/jolt_setup?label=jolt_setup)](https://pub.dev/packages/jolt_setup)
 [![jolt_hooks](https://img.shields.io/pub/v/jolt_hooks?label=jolt_hooks)](https://pub.dev/packages/jolt_hooks)
 [![jolt_surge](https://img.shields.io/pub/v/jolt_surge?label=jolt_surge)](https://pub.dev/packages/jolt_surge)
 [![jolt_lint](https://img.shields.io/pub/v/jolt_lint?label=jolt_lint)](https://pub.dev/packages/jolt_lint)
@@ -17,7 +18,7 @@ Reactive state management for Dart and Flutter using signals, computed values, e
 
 ## Packages
 
-The Jolt ecosystem consists of five packages:
+The Jolt ecosystem consists of six packages:
 
 ### [jolt](packages/jolt/) - Core Library
 
@@ -35,14 +36,24 @@ Flutter-specific widgets and utilities for reactive UI:
 - `JoltSelector` - Fine-grained selector updates
 - `JoltValueNotifier` - Integration with Flutter's ValueNotifier system
 
+### [jolt_setup](packages/jolt_setup/) - Setup Widget & Composition API
+
+Composition API similar to Vue's Composition API for Flutter, with automatic resource management:
+- `SetupWidget` - Composition-based widget with `setup()` function
+- `SetupMixin` - Add composition API to existing StatefulWidgets
+- `SetupBuilder` - Inline composition API for quick prototyping
+- Automatic resource cleanup - No manual dispose() needed
+- Rich hook library - Controllers, focus nodes, animations, lifecycle, and more
+
 ### [jolt_hooks](packages/jolt_hooks/) - Flutter Hooks Integration
 
-Hooks API for using Jolt in HookWidget:
-- `useSignal()` - Reactive signal hooks
-- `useComputed()` - Computed value hooks
-- `useAsyncSignal()` - Async state hooks
-- `useJoltEffect()` - Side-effect hooks
-- Reactive collection hooks: `useListSignal()`, `useMapSignal()`, `useSetSignal()`
+Integration with flutter_hooks for using Jolt primitives in HookWidget:
+- `useSignal()` - Create reactive signals in hooks
+- `useComputed()` - Computed values that rebuild on changes
+- `useJoltEffect()` - Side effects with automatic cleanup
+- `useJoltWidget()` - Fine-grained reactive widgets
+- Collection variants: `useSignal.list()`, `useSignal.map()`, `useSignal.set()`
+- Compatible with Flutter Hooks patterns - runs on every build
 
 ### [jolt_surge](packages/jolt_surge/) - Signal-Powered Cubit Pattern
 
@@ -52,12 +63,14 @@ A state management pattern inspired by [BLoC's Cubit](https://bloclibrary.dev/#/
 - `SurgeConsumer` - Unified widget for both building UI and handling side effects
 - `SurgeBuilder`, `SurgeListener`, `SurgeSelector` - Convenience widgets
 
-### [jolt_lint](packages/jolt_lint/) - Lint Tool
+### [jolt_lint](packages/jolt_lint/) - Lint & Code Assists
 
-A lint tool designed for the Jolt ecosystem, providing code transformation assists and rule checks:
-- Code transformation assists: Convert to/from Signal, wrap widgets with JoltBuilder/JoltProvider/JoltSelector
-- Lint rules: `no_setup_this` rule to ensure Setup pattern purity
-- IDE integration: Quick fixes and real-time code quality checks
+Custom lint rules and code assists for the Jolt ecosystem:
+- **Hook Rules Enforcement** - Ensures hooks are only called in setup or other hooks
+- **Code Assists** - Quick fixes for converting between patterns, wrapping widgets
+- **Compile-time Safety** - Catches async/callback hook usage before runtime
+- **IDE Integration** - Real-time feedback and automatic fixes in your editor
+- **Pattern Validation** - Enforces best practices for Setup Widget and reactive patterns
 
 ## Quick Start
 

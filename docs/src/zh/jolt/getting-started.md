@@ -21,6 +21,13 @@ dart pub add jolt
 flutter pub add jolt_flutter
 ```
 
+如果需要组合式 API 和 Setup Widget 模式，可以安装 `jolt_setup`：
+
+```bash
+# 组合式 API，自动资源清理
+flutter pub add jolt_setup
+```
+
 如果使用 Flutter Hooks，可以安装 `jolt_hooks`：
 
 ```bash

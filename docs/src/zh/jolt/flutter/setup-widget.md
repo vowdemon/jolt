@@ -15,6 +15,162 @@
 >
 > 这是两种根本不同的模型。避免混合使用它们以防止混淆。
 
+## 为什么选择 Setup Widget？
+
+Setup Widget 将 Vue Composition API 的简洁性和强大功能带到 Flutter，显著减少样板代码，同时使代码更易维护和理解。
+
+### 核心特性
+
+✨ **基于组合的逻辑** - 按功能组织代码，而非生命周期  
+🎯 **自动资源清理** - 无需手动 dispose()，一切自动清理  
+⚡ **更好的性能** - `setup` 只运行一次，而非每次重建（不同于 React hooks）  
+🔄 **默认响应式** - 基于 Jolt 的 Signal 系统实现细粒度响应式  
+🪝 **丰富的 Hook 库** - 用于控制器、焦点节点、动画等的声明式 API  
+🔧 **灵活性** - 可根据需要使用 SetupWidget、SetupMixin 或 SetupBuilder  
+
+### 快速对比
+
+看看区别 - 使用 Setup Widget 与传统 StatefulWidget 的相同组件：
+
+**使用 Setup Widget（36 行）：**
+
+```dart
+class HookExample extends SetupWidget<HookExample> {
+  HookExample({super.key});
+
+  @override
+  setup(context, props) {
+    useAutomaticKeepAlive(true);
+
+    final scrollController = useScrollController();
+    useListenable(scrollController, () {
+      print('scrollController.offset: ${scrollController.offset}');
+    });
+
+    final loadingFuture =
+        useFuture(Future.delayed(Duration(seconds: 3), () => true));
+
+    useAppLifecycleState(
+      onChange: (state) {
+        if (state == AppLifecycleState.resumed) {
+          print('app resumed');
+        } else if (state == AppLifecycleState.paused) {
+          print('app paused');
+        }
+      },
+    );
+
+    return () => SingleChildScrollView(
+        controller: scrollController,
+        child: switch (loadingFuture.hasData) {
+          false => Center(child: CircularProgressIndicator()),
+          true => Column(
+              children: [
+                for (var i = 0; i < 100; i++) Text('Item $i'),
+              ],
+            ),
+        });
+  }
+}
+```
+
+**传统 StatefulWidget（64 行）：**
+
+```dart
+class NormalExample extends StatefulWidget {
+  const NormalExample({super.key});
+
+  @override
+  State<NormalExample> createState() => _NormalExampleState();
+}
+
+class _NormalExampleState extends State<NormalExample>
+    with AutomaticKeepAliveClientMixin, WidgetsBindingObserver, RouteAware {
+  late final ScrollController scrollController;
+  late final Future<bool> loadingFuture;
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    scrollController = ScrollController();
+    loadingFuture = Future.delayed(Duration(seconds: 3), () => true);
+    scrollController.addListener(_listener);
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      print('app resumed');
+    } else if (state == AppLifecycleState.paused) {
+      print('app paused');
+    }
+  }
+
+  @override
+  void dispose() {
+    scrollController.removeListener(_listener);
+    scrollController.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  void _listener() {
+    print('scrollController.offset: ${scrollController.offset}');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return SingleChildScrollView(
+        controller: scrollController,
+        child: FutureBuilder(
+            future: loadingFuture,
+            builder: (context, snapshot) {
+              return switch (snapshot.hasData) {
+                false => Center(child: CircularProgressIndicator()),
+                true => Column(
+                    children: [
+                      for (var i = 0; i < 100; i++) Text('Item $i'),
+                    ],
+                  ),
+              };
+            }));
+  }
+}
+```
+
+**区别：**
+- ✅ **更少代码** - 36 行 vs 64 行
+- ✅ **无需手动清理** - 自动资源释放
+- ✅ **无需 mixins** - 通过简单的 hooks 实现一切
+- ✅ **更好的组织** - 按功能分组逻辑，而非分散在生命周期方法中
+- ✅ **更易测试** - 组合式使单元测试更直接
+
+## 推荐：与 jolt_lint 搭配使用
+
+为获得最佳开发体验，**强烈推荐**将 `jolt_setup` 与 [`jolt_lint`](https://pub.dev/packages/jolt_lint) 一起使用：
+
+```yaml
+# analysis_options.yaml
+
+plugins:
+  jolt_lint: ^3.0.0
+```
+
+**jolt_lint 提供：**
+- 🔍 **Hook 规则强制** - 确保 hooks 只在 setup 或其他 hooks 中调用
+- 🚫 **防止常见错误** - 在编译时捕获异步/回调中的 hook 使用
+- 💡 **代码辅助** - 提供模式转换的快速修复
+- 🎯 **更好的 DX** - 立即获得 hook 使用违规的反馈
+
+没有 `jolt_lint`，hook 规则违规只能在运行时被捕获。有了它，你可以获得编译时安全和有用的 IDE 警告。
+
+**了解更多：**查看 [jolt_lint 文档](https://pub.dev/packages/jolt_lint) 了解设置和配置。
+
 ## 基本概念
 
 `SetupWidget` 的核心思想是将 Widget 的构建逻辑分离为两部分：
@@ -354,6 +510,153 @@ Setup Widget 为所有 Jolt 响应式原语提供 hooks：
 | `useMemoized(creator, [disposer])` | 记忆化值，带可选的清理函数 |
 | `useAutoDispose(creator)` | 自动清理资源 |
 | `useHook(hook)` | 使用自定义 hook |
+
+### 创建自定义 Hook
+
+有两种方式创建自定义 hook：
+
+**1. 组合式 Hook（基于函数）：**
+
+将现有 hooks 组合成可复用函数：
+
+```dart
+import 'package:jolt_setup/jolt_setup.dart';
+
+// 组合式 hook - 直接组合现有 hooks
+T useMyCustomHook<T>(T initialValue) {
+  final signal = useSignal(initialValue);
+  
+  useEffect(() {
+    print('Value changed: ${signal.value}');
+  });
+  
+  return signal.value;
+}
+
+// 在 setup 中使用
+class MyWidget extends SetupWidget {
+  @override
+  setup(context) {
+    final value = useMyCustomHook(0);
+    
+    return () => Text('Value: $value');
+  }
+}
+```
+
+**2. 基于类的 Hook：**
+
+对于更复杂的 hooks，继承 `SetupHook` 类并使用 `use()` 方法：
+
+```dart
+import 'package:jolt_setup/jolt_setup.dart';
+
+class MyCustomHook<T> extends SetupHook<T> {
+  final T initialValue;
+  
+  MyCustomHook(this.initialValue);
+  
+  @override
+  T call() {
+    final signal = useSignal(initialValue);
+    
+    useEffect(() {
+      print('Value changed: ${signal.value}');
+    });
+    
+    onUnmounted(() {
+      print('Hook cleanup');
+    });
+    
+    return signal.value;
+  }
+}
+
+// 使用 'use' 方法
+class MyWidget extends SetupWidget {
+  @override
+  setup(context) {
+    final value = use(MyCustomHook(0));
+    
+    return () => Text('Value: $value');
+  }
+}
+```
+
+**使用 `@defineHook` 进行 Lint 检查：**
+
+`@defineHook` 注解用于指示某个函数是一个 hook，以便进行 lint 检查。它有助于确保正确的 hook 使用模式：
+
+```dart
+@defineHook
+T useMyCustomHook<T>(T initialValue) {
+  // Lint 将确保此 hook 的调用（useSignal 等）
+  // 只能在 setup() 或另一个 hook 内部进行
+  final signal = useSignal(initialValue);
+  return signal.value;
+}
+```
+
+**Hook 规则：**
+
+Hooks 必须遵循这些规则才能正常工作：
+
+✅ **正确：同步调用 hooks**
+```dart
+setup(context) {
+  final count = useSignal(0);  // ✅ 正确 - 同步调用
+  return () => Text('${count.value}');
+}
+```
+
+❌ **错误：在异步函数中调用 hooks**
+```dart
+setup(context) {
+  Future<void> loadData() async {
+    final data = useSignal([]);  // ❌ 错误 - 在异步函数内
+  }
+  return () => Text('...');
+}
+```
+
+❌ **错误：在回调中调用 hooks**
+```dart
+setup(context) {
+  ElevatedButton(
+    onPressed: () {
+      final count = useSignal(0);  // ❌ 错误 - 在回调内
+    },
+  );
+  return () => Text('...');
+}
+```
+
+❌ **错误：在 setup/hook 上下文之外调用 hooks**
+```dart
+void regularFunction() {
+  final count = useSignal(0);  // ❌ 错误 - 在 setup 上下文外
+}
+```
+
+✅ **正确：在 setup 或另一个 hook 的顶层调用 hooks**
+```dart
+setup(context) {
+  final count = useSignal(0);  // ✅ 正确
+  final doubled = useComputed(() => count.value * 2);  // ✅ 正确
+  
+  onMounted(() {
+    // ❌ 不要在这里调用 hooks - 这是回调
+    print('Mounted');
+  });
+  
+  return () => Text('${doubled.value}');
+}
+```
+
+**指南：**
+- 简单可复用逻辑使用组合式 hooks
+- 复杂的、带状态或配置的 hooks 使用基于类的 hooks
+- 添加 `@defineHook` 注解以启用 lint 检查并强制执行 hook 规则
 
 **使用示例：**
 

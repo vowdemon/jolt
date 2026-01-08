@@ -192,8 +192,6 @@ class SetupWidgetElement<T extends SetupWidget<T>> extends ComponentElement {
 
   void _reload() {
     assert(() {
-      setupContext._hooks.clear();
-
       setupContext.run(() {
         setupContext._resetHookIndex();
         setupContext.setupBuilder = widget.setup(this, _propsNode);

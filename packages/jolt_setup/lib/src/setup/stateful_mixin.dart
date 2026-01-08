@@ -198,8 +198,6 @@ mixin SetupMixin<T extends StatefulWidget> on State<T> {
   // coverage:ignore-start
   void _reload() {
     assert(() {
-      setupContext._hooks.clear();
-
       setupContext.run(() {
         setupContext._resetHookIndex();
         setupContext.setupBuilder = setup(context);

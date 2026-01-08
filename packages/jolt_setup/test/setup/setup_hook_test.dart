@@ -30,7 +30,7 @@ class _TestLifecycleHook extends SetupHook<String> {
   }
 
   @override
-  void reassemble() {
+  void reassemble(SetupHook newHook) {
     tracker.reassembleCount++;
     tracker.reassembleOrder.add('reassemble');
   }

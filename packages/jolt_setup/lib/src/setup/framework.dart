@@ -57,11 +57,14 @@ class JoltSetupContext<T extends Widget> extends EffectScopeImpl {
 
   // coverage:ignore-start
   /// Temporary list used during hot reload to build the new hook sequence.
-  final List<SetupHook> _newHooks = [];
+  late final List<SetupHook> _newHooks = [];
 
   /// Set of hooks that were newly created during hot reload.
   /// These hooks will have their [SetupHook.mount] method called.
-  final Set<SetupHook> _newlyCreatedHooks = {};
+  late final Set<SetupHook> _newlyCreatedHooks = {};
+
+  /// Maps reused hooks to their new configurations during hot reload.
+  late final Map<SetupHook, SetupHook> _newHookConfigs = {};
 
   /// Current position in the hook sequence during hot reload.
   late int _currentHookIndex = 0;
@@ -79,6 +82,7 @@ class JoltSetupContext<T extends Widget> extends EffectScopeImpl {
       _currentHookIndex = 0;
       _newHooks.clear();
       _newlyCreatedHooks.clear();
+      _newHookConfigs.clear();
       return true;
     }());
   }
@@ -111,6 +115,7 @@ class JoltSetupContext<T extends Widget> extends EffectScopeImpl {
           existingHook = oldHook as SetupHook<U>;
           hookState = existingHook!.state;
           _newHooks.add(existingHook!);
+          _newHookConfigs[existingHook!] = hook;
           _currentHookIndex++;
           return true;
         } else {
@@ -164,11 +169,14 @@ class JoltSetupContext<T extends Widget> extends EffectScopeImpl {
         if (_newlyCreatedHooks.contains(hook)) {
           hook.mount();
         } else {
-          hook.reassemble();
+          final newHook = _newHookConfigs[hook];
+          assert(newHook != null, 'Reused hook must have a new configuration');
+          hook.reassemble(newHook!);
         }
       }
 
       _newlyCreatedHooks.clear();
+      _newHookConfigs.clear();
 
       return true;
     }());
@@ -250,6 +258,7 @@ class JoltSetupContext<T extends Widget> extends EffectScopeImpl {
     assert(() {
       _newHooks.clear();
       _newlyCreatedHooks.clear();
+      _newHookConfigs.clear();
       _currentHookIndex = 0;
       return true;
     }());

@@ -487,7 +487,33 @@ abstract class SetupHook<T> {
   ///
   /// This is called instead of [mount] for hooks that matched during
   /// hot reload sequence matching.
-  void reassemble() {}
+  ///
+  /// The [newHook] parameter contains the new hook instance with updated
+  /// configuration from the hot-reloaded code. You can compare it with
+  /// the current hook configuration and update state if needed.
+  ///
+  /// Example:
+  /// ```dart
+  /// class TimerHook extends SetupHook<Timer> {
+  ///   TimerHook(this.duration);
+  ///   final Duration duration;
+  ///
+  ///   @override
+  ///   Timer build() => Timer.periodic(duration, (_) {});
+  ///
+  ///   @override
+  ///   void reassemble(covariant TimerHook newHook) {
+  ///     if (newHook.duration != duration) {
+  ///       state.cancel();
+  ///       _state = Timer.periodic(newHook.duration, (_) {});
+  ///     }
+  ///   }
+  ///
+  ///   @override
+  ///   void unmount() => state.cancel();
+  /// }
+  /// ```
+  void reassemble(SetupHook newHook) {}
 
   /// Called when the widget's InheritedWidget dependencies change.
   void didChangeDependencies() {}

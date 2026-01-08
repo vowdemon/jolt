@@ -37,14 +37,41 @@ ValueNotifier<T> useValueNotifier<T>(T initialValue) {
 @defineHook
 void useValueListenable<T>(
     ValueListenable<T> listenable, void Function(T value) listener) {
-  useMemoized(() {
-    void internalListener() {
-      listener(listenable.value);
-    }
+  useHook(_ValueListenableHook(listenable, listener));
+}
 
-    listenable.addListener(internalListener);
-    return internalListener;
-  }, (listener) => listenable.removeListener(listener));
+class _ValueListenableHook<E, T extends ValueListenable<E>>
+    extends SetupHook<T> {
+  _ValueListenableHook(this.listenable, this.listener);
+
+  late T listenable;
+  late void Function(E value) listener;
+
+  void _listener() {
+    listener(listenable.value);
+  }
+
+  @override
+  T build() {
+    listenable.addListener(_listener);
+    return listenable;
+  }
+
+  @override
+  void unmount() {
+    listenable.removeListener(_listener);
+  }
+
+  @override
+  void reassemble(covariant _ValueListenableHook<E, T> newHook) {
+    final hasNewListenable = newHook.listenable != listenable;
+
+    if (!hasNewListenable) return;
+    listenable.removeListener(_listener);
+    listenable = newHook.listenable;
+    listener = newHook.listener;
+    listenable.addListener(_listener);
+  }
 }
 
 /// Subscribes to a Listenable and calls the listener when it notifies.
@@ -62,10 +89,43 @@ void useValueListenable<T>(
 /// ```
 @defineHook
 void useListenable<T>(Listenable listenable, VoidCallback listener) {
-  useMemoized(() {
-    listenable.addListener(listener);
-    return listener;
-  }, (listener) => listenable.removeListener(listener));
+  useHook(_ListenableHook(listenable, listener));
+}
+
+class _ListenableHook<T extends Listenable> extends SetupHook<T> {
+  _ListenableHook(this.listenable, this.listener);
+
+  late T listenable;
+  late VoidCallback listener;
+
+  void _listener() {
+    listener();
+  }
+
+  @override
+  T build() {
+    listenable.addListener(_listener);
+    return listenable;
+  }
+
+  @override
+  void unmount() {
+    listenable.removeListener(_listener);
+  }
+
+  @override
+  void reassemble(covariant _ListenableHook<T> newHook) {
+    final hasNewListenable = newHook.listenable != listenable;
+
+    if (hasNewListenable) {
+      listenable.removeListener(_listener);
+      listenable = newHook.listenable;
+      listener = newHook.listener;
+      listenable.addListener(_listener);
+    } else {
+      listener = newHook.listener;
+    }
+  }
 }
 
 /// Subscribes to a Listenable and syncs it with a Writable node, optionally bidirectional.

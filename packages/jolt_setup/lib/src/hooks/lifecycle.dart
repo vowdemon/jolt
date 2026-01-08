@@ -1,11 +1,13 @@
 import 'package:flutter/widgets.dart';
 import 'package:jolt_flutter/extension.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
+import 'package:jolt_setup/hooks.dart';
 import 'package:jolt_setup/jolt_setup.dart';
 
 /// Listens to application lifecycle state changes
 ///
 /// Returns a reactive Signal representing the current application lifecycle state
+@defineHook
 ReadonlySignal<AppLifecycleState?> useAppLifecycleState({
   AppLifecycleState? initialState,
   void Function(AppLifecycleState state)? onChange,

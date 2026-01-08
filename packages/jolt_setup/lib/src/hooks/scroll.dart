@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-
-import 'animation.dart';
-import 'listenable.dart';
+import 'package:jolt_setup/hooks.dart';
 
 /// Creates a scroll controller
 ///
 /// The controller will be automatically disposed when the component is unmounted
+@defineHook
 ScrollController useScrollController({
   double initialScrollOffset = 0.0,
   bool keepScrollOffset = true,
@@ -22,6 +21,7 @@ ScrollController useScrollController({
       ));
 }
 
+@defineHook
 TrackingScrollController useTrackingScrollController({
   double initialScrollOffset = 0.0,
   bool keepScrollOffset = true,
@@ -44,6 +44,7 @@ TrackingScrollController useTrackingScrollController({
 ///
 /// [length] Number of tabs (required)
 /// [initialIndex] Initial selected tab index
+@defineHook
 TabController useTabController({
   required int length,
   int initialIndex = 0,
@@ -63,6 +64,7 @@ TabController useTabController({
 /// Creates a Page controller
 ///
 /// The controller will be automatically disposed when the component is unmounted
+@defineHook
 PageController usePageController(
     {int initialPage = 0,
     bool keepPage = true,
@@ -83,6 +85,7 @@ PageController usePageController(
 /// Creates a fixed extent scroll controller
 ///
 /// The controller will be automatically disposed when the component is unmounted
+@defineHook
 FixedExtentScrollController useFixedExtentScrollController({
   int initialItem = 0,
   void Function(ScrollPosition)? onAttach,
@@ -101,10 +104,12 @@ FixedExtentScrollController useFixedExtentScrollController({
   );
 }
 
+@defineHook
 DraggableScrollableController useDraggableScrollableController() {
   return useChangeNotifier(() => DraggableScrollableController());
 }
 
+@defineHook
 CarouselController useCarouselController({int initialItem = 0}) {
   return useChangeNotifier(() => CarouselController(initialItem: initialItem));
 }

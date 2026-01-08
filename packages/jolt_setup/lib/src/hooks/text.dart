@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:jolt_setup/hooks.dart';
 
-import 'listenable.dart';
 
 /// Creates a text editing controller
 ///
@@ -19,6 +19,7 @@ final class _TextEditingControllerCreator {
   /// Creates a text editing controller
   ///
   /// [text] Initial text content
+  @defineHook
   TextEditingController call({String? text}) {
     return useChangeNotifier(
       () => TextEditingController(text: text),
@@ -28,6 +29,7 @@ final class _TextEditingControllerCreator {
   /// Creates a text editing controller from TextEditingValue
   ///
   /// [value] Initial TextEditingValue
+  @defineHook
   TextEditingController fromValue(TextEditingValue? value) {
     return useChangeNotifier(
       () => TextEditingController.fromValue(value),
@@ -54,6 +56,7 @@ final class _RestorableTextEditingControllerCreator {
   /// Creates a text editing controller
   ///
   /// [text] Initial text content
+  @defineHook
   RestorableTextEditingController call({String? text}) {
     return useChangeNotifier(
       () => RestorableTextEditingController(text: text),
@@ -63,6 +66,7 @@ final class _RestorableTextEditingControllerCreator {
   /// Creates a text editing controller from TextEditingValue
   ///
   /// [value] Initial TextEditingValue
+  @defineHook
   RestorableTextEditingController fromValue(TextEditingValue value) {
     return useChangeNotifier(
       () => RestorableTextEditingController.fromValue(value),
@@ -73,10 +77,12 @@ final class _RestorableTextEditingControllerCreator {
 const useRestorableTextEditingController =
     _RestorableTextEditingControllerCreator._();
 
+@defineHook
 SearchController useSearchController() {
   return useChangeNotifier(() => SearchController());
 }
 
+@defineHook
 UndoHistoryController useUndoHistoryController({UndoHistoryValue? value}) {
   return useChangeNotifier(() => UndoHistoryController(value: value));
 }

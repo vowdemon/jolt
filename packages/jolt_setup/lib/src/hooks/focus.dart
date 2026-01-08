@@ -1,10 +1,10 @@
 import 'package:flutter/widgets.dart';
-
-import 'listenable.dart';
+import 'package:jolt_setup/hooks.dart';
 
 /// Creates a focus node
 ///
 /// The node will be automatically disposed when the component is unmounted
+@defineHook
 FocusNode useFocusNode({
   String? debugLabel,
   KeyEventResult Function(FocusNode, KeyEvent)? onKeyEvent,
@@ -28,6 +28,7 @@ FocusNode useFocusNode({
 /// Creates a focus scope node
 ///
 /// The node will be automatically disposed when the component is unmounted
+@defineHook
 FocusScopeNode useFocusScopeNode({
   String? debugLabel,
   FocusOnKeyEventCallback? onKeyEvent,

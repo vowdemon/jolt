@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:jolt_flutter/core.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
+import 'package:jolt_setup/hooks.dart';
 import 'package:jolt_setup/jolt_setup.dart';
 
 /// Creates a ValueNotifier that is automatically disposed when the widget is unmounted.
@@ -13,6 +14,7 @@ import 'package:jolt_setup/jolt_setup.dart';
 /// final notifier = useValueNotifier(0);
 /// notifier.value = 10; // Update value
 /// ```
+@defineHook
 ValueNotifier<T> useValueNotifier<T>(T initialValue) {
   return useChangeNotifier(
     () => ValueNotifier(initialValue),
@@ -32,6 +34,7 @@ ValueNotifier<T> useValueNotifier<T>(T initialValue) {
 ///   print('Value changed to: $value');
 /// });
 /// ```
+@defineHook
 void useValueListenable<T>(
     ValueListenable<T> listenable, void Function(T value) listener) {
   useMemoized(() {
@@ -57,6 +60,7 @@ void useValueListenable<T>(
 ///   print('Notifier changed');
 /// });
 /// ```
+@defineHook
 void useListenable<T>(Listenable listenable, VoidCallback listener) {
   useMemoized(() {
     listenable.addListener(listener);
@@ -83,6 +87,7 @@ void useListenable<T>(Listenable listenable, VoidCallback listener) {
 ///   setter: (value) => notifier.value = value, // Bidirectional sync
 /// );
 /// ```
+@defineHook
 void useListenableSync<T, C extends Listenable>(Writable<T> node, C listenable,
     {required T Function(C listenable) getter,
     void Function(T value)? setter}) {
@@ -144,6 +149,7 @@ class _ChangeNotifierHook<T extends ChangeNotifier> extends SetupHook<T> {
 @pragma('vm:prefer-inline')
 @pragma('wasm:prefer-inline')
 @pragma('dart2js:prefer-inline')
+@defineHook
 T useChangeNotifier<T extends ChangeNotifier>(T Function() creator) {
   return useHook(_ChangeNotifierHook(creator));
 }

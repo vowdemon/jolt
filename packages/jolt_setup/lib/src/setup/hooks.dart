@@ -47,6 +47,7 @@ class _OnMountedHook extends _LifeCycleHook {
 ///   return () => Text('Hello');
 /// }
 /// ```
+@defineHook
 void onMounted(void Function() callback) {
   useHook(_OnMountedHook(callback));
 }
@@ -79,6 +80,7 @@ class _OnUnmountedHook extends _LifeCycleHook {
 ///   return () => Text('Hello');
 /// }
 /// ```
+@defineHook
 void onUnmounted(void Function() callback) {
   useHook(_OnUnmountedHook(callback));
 }
@@ -126,6 +128,7 @@ class _OnDidUpdateWidgetHook<T> extends SetupHook<_LifeCycleHookType> {
 ///   return () => Text('Hello');
 /// }
 /// ```
+@defineHook
 void onDidUpdateWidgetAt<T>(void Function(T, T) callback) {
   useHook(_OnDidUpdateWidgetHook(callback));
 }
@@ -159,6 +162,7 @@ extension JoltSetupOnDidUpdateWidget<T extends SetupWidget<T>>
   ///
   /// Parameters:
   /// - [callback]: Function that receives (oldWidget, newWidget) when updated
+  @defineHook
   void onDidUpdateWidget(void Function(T, T) callback) {
     useHook(_OnDidUpdateWidgetHook(callback));
   }
@@ -198,6 +202,7 @@ extension JoltSetupMixinOnDidUpdateWidget<T extends StatefulWidget>
   ///
   /// Parameters:
   /// - [callback]: Function that receives (oldWidget, newWidget) when updated
+  @defineHook
   void onDidUpdateWidget(void Function(T, T) callback) {
     useHook(_OnDidUpdateWidgetHook(callback));
   }
@@ -230,6 +235,7 @@ class _OnDidChangeDependenciesHook extends _LifeCycleHook {
 ///   return () => Text('Hello');
 /// }
 /// ```
+@defineHook
 void onDidChangeDependencies(void Function() callback) {
   useHook(_OnDidChangeDependenciesHook(callback));
 }
@@ -263,6 +269,7 @@ class _OnActivatedHook extends _LifeCycleHook {
 ///   return () => Text('Hello');
 /// }
 /// ```
+@defineHook
 void onActivated(void Function() callback) {
   useHook(_OnActivatedHook(callback));
 }
@@ -297,6 +304,7 @@ class _OnDeactivatedHook extends _LifeCycleHook {
 ///   return () => Text('Hello');
 /// }
 /// ```
+@defineHook
 void onDeactivated(void Function() callback) {
   useHook(_OnDeactivatedHook(callback));
 }
@@ -316,6 +324,7 @@ void onDeactivated(void Function() callback) {
 ///   return () => Container(color: theme.primaryColor);
 /// }
 /// ```
+@defineHook
 BuildContext useContext() {
   final currentContext = JoltSetupContext.current?.context;
   assert(currentContext != null, 'SetupWidgetElement is not exists');
@@ -341,6 +350,7 @@ BuildContext useContext() {
 ///   return () => Text('Hello');
 /// }
 /// ```
+@defineHook
 JoltSetupContext useSetupContext() {
   final currentContext = JoltSetupContext.current;
   assert(currentContext != null, 'SetupWidgetElement is not exists');
@@ -381,6 +391,7 @@ JoltSetupContext useSetupContext() {
 /// // In setup:
 /// final counter = useHook(CounterHook());
 /// ```
+@defineHook
 T useHook<T>(SetupHook<T> hook) => JoltSetupContext.current!._useHook(hook);
 
 /// Base class for all setup hooks.
@@ -538,6 +549,7 @@ class AutoDisposeHook<T extends Disposable> extends SetupHook<T> {
 ///   return () => Text('${computed.value}');
 /// }
 /// ```
+@defineHook
 T useAutoDispose<T extends Disposable>(T Function() creator) {
   return useHook(AutoDisposeHook(creator));
 }
@@ -574,6 +586,7 @@ class DisposableHook<T> extends SetupHook<T> {
 ///   return () => TextField(controller: controller);
 /// }
 /// ```
+@defineHook
 T useMemoized<T>(T Function() creator, [void Function(T state)? disposer]) {
   return useHook(DisposableHook(creator, disposer));
 }
@@ -663,6 +676,7 @@ class _UseInheritedHook<T> extends SetupHook<Computed<T>> {
 /// ```
 ///
 /// Returns a computed signal that stays in sync with the inherited widget.
+@defineHook
 Computed<T> useInherited<T>(T Function(BuildContext) getter) {
   return useHook(_UseInheritedHook<T>(getter));
 }

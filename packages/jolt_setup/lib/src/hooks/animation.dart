@@ -1,11 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
+import 'package:jolt_setup/hooks.dart';
 import 'package:jolt_setup/jolt_setup.dart';
 
 /// Creates a single ticker provider
 ///
 /// If you need multiple tickers, call this hook multiple times or use [useTickerProvider]
+@defineHook
 TickerProvider useSingleTickerProvider() {
   final provider = useHook(_SingleTickerProviderHook());
 
@@ -107,6 +109,7 @@ class _SingleTickerProviderHook extends SetupHook<TickerProvider>
 /// Creates a ticker provider that can create multiple tickers
 ///
 /// If you need a single ticker, use [useSingleTickerProvider]
+@defineHook
 TickerProvider useTickerProvider() {
   return useHook(_TickerProviderHook());
 }
@@ -219,6 +222,7 @@ class _WidgetTicker extends Ticker {
 /// Creates an animation controller
 ///
 /// The controller will be automatically disposed when the component is unmounted
+@defineHook
 AnimationController useAnimationController({
   TickerProvider? vsync,
   double? value,

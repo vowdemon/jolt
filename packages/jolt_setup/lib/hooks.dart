@@ -15,3 +15,4 @@ export './src/hooks/text.dart';
 export './src/hooks/controller.dart';
 export './src/hooks/keep_alive.dart';
 export './src/hooks/jolt_hooks.dart';
+export './src/annotation.dart';

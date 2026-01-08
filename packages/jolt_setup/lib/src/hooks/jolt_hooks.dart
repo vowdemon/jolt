@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:jolt_flutter/core.dart';
 import 'package:jolt_flutter/extension.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
+import 'package:jolt_setup/hooks.dart';
 import 'package:jolt_setup/jolt_setup.dart';
 
 /// Helper class for creating signal hooks in SetupWidget.
@@ -32,6 +33,7 @@ final class JoltSignalHookCreator {
   /// }
   /// ```
   /// {@endtemplate}
+  @defineHook
   Signal<T> call<T>(
     T value, {
     JoltDebugFn? onDebug,
@@ -59,6 +61,7 @@ final class JoltSignalHookCreator {
   ///   return () => Text(data.peek ?? 'Loading...');
   /// }
   /// ```
+  @defineHook
   Signal<T> lazy<T>({
     JoltDebugFn? onDebug,
   }) {
@@ -91,6 +94,7 @@ final class JoltSignalHookCreator {
   ///   );
   /// }
   /// ```
+  @defineHook
   ListSignal<T> list<T>(
     List<T>? value, {
     JoltDebugFn? onDebug,
@@ -116,6 +120,7 @@ final class JoltSignalHookCreator {
   ///   return () => Text('${user['name']}, age ${user['age']}');
   /// }
   /// ```
+  @defineHook
   MapSignal<K, V> map<K, V>(
     Map<K, V>? value, {
     JoltDebugFn? onDebug,
@@ -141,6 +146,7 @@ final class JoltSignalHookCreator {
   ///   return () => Text('Tags: ${tags.join(', ')}');
   /// }
   /// ```
+  @defineHook
   SetSignal<T> set<T>(
     Set<T>? value, {
     JoltDebugFn? onDebug,
@@ -165,6 +171,7 @@ final class JoltSignalHookCreator {
   ///   return () => Text('Evens: ${evens.toList()}');
   /// }
   /// ```
+  @defineHook
   IterableSignal<T> iterable<T>(
     Iterable<T> Function() getter, {
     JoltDebugFn? onDebug,
@@ -201,6 +208,7 @@ final class JoltSignalHookCreator {
   ///   ) ?? SizedBox();
   /// }
   /// ```
+  @defineHook
   AsyncSignal<T> async<T>(
     AsyncSource<T> Function() source, {
     AsyncState<T> Function()? initialValue,
@@ -214,6 +222,7 @@ final class JoltSignalHookCreator {
 }
 
 /// {@macro jolt_signal_hook_creator}
+@defineHook
 const useSignal = JoltSignalHookCreator._();
 
 /// Helper class for creating computed hooks in SetupWidget.
@@ -243,6 +252,7 @@ final class JoltUseComputed {
   /// }
   /// ```
   /// {@endtemplate}
+  @defineHook
   Computed<T> call<T>(T Function() getter, {JoltDebugFn? onDebug}) {
     return useAutoDispose(() => Computed(getter, onDebug: onDebug));
   }
@@ -278,6 +288,7 @@ final class JoltUseComputed {
   ///   return () => Text('Items: ${computed.value.join(", ")}');
   /// }
   /// ```
+  @defineHook
   Computed<T> withPrevious<T>(T Function(T?) getter, {JoltDebugFn? onDebug}) {
     return useAutoDispose(
         () => Computed.withPrevious(getter, onDebug: onDebug));
@@ -311,6 +322,7 @@ final class JoltUseComputed {
   ///   return () => Text(fullName.value);
   /// }
   /// ```
+  @defineHook
   Computed<T> writable<T>(T Function() getter, void Function(T) setter,
       {JoltDebugFn? onDebug}) {
     return useAutoDispose(
@@ -352,6 +364,7 @@ final class JoltUseComputed {
   ///   return () => Text('Value: ${computed.value}');
   /// }
   /// ```
+  @defineHook
   WritableComputed<T> writableWithPrevious<T>(
       T Function(T?) getter, void Function(T) setter,
       {JoltDebugFn? onDebug}) {
@@ -404,6 +417,7 @@ final class JoltEffectHookCreator {
   /// }
   /// ```
   /// {@endtemplate}
+  @defineHook
   Effect call(void Function() effect,
       {bool lazy = false, JoltDebugFn? onDebug}) {
     return useAutoDispose(() => Effect(effect, lazy: lazy, onDebug: onDebug));
@@ -433,6 +447,7 @@ final class JoltEffectHookCreator {
   ///   return () => Text('Count: ${count.value}');
   /// }
   /// ```
+  @defineHook
   Effect lazy(void Function() effect, {JoltDebugFn? onDebug}) {
     return useAutoDispose(() => Effect.lazy(effect, onDebug: onDebug));
   }
@@ -486,6 +501,7 @@ final class JoltFlutterEffectHookCreator {
   /// }
   /// ```
   /// {@endtemplate}
+  @defineHook
   FlutterEffect call(void Function() effect,
       {bool lazy = false, JoltDebugFn? onDebug}) {
     return useAutoDispose(
@@ -516,6 +532,7 @@ final class JoltFlutterEffectHookCreator {
   ///   return () => Text('Count: ${count.value}');
   /// }
   /// ```
+  @defineHook
   FlutterEffect lazy(void Function() effect, {JoltDebugFn? onDebug}) {
     return useAutoDispose(() => FlutterEffect.lazy(effect, onDebug: onDebug));
   }
@@ -561,6 +578,7 @@ final class JoltWatcherHookCreator {
   /// }
   /// ```
   /// {@endtemplate}
+  @defineHook
   Watcher call<T>(
     SourcesFn<T> sourcesFn,
     WatcherFn<T> fn, {
@@ -581,6 +599,7 @@ final class JoltWatcherHookCreator {
   /// - [onDebug]: Optional debug callback for reactive system debugging
   ///
   /// Returns: A [Watcher] that executes immediately
+  @defineHook
   Watcher<T> immediately<T>(
     SourcesFn<T> sourcesFn,
     WatcherFn<T> fn, {
@@ -600,6 +619,7 @@ final class JoltWatcherHookCreator {
   /// - [onDebug]: Optional debug callback for reactive system debugging
   ///
   /// Returns: A [Watcher] that executes only once
+  @defineHook
   Watcher<T> once<T>(
     SourcesFn<T> sourcesFn,
     WatcherFn<T> fn, {
@@ -648,6 +668,7 @@ final class JoltEffectScopeHookCreator {
   /// }
   /// ```
   /// {@endtemplate}
+  @defineHook
   EffectScope call({
     bool? detach,
     JoltDebugFn? onDebug,
@@ -683,6 +704,7 @@ final useEffectScope = JoltEffectScopeHookCreator._();
 ///   );
 /// }
 /// ```
+@defineHook
 Stream<T> useJoltStream<T>(Readable<T> value) {
   return useMemoized(() => value.stream);
 }

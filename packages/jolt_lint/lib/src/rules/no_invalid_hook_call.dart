@@ -3,6 +3,7 @@ import 'package:analyzer/analysis_rule/rule_context.dart';
 import 'package:analyzer/analysis_rule/rule_visitor_registry.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
+import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/error/error.dart';
 import 'package:jolt_lint/src/shared.dart';
 
@@ -35,8 +36,7 @@ class _HookCallVisitor extends SimpleAstVisitor<void> {
     // useXXX() - method call()
     if (node.function is SimpleIdentifier) {
       final identifier = node.function as SimpleIdentifier;
-      if (!_isHookName(identifier.name) &&
-          !_isLifecycleHookName(identifier.name)) {
+      if (!_checkAnnotation(identifier.element)) {
         return;
       }
 
@@ -53,7 +53,7 @@ class _HookCallVisitor extends SimpleAstVisitor<void> {
     // Check if this is a hook call
     // useXXX() - function call, check method name
     // useXXX.yyy() - method call, check target
-    if (!_isHookCall(node) && !_isLifecycleHookName(node.methodName.name)) {
+    if (!_checkAnnotation(node.methodName.element)) {
       return;
     }
 
@@ -64,35 +64,22 @@ class _HookCallVisitor extends SimpleAstVisitor<void> {
     rule.reportAtNode(node, diagnosticCode: JoltCode.invalidHookCall);
   }
 
-  bool _isHookCall(MethodInvocation node) {
-    final methodName = node.methodName.name;
-    if (_isHookName(methodName)) {
-      return true;
-    }
-    if (node.realTarget != null && node.realTarget is SimpleIdentifier) {
-      return _isHookName((node.realTarget as SimpleIdentifier).name);
+  bool _checkAnnotation(Element? element) {
+    if (element == null) return false;
+    final annotations = element.metadata.annotations;
+    for (var annotation in annotations) {
+      final annotationElement = annotation
+          .computeConstantValue()
+          ?.type
+          ?.element;
+      if (annotationElement != null) {
+        if (annotationElement.displayName == 'DefineHook' &&
+            annotationElement.library?.identifier == joltDefineHookUri) {
+          return true;
+        }
+      }
     }
     return false;
-  }
-
-  bool _isHookName(String name) {
-    return (name.startsWith('use') &&
-        name.length > 3 &&
-        name[3].toUpperCase() == name[3]);
-  }
-
-  static const _lifecycleHookNames = {
-    'onMounted',
-    'onUnmounted',
-    'onDidUpdateWidget',
-    'onDidUpdateWidgetAt',
-    'onDidChangeDependencies',
-    'onActivated',
-    'onDeactivated',
-  };
-
-  bool _isLifecycleHookName(String name) {
-    return (name.startsWith('on') && _lifecycleHookNames.contains(name));
   }
 
   bool _isValidCallInSetupMethod(MethodDeclaration method, AstNode node) {
@@ -114,7 +101,6 @@ class _HookCallVisitor extends SimpleAstVisitor<void> {
     return true;
   }
 
-  // TODO: check setup is in SetupBuilder
   bool _isValidCallInSetupArgument(
     FunctionExpression functionExpression,
     AstNode node,
@@ -147,18 +133,18 @@ class _HookCallVisitor extends SimpleAstVisitor<void> {
     AstNode? current = node;
     while (current != null) {
       if (current is MethodDeclaration) {
-        if (_isHookName(current.name.lexeme) ||
+        if ((_checkAnnotation(current.declaredFragment?.element)) ||
             _isValidCallInSetupMethod(current, node)) {
           return true;
         }
       } else if (current is FunctionDeclaration) {
-        if (_isHookName(current.name.lexeme)) {
+        if (_checkAnnotation(current.declaredFragment?.element)) {
           return true;
         }
       } else if (current is FunctionExpression) {
         if (current.parent is VariableDeclaration) {
           final variableDeclaration = current.parent as VariableDeclaration;
-          if (_isHookName(variableDeclaration.name.lexeme)) {
+          if (_checkAnnotation(variableDeclaration.declaredFragment?.element)) {
             return true;
           }
         } else if (_isValidCallInSetupArgument(current, node)) {

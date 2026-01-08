@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
+import 'package:jolt_setup/hooks.dart';
 import 'package:jolt_setup/jolt_setup.dart';
 
 /// Creator class for the useAutomaticKeepAlive hook.
@@ -27,6 +28,7 @@ class _UseAutomaticKeepAliveCreator {
   ///   return () => MyExpensiveWidget();
   /// }
   /// ```
+  @defineHook
   void call(bool wantKeepAlive) {
     return useHook(_AutomaticKeepAliveClientHook(
         wantKeepAlive: ReadonlySignal(wantKeepAlive)));
@@ -58,6 +60,7 @@ class _UseAutomaticKeepAliveCreator {
   ///   );
   /// }
   /// ```
+  @defineHook
   void value(ReadableNode<bool> wantKeepAlive) {
     return useHook(_AutomaticKeepAliveClientHook(wantKeepAlive: wantKeepAlive));
   }

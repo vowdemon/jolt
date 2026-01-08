@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:jolt_flutter/core.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
+import 'package:jolt_setup/hooks.dart';
 import 'package:jolt_setup/jolt_setup.dart';
 
 /// Creates a reactive signal that tracks the state of a Future.
@@ -27,6 +28,7 @@ import 'package:jolt_setup/jolt_setup.dart';
 ///   return Text('Data: ${snapshot.data}');
 /// }
 /// ```
+@defineHook
 AsyncSnapshotFutureSignal<T> useFuture<T>(Future<T>? future, {T? initialData}) {
   return useAutoDispose<_AsyncSnapshotFutureSignalImpl<T>>(() {
     final signal = _AsyncSnapshotFutureSignalImpl<T>(
@@ -145,6 +147,7 @@ abstract interface class AsyncSnapshotFutureSignal<T>
 /// // Later, emit data
 /// controller.add(42);
 /// ```
+@defineHook
 AsyncSnapshotStreamSignal<T> useStream<T>(Stream<T>? stream, {T? initialData}) {
   return useAutoDispose<_AsyncSnapshotStreamSignalImpl<T>>(() {
     final signal = _AsyncSnapshotStreamSignalImpl<T>(
@@ -282,6 +285,7 @@ final class _StreamControllerCreator {
   /// });
   /// controller.add(42);
   /// ```
+  @defineHook
   StreamController<T> call<T>(
       {void Function()? onListen,
       void Function()? onPause,
@@ -317,6 +321,7 @@ final class _StreamControllerCreator {
   /// });
   /// controller.add(42); // Both listeners receive the value
   /// ```
+  @defineHook
   StreamController<T> broadcast<T>(
       {void Function()? onListen,
       FutureOr<void> Function()? onCancel,
@@ -342,6 +347,7 @@ final class _StreamControllerCreator {
 /// controller.stream.listen((value) => print(value));
 /// controller.add(42);
 /// ```
+@defineHook
 const useStreamController = _StreamControllerCreator._();
 
 /// Subscribes to a Stream and automatically cancels the subscription when the widget is unmounted.
@@ -370,6 +376,7 @@ const useStreamController = _StreamControllerCreator._();
 /// );
 /// controller.add(42);
 /// ```
+@defineHook
 void useStreamSubscription<T>(
   Stream<T> stream,
   void Function(T event)? onData, {

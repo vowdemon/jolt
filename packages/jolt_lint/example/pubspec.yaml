@@ -36,7 +36,8 @@ dependencies:
   cupertino_icons: ^1.0.8
   jolt_flutter: ^3.0.0
   jolt: ^3.0.0
-  jolt_setup: ^3.0.0
+  jolt_setup:
+    path: ../../jolt_setup
 
 dev_dependencies:
   flutter_test:

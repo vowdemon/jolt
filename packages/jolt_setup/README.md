@@ -7,6 +7,141 @@
 
 Setup Widget API and Flutter hooks for [Jolt](https://pub.dev/packages/jolt). Provides a composition API similar to Vue's Composition API for building Flutter widgets, along with declarative hooks for managing common Flutter resources such as controllers, focus nodes, and lifecycle states with automatic cleanup.
 
+## Why Setup Widget?
+
+Setup Widget brings the simplicity and power of Vue's Composition API to Flutter, dramatically reducing boilerplate while making your code more maintainable and easier to understand.
+
+### Key Features
+
+✨ **Composition-Based Logic** - Organize code by feature, not lifecycle  
+🎯 **Automatic Resource Cleanup** - No more manual dispose(), everything cleans up automatically  
+⚡ **Better Performance** - `setup` runs once, not on every rebuild (unlike React hooks)  
+🔄 **Reactive by Default** - Built on Jolt's Signal system for fine-grained reactivity  
+🪝 **Rich Hook Library** - Declarative APIs for controllers, focus nodes, animations, and more  
+🔧 **Flexible** - Use with SetupWidget, SetupMixin, or SetupBuilder based on your needs  
+
+### Quick Comparison
+
+See the difference yourself. Here's the same widget implemented both ways:
+
+**With Setup Widget:**
+
+```dart
+class HookExample extends SetupWidget<HookExample> {
+  HookExample({super.key});
+
+  @override
+  setup(context, props) {
+    useAutomaticKeepAlive(true);
+
+    final scrollController = useScrollController();
+    useListenable(scrollController, () {
+      print('scrollController.offset: ${scrollController.offset}');
+    });
+
+    final loadingFuture =
+        useFuture(Future.delayed(Duration(seconds: 3), () => true));
+
+    useAppLifecycleState(
+      onChange: (state) {
+        if (state == AppLifecycleState.resumed) {
+          print('app resumed');
+        } else if (state == AppLifecycleState.paused) {
+          print('app paused');
+        }
+      },
+    );
+
+    return () => SingleChildScrollView(
+        controller: scrollController,
+        child: switch (loadingFuture.hasData) {
+          false => Center(child: CircularProgressIndicator()),
+          true => Column(
+              children: [
+                for (var i = 0; i < 100; i++) Text('Item $i'),
+              ],
+            ),
+        });
+  }
+}
+```
+
+**Traditional StatefulWidget:**
+
+```dart
+class NormalExample extends StatefulWidget {
+  const NormalExample({super.key});
+
+  @override
+  State<NormalExample> createState() => _NormalExampleState();
+}
+
+class _NormalExampleState extends State<NormalExample>
+    with AutomaticKeepAliveClientMixin, WidgetsBindingObserver, RouteAware {
+  late final ScrollController scrollController;
+  late final Future<bool> loadingFuture;
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    scrollController = ScrollController();
+    loadingFuture = Future.delayed(Duration(seconds: 3), () => true);
+    scrollController.addListener(_listener);
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      print('app resumed');
+    } else if (state == AppLifecycleState.paused) {
+      print('app paused');
+    }
+  }
+
+  @override
+  void dispose() {
+    scrollController.removeListener(_listener);
+    scrollController.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  void _listener() {
+    print('scrollController.offset: ${scrollController.offset}');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return SingleChildScrollView(
+        controller: scrollController,
+        child: FutureBuilder(
+            future: loadingFuture,
+            builder: (context, snapshot) {
+              return switch (snapshot.hasData) {
+                false => Center(child: CircularProgressIndicator()),
+                true => Column(
+                    children: [
+                      for (var i = 0; i < 100; i++) Text('Item $i'),
+                    ],
+                  ),
+              };
+            }));
+  }
+}
+```
+
+**The Difference:**
+- ✅ **Less code** - 36 lines vs 64 lines
+- ✅ **No manual cleanup** - Automatic resource disposal
+- ✅ **No mixins needed** - Everything through simple hooks
+- ✅ **Better organization** - Logic grouped by feature, not scattered across lifecycle methods
+- ✅ **Easier to test** - Composition makes unit testing straightforward
+
 ## Quick Start
 
 ```dart
@@ -38,6 +173,27 @@ class MyWidget extends SetupWidget {
   }
 }
 ```
+
+## Recommended: Use with jolt_lint
+
+For the best development experience, it's **highly recommended** to use `jolt_setup` with [`jolt_lint`](https://pub.dev/packages/jolt_lint):
+
+```yaml
+# analysis_options.yaml
+
+plugins:
+  jolt_lint: ^3.0.0
+```
+
+**What jolt_lint provides:**
+- 🔍 **Hook Rules Enforcement** - Ensures hooks are only called in setup or other hooks
+- 🚫 **Prevents Common Mistakes** - Catches async/callback hook usage at compile time
+- 💡 **Code Assists** - Quick fixes for converting between patterns
+- 🎯 **Better DX** - Get immediate feedback on hook usage violations
+
+Without `jolt_lint`, hook rule violations will only be caught at runtime. With it, you get compile-time safety and helpful IDE warnings.
+
+**Learn more:** See [jolt_lint documentation](https://pub.dev/packages/jolt_lint) for setup and configuration.
 
 ## Setup Widget
 
@@ -309,7 +465,6 @@ Setup Widget provides hooks for all Jolt reactive primitives:
 | `useSignal.set(initial)` | Create a reactive Set |
 | `useSignal.iterable(getter)` | Create a reactive Iterable |
 | `useSignal.async(source)` | Create an async Signal |
-| `useSignal.persist(...)` | Create a persisted Signal |
 
 ### Computed Value Hooks
 
@@ -319,7 +474,6 @@ Setup Widget provides hooks for all Jolt reactive primitives:
 | `useComputed.withPrevious(getter)` | Create a computed value with access to previous value |
 | `useComputed.writable(getter, setter)` | Create a writable computed value |
 | `useComputed.writableWithPrevious(getter, setter)` | Create a writable computed value with access to previous value |
-| `useComputed.convert(source, decode, encode)` | Create a type-converting computed value |
 
 ### Effect Hooks
 
@@ -353,6 +507,153 @@ Setup Widget provides hooks for all Jolt reactive primitives:
 | `useMemoized(creator, [disposer])` | Memoize value with optional cleanup |
 | `useAutoDispose(creator)` | Auto-dispose resource |
 | `useHook(hook)` | Use a custom hook |
+
+### Creating Custom Hooks
+
+There are two ways to create custom hooks:
+
+**1. Composition Hooks (Function-based):**
+
+Combine existing hooks into a reusable function:
+
+```dart
+import 'package:jolt_setup/jolt_setup.dart';
+
+// Composition hook - directly compose existing hooks
+T useMyCustomHook<T>(T initialValue) {
+  final signal = useSignal(initialValue);
+  
+  useEffect(() {
+    print('Value changed: ${signal.value}');
+  });
+  
+  return signal.value;
+}
+
+// Usage in setup
+class MyWidget extends SetupWidget {
+  @override
+  setup(context) {
+    final value = useMyCustomHook(0);
+    
+    return () => Text('Value: $value');
+  }
+}
+```
+
+**2. Class-based Hooks:**
+
+For more complex hooks, extend the `SetupHook` class and use the `use()` method:
+
+```dart
+import 'package:jolt_setup/jolt_setup.dart';
+
+class MyCustomHook<T> extends SetupHook<T> {
+  final T initialValue;
+  
+  MyCustomHook(this.initialValue);
+  
+  @override
+  T call() {
+    final signal = useSignal(initialValue);
+    
+    useEffect(() {
+      print('Value changed: ${signal.value}');
+    });
+    
+    onUnmounted(() {
+      print('Hook cleanup');
+    });
+    
+    return signal.value;
+  }
+}
+
+// Usage with 'use' method
+class MyWidget extends SetupWidget {
+  @override
+  setup(context) {
+    final value = use(MyCustomHook(0));
+    
+    return () => Text('Value: $value');
+  }
+}
+```
+
+**Using `@defineHook` for Lint Checking:**
+
+The `@defineHook` annotation is used to indicate that a function is a hook for lint checking purposes. It helps ensure proper hook usage patterns:
+
+```dart
+@defineHook
+T useMyCustomHook<T>(T initialValue) {
+  // Lint will ensure this hook's calls (useSignal, etc.) 
+  // are only made within setup() or inside another hook
+  final signal = useSignal(initialValue);
+  return signal.value;
+}
+```
+
+**Guidelines:**
+- Use composition hooks for simple reusable logic
+- Use class-based hooks for complex hooks with state or configuration
+- Add `@defineHook` annotation to enable lint checking and enforce hook rules
+
+**Hook Rules:**
+
+Hooks must follow these rules to work correctly:
+
+✅ **DO: Call hooks synchronously**
+```dart
+setup(context) {
+  final count = useSignal(0);  // ✅ Correct - synchronous call
+  return () => Text('${count.value}');
+}
+```
+
+❌ **DON'T: Call hooks in async functions**
+```dart
+setup(context) {
+  Future<void> loadData() async {
+    final data = useSignal([]);  // ❌ Wrong - inside async function
+  }
+  return () => Text('...');
+}
+```
+
+❌ **DON'T: Call hooks in callbacks**
+```dart
+setup(context) {
+  ElevatedButton(
+    onPressed: () {
+      final count = useSignal(0);  // ❌ Wrong - inside callback
+    },
+  );
+  return () => Text('...');
+}
+```
+
+❌ **DON'T: Call hooks outside setup/hook context**
+```dart
+void regularFunction() {
+  final count = useSignal(0);  // ❌ Wrong - outside setup context
+}
+```
+
+✅ **DO: Call hooks at the top level of setup or inside another hook**
+```dart
+setup(context) {
+  final count = useSignal(0);  // ✅ Correct
+  final doubled = useComputed(() => count.value * 2);  // ✅ Correct
+  
+  onMounted(() {
+    // ❌ Don't call hooks here - this is a callback
+    print('Mounted');
+  });
+  
+  return () => Text('${doubled.value}');
+}
+```
 
 **Usage Example:**
 
@@ -510,3 +811,4 @@ Jolt Setup is part of the Jolt ecosystem. Explore these related packages:
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+

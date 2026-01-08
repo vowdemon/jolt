@@ -62,6 +62,7 @@ class _ValueListenableHook<E, T extends ValueListenable<E>>
     listenable.removeListener(_listener);
   }
 
+  // coverage:ignore-start
   @override
   void reassemble(covariant _ValueListenableHook<E, T> newHook) {
     final hasNewListenable = newHook.listenable != listenable;
@@ -72,6 +73,7 @@ class _ValueListenableHook<E, T extends ValueListenable<E>>
     listener = newHook.listener;
     listenable.addListener(_listener);
   }
+  // coverage:ignore-end
 }
 
 /// Subscribes to a Listenable and calls the listener when it notifies.
@@ -113,6 +115,7 @@ class _ListenableHook<T extends Listenable> extends SetupHook<T> {
     listenable.removeListener(_listener);
   }
 
+  // coverage:ignore-start
   @override
   void reassemble(covariant _ListenableHook<T> newHook) {
     final hasNewListenable = newHook.listenable != listenable;
@@ -126,6 +129,7 @@ class _ListenableHook<T extends Listenable> extends SetupHook<T> {
       listener = newHook.listener;
     }
   }
+  // coverage:ignore-end
 }
 
 /// Subscribes to a Listenable and syncs it with a Writable node, optionally bidirectional.

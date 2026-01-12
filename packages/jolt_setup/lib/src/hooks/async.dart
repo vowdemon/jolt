@@ -1,10 +1,12 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:jolt_flutter/core.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
 import 'package:jolt_setup/hooks.dart';
 import 'package:jolt_setup/jolt_setup.dart';
+import 'package:shared_interfaces/shared_interfaces.dart';
 
 /// Creates a reactive signal that tracks the state of a Future.
 ///
@@ -29,14 +31,89 @@ import 'package:jolt_setup/jolt_setup.dart';
 /// }
 /// ```
 @defineHook
-AsyncSnapshotFutureSignal<T> useFuture<T>(Future<T>? future, {T? initialData}) {
-  return useAutoDispose<_AsyncSnapshotFutureSignalImpl<T>>(() {
-    final signal = _AsyncSnapshotFutureSignalImpl<T>(
-      future,
-      initialData: initialData,
-    );
-    return signal;
-  });
+final useFuture = JoltUseFutureHookCreator._();
+
+final class JoltUseFutureHookCreator {
+  const JoltUseFutureHookCreator._();
+
+  @defineHook
+  AsyncSnapshotFutureSignal<T> call<T>(FutureOr<T>? future, {T? initialData}) {
+    return useHook(_UseFutureHook(future, initialData: initialData));
+  }
+
+  @defineHook
+  AsyncSnapshotFutureSignal<T> watch<T>(Readable<FutureOr<T>?> future,
+      {T? initialData}) {
+    final result =
+        useHook(_UseFutureWatchHook(future, initialData: initialData));
+
+    return result;
+  }
+
+  static _AsyncSnapshotFutureSignalImpl<T> _create<T>(FutureOr<T>? future,
+      {T? initialData}) {
+    return switch (future) {
+      null => _AsyncSnapshotFutureSignalImpl(null, initialData: initialData),
+      Future() =>
+        _AsyncSnapshotFutureSignalImpl(future, initialData: initialData),
+      T() => _AsyncSnapshotFutureSignalImpl(SynchronousFuture(future),
+          initialData: initialData),
+    };
+  }
+}
+
+class _UseFutureWatchHook<T>
+    extends SetupHook<_AsyncSnapshotFutureSignalImpl<T>> {
+  _UseFutureWatchHook(this.future, {this.initialData});
+  final Readable<FutureOr<T>?> future;
+  final T? initialData;
+
+  @override
+  _AsyncSnapshotFutureSignalImpl<T> build() {
+    _future = future.value;
+    return JoltUseFutureHookCreator._create(future.value,
+        initialData: initialData);
+  }
+
+  Object? _future;
+  Disposer? _disposer;
+
+  @override
+  void mount() {
+    _disposer = Effect(
+      () {
+        if (identical(_future, future.value)) {
+          return;
+        }
+        _future = future.value;
+        state.setFuture(future.value);
+      },
+    ).dispose;
+  }
+
+  @override
+  void unmount() {
+    _disposer?.call();
+    _disposer = null;
+    _future = null;
+    state.dispose();
+  }
+}
+
+class _UseFutureHook<T> extends SetupHook<_AsyncSnapshotFutureSignalImpl<T>> {
+  _UseFutureHook(this.future, {this.initialData});
+  final FutureOr<T>? future;
+  final T? initialData;
+
+  @override
+  _AsyncSnapshotFutureSignalImpl<T> build() {
+    return JoltUseFutureHookCreator._create(future, initialData: initialData);
+  }
+
+  @override
+  void unmount() {
+    state.dispose();
+  }
 }
 
 // ignore: must_be_immutable
@@ -58,7 +135,7 @@ class _AsyncSnapshotFutureSignalImpl<T> extends SignalImpl<AsyncSnapshot<T>>
   Object? _activeCallbackIdentity;
 
   @override
-  void setFuture(Future<T>? future) {
+  void setFuture(FutureOr<T>? future) {
     batch(() {
       if (this.future == future) {
         return;
@@ -67,7 +144,14 @@ class _AsyncSnapshotFutureSignalImpl<T> extends SignalImpl<AsyncSnapshot<T>>
         _unsubscribe();
         inState(ConnectionState.none);
       }
-      this.future = future;
+      switch (future) {
+        case null:
+          this.future = null;
+        case Future():
+          this.future = future;
+        case T():
+          this.future = SynchronousFuture(future);
+      }
       _subscribe();
     });
   }
@@ -119,7 +203,7 @@ abstract interface class AsyncSnapshotFutureSignal<T>
   ///
   /// Parameters:
   /// - [future]: The new Future to track, can be null
-  void setFuture(Future<T>? future);
+  void setFuture(FutureOr<T>? future);
 }
 
 /// Creates a reactive signal that tracks the state of a Stream.
@@ -377,19 +461,67 @@ const useStreamController = _StreamControllerCreator._();
 /// controller.add(42);
 /// ```
 @defineHook
-void useStreamSubscription<T>(
+StreamSubscription<T> useStreamSubscription<T>(
   Stream<T> stream,
   void Function(T event)? onData, {
   Function? onError,
   void Function()? onDone,
   bool? cancelOnError,
 }) {
-  useMemoized(() {
-    return stream.listen(
-      onData,
-      onError: onError,
-      onDone: onDone,
-      cancelOnError: cancelOnError,
-    );
-  }, (subscription) => subscription.cancel());
+  return useHook(_UseStreamSubscriptionHook(
+      stream, onData, onError, onDone, cancelOnError));
+}
+
+class _UseStreamSubscriptionHook<T> extends SetupHook<StreamSubscription<T>> {
+  _UseStreamSubscriptionHook(
+      this.stream, this.onData, this.onError, this.onDone, this.cancelOnError);
+
+  late Stream<T> stream;
+  late void Function(T event)? onData;
+  late Function? onError;
+  late void Function()? onDone;
+  late bool? cancelOnError;
+
+  void _onData(T data) {
+    onData?.call(data);
+  }
+
+  void _onError(Object error, StackTrace stackTrace) {
+    onError?.call(error, stackTrace);
+  }
+
+  void _onDone() {
+    onDone?.call();
+  }
+
+  @override
+  StreamSubscription<T> build() {
+    return stream.listen(_onData,
+        onError: _onError, onDone: _onDone, cancelOnError: cancelOnError);
+  }
+
+  @override
+  void unmount() {
+    state.cancel();
+  }
+
+  // coverage:ignore-start
+  @override
+  void reassemble(covariant _UseStreamSubscriptionHook<T> newHook) {
+    final needRecreate =
+        stream != newHook.stream || cancelOnError != newHook.cancelOnError;
+
+    stream = newHook.stream;
+    onData = newHook.onData;
+    onError = newHook.onError;
+    onDone = newHook.onDone;
+    cancelOnError = newHook.cancelOnError;
+    rawState = build();
+
+    if (needRecreate) {
+      state.cancel();
+      rawState = build();
+    }
+  }
+  // coverage:ignore-end
 }

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:jolt/core.dart';
 import 'package:jolt/jolt.dart';

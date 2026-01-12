@@ -450,10 +450,11 @@ abstract class SetupHook<T> {
   /// The BuildContext of the widget that owns this hook.
   BuildContext get context => _context;
 
-  T? _state;
+  @protected
+  T? rawState;
 
   /// The current state value of this hook.
-  T get state => _state as T;
+  T get state => rawState as T;
 
   /// Builds the initial state for this hook.
   ///
@@ -528,7 +529,7 @@ abstract class SetupHook<T> {
 
 extension<T> on SetupHook<T> {
   T firstBuild() {
-    _state = build();
+    rawState = build();
     return state;
   }
 }

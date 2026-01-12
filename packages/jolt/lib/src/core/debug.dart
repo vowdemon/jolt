@@ -47,7 +47,6 @@ typedef JoltDebugFn = void Function(
 @internal
 final joltDebugFns = Expando<JoltDebugFn>();
 
-@internal
 @pragma("vm:prefer-inline")
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")

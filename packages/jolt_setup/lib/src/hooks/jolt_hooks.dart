@@ -376,6 +376,41 @@ final class JoltUseComputed {
 /// {@macro jolt_computed_hook_creator}
 final useComputed = JoltUseComputed._();
 
+/// Internal hook implementation for effect hooks, similar to [_UseWatcherHook].
+/// Provides fine-grained control over effect lifecycle and hot reload behavior.
+// ignore: unused_element
+class _UseEffectHook extends SetupHook<EffectImpl> {
+  _UseEffectHook(this.effect, this.lazy, this.onDebug);
+
+  late void Function() effect;
+  late bool lazy;
+  late JoltDebugFn? onDebug;
+
+  @override
+  EffectImpl build() {
+    return EffectImpl(effect, lazy: lazy, onDebug: onDebug);
+  }
+
+  @override
+  void unmount() {
+    state.dispose();
+  }
+
+  // coverage:ignore-start
+  @override
+  void reassemble(covariant _UseEffectHook newHook) {
+    if (onDebug != newHook.onDebug) {
+      onDebug = newHook.onDebug;
+      if (newHook.onDebug != null) {
+        setJoltDebugFn(state, newHook.onDebug!);
+      }
+    }
+    lazy = newHook.lazy;
+    effect = newHook.effect;
+  }
+  // coverage:ignore-end
+}
+
 /// Helper class for creating effect hooks in SetupWidget.
 final class JoltEffectHookCreator {
   /// Helper class for creating effect hooks in SetupWidget.
@@ -420,7 +455,7 @@ final class JoltEffectHookCreator {
   @defineHook
   Effect call(void Function() effect,
       {bool lazy = false, JoltDebugFn? onDebug}) {
-    return useAutoDispose(() => Effect(effect, lazy: lazy, onDebug: onDebug));
+    return useHook(_UseEffectHook(effect, lazy, onDebug));
   }
 
   /// Creates an effect hook that runs immediately upon creation.
@@ -449,12 +484,44 @@ final class JoltEffectHookCreator {
   /// ```
   @defineHook
   Effect lazy(void Function() effect, {JoltDebugFn? onDebug}) {
-    return useAutoDispose(() => Effect.lazy(effect, onDebug: onDebug));
+    return useHook(_UseEffectHook(effect, true, onDebug));
   }
 }
 
 /// {@macro jolt_effect_hook_creator}
 final useEffect = JoltEffectHookCreator._();
+
+class _UseFlutterEffectHook extends SetupHook<FlutterEffectImpl> {
+  _UseFlutterEffectHook(this.effect, this.lazy, this.onDebug);
+
+  late void Function() effect;
+  late bool lazy;
+  late JoltDebugFn? onDebug;
+
+  @override
+  FlutterEffectImpl build() {
+    return FlutterEffectImpl(effect, lazy: lazy, onDebug: onDebug);
+  }
+
+  @override
+  void unmount() {
+    state.dispose();
+  }
+
+  // coverage:ignore-start
+  @override
+  void reassemble(covariant _UseEffectHook newHook) {
+    if (onDebug != newHook.onDebug) {
+      onDebug = newHook.onDebug;
+      if (newHook.onDebug != null) {
+        setJoltDebugFn(state, newHook.onDebug!);
+      }
+    }
+    lazy = newHook.lazy;
+    effect = newHook.effect;
+  }
+  // coverage:ignore-end
+}
 
 /// Helper class for creating Flutter effect hooks in SetupWidget.
 final class JoltFlutterEffectHookCreator {
@@ -504,8 +571,7 @@ final class JoltFlutterEffectHookCreator {
   @defineHook
   FlutterEffect call(void Function() effect,
       {bool lazy = false, JoltDebugFn? onDebug}) {
-    return useAutoDispose(
-        () => FlutterEffect(effect, lazy: lazy, onDebug: onDebug));
+    return useHook(_UseFlutterEffectHook(effect, lazy, onDebug));
   }
 
   /// Creates a Flutter effect hook that runs immediately upon creation.
@@ -534,12 +600,65 @@ final class JoltFlutterEffectHookCreator {
   /// ```
   @defineHook
   FlutterEffect lazy(void Function() effect, {JoltDebugFn? onDebug}) {
-    return useAutoDispose(() => FlutterEffect.lazy(effect, onDebug: onDebug));
+    return useHook(_UseFlutterEffectHook(effect, true, onDebug));
   }
 }
 
 /// {@macro jolt_flutter_effect_hook_creator}
 final useFlutterEffect = JoltFlutterEffectHookCreator._();
+
+class _UseWatcherHook<T> extends SetupHook<WatcherImpl<T>> {
+  _UseWatcherHook(this.sourcesFn, this.fn,
+      {this.when, this.immediately = false, this.onDebug});
+
+  late SourcesFn<T> sourcesFn;
+  late WatcherFn<T> fn;
+  late WhenFn<T>? when;
+  late bool immediately;
+  late JoltDebugFn? onDebug;
+
+  @override
+  WatcherImpl<T> build() {
+    return WatcherImpl(sourcesFn, fn,
+        when: when, immediately: immediately, onDebug: onDebug);
+  }
+
+  @override
+  void unmount() {
+    state.dispose();
+  }
+
+  // coverage:ignore-start
+  @override
+  void reassemble(covariant _UseWatcherHook<T> newHook) {
+    if (newHook.immediately != immediately) {
+      state.dispose();
+      immediately = newHook.immediately;
+      sourcesFn = newHook.sourcesFn;
+      fn = newHook.fn;
+      when = newHook.when;
+      rawState = build();
+      return;
+    }
+
+    if (onDebug != newHook.onDebug) {
+      if (newHook.onDebug != null) {
+        setJoltDebugFn(state, newHook.onDebug!);
+      }
+    }
+
+    if (sourcesFn == newHook.sourcesFn &&
+        fn == newHook.fn &&
+        when == newHook.when) {
+      return;
+    }
+
+    state.sourcesFn = newHook.sourcesFn;
+    state.fn = newHook.fn;
+    state.when = newHook.when;
+  }
+  // coverage:ignore-end
+}
 
 /// Helper class for creating watcher hooks in SetupWidget.
 final class JoltWatcherHookCreator {
@@ -586,7 +705,7 @@ final class JoltWatcherHookCreator {
     bool immediately = false,
     JoltDebugFn? onDebug,
   }) {
-    return useAutoDispose(() => Watcher<T>(sourcesFn, fn,
+    return useHook(_UseWatcherHook<T>(sourcesFn, fn,
         when: when, immediately: immediately, onDebug: onDebug));
   }
 
@@ -606,8 +725,8 @@ final class JoltWatcherHookCreator {
     WhenFn<T>? when,
     JoltDebugFn? onDebug,
   }) {
-    return useAutoDispose(() =>
-        Watcher<T>.immediately(sourcesFn, fn, when: when, onDebug: onDebug));
+    return useHook(_UseWatcherHook<T>(sourcesFn, fn,
+        when: when, immediately: true, onDebug: onDebug));
   }
 
   /// Creates a watcher hook that executes only once.
@@ -626,8 +745,12 @@ final class JoltWatcherHookCreator {
     WhenFn<T>? when,
     JoltDebugFn? onDebug,
   }) {
-    return useAutoDispose(
-        () => Watcher<T>.once(sourcesFn, fn, when: when, onDebug: onDebug));
+    late _UseWatcherHook<T> hook;
+    hook = _UseWatcherHook<T>(sourcesFn, (newValue, oldValue) {
+      fn(newValue, oldValue);
+      hook.state.dispose();
+    }, when: when, immediately: false, onDebug: onDebug);
+    return useHook(hook);
   }
 }
 

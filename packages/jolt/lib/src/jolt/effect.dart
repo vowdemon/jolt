@@ -592,19 +592,15 @@ class WatcherImpl<T> extends EffectReactiveNode
   }
 
   /// Function that provides the source values to watch.
-  @protected
-  final SourcesFn<T> sourcesFn;
+  late SourcesFn<T> sourcesFn;
 
   /// Callback function executed when sources change.
-  @protected
-  final WatcherFn<T> fn;
+  late WatcherFn<T> fn;
 
   /// Optional condition function for custom trigger logic.
-  @protected
-  final WhenFn<T>? when;
+  late WhenFn<T>? when;
 
   /// The previous source values for comparison.
-  @protected
   late T prevSources;
 
   @visibleForTesting
@@ -631,7 +627,6 @@ class WatcherImpl<T> extends EffectReactiveNode
   @pragma("vm:prefer-inline")
   @pragma("wasm:prefer-inline")
   @pragma("dart2js:prefer-inline")
-  @protected
   void trigger({required T? sources}) {
     if (sources == null) {
       doCleanup();

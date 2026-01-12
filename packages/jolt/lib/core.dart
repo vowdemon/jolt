@@ -8,7 +8,7 @@ library;
 
 export 'src/core/reactive.dart';
 export 'src/core/debug.dart'
-    show JoltDebug, DebugNodeOperationType, JoltDebugFn;
+    show JoltDebug, DebugNodeOperationType, JoltDebugFn, setJoltDebugFn;
 
 export "src/jolt/base.dart" show DisposableNodeMixin;
 export "src/jolt/signal.dart" show SignalImpl, ReadonlySignalImpl;

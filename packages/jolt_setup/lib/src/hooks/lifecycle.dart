@@ -22,8 +22,8 @@ class _AppLifecycleObserver extends SetupHook<Signal<AppLifecycleState?>>
     with WidgetsBindingObserver {
   _AppLifecycleObserver({this.initialState, this.onChange});
 
-  final AppLifecycleState? initialState;
-  final void Function(AppLifecycleState state)? onChange;
+  late AppLifecycleState? initialState;
+  late void Function(AppLifecycleState state)? onChange;
 
   @override
   void mount() {
@@ -49,4 +49,11 @@ class _AppLifecycleObserver extends SetupHook<Signal<AppLifecycleState?>>
     return Signal<AppLifecycleState?>(
         initialState ?? WidgetsBinding.instance.lifecycleState);
   }
+
+  // coverage:ignore-start
+  @override
+  void reassemble(covariant _AppLifecycleObserver newHook) {
+    onChange = newHook.onChange;
+  }
+  // coverage:ignore-end
 }

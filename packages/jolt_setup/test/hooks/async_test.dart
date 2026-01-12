@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jolt/jolt.dart';
 import 'package:jolt_setup/hooks.dart';
 import 'package:jolt_setup/jolt_setup.dart';
 
@@ -303,6 +304,264 @@ void main() {
 
       expect(widget.data, contains('ConnectionState.done'));
       expect(widget.data, contains('Data: 42'));
+    });
+  });
+
+  group('useFuture.watch', () {
+    testWidgets('watches Signal with Future value', (tester) async {
+      final futureSignal = Signal<FutureOr<int>?>(Future.value(42));
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final snapshot = useFuture.watch(futureSignal);
+          return () => Text(
+              'State: ${snapshot.connectionState}, Data: ${snapshot.data}');
+        }),
+      ));
+
+      await tester.pumpAndSettle();
+
+      final text = find.textContaining('Data: 42');
+      expect(text, findsOneWidget);
+
+      final widget = tester.widget<Text>(text);
+      expect(widget.data, contains('ConnectionState.done'));
+    });
+
+    testWidgets('watches Signal with non-Future value (synchronous)',
+        (tester) async {
+      final valueSignal = Signal<FutureOr<int>?>(42);
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final snapshot = useFuture.watch(valueSignal);
+          return () => Text(
+              'State: ${snapshot.connectionState}, Data: ${snapshot.data}');
+        }),
+      ));
+
+      // Non-Future value should complete immediately
+      await tester.pump();
+
+      final text = find.textContaining('Data: 42');
+      expect(text, findsOneWidget);
+
+      final widget = tester.widget<Text>(text);
+      expect(widget.data, contains('ConnectionState.done'));
+    });
+
+    testWidgets('watches Signal with null value', (tester) async {
+      final nullSignal = Signal<FutureOr<int>?>(null);
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final snapshot = useFuture.watch(nullSignal);
+          return () => Text(
+              'State: ${snapshot.connectionState}, Data: ${snapshot.data}');
+        }),
+      ));
+
+      final text = find.textContaining('State:');
+      expect(text, findsOneWidget);
+
+      final widget = tester.widget<Text>(text);
+      expect(widget.data, contains('ConnectionState.none'));
+    });
+
+    testWidgets('updates when Signal value changes from Future to non-Future',
+        (tester) async {
+      final signal = Signal<FutureOr<int>?>(Future.delayed(
+        const Duration(milliseconds: 50),
+        () => 1,
+      ));
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final snapshot = useFuture.watch(signal);
+          return () => Text(
+              'State: ${snapshot.connectionState}, Data: ${snapshot.data}');
+        }),
+      ));
+
+      // Wait for first future to complete
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Data: 1'), findsOneWidget);
+
+      // Change to non-Future value
+      signal.value = 2;
+      await tester.pumpAndSettle();
+
+      // Should immediately show new value (non-Future completes synchronously)
+      final text = find.textContaining('Data: 2');
+      expect(text, findsOneWidget);
+
+      final widget = tester.widget<Text>(text);
+      expect(widget.data, contains('ConnectionState.done'));
+    });
+
+    testWidgets('updates when Signal value changes from non-Future to Future',
+        (tester) async {
+      final signal = Signal<FutureOr<int>?>(42);
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final snapshot = useFuture.watch(signal);
+          return () => Text(
+              'State: ${snapshot.connectionState}, Data: ${snapshot.data}');
+        }),
+      ));
+
+      // Should show non-Future value immediately
+      await tester.pump();
+      expect(find.textContaining('Data: 42'), findsOneWidget);
+
+      // Change to Future value
+      signal.value = Future.delayed(
+        const Duration(milliseconds: 50),
+        () => 100,
+      );
+      await tester.pump();
+
+      // Should reset to waiting
+      final waitingText = find.textContaining('State:');
+      expect(waitingText, findsOneWidget);
+
+      // Wait for future to complete
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Data: 100'), findsOneWidget);
+    });
+
+    testWidgets('updates when Signal value changes from null to Future',
+        (tester) async {
+      final signal = Signal<FutureOr<int>?>(null);
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final snapshot = useFuture.watch(signal);
+          return () => Text(
+              'State: ${snapshot.connectionState}, Data: ${snapshot.data}');
+        }),
+      ));
+
+      // Should show none state
+      final noneText = find.textContaining('State:');
+      expect(noneText, findsOneWidget);
+      var widget = tester.widget<Text>(noneText);
+      expect(widget.data, contains('ConnectionState.none'));
+
+      // Change to Future
+      signal.value = Future.value(42);
+      await tester.pump();
+
+      // Should reset to waiting
+      final waitingText = find.textContaining('State:');
+      expect(waitingText, findsOneWidget);
+
+      // Wait for future to complete
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Data: 42'), findsOneWidget);
+    });
+
+    testWidgets('updates when Signal value changes from null to non-Future',
+        (tester) async {
+      final signal = Signal<FutureOr<int>?>(null);
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final snapshot = useFuture.watch(signal);
+          return () => Text(
+              'State: ${snapshot.connectionState}, Data: ${snapshot.data}');
+        }),
+      ));
+
+      // Should show none state
+      final noneText = find.textContaining('State:');
+      expect(noneText, findsOneWidget);
+
+      // Change to non-Future value
+      signal.value = 42;
+      await tester.pumpAndSettle();
+
+      // Should immediately show new value (non-Future completes synchronously)
+      final text = find.textContaining('Data: 42');
+      expect(text, findsOneWidget);
+
+      final widget = tester.widget<Text>(text);
+      expect(widget.data, contains('ConnectionState.done'));
+    });
+
+    testWidgets('uses initialData when provided', (tester) async {
+      final signal = Signal<FutureOr<int>?>(Future.delayed(
+        const Duration(milliseconds: 100),
+        () => 100,
+      ));
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final snapshot = useFuture.watch(signal, initialData: 42);
+          return () => Text(
+              'State: ${snapshot.connectionState}, Data: ${snapshot.data}');
+        }),
+      ));
+
+      // Should show initialData immediately
+      final initialText = find.textContaining('Data: 42');
+      expect(initialText, findsOneWidget);
+
+      // Wait for future to complete
+      await tester.pumpAndSettle();
+
+      // Should update to new data
+      final finalText = find.textContaining('Data: 100');
+      expect(finalText, findsOneWidget);
+    });
+
+    testWidgets('handles Signal with non-Future value and initialData',
+        (tester) async {
+      final signal = Signal<FutureOr<int>?>(42);
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final snapshot = useFuture.watch(signal, initialData: 0);
+          return () => Text(
+              'State: ${snapshot.connectionState}, Data: ${snapshot.data}');
+        }),
+      ));
+
+      // Non-Future value should override initialData immediately
+      await tester.pump();
+
+      final text = find.textContaining('Data: 42');
+      expect(text, findsOneWidget);
+
+      final widget = tester.widget<Text>(text);
+      expect(widget.data, contains('ConnectionState.done'));
+    });
+
+    testWidgets('handles error from Future in Signal', (tester) async {
+      final error = Exception('Test error');
+      final signal = Signal<FutureOr<int>?>(Future<int>.delayed(
+        Duration.zero,
+        () => throw error,
+      ));
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final snapshot = useFuture.watch(signal);
+          return () => Text('State: ${snapshot.connectionState}, '
+              'HasError: ${snapshot.hasError}, '
+              'Error: ${snapshot.error}');
+        }),
+      ));
+
+      await tester.pumpAndSettle();
+
+      final text = find.textContaining('HasError: true');
+      expect(text, findsOneWidget);
+
+      final widget = tester.widget<Text>(text);
+      expect(widget.data, contains('ConnectionState.done'));
+      expect(widget.data, contains('HasError: true'));
     });
   });
 

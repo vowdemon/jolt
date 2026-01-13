@@ -713,4 +713,394 @@ void main() {
           equals(writableComputed.value.toString()));
     });
   });
+
+  group("Computed equals", () {
+    test("should use custom equals function to prevent unnecessary updates",
+        () {
+      final signal = Signal<List<int>>([1, 2, 3]);
+      var computeCount = 0;
+      final effectValues = <List<int>>[];
+
+      final computed = Computed<List<int>>(
+        () {
+          computeCount++;
+          return List<int>.from(signal.value);
+        },
+        equals: (a, b) {
+          if (a is! List<int> || b is! List<int>) return a == b;
+          if (a.length != b.length) return false;
+          for (var i = 0; i < a.length; i++) {
+            if (a[i] != b[i]) return false;
+          }
+          return true;
+        },
+      );
+
+      Effect(() {
+        effectValues.add(List<int>.from(computed.value));
+      });
+
+      expect(computeCount, equals(1));
+      expect(effectValues.length, equals(1));
+      expect(effectValues.last, equals([1, 2, 3]));
+
+      // Set to a new list with same values - equals should return true
+      signal.value = [1, 2, 3];
+      expect(computeCount, equals(2)); // Computed again
+      expect(effectValues.length, equals(1)); // Effect not triggered
+      expect(computed.value, equals([1, 2, 3]));
+
+      // Set to different values - equals should return false
+      signal.value = [4, 5, 6];
+      expect(computeCount, equals(3));
+      expect(effectValues.length, equals(2)); // Effect triggered
+      expect(effectValues.last, equals([4, 5, 6]));
+    });
+
+    test("should use default == comparison when equals is not provided", () {
+      final signal = Signal<List<int>>([1, 2, 3]);
+      var computeCount = 0;
+      final effectValues = <List<int>>[];
+
+      final computed = Computed<List<int>>(() {
+        computeCount++;
+        return List<int>.from(signal.value);
+      });
+
+      Effect(() {
+        effectValues.add(List<int>.from(computed.value));
+      });
+
+      expect(computeCount, equals(1));
+      expect(effectValues.length, equals(1));
+
+      // New list with same values - default == will return false (different instances)
+      signal.value = [1, 2, 3];
+      expect(computeCount, equals(2));
+      expect(effectValues.length,
+          equals(2)); // Effect triggered (different instances)
+    });
+
+    test("should work with equals for primitive types", () {
+      final signal = Signal(5);
+      var effectCount = 0;
+
+      final computed = Computed<int>(
+        () => signal.value,
+        equals: (a, b) => (a as int).abs() == (b as int).abs(),
+      );
+
+      Effect(() {
+        computed.value;
+        effectCount++;
+      });
+
+      expect(effectCount, equals(1));
+
+      // Set to -5, equals should return true (same absolute value)
+      signal.value = -5;
+      expect(effectCount, equals(1)); // Effect not triggered
+
+      // Set to 10, equals should return false
+      signal.value = 10;
+      expect(effectCount, equals(2)); // Effect triggered
+    });
+
+    test("should work with equals in Computed.withPrevious", () {
+      final signal = Signal<List<int>>([1, 2, 3]);
+      var computeCount = 0;
+      final effectValues = <List<int>>[];
+
+      final computed = Computed<List<int>>.withPrevious(
+        (prev) {
+          computeCount++;
+          final newList = List<int>.from(signal.value);
+          // Return previous if equals says they're the same
+          if (prev != null) {
+            bool equalsFn(a, b) {
+              if (a is! List<int> || b is! List<int>) return a == b;
+              if (a.length != b.length) return false;
+              for (var i = 0; i < a.length; i++) {
+                if (a[i] != b[i]) return false;
+              }
+              return true;
+            }
+
+            if (equalsFn(newList, prev)) {
+              return prev;
+            }
+          }
+          return newList;
+        },
+        equals: (a, b) {
+          if (a is! List<int> || b is! List<int>) return a == b;
+          if (a.length != b.length) return false;
+          for (var i = 0; i < a.length; i++) {
+            if (a[i] != b[i]) return false;
+          }
+          return true;
+        },
+      );
+
+      Effect(() {
+        effectValues.add(List<int>.from(computed.value));
+      });
+
+      expect(computeCount, equals(1));
+      expect(effectValues.length, equals(1));
+
+      // Set to same values
+      signal.value = [1, 2, 3];
+      expect(computeCount, equals(2));
+      expect(effectValues.length, equals(1)); // Effect not triggered
+
+      // Set to different values
+      signal.value = [4, 5, 6];
+      expect(computeCount, equals(3));
+      expect(effectValues.length, equals(2)); // Effect triggered
+    });
+  });
+
+  group("WritableComputed equals", () {
+    test("should use custom equals function to prevent unnecessary updates",
+        () {
+      final signal = Signal<List<int>>([1, 2, 3]);
+      var computeCount = 0;
+      final effectValues = <List<int>>[];
+
+      final writableComputed = WritableComputed<List<int>>(
+        () {
+          computeCount++;
+          return List<int>.from(signal.value);
+        },
+        (value) => signal.value = List<int>.from(value),
+        equals: (a, b) {
+          if (a is! List<int> || b is! List<int>) return a == b;
+          if (a.length != b.length) return false;
+          for (var i = 0; i < a.length; i++) {
+            if (a[i] != b[i]) return false;
+          }
+          return true;
+        },
+      );
+
+      Effect(() {
+        effectValues.add(List<int>.from(writableComputed.value));
+      });
+
+      expect(computeCount, equals(1));
+      expect(effectValues.length, equals(1));
+
+      // Set to same values
+      signal.value = [1, 2, 3];
+      expect(computeCount, equals(2));
+      expect(effectValues.length, equals(1)); // Effect not triggered
+
+      // Set to different values
+      signal.value = [4, 5, 6];
+      expect(computeCount, equals(3));
+      expect(effectValues.length, equals(2)); // Effect triggered
+    });
+
+    test("should work with equals when setting value", () {
+      final signal = Signal(5);
+      var effectCount = 0;
+
+      final writableComputed = WritableComputed<int>(
+        () => signal.value,
+        (value) => signal.value = value,
+        equals: (a, b) => (a as int).abs() == (b as int).abs(),
+      );
+
+      Effect(() {
+        writableComputed.value;
+        effectCount++;
+      });
+
+      expect(effectCount, equals(1));
+
+      // Set to -5, equals should return true
+      writableComputed.value = -5;
+      expect(effectCount, equals(1)); // Effect not triggered
+      expect(signal.value, equals(-5));
+
+      // Set to 10, equals should return false
+      writableComputed.value = 10;
+      expect(effectCount, equals(2)); // Effect triggered
+      expect(signal.value, equals(10));
+    });
+
+    test("should work with equals in WritableComputed.withPrevious", () {
+      final signal = Signal<List<int>>([1, 2, 3]);
+      var computeCount = 0;
+      final effectValues = <List<int>>[];
+
+      final writableComputed = WritableComputed<List<int>>.withPrevious(
+        (prev) {
+          computeCount++;
+          final newList = List<int>.from(signal.value);
+          if (prev != null) {
+            bool equalsFn(a, b) {
+              if (a is! List<int> || b is! List<int>) return a == b;
+              if (a.length != b.length) return false;
+              for (var i = 0; i < a.length; i++) {
+                if (a[i] != b[i]) return false;
+              }
+              return true;
+            }
+
+            if (equalsFn(newList, prev)) {
+              return prev;
+            }
+          }
+          return newList;
+        },
+        (value) => signal.value = List<int>.from(value),
+        equals: (a, b) {
+          if (a is! List<int> || b is! List<int>) return a == b;
+          if (a.length != b.length) return false;
+          for (var i = 0; i < a.length; i++) {
+            if (a[i] != b[i]) return false;
+          }
+          return true;
+        },
+      );
+
+      Effect(() {
+        effectValues.add(List<int>.from(writableComputed.value));
+      });
+
+      expect(computeCount, equals(1));
+      expect(effectValues.length, equals(1));
+
+      // Set to same values
+      signal.value = [1, 2, 3];
+      expect(computeCount, equals(2));
+      expect(effectValues.length, equals(1)); // Effect not triggered
+
+      // Set to different values
+      signal.value = [4, 5, 6];
+      expect(computeCount, equals(3));
+      expect(effectValues.length, equals(2)); // Effect triggered
+    });
+  });
+
+  group("Computed.getPeek", () {
+    test("should return pending value when called inside computed getter", () {
+      final signal = Signal(5);
+      int? capturedValue;
+
+      final computed = Computed<int>(() {
+        signal.value; // Track dependency
+        capturedValue = Computed.getPeek<int>();
+        return signal.value * 2;
+      });
+
+      // First access - getPeek should return null (no previous value)
+      expect(computed.value, equals(10));
+      expect(capturedValue, isNull);
+
+      // Second access - getPeek should return previous pending value
+      signal.value = 6;
+      expect(computed.value, equals(12));
+      expect(capturedValue, equals(10)); // Previous value was 10
+    });
+
+    test("should throw StateError when called outside computed context", () {
+      expect(
+        () => Computed.getPeek<int>(),
+        throwsA(isA<StateError>()),
+      );
+    });
+
+    test("should work with nullable types", () {
+      final signal = Signal<int?>(null);
+      int? capturedValue;
+
+      final computed = Computed<int?>(() {
+        signal.value;
+        capturedValue = Computed.getPeek<int?>();
+        return signal.value;
+      });
+
+      // First access
+      expect(computed.value, isNull);
+      expect(capturedValue, isNull);
+
+      // Second access
+      signal.value = 42;
+      expect(computed.value, equals(42));
+      expect(capturedValue, isNull); // Previous was null
+    });
+
+    test("should work with complex types", () {
+      final signal = Signal<List<int>>([1, 2, 3]);
+      List<int>? capturedValue;
+
+      final computed = Computed<List<int>>(() {
+        signal.value;
+        capturedValue = Computed.getPeek<List<int>>();
+        return List<int>.from(signal.value);
+      });
+
+      // First access
+      expect(computed.value, equals([1, 2, 3]));
+      expect(capturedValue, isNull);
+
+      // Second access
+      signal.value = [4, 5, 6];
+      expect(computed.value, equals([4, 5, 6]));
+      expect(capturedValue, equals([1, 2, 3])); // Previous value
+    });
+
+    test("should work with Computed.withPrevious", () {
+      final signal = Signal(5);
+      int? capturedValue;
+
+      final computed = Computed<int>.withPrevious((prev) {
+        signal.value;
+        capturedValue = Computed.getPeek<int>();
+        // getPeek should return the same as prev parameter
+        return signal.value * 2;
+      });
+
+      // First access
+      expect(computed.value, equals(10));
+      expect(capturedValue, isNull);
+
+      // Second access
+      signal.value = 6;
+      expect(computed.value, equals(12));
+      expect(capturedValue, equals(10)); // Previous value
+    });
+
+    test("should work in nested computed", () {
+      final signal = Signal(2);
+      int? outerValue;
+      int? innerValue;
+
+      final inner = Computed<int>(() {
+        signal.value;
+        innerValue = Computed.getPeek<int>();
+        return signal.value * 2;
+      });
+
+      final outer = Computed<int>(() {
+        inner.value;
+        outerValue = Computed.getPeek<int>();
+        return inner.value * 2;
+      });
+
+      // First access
+      expect(outer.value, equals(8)); // 2 * 2 * 2
+      expect(innerValue, isNull);
+      expect(outerValue, isNull);
+
+      // Second access
+      signal.value = 3;
+      expect(outer.value, equals(12)); // 3 * 2 * 2
+      expect(innerValue, equals(4)); // Previous inner value (2 * 2)
+      expect(outerValue, equals(8)); // Previous outer value
+    });
+  });
 }

@@ -353,8 +353,15 @@ bool updateComputed<T>(ComputedReactiveNode<T> computed) {
 
   try {
     final oldValue = computed.pendingValue;
-
-    return (oldValue != (computed.pendingValue = computed.getter()));
+    final newValue = computed.getter();
+    final equals = computed.equals == null
+        ? oldValue == newValue
+        : computed.equals!(newValue as Object, oldValue as Object);
+    if (equals) {
+      return false;
+    }
+    computed.pendingValue = newValue;
+    return true;
   } finally {
     activeSub = prevSub;
     computed.flags &= ~ReactiveFlags.recursedCheck;
@@ -952,9 +959,44 @@ abstract class ComputedReactiveNode<T> extends ReactiveNode {
     this.getter, {
     required super.flags,
     this.pendingValue,
+    this.equals,
   });
   T? pendingValue;
   final T Function() getter;
+  final EqualFn? equals;
+
+  /// {@template jolt_computed_get_peek}
+  /// Returns the pending value of the currently executing computed node.
+  ///
+  /// This static method can only be called from within a computed getter function.
+  /// It returns the pending value (the value being computed) of the current computed
+  /// node. This is useful for advanced scenarios where you need to access the
+  /// previous or current pending value during computation, such as when implementing
+  /// custom equality checks or mutations.
+  ///
+  /// **Important:** This method will throw a [StateError] if called outside of
+  /// a computed getter context.
+  ///
+  /// Example:
+  /// ```dart
+  /// final signal = Signal(0);
+  /// final computed = Computed(() {
+  ///   signal.value;
+  ///   final previous = Computed.getPeek<List<int>?>();
+  ///   // Use previous value for comparison or mutation
+  ///   return List.generate(3, (index) => index);
+  /// }, equals: equalList);
+  /// ```
+  /// {@endtemplate}
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
+  static T? getPeek<T>() {
+    if (activeSub is! ComputedReactiveNode) {
+      throw (StateError('Cannot get peek from non-computed node'));
+    }
+    return (activeSub as ComputedReactiveNode).pendingValue as T?;
+  }
 }
 
 /// Base reactive node for writable signals.
@@ -1165,3 +1207,5 @@ abstract class EffectScopeReactiveNode extends ReactiveNode
     implements Disposable, EffectBaseReactiveNode {
   EffectScopeReactiveNode({required super.flags});
 }
+
+typedef EqualFn = bool Function(dynamic value, dynamic previous);

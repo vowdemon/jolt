@@ -42,6 +42,7 @@ class ComputedImpl<T> extends ComputedReactiveNode<T>
   /// {@endtemplate}
   ComputedImpl(
     super.getter, {
+    super.equals,
     JoltDebugFn? onDebug,
   }) : super(flags: ReactiveFlags.none) {
     JoltDebug.create(this, onDebug);
@@ -71,6 +72,7 @@ class ComputedImpl<T> extends ComputedReactiveNode<T>
   /// {@endtemplate}
   factory ComputedImpl.withPrevious(
     T Function(T?) getter, {
+    EqualFn? equals,
     JoltDebugFn? onDebug,
   }) {
     late final ComputedImpl<T> computed;
@@ -207,11 +209,13 @@ class ComputedImpl<T> extends ComputedReactiveNode<T>
 /// ```
 abstract interface class Computed<T> implements ReadableNode<T> {
   /// {@macro jolt_computed_impl}
-  factory Computed(T Function() getter, {JoltDebugFn? onDebug}) = ComputedImpl;
+  factory Computed(T Function() getter,
+      {EqualFn? equals, JoltDebugFn? onDebug}) = ComputedImpl;
 
   /// {@macro jolt_computed_impl_with_previous}
   factory Computed.withPrevious(
     T Function(T?) getter, {
+    EqualFn? equals,
     JoltDebugFn? onDebug,
   }) = ComputedImpl.withPrevious;
 
@@ -237,6 +241,9 @@ abstract interface class Computed<T> implements ReadableNode<T> {
   /// print(computed.peekCached); // Returns cached value immediately if available
   /// ```
   T get peekCached;
+
+  /// {@macro jolt_computed_get_peek}
+  static const getPeek = ComputedReactiveNode.getPeek;
 }
 
 /// Implementation of [WritableComputed] that can be both read and written.
@@ -284,7 +291,8 @@ class WritableComputedImpl<T> extends ComputedImpl<T>
   /// );
   /// ```
   /// {@endtemplate}
-  WritableComputedImpl(super.getter, this.setter, {super.onDebug});
+  WritableComputedImpl(super.getter, this.setter,
+      {super.equals, super.onDebug});
 
   /// {@template jolt_writable_computed_impl_with_previous}
   /// Creates a writable computed value with a getter that receives the previous value.
@@ -313,12 +321,14 @@ class WritableComputedImpl<T> extends ComputedImpl<T>
   factory WritableComputedImpl.withPrevious(
     T Function(T?) getter,
     void Function(T) setter, {
+    EqualFn? equals,
     JoltDebugFn? onDebug,
   }) {
     late final WritableComputedImpl<T> computed;
     T fn() => getter(computed.pendingValue);
 
-    computed = WritableComputedImpl(fn, setter, onDebug: onDebug);
+    computed =
+        WritableComputedImpl(fn, setter, equals: equals, onDebug: onDebug);
     return computed;
   }
 
@@ -380,6 +390,7 @@ abstract interface class WritableComputed<T> implements Computed<T>, Signal<T> {
   factory WritableComputed(
     T Function() getter,
     void Function(T) setter, {
+    EqualFn? equals,
     JoltDebugFn? onDebug,
   }) = WritableComputedImpl<T>;
 
@@ -387,6 +398,7 @@ abstract interface class WritableComputed<T> implements Computed<T>, Signal<T> {
   factory WritableComputed.withPrevious(
     T Function(T?) getter,
     void Function(T) setter, {
+    EqualFn? equals,
     JoltDebugFn? onDebug,
   }) = WritableComputedImpl.withPrevious;
 }

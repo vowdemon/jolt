@@ -1103,4 +1103,143 @@ void main() {
       expect(outerValue, equals(8)); // Previous outer value
     });
   });
+
+  group("Computed notify force", () {
+    test("should not notify subscribers when soft update and value unchanged",
+        () {
+      final signal = Signal(5);
+      final computed = Computed<int>(() => signal.value);
+      var effectCount = 0;
+
+      Effect(() {
+        computed.value;
+        effectCount++;
+      });
+
+      expect(effectCount, equals(1));
+      expect(computed.value, equals(5));
+
+      // Soft update (force=false) - value hasn't changed, should not notify
+      computed.notify(false);
+      expect(effectCount, equals(1)); // Effect not triggered
+
+      // Change signal to make computed value change
+      signal.value = 10;
+      expect(computed.value, equals(10));
+      expect(effectCount, equals(2)); // Effect triggered by value change
+
+      // Soft update after value change - should not notify again
+      computed.notify(false);
+      expect(
+          effectCount, equals(2)); // Effect not triggered (value didn't change)
+    });
+
+    test("should notify subscribers when force update even if value unchanged",
+        () {
+      final signal = Signal(5);
+      final computed = Computed<int>(() => signal.value);
+      var effectCount = 0;
+
+      Effect(() {
+        computed.value;
+        effectCount++;
+      });
+
+      expect(effectCount, equals(1));
+      expect(computed.value, equals(5));
+
+      // Force update (force=true) - should notify even if value unchanged
+      computed.notify(true);
+      expect(effectCount, equals(2)); // Effect triggered
+
+      // Force update again
+      computed.notify(true);
+      expect(effectCount, equals(3)); // Effect triggered again
+    });
+
+    test(
+        "should notify subscribers when soft update and value changed during recompute",
+        () {
+      final signal = Signal(5);
+      var computeCount = 0;
+      final computed = Computed<int>(() {
+        computeCount++;
+        return signal.value;
+      });
+      var effectCount = 0;
+
+      Effect(() {
+        computed.value;
+        effectCount++;
+      });
+
+      expect(effectCount, equals(1));
+      expect(computeCount, equals(1));
+
+      // Soft update - value hasn't changed, should not notify
+      computed.notify(false);
+      expect(effectCount, equals(1)); // Effect not triggered
+      expect(computeCount, equals(2)); // Recomputed but value unchanged
+
+      // Change signal value - this will trigger effect automatically
+      signal.value = 10;
+      expect(computed.value, equals(10));
+      expect(effectCount, equals(2)); // Effect triggered by value change
+      expect(computeCount, equals(3)); // Recomputed
+
+      // Soft update - value already updated, should not notify again
+      computed.notify(false);
+      expect(
+          effectCount,
+          equals(
+              2)); // Effect not triggered (value didn't change during recompute)
+      expect(computeCount, equals(4)); // Recomputed again
+    });
+
+    test("should work with equals parameter and soft update", () {
+      final signal = Signal<List<int>>([1, 2, 3]);
+      var effectCount = 0;
+      var computeCount = 0;
+
+      final computed = Computed<List<int>>(
+        () {
+          computeCount++;
+          return List<int>.from(signal.value);
+        },
+        equals: (a, b) {
+          if (a is! List<int> || b is! List<int>) return a == b;
+          if (a.length != b.length) return false;
+          for (var i = 0; i < a.length; i++) {
+            if (a[i] != b[i]) return false;
+          }
+          return true;
+        },
+      );
+
+      Effect(() {
+        computed.value;
+        effectCount++;
+      });
+
+      expect(effectCount, equals(1));
+      expect(computeCount, equals(1));
+
+      // Set to same values - equals returns true, value considered unchanged
+      signal.value = [1, 2, 3];
+      expect(computed.value, equals([1, 2, 3]));
+      expect(
+          effectCount, equals(1)); // Effect not triggered (equals returns true)
+      expect(computeCount, equals(2)); // Recomputed
+
+      // Soft update - value considered equal, should not notify
+      computed.notify(false);
+      expect(effectCount, equals(1)); // Effect not triggered
+      expect(computeCount, equals(3)); // Recomputed but value unchanged
+
+      // Force update - should notify even if equals returns true
+      computed.notify(true);
+      expect(effectCount, equals(2)); // Effect triggered
+      expect(computeCount, equals(4)); // Recomputed
+    });
+  });
 }

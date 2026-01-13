@@ -104,7 +104,7 @@ class _ComputedWrapperImpl<T> implements Computed<T> {
   bool get isDisposed => root.isDisposed;
 
   @override
-  void notify() => root.notify();
+  void notify([bool force = false]) => root.notify(force);
 
   @override
   T get peekCached => root.peekCached;
@@ -162,5 +162,5 @@ class _ReadonlySignalWrapperImpl<T> implements ReadonlySignal<T> {
   bool get isDisposed => root.isDisposed;
 
   @override
-  void notify() => root.notify();
+  void notify([bool force = false]) => root.notify(force);
 }

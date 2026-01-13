@@ -82,7 +82,7 @@ void main() {
       );
       expect(e1, equals(1));
       expect(e2, equals(1));
-      c1.notify();
+      c1.notify(true);
       expect(e1, equals(2));
       expect(e2, equals(2));
     });
@@ -135,10 +135,10 @@ void main() {
       s1.notify();
       expect(e1, equals(2));
       expect(e2, equals(2));
-      c1.notify();
+      c1.notify(true);
       expect(e1, equals(2));
       expect(e2, equals(3));
-      c2.notify();
+      c2.notify(true);
       expect(e1, equals(3));
       expect(e2, equals(4));
     });
@@ -182,7 +182,7 @@ void main() {
       s1.notify();
       expect(outerCount, equals(2));
       expect(innerCount, equals(2));
-      c1.notify();
+      c1.notify(true);
       expect(outerCount, equals(2));
       expect(innerCount, equals(3));
     });

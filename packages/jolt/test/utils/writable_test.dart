@@ -83,7 +83,7 @@ void main() {
       final readonly = signal.readonly();
 
       expect(readonly.toString(), equals("42"));
-      
+
       signal.value = 100;
       expect(readonly.toString(), equals("100"));
     });
@@ -120,7 +120,8 @@ void main() {
       expect(values, equals([0]));
 
       readonly.notify();
-      expect(values, equals([0, 0])); // Notified even though value didn't change
+      expect(
+          values, equals([0, 0])); // Notified even though value didn't change
     });
   });
 
@@ -204,7 +205,8 @@ void main() {
       );
       final readonly1 = writableComputed1.readonly();
       final readonly2 = writableComputed1.readonly(); // Same writable computed
-      final readonly3 = writableComputed2.readonly(); // Different writable computed
+      final readonly3 =
+          writableComputed2.readonly(); // Different writable computed
 
       expect(readonly1 == readonly2, isTrue); // Same root
       expect(readonly1 == readonly3, isFalse); // Different roots
@@ -238,8 +240,9 @@ void main() {
 
       expect(values, equals([10]));
 
-      readonly.notify();
-      expect(values, equals([10, 10])); // Notified even though value didn't change
+      readonly.notify(true);
+      expect(
+          values, equals([10, 10])); // Notified even though value didn't change
     });
 
     test("readonly view peekCached returns cached value", () {

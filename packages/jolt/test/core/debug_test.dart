@@ -45,7 +45,7 @@ void main() {
       expect(counter.setCount, equals(1));
       expect(counter.count, equals(4));
 
-      c.notify();
+      c.notify(true);
       expect(counter.notifyCount, equals(1));
       expect(counter.count, equals(5));
 

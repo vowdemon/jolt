@@ -119,7 +119,7 @@ class SignalImpl<T> extends SignalReactiveNode<T>
   @pragma("wasm:prefer-inline")
   @pragma("dart2js:prefer-inline")
   @override
-  void notify() {
+  void notify([bool force = true]) {
     assert(!isDisposed, "Signal is disposed");
     notifySignal(this);
   }
@@ -216,7 +216,7 @@ class ReadonlySignalImpl<T> extends SignalReactiveNode<T>
   @pragma("wasm:prefer-inline")
   @pragma("dart2js:prefer-inline")
   @override
-  void notify() {
+  void notify([bool force = true]) {
     assert(!isDisposed, "Signal is disposed");
     notifySignal(this);
   }
@@ -314,7 +314,7 @@ class _ConstantSignalImpl<T> implements ReadonlySignal<T> {
   bool get isDisposed => false;
 
   @override
-  void notify() {
+  void notify([bool force = true]) {
     // noop
   }
 }

@@ -580,22 +580,30 @@ T getComputed<T>(ComputedReactiveNode<T> computed) {
   return computed.pendingValue as T;
 }
 
-/// Invalidates a computed node and notifies its subscribers without assigning
-/// a new value.
+/// Invalidates a computed node and notifies its subscribers.
+///
+/// This function recomputes the value and notifies subscribers based on the
+/// [force] parameter. When [force] is `false` (soft update), subscribers are
+/// only notified if the value actually changed. When [force] is `true` (force
+/// update), subscribers are notified regardless of whether the value changed.
 ///
 /// Parameters:
-/// - [computed]: Node to invalidate
+/// - [computed]: Node to invalidate and notify
+/// - [force]: If `true`, forces notification even if the value hasn't changed
 ///
 /// Example:
 /// ```dart
 /// final cacheBustingComputed = CustomComputedNode<int>(() => 0);
-/// notifyComputed(cacheBustingComputed);
+/// notifyComputed(cacheBustingComputed, false); // Soft update
+/// notifyComputed(cacheBustingComputed, true); // Force update
 /// ```
 @pragma("vm:prefer-inline")
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
-void notifyComputed<T>(ComputedReactiveNode<T> computed) {
-  updateComputed(computed);
+void notifyComputed<T>(ComputedReactiveNode<T> computed, [bool force = false]) {
+  final updated = updateComputed(computed);
+
+  if (!force && !updated) return;
 
   var subs = computed.subs;
 
@@ -907,16 +915,33 @@ abstract interface class Readable<T> {
 abstract interface class Notifiable {
   /// Triggers a change notification without modifying the value.
   ///
-  /// Notifies all subscribers that they should re-evaluate, even if
-  /// the underlying value hasn't changed (e.g., in-place mutations).
+  /// Notifies all subscribers that they should re-evaluate. The behavior
+  /// depends on the [force] parameter and the specific implementation:
+  ///
+  /// - When [force] is `true` (force update), subscribers are notified
+  ///   regardless of whether the value changed.
+  /// - When [force] is `false` (soft update), subscribers are only notified
+  ///   if the value actually changed during recomputation.
+  ///
+  /// This is useful for scenarios like in-place mutations where the value
+  /// reference doesn't change but the content does.
+  ///
+  /// Parameters:
+  /// - [force]: If `true`, forces notification even if the value hasn't changed.
+  ///   The default value depends on the implementation (e.g., `false` for
+  ///   [Computed], `true` for [Signal]).
   ///
   /// Example:
   /// ```dart
   /// final list = ListSignal([1, 2, 3]);
-  /// list.value.add(4);
+  /// list.value.add(4); // Mutation doesn't auto-notify
   /// list.notify(); // Force subscribers to update
+  ///
+  /// final computed = Computed(() => expensiveCalculation());
+  /// computed.notify(); // Soft update: only notifies if value changed
+  /// computed.notify(true); // Force update: always notifies subscribers
   /// ```
-  void notify();
+  void notify([bool force]);
 }
 
 /// Interface for writable reactive values.

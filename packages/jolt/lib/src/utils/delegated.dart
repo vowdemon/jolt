@@ -110,8 +110,8 @@ class DelegatedReadonlySignal<T> implements ReadonlySignal<T> {
   }
 
   @override
-  void notify() {
-    delegated.source.notify();
+  void notify([bool force = false]) {
+    delegated.source.notify(force);
   }
 
   bool _isDisposed = false;
@@ -177,8 +177,8 @@ class DelegatedSignal<T> implements Signal<T> {
   }
 
   @override
-  void notify() {
-    delegated.source.notify();
+  void notify([bool force = false]) {
+    delegated.source.notify(force);
   }
 
   bool _isDisposed = false;

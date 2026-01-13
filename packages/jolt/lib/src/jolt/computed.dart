@@ -161,17 +161,27 @@ class ComputedImpl<T> extends ComputedReactiveNode<T>
   /// This is typically called automatically by the reactive system when
   /// dependencies change, but can be called manually for custom scenarios.
   ///
+  /// Parameters:
+  /// - [force]: If `true`, forces notification even if the value hasn't changed
+  ///   (soft update when `false`, force update when `true`). Defaults to `false`.
+  ///
+  /// When `force` is `false` (soft update), subscribers are only notified if
+  /// the computed value actually changed. When `force` is `true` (force update),
+  /// subscribers are notified regardless of whether the value changed.
+  ///
   /// Example:
   /// ```dart
-  /// computed.notify(); // Force downstream effects to re-run
+  /// final computed = Computed(() => expensiveCalculation());
+  /// computed.notify(); // Soft update: only notifies if value changed
+  /// computed.notify(true); // Force update: always notifies subscribers
   /// ```
   @pragma("vm:prefer-inline")
   @pragma("wasm:prefer-inline")
   @pragma("dart2js:prefer-inline")
   @override
-  void notify() {
+  void notify([bool force = false]) {
     assert(!isDisposed, "Computed is disposed");
-    notifyComputed(this);
+    notifyComputed(this, force);
   }
 
   /// Disposes the computed value and cleans up resources.

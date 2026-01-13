@@ -95,7 +95,7 @@ mixin MapSignalMixin<K, V>
       peek[key] = value;
     } else {
       peek[key] = value;
-      notify();
+      notify(true);
     }
   }
 
@@ -114,7 +114,7 @@ mixin MapSignalMixin<K, V>
     });
 
     if (needNotify) {
-      notify();
+      notify(true);
     }
   }
 
@@ -134,7 +134,7 @@ mixin MapSignalMixin<K, V>
     }
 
     if (needNotify) {
-      notify();
+      notify(true);
     }
   }
 
@@ -147,7 +147,7 @@ mixin MapSignalMixin<K, V>
       return;
     } else {
       peek.clear();
-      notify();
+      notify(true);
     }
   }
 
@@ -162,7 +162,7 @@ mixin MapSignalMixin<K, V>
       return peek[key] as V;
     }
     final result = peek[key] = ifAbsent();
-    notify();
+    notify(true);
     return result;
   }
 
@@ -174,7 +174,7 @@ mixin MapSignalMixin<K, V>
   V? remove(Object? key) {
     if (peek.containsKey(key)) {
       final v = peek.remove(key);
-      notify();
+      notify(true);
       return v;
     } else {
       return peek.remove(key);
@@ -193,13 +193,13 @@ mixin MapSignalMixin<K, V>
       final oldValue = peek[key];
       final newValue = peek[key] = update(oldValue as V);
       if (oldValue != newValue) {
-        notify();
+        notify(true);
       }
       return newValue;
     }
     if (ifAbsent != null) {
       final result = peek[key] = ifAbsent();
-      notify();
+      notify(true);
       return result;
     }
     throw ArgumentError.value(key, "key", "Key not in map.");
@@ -220,7 +220,7 @@ mixin MapSignalMixin<K, V>
       }
     }
     if (needNotify) {
-      notify();
+      notify(true);
     }
   }
 
@@ -238,7 +238,7 @@ mixin MapSignalMixin<K, V>
       peek.remove(key);
     }
     if (keysToRemove.isNotEmpty) {
-      notify();
+      notify(true);
     }
   }
 }

@@ -13,8 +13,6 @@ topics:
 
 version: 2.0.0
 
-resolution: workspace
-
 environment:
   sdk: ">=3.6.0 <4.0.0"
 

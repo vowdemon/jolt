@@ -804,6 +804,7 @@ Jolt Setup is part of the Jolt ecosystem. Explore these related packages:
 | Package | Description |
 |---------|-------------|
 | [jolt](https://pub.dev/packages/jolt) | Core library providing Signals, Computed, Effects, and reactive collections |
+| [jolt_flutter](https://pub.dev/packages/jolt_flutter) | Flutter widgets: JoltBuilder, JoltSelector, and ValueNotifier integration |
 | [jolt_hooks](https://pub.dev/packages/jolt_hooks) | Hooks API: useSignal, useComputed, useJoltEffect, useJoltWidget |
 | [jolt_surge](https://pub.dev/packages/jolt_surge) | Signal-powered Cubit pattern: Surge, SurgeProvider, SurgeConsumer |
 | [jolt_lint](https://pub.dev/packages/jolt_lint) | Custom lint and code assists: Wrap widgets, convert to/from Signals, Hook conversions |

@@ -298,8 +298,10 @@ Jolt Surge is part of the Jolt ecosystem. Explore these related packages:
 | Package | Description |
 |---------|-------------|
 | [jolt](https://pub.dev/packages/jolt) | Core library providing Signals, Computed, Effects, and reactive collections |
-| [jolt_flutter](https://pub.dev/packages/jolt_flutter) | Flutter widgets: JoltBuilder, JoltSelector, JoltProvider |
+| [jolt_flutter](https://pub.dev/packages/jolt_flutter) | Flutter widgets: JoltBuilder, JoltSelector, and ValueNotifier integration |
+| [jolt_setup](https://pub.dev/packages/jolt_setup) | Setup Widget API and Flutter hooks: SetupWidget, SetupMixin, useTextEditingController, useScrollController, etc. |
 | [jolt_hooks](https://pub.dev/packages/jolt_hooks) | Hooks API: useSignal, useComputed, useJoltEffect, useJoltWidget |
+| [jolt_lint](https://pub.dev/packages/jolt_lint) | Custom lint and code assists: Wrap widgets, convert to/from Signals, Hook conversions |
 
 ## Acknowledgments
 

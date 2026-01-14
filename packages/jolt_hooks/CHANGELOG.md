@@ -1,3 +1,7 @@
+## 3.0.1
+
+ - Update a dependency to the latest release.
+
 ## 3.0.0
 
  - **REFACTOR**(jolt_hooks): remove tricks methods and update type names. ([611ed474](https://github.com/vowdemon/jolt/commit/611ed4742874696be76251c6ca188631513d178e))

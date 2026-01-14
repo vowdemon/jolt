@@ -2,7 +2,6 @@ import 'package:flutter/widgets.dart';
 import 'package:jolt_flutter/core.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
 import 'package:jolt_setup/hooks.dart';
-import 'package:meta/meta.dart';
 
 import 'package:shared_interfaces/shared_interfaces.dart';
 

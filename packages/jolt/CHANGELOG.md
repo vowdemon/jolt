@@ -1,3 +1,9 @@
+## 3.1.0
+
+ - **REFACTOR**: implement fine-grained hot reload for partial hooks. ([53226b34](https://github.com/vowdemon/jolt/commit/53226b34753f70d3177521666b10289fe43a86a8))
+ - **FEAT**(jolt): add force parameter to notify method for soft and force updates. ([1b2d029d](https://github.com/vowdemon/jolt/commit/1b2d029d1752c2cc637175cdbff69f29dd31ec16))
+ - **FEAT**(jolt): add equals parameter support and getPeek method. ([91418023](https://github.com/vowdemon/jolt/commit/91418023f086557ff131a499ff5c39db62b77ea2))
+
 ## 3.0.1
 
  - **FIX**(jolt): sync upstream fix for effect flush error handling. ([39ad65d9](https://github.com/vowdemon/jolt/commit/39ad65d9f860227dad52a030b1766a6f8e325549))

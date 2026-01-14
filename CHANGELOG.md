@@ -3,6 +3,48 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-01-14
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`jolt` - `v3.1.0`](#jolt---v310)
+ - [`jolt_flutter` - `v3.0.1`](#jolt_flutter---v301)
+ - [`jolt_setup` - `v3.1.1`](#jolt_setup---v311)
+ - [`jolt_hooks` - `v3.0.1`](#jolt_hooks---v301)
+ - [`jolt_surge` - `v3.0.1`](#jolt_surge---v301)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `jolt_hooks` - `v3.0.1`
+ - `jolt_surge` - `v3.0.1`
+
+---
+
+#### `jolt` - `v3.1.0`
+
+ - **REFACTOR**: implement fine-grained hot reload for partial hooks. ([53226b34](https://github.com/vowdemon/jolt/commit/53226b34753f70d3177521666b10289fe43a86a8))
+ - **FEAT**(jolt): add force parameter to notify method for soft and force updates. ([1b2d029d](https://github.com/vowdemon/jolt/commit/1b2d029d1752c2cc637175cdbff69f29dd31ec16))
+ - **FEAT**(jolt): add equals parameter support and getPeek method. ([91418023](https://github.com/vowdemon/jolt/commit/91418023f086557ff131a499ff5c39db62b77ea2))
+
+#### `jolt_flutter` - `v3.0.1`
+
+ - **REFACTOR**: implement fine-grained hot reload for partial hooks. ([53226b34](https://github.com/vowdemon/jolt/commit/53226b34753f70d3177521666b10289fe43a86a8))
+
+#### `jolt_setup` - `v3.1.1`
+
+ - **REFACTOR**: implement fine-grained hot reload for partial hooks. ([53226b34](https://github.com/vowdemon/jolt/commit/53226b34753f70d3177521666b10289fe43a86a8))
+
+
 ## 2026-01-09
 
 ### Changes

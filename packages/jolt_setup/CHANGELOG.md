@@ -1,3 +1,7 @@
+## 3.1.1
+
+ - **REFACTOR**: implement fine-grained hot reload for partial hooks. ([53226b34](https://github.com/vowdemon/jolt/commit/53226b34753f70d3177521666b10289fe43a86a8))
+
 ## 3.1.0
 
  - **REFACTOR**: use annotation to mark hook functions instead of naming convention check. ([f25bdad9](https://github.com/vowdemon/jolt/commit/f25bdad98a6b57816188435ea19c5a6449905401))

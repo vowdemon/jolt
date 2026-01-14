@@ -38,6 +38,35 @@ final doubled = Computed(() => count.value * 2);
 
 Computed 是惰性的，只有在被访问时才会计算。如果没有任何订阅者，getter 函数可能永远不会执行。
 
+### 自定义相等性比较
+
+你可以提供一个自定义的相等性函数来控制何时认为计算值"改变了"。这对于像列表或映射这样的复杂类型很有用，当你想要按值而不是按引用进行比较时：
+
+```dart
+final signal = Signal<List<int>>([1, 2, 3]);
+
+final computed = Computed<List<int>>(
+  () => List<int>.from(signal.value),
+  equals: (a, b) {
+    if (a is! List<int> || b is! List<int>) return a == b;
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  },
+);
+
+Effect(() {
+  print('Computed: ${computed.value}');
+});
+
+signal.value = [1, 2, 3]; // 相同的值，不同的实例
+// Effect 不会触发，因为 equals 返回 true
+```
+
+当 `equals` 返回 `true` 时，计算值被认为是未改变的，订阅者不会被通知，即使发生了新的计算。
+
 ## 读取
 
 ### `.value`
@@ -115,9 +144,35 @@ final latest = expensive.peek; // 会重新计算
 final cached = expensive.peekCached; // 立即返回缓存，不重新计算
 ```
 
+### `Computed.getPeek<T>()`
+
+静态方法 `Computed.getPeek<T>()` 允许你在计算值的 getter 函数内部访问待处理值（正在计算的值）。这对于需要与之前的值进行比较或执行变更的高级场景很有用。
+
+**重要：** 此方法只能在计算值的 getter 函数内部调用。在外部调用会抛出 `StateError`。
+
+```dart
+final signal = Signal(0);
+int? previousValue;
+
+final computed = Computed<int>(() {
+  signal.value; // 追踪依赖
+  previousValue = Computed.getPeek<int>(); // 获取之前的待处理值
+  return signal.value * 2;
+});
+
+computed.value; // previousValue 是 null（首次计算）
+signal.value = 5;
+computed.value; // previousValue 是 0（之前的待处理值）
+```
+
+这在实现需要与之前计算值进行比较的自定义逻辑，或处理可变集合时特别有用。
+
 ## 手动通知
 
-如果需要手动告诉依赖它的订阅者它更新了，可以使用 `notify()` 方法。即使依赖没有改变，也会通知所有订阅者。
+如果需要手动告诉依赖它的订阅者它更新了，可以使用 `notify()` 方法。`notify()` 方法接受一个可选的 `force` 参数：
+
+- **`notify(false)` 或 `notify()`**（软更新）：只有在计算值在重新计算期间实际改变时才通知订阅者。这是默认行为。
+- **`notify(true)`**（强制更新）：即使值没有改变，也会通知订阅者。
 
 ```dart
 final count = Signal(0);
@@ -129,8 +184,14 @@ Effect(() {
 
 count.value = 5; // 首次输出: "Doubled: 10"
 
-doubled.notify(); // 再次输出: "Doubled: 10"
+doubled.notify(false); // 无输出（值未改变）
+doubled.notify(true); // 输出: "Doubled: 10"（强制更新）
 ```
+
+**何时使用强制更新：**
+- 当你需要强制订阅者重新评估，即使值看起来未改变
+- 当处理可变对象，内部状态可能已改变时
+- 当使用自定义相等性函数，想要绕过相等性检查时
 
 ## 生命周期管理
 

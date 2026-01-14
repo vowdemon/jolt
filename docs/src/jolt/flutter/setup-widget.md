@@ -842,7 +842,7 @@ class LoginForm extends SetupWidget<LoginForm> {
 
 1. **setup executes only once**: The `setup` function only executes once when the Widget is created, not on every rebuild.
 
-2. **Hook order**: Hook call order must remain consistent. Hooks cannot be called in conditional statements.
+2. **Hook synchronous calls**: Hooks must be called synchronously within the `setup` function, and cannot be called in async functions or callbacks.
 
 3. **Automatic cleanup**: All resources created through Hooks are automatically cleaned up when Widgets are unmounted.
 
@@ -850,5 +850,12 @@ class LoginForm extends SetupWidget<LoginForm> {
 
 5. **Type safety**: `SetupWidget` provides complete type safety with compile-time type checking.
 
-6. **Hot reload support**: `SetupWidget` supports hot reload, and Hook state is preserved during hot reload.
+6. **Hot reload support**: `SetupWidget` supports hot reload, and Hook state is preserved during hot reload. The following hooks support fine-grained hot reload, updating their callback functions, condition functions, and configuration parameters during hot reload:
+   - `useEffect` / `useFlutterEffect`
+   - `useWatcher`
+   - `useFuture` / `useStreamSubscription`
+   - `useAppLifecycle`
+   - `useValueListenable` / `useListenable`
+   
+   When you modify these hooks' parameters (such as effect functions, watcher callbacks, future sources, or listener callbacks) during hot reload, the hooks will automatically update their internal state without requiring a full widget rebuild.
 

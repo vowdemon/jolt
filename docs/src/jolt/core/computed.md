@@ -38,6 +38,35 @@ final doubled = Computed(() => count.value * 2);
 
 Computed is lazy—it only computes when accessed. If there are no subscribers, the getter function may never execute.
 
+### Custom Equality Comparison
+
+You can provide a custom equality function to control when the computed value is considered "changed". This is useful for complex types like lists or maps where you want to compare by value rather than reference:
+
+```dart
+final signal = Signal<List<int>>([1, 2, 3]);
+
+final computed = Computed<List<int>>(
+  () => List<int>.from(signal.value),
+  equals: (a, b) {
+    if (a is! List<int> || b is! List<int>) return a == b;
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  },
+);
+
+Effect(() {
+  print('Computed: ${computed.value}');
+});
+
+signal.value = [1, 2, 3]; // Same values, different instance
+// Effect won't trigger because equals returns true
+```
+
+When `equals` returns `true`, the computed value is considered unchanged and subscribers won't be notified, even if a new computation occurs.
+
 ## Reading Values
 
 ### `.value`
@@ -115,9 +144,35 @@ final latest = expensive.peek; // Will recompute
 final cached = expensive.peekCached; // Returns cache immediately, no recomputation
 ```
 
+### `Computed.getPeek<T>()`
+
+The static method `Computed.getPeek<T>()` allows you to access the pending value (the value being computed) from within a computed getter function. This is useful for advanced scenarios where you need to compare with the previous value or perform mutations.
+
+**Important:** This method can only be called from within a computed getter function. Calling it outside will throw a `StateError`.
+
+```dart
+final signal = Signal(0);
+int? previousValue;
+
+final computed = Computed<int>(() {
+  signal.value; // Track dependency
+  previousValue = Computed.getPeek<int>(); // Get previous pending value
+  return signal.value * 2;
+});
+
+computed.value; // previousValue is null (first computation)
+signal.value = 5;
+computed.value; // previousValue is 0 (previous pending value)
+```
+
+This is particularly useful when implementing custom logic that needs to compare with the previous computed value or when working with mutable collections.
+
 ## Manual Notification
 
-If you need to manually tell subscribers that it has updated, you can use the `notify()` method. This notifies all subscribers even if dependencies haven't changed.
+If you need to manually tell subscribers that it has updated, you can use the `notify()` method. The `notify()` method accepts an optional `force` parameter:
+
+- **`notify(false)` or `notify()`** (soft update): Only notifies subscribers if the computed value actually changed during recomputation. This is the default behavior.
+- **`notify(true)`** (force update): Always notifies subscribers, even if the value hasn't changed.
 
 ```dart
 final count = Signal(0);
@@ -129,8 +184,14 @@ Effect(() {
 
 count.value = 5; // First output: "Doubled: 10"
 
-doubled.notify(); // Output again: "Doubled: 10"
+doubled.notify(false); // No output (value unchanged)
+doubled.notify(true); // Output: "Doubled: 10" (force update)
 ```
+
+**When to use force updates:**
+- When you need to force subscribers to re-evaluate even if the value appears unchanged
+- When working with mutable objects where internal state may have changed
+- When using custom equality functions and you want to bypass the equality check
 
 ## Lifecycle Management
 

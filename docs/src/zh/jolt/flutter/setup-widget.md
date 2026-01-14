@@ -842,7 +842,7 @@ class LoginForm extends SetupWidget<LoginForm> {
 
 1. **setup 只执行一次**：`setup` 函数只在 Widget 创建时执行一次，不会在每次重建时执行。
 
-2. **Hook 顺序**：Hooks 的调用顺序必须保持一致，不能在条件语句中调用 Hooks。
+2. **Hook 同步调用**：Hooks 必须在 `setup` 函数中同步调用，不能在异步函数或回调中调用。
 
 3. **自动清理**：所有通过 Hooks 创建的资源会在 Widget 卸载时自动清理。
 
@@ -850,4 +850,11 @@ class LoginForm extends SetupWidget<LoginForm> {
 
 5. **类型安全**：`SetupWidget` 提供完整的类型安全，编译时会进行类型检查。
 
-6. **热重载支持**：`SetupWidget` 支持热重载，Hooks 的状态会在热重载时保持。
+6. **热重载支持**：`SetupWidget` 支持热重载，Hooks 的状态会在热重载时保持。以下 Hooks 支持细粒度的热重载，在热重载时会更新它们的回调函数、条件函数和配置参数：
+   - `useEffect` / `useFlutterEffect`
+   - `useWatcher`
+   - `useFuture` / `useStreamSubscription`
+   - `useAppLifecycle`
+   - `useValueListenable` / `useListenable`
+   
+   当你在热重载期间修改这些 Hooks 的参数（如 effect 函数、watcher 回调、future 源或 listener 回调）时，Hooks 会自动更新其内部状态，而无需完整的 Widget 重建。

@@ -392,7 +392,7 @@ class ListSignalImpl<E> extends SignalImpl<List<E>>
   ///
   /// Parameters:
   /// - [value]: Initial list content, defaults to empty list if null
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Example:
   /// ```dart
@@ -400,7 +400,7 @@ class ListSignalImpl<E> extends SignalImpl<List<E>>
   /// final numbers = ListSignal([1, 2, 3]);
   /// final autoList = ListSignal(['a', 'b']);
   /// ```
-  ListSignalImpl(List<E>? value, {super.onDebug}) : super(value ?? []);
+  ListSignalImpl(List<E>? value, {super.debug}) : super(value ?? []);
 }
 
 /// Interface for reactive list signals.
@@ -422,7 +422,7 @@ abstract interface class ListSignal<E>
   ///
   /// Parameters:
   /// - [value]: Initial list content, defaults to empty list if null
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Example:
   /// ```dart
@@ -430,6 +430,6 @@ abstract interface class ListSignal<E>
   /// final numbers = ListSignal([1, 2, 3]);
   /// final autoList = ListSignal(['a', 'b']);
   /// ```
-  factory ListSignal(List<E>? value, {JoltDebugFn? onDebug}) =
+  factory ListSignal(List<E>? value, {JoltDebugOption? debug}) =
       ListSignalImpl<E>;
 }

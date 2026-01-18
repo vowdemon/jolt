@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:jolt/core.dart';
 
 import '../effect/flutter_effect.dart';
 
@@ -123,7 +124,7 @@ class JoltSelectorElement<T> extends ComponentElement {
       } else {
         _isFirstBuildEffect = false;
       }
-    });
+    }, debug: const JoltDebugOption.type('JoltSelector'));
 
     super.mount(parent, newSlot);
   }

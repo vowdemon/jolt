@@ -24,7 +24,7 @@ final class JoltSignalHookCreator {
   /// Parameters:
   /// - [value]: The initial value for the signal
   /// - [keys]: Optional keys for hook memoization
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Returns: A [Signal] that can be read and written to
   ///
@@ -48,16 +48,16 @@ final class JoltSignalHookCreator {
   Signal<T> call<T>(
     T value, {
     List<Object?>? keys,
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) {
-    return use(JoltHook(() => Signal(value, onDebug: onDebug), keys: keys));
+    return use(JoltHook(() => Signal(value, debug: debug), keys: keys));
   }
 
   Signal<T> lazy<T>({
     List<Object?>? keys,
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) {
-    return use(JoltHook(() => Signal.lazy(onDebug: onDebug), keys: keys));
+    return use(JoltHook(() => Signal.lazy(debug: debug), keys: keys));
   }
 
   /// Creates a reactive list signal hook.
@@ -68,7 +68,7 @@ final class JoltSignalHookCreator {
   /// Parameters:
   /// - [value]: The initial list value
   /// - [keys]: Optional keys for hook memoization
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Returns: A [ListSignal] with reactive list operations
   ///
@@ -91,9 +91,9 @@ final class JoltSignalHookCreator {
   ListSignal<T> list<T>(
     List<T>? value, {
     List<Object?>? keys,
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) {
-    return use(JoltHook(() => ListSignal(value, onDebug: onDebug), keys: keys));
+    return use(JoltHook(() => ListSignal(value, debug: debug), keys: keys));
   }
 
   /// Creates a reactive map signal hook.
@@ -104,7 +104,7 @@ final class JoltSignalHookCreator {
   /// Parameters:
   /// - [value]: The initial map value
   /// - [keys]: Optional keys for hook memoization
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Returns: A [MapSignal] with reactive map operations
   ///
@@ -128,9 +128,9 @@ final class JoltSignalHookCreator {
   MapSignal<K, V> map<K, V>(
     Map<K, V>? value, {
     List<Object?>? keys,
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) {
-    return use(JoltHook(() => MapSignal(value, onDebug: onDebug), keys: keys));
+    return use(JoltHook(() => MapSignal(value, debug: debug), keys: keys));
   }
 
   /// Creates a reactive set signal hook.
@@ -141,7 +141,7 @@ final class JoltSignalHookCreator {
   /// Parameters:
   /// - [value]: The initial set value
   /// - [keys]: Optional keys for hook memoization
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Returns: A [SetSignal] with reactive set operations
   ///
@@ -164,9 +164,9 @@ final class JoltSignalHookCreator {
   SetSignal<T> set<T>(
     Set<T>? value, {
     List<Object?>? keys,
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) {
-    return use(JoltHook(() => SetSignal(value, onDebug: onDebug), keys: keys));
+    return use(JoltHook(() => SetSignal(value, debug: debug), keys: keys));
   }
 
   /// Creates a reactive iterable signal hook.
@@ -177,7 +177,7 @@ final class JoltSignalHookCreator {
   /// Parameters:
   /// - [getter]: Function that computes the iterable value
   /// - [keys]: Optional keys for hook memoization
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Returns: An [IterableSignal] with reactive iterable operations
   ///
@@ -204,10 +204,10 @@ final class JoltSignalHookCreator {
   IterableSignal<T> iterable<T>(
     Iterable<T> Function() getter, {
     List<Object?>? keys,
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) {
     return use(
-        JoltHook(() => IterableSignal(getter, onDebug: onDebug), keys: keys));
+        JoltHook(() => IterableSignal(getter, debug: debug), keys: keys));
   }
 
   /// Creates an async signal hook for managing asynchronous operations.
@@ -218,7 +218,7 @@ final class JoltSignalHookCreator {
   /// Parameters:
   /// - [source]: The async source that provides the data
   /// - [keys]: Optional keys for hook memoization
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   /// - [initialValue]: Optional initial async state
   ///
   /// Returns: An [AsyncSignal] that manages async state transitions
@@ -243,13 +243,13 @@ final class JoltSignalHookCreator {
   AsyncSignal<T> async<T>(
     AsyncSource<T> source, {
     List<Object?>? keys,
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
     AsyncState<T>? initialValue,
   }) {
     return use(
       JoltHook(
         () => AsyncSignal(
-            source: source, initialValue: initialValue, onDebug: onDebug),
+            source: source, initialValue: initialValue, debug: debug),
         keys: keys,
       ),
     );
@@ -273,7 +273,7 @@ final class JoltComputedHookCreator {
   /// Parameters:
   /// - [value]: Function that computes the derived value
   /// - [keys]: Optional keys for hook memoization
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Returns: A [Computed] that automatically updates when dependencies change
   ///
@@ -291,9 +291,9 @@ final class JoltComputedHookCreator {
   Computed<T> call<T>(
     T Function() value, {
     List<Object?>? keys,
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) {
-    return use(JoltHook(() => Computed(value, onDebug: onDebug), keys: keys));
+    return use(JoltHook(() => Computed(value, debug: debug), keys: keys));
   }
 
   /// Creates a writable computed signal hook with custom getter and setter.
@@ -305,7 +305,7 @@ final class JoltComputedHookCreator {
   /// - [getter]: Function that computes the current value
   /// - [setter]: Function that handles value updates
   /// - [keys]: Optional keys for hook memoization
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Returns: A [WritableComputed] with custom read/write behavior
   ///
@@ -334,10 +334,10 @@ final class JoltComputedHookCreator {
     T Function() getter,
     void Function(T) setter, {
     List<Object?>? keys,
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) {
     return use(
-      JoltHook(() => WritableComputed(getter, setter, onDebug: onDebug),
+      JoltHook(() => WritableComputed(getter, setter, debug: debug),
           keys: keys),
     );
   }
@@ -364,7 +364,7 @@ final class JoltEffectHookCreator {
   ///   then automatically re-run whenever its reactive dependencies change.
   ///   If `false` (default), the effect will only run when dependencies change,
   ///   not immediately upon creation.
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   /// - [keys]: Optional keys for hook memoization
   ///
   /// Returns: An [Effect] that tracks dependencies and runs automatically
@@ -388,12 +388,12 @@ final class JoltEffectHookCreator {
   Effect call(
     void Function() fn, {
     bool lazy = false,
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
     List<Object?>? keys,
   }) {
     return use(
       JoltEffectHook(
-        () => Effect(fn, lazy: lazy, onDebug: onDebug),
+        () => Effect(fn, lazy: lazy, debug: debug),
         keys: keys,
       ),
     );
@@ -407,7 +407,7 @@ final class JoltEffectHookCreator {
   ///
   /// Parameters:
   /// - [fn]: The effect function to execute
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   /// - [keys]: Optional keys for hook memoization
   ///
   /// Returns: An [Effect] that executes immediately
@@ -426,12 +426,12 @@ final class JoltEffectHookCreator {
   /// ```
   Effect lazy(
     void Function() fn, {
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
     List<Object?>? keys,
   }) {
     return use(
       JoltEffectHook(
-        () => Effect.lazy(fn, onDebug: onDebug),
+        () => Effect.lazy(fn, debug: debug),
         keys: keys,
       ),
     );
@@ -456,7 +456,7 @@ final class JoltWatcherHookCreator {
   /// - [sources]: Function that returns the values to watch
   /// - [fn]: Callback function executed when sources change
   /// - [keys]: Optional keys for hook memoization
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   /// - [immediately]: Whether to execute the callback immediately (default is false)
   /// - [when]: Optional condition function for custom trigger logic
   ///
@@ -486,7 +486,7 @@ final class JoltWatcherHookCreator {
     T Function() sources,
     WatcherFn<T> fn, {
     List<Object?>? keys,
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
     bool immediately = false,
     WhenFn<T>? when,
   }) {
@@ -497,7 +497,7 @@ final class JoltWatcherHookCreator {
           fn,
           immediately: immediately,
           when: when,
-          onDebug: onDebug,
+          debug: debug,
         ),
         keys: keys,
       ),
@@ -510,7 +510,7 @@ final class JoltWatcherHookCreator {
   /// - [sources]: Function that returns the values to watch
   /// - [fn]: Callback function executed when sources change
   /// - [keys]: Optional keys for hook memoization
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   /// - [when]: Optional condition function for custom trigger logic
   ///
   /// Returns: A [Watcher] that executes immediately
@@ -518,11 +518,11 @@ final class JoltWatcherHookCreator {
     T Function() sources,
     WatcherFn<T> fn, {
     List<Object?>? keys,
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
     WhenFn<T>? when,
   }) {
     return use(JoltEffectHook(
-        () => Watcher<T>.immediately(sources, fn, when: when, onDebug: onDebug),
+        () => Watcher<T>.immediately(sources, fn, when: when, debug: debug),
         keys: keys));
   }
 
@@ -532,7 +532,7 @@ final class JoltWatcherHookCreator {
   /// - [sources]: Function that returns the values to watch
   /// - [fn]: Callback function executed when sources change
   /// - [keys]: Optional keys for hook memoization
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   /// - [when]: Optional condition function for custom trigger logic
   ///
   /// Returns: A [Watcher] that executes only once
@@ -540,11 +540,11 @@ final class JoltWatcherHookCreator {
     T Function() sources,
     WatcherFn<T> fn, {
     List<Object?>? keys,
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
     WhenFn<T>? when,
   }) {
     return use(JoltEffectHook(
-        () => Watcher<T>.once(sources, fn, when: when, onDebug: onDebug),
+        () => Watcher<T>.once(sources, fn, when: when, debug: debug),
         keys: keys));
   }
 }
@@ -566,7 +566,7 @@ final class JoltEffectScopeHookCreator {
   /// Parameters:
   /// - [fn]: Optional function to execute within the scope context
   /// - [keys]: Optional keys for hook memoization
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Returns: An [EffectScope] for managing effect lifecycles
   ///
@@ -590,10 +590,10 @@ final class JoltEffectScopeHookCreator {
     void Function(EffectScope scope)? fn,
     bool detach = false,
     List<Object?>? keys,
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) {
     return use(JoltEffectHook(() {
-      final scope = EffectScope(detach: detach, onDebug: onDebug);
+      final scope = EffectScope(detach: detach, debug: debug);
       if (fn != null) {
         scope.run(() => fn(scope));
       }

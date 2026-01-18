@@ -31,7 +31,7 @@ class ComputedImpl<T> extends ComputedReactiveNode<T>
   ///
   /// Parameters:
   /// - [getter]: Function that computes the value based on dependencies
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Example:
   /// ```dart
@@ -43,9 +43,9 @@ class ComputedImpl<T> extends ComputedReactiveNode<T>
   ComputedImpl(
     super.getter, {
     super.equals,
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) : super(flags: ReactiveFlags.none) {
-    JoltDebug.create(this, onDebug);
+    JoltDebug.create(this, debug);
   }
 
   /// {@template jolt_computed_impl_with_previous}
@@ -54,7 +54,7 @@ class ComputedImpl<T> extends ComputedReactiveNode<T>
   /// Parameters:
   /// - [getter]: Function that computes the value, receiving the previous value
   ///   (or `null` on first computation) as a parameter
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Example:
   /// ```dart
@@ -73,12 +73,12 @@ class ComputedImpl<T> extends ComputedReactiveNode<T>
   factory ComputedImpl.withPrevious(
     T Function(T?) getter, {
     EqualFn? equals,
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) {
     late final ComputedImpl<T> computed;
     T fn() => getter(computed.pendingValue);
 
-    computed = ComputedImpl(fn, onDebug: onDebug);
+    computed = ComputedImpl(fn, debug: debug);
     return computed;
   }
 
@@ -219,14 +219,17 @@ class ComputedImpl<T> extends ComputedReactiveNode<T>
 /// ```
 abstract interface class Computed<T> implements ReadableNode<T> {
   /// {@macro jolt_computed_impl}
-  factory Computed(T Function() getter,
-      {EqualFn? equals, JoltDebugFn? onDebug}) = ComputedImpl;
+  factory Computed(
+    T Function() getter, {
+    EqualFn? equals,
+    JoltDebugOption? debug,
+  }) = ComputedImpl;
 
   /// {@macro jolt_computed_impl_with_previous}
   factory Computed.withPrevious(
     T Function(T?) getter, {
     EqualFn? equals,
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) = ComputedImpl.withPrevious;
 
   /// Returns the cached computed value without establishing a reactive dependency.
@@ -290,7 +293,7 @@ class WritableComputedImpl<T> extends ComputedImpl<T>
   /// Parameters:
   /// - [getter]: Function that computes the value from dependencies
   /// - [setter]: Function called when the computed value is set
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Example:
   /// ```dart
@@ -301,8 +304,7 @@ class WritableComputedImpl<T> extends ComputedImpl<T>
   /// );
   /// ```
   /// {@endtemplate}
-  WritableComputedImpl(super.getter, this.setter,
-      {super.equals, super.onDebug});
+  WritableComputedImpl(super.getter, this.setter, {super.equals, super.debug});
 
   /// {@template jolt_writable_computed_impl_with_previous}
   /// Creates a writable computed value with a getter that receives the previous value.
@@ -311,7 +313,7 @@ class WritableComputedImpl<T> extends ComputedImpl<T>
   /// - [getter]: Function that computes the value, receiving the previous value
   ///   (or `null` on first computation) as a parameter
   /// - [setter]: Function called when the computed value is set
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Example:
   /// ```dart
@@ -332,13 +334,12 @@ class WritableComputedImpl<T> extends ComputedImpl<T>
     T Function(T?) getter,
     void Function(T) setter, {
     EqualFn? equals,
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) {
     late final WritableComputedImpl<T> computed;
     T fn() => getter(computed.pendingValue);
 
-    computed =
-        WritableComputedImpl(fn, setter, equals: equals, onDebug: onDebug);
+    computed = WritableComputedImpl(fn, setter, equals: equals, debug: debug);
     return computed;
   }
 
@@ -401,7 +402,7 @@ abstract interface class WritableComputed<T> implements Computed<T>, Signal<T> {
     T Function() getter,
     void Function(T) setter, {
     EqualFn? equals,
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) = WritableComputedImpl<T>;
 
   /// {@macro jolt_writable_computed_impl_with_previous}
@@ -409,6 +410,6 @@ abstract interface class WritableComputed<T> implements Computed<T>, Signal<T> {
     T Function(T?) getter,
     void Function(T) setter, {
     EqualFn? equals,
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) = WritableComputedImpl.withPrevious;
 }

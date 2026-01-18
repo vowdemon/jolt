@@ -310,7 +310,7 @@ class AsyncSignalImpl<T> extends SignalImpl<AsyncState<T>>
   AsyncSignalImpl({
     AsyncSource<T>? source,
     AsyncState<T>? initialValue,
-    super.onDebug,
+    JoltDebugOption? debug,
   }) : super(initialValue ?? AsyncLoading<T>()) {
     if (source != null) {
       unawaited(fetch(source));
@@ -369,7 +369,7 @@ abstract interface class AsyncSignal<T> implements Signal<AsyncState<T>> {
   /// Parameters:
   /// - [source]: The async source to manage
   /// - [initialValue]: Optional initial async state
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Example:
   /// ```dart
@@ -381,7 +381,7 @@ abstract interface class AsyncSignal<T> implements Signal<AsyncState<T>> {
   factory AsyncSignal({
     AsyncSource<T>? source,
     AsyncState<T>? initialValue,
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) = AsyncSignalImpl<T>;
 
   /// Creates an async signal from a Future.
@@ -397,8 +397,8 @@ abstract interface class AsyncSignal<T> implements Signal<AsyncState<T>> {
   ///   Future.delayed(Duration(seconds: 1), () => 'Hello')
   /// );
   /// ```
-  factory AsyncSignal.fromFuture(Future<T> future, {JoltDebugFn? onDebug}) =>
-      AsyncSignalImpl(source: FutureSource(future), onDebug: onDebug);
+  factory AsyncSignal.fromFuture(Future<T> future, {JoltDebugOption? debug}) =>
+      AsyncSignalImpl(source: FutureSource(future), debug: debug);
 
   /// Creates an async signal from a Stream.
   ///
@@ -413,8 +413,8 @@ abstract interface class AsyncSignal<T> implements Signal<AsyncState<T>> {
   ///   Stream.periodic(Duration(seconds: 1), (i) => i)
   /// );
   /// ```
-  factory AsyncSignal.fromStream(Stream<T> stream, {JoltDebugFn? onDebug}) =>
-      AsyncSignalImpl(source: StreamSource(stream), onDebug: onDebug);
+  factory AsyncSignal.fromStream(Stream<T> stream, {JoltDebugOption? debug}) =>
+      AsyncSignalImpl(source: StreamSource(stream), debug: debug);
 
   /// Gets the data from the current async state.
   ///

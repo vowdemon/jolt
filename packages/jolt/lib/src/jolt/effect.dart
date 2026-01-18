@@ -81,7 +81,7 @@ class EffectScopeImpl extends EffectScopeReactiveNode
   /// - [detach]: Whether to detach this scope from its parent scope. If true,
   ///   the scope will not be automatically disposed when its parent is disposed.
   ///   Defaults to false.
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// The scope is automatically linked to its parent scope (if any) unless
   /// [detach] is true. Use [run] to execute code within the scope context.
@@ -97,9 +97,9 @@ class EffectScopeImpl extends EffectScopeReactiveNode
   ///     onScopeDispose(() => print('Scope disposed'));
   ///   });
   /// ```
-  EffectScopeImpl({bool? detach, JoltDebugFn? onDebug})
+  EffectScopeImpl({bool? detach, JoltDebugOption? debug})
       : super(flags: ReactiveFlags.none) {
-    JoltDebug.create(this, onDebug);
+    JoltDebug.create(this, debug);
     if (!(detach ?? false)) {
       final prevSub = getActiveSub();
       if (prevSub != null) {
@@ -167,13 +167,16 @@ abstract class EffectScope implements EffectNode {
   ///
   /// Parameters:
   /// - [detach]: Whether to detach this scope from its parent scope
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Example:
   /// ```dart
   /// final scope = EffectScope(detach: true);
   /// ```
-  factory EffectScope({bool? detach, JoltDebugFn? onDebug}) = EffectScopeImpl;
+  factory EffectScope({
+    bool? detach,
+    JoltDebugOption? debug,
+  }) = EffectScopeImpl;
 
   /// Runs a function within this scope's context.
   ///
@@ -235,7 +238,7 @@ class EffectImpl extends EffectReactiveNode
   ///   then automatically re-run whenever its reactive dependencies change.
   ///   If `false` (default), the effect will only run when dependencies change,
   ///   not immediately upon creation.
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// The effect function will be called immediately upon creation (if [lazy] is true)
   /// and then automatically whenever any of its reactive dependencies change.
@@ -257,9 +260,9 @@ class EffectImpl extends EffectReactiveNode
   /// signal.value = 1; // Both effects run
   /// ```
   /// {@endtemplate}
-  EffectImpl(this.fn, {bool lazy = false, JoltDebugFn? onDebug})
+  EffectImpl(this.fn, {bool lazy = false, JoltDebugOption? debug})
       : super(flags: ReactiveFlags.watching | ReactiveFlags.recursedCheck) {
-    JoltDebug.create(this, onDebug);
+    JoltDebug.create(this, debug);
 
     final prevSub = getActiveSub();
     if (prevSub != null) {
@@ -288,7 +291,7 @@ class EffectImpl extends EffectReactiveNode
   ///
   /// Parameters:
   /// - [fn]: The effect function to execute
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Returns: A new [Effect] instance that executes immediately
   ///
@@ -308,8 +311,8 @@ class EffectImpl extends EffectReactiveNode
   /// expect(values, equals([10, 20]));
   /// ```
   /// {@endtemplate}
-  factory EffectImpl.lazy(void Function() fn, {JoltDebugFn? onDebug}) {
-    return EffectImpl(fn, lazy: true, onDebug: onDebug);
+  factory EffectImpl.lazy(void Function() fn, {JoltDebugOption? debug}) {
+    return EffectImpl(fn, lazy: true, debug: debug);
   }
 
   @pragma("vm:prefer-inline")
@@ -384,11 +387,11 @@ abstract class Effect implements EffectNode {
   factory Effect(
     void Function() fn, {
     bool lazy,
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) = EffectImpl;
 
   /// {@macro jolt_effect_impl.lazy}
-  factory Effect.lazy(void Function() fn, {JoltDebugFn? onDebug}) =
+  factory Effect.lazy(void Function() fn, {JoltDebugOption? debug}) =
       EffectImpl.lazy;
 
   /// Manually runs the effect function.
@@ -472,9 +475,9 @@ class WatcherImpl<T> extends EffectReactiveNode
   /// ```
   /// {@endtemplate}
   WatcherImpl(this.sourcesFn, this.fn,
-      {bool immediately = false, this.when, JoltDebugFn? onDebug})
+      {bool immediately = false, this.when, JoltDebugOption? debug})
       : super(flags: ReactiveFlags.watching) {
-    JoltDebug.create(this, onDebug);
+    JoltDebug.create(this, debug);
 
     final prevSub = setActiveSub(this);
     if (prevSub != null) {
@@ -511,7 +514,7 @@ class WatcherImpl<T> extends EffectReactiveNode
   /// - [sourcesFn]: Function that returns the values to watch
   /// - [fn]: Callback function executed when sources change
   /// - [when]: Optional condition function for custom trigger logic
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Returns: A new [Watcher] instance that executes immediately
   ///
@@ -535,9 +538,9 @@ class WatcherImpl<T> extends EffectReactiveNode
   /// ```
   /// {@endtemplate}
   factory WatcherImpl.immediately(SourcesFn<T> sourcesFn, WatcherFn<T> fn,
-      {WhenFn<T>? when, JoltDebugFn? onDebug}) {
+      {WhenFn<T>? when, JoltDebugOption? debug}) {
     return WatcherImpl(sourcesFn, fn,
-        immediately: true, when: when, onDebug: onDebug);
+        immediately: true, when: when, debug: debug);
   }
 
   /// {@template jolt_watcher_impl.once}
@@ -552,7 +555,7 @@ class WatcherImpl<T> extends EffectReactiveNode
   /// - [sourcesFn]: Function that returns the values to watch
   /// - [fn]: Callback function executed on first change
   /// - [when]: Optional condition function for custom trigger logic
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Returns: A new [Watcher] instance that auto-disposes after first execution
   ///
@@ -580,13 +583,13 @@ class WatcherImpl<T> extends EffectReactiveNode
   /// ```
   /// {@endtemplate}
   factory WatcherImpl.once(SourcesFn<T> sourcesFn, WatcherFn<T> fn,
-      {WhenFn<T>? when, JoltDebugFn? onDebug}) {
+      {WhenFn<T>? when, JoltDebugOption? debug}) {
     late WatcherImpl<T> watcher;
 
     watcher = WatcherImpl(sourcesFn, (newValue, oldValue) {
       fn(newValue, oldValue);
       watcher.dispose();
-    }, when: when, immediately: false, onDebug: onDebug);
+    }, when: when, immediately: false, debug: debug);
 
     return watcher;
   }
@@ -724,18 +727,29 @@ class WatcherImpl<T> extends EffectReactiveNode
 /// ```
 abstract class Watcher<T> implements EffectNode {
   /// {@macro jolt_watcher_impl}
-  factory Watcher(SourcesFn<T> sourcesFn, WatcherFn<T> fn,
-      {bool immediately,
-      WhenFn<T>? when,
-      JoltDebugFn? onDebug}) = WatcherImpl<T>;
+  factory Watcher(
+    SourcesFn<T> sourcesFn,
+    WatcherFn<T> fn, {
+    bool immediately,
+    WhenFn<T>? when,
+    JoltDebugOption? debug,
+  }) = WatcherImpl<T>;
 
   /// {@macro jolt_watcher_impl.immediately}
-  factory Watcher.immediately(SourcesFn<T> sourcesFn, WatcherFn<T> fn,
-      {WhenFn<T>? when, JoltDebugFn? onDebug}) = WatcherImpl.immediately;
+  factory Watcher.immediately(
+    SourcesFn<T> sourcesFn,
+    WatcherFn<T> fn, {
+    WhenFn<T>? when,
+    JoltDebugOption? debug,
+  }) = WatcherImpl.immediately;
 
   /// {@macro jolt_watcher_impl.once}
-  factory Watcher.once(SourcesFn<T> sourcesFn, WatcherFn<T> fn,
-      {WhenFn<T>? when, JoltDebugFn? onDebug}) = WatcherImpl.once;
+  factory Watcher.once(
+    SourcesFn<T> sourcesFn,
+    WatcherFn<T> fn, {
+    WhenFn<T>? when,
+    JoltDebugOption? debug,
+  }) = WatcherImpl.once;
 
   /// The currently active watcher instance.
   ///

@@ -1,5 +1,6 @@
 import "dart:async";
 
+import "package:jolt/core.dart";
 import "package:jolt/jolt.dart";
 import "package:jolt/src/jolt/signal.dart";
 
@@ -172,7 +173,7 @@ class SyncPersistSignalImpl<T> extends SignalImpl<T>
   /// - [write]: Function to write to storage
   /// - [lazy]: Defer loading until first access (default: false)
   /// - [throttle]: Delay before writing (null = no throttling)
-  /// - [onDebug]: Optional debug callback
+  /// - [debug]: Optional debug options
   ///
   /// Example:
   /// ```dart
@@ -186,7 +187,7 @@ class SyncPersistSignalImpl<T> extends SignalImpl<T>
     required this.write,
     bool lazy = false,
     this.throttle,
-    super.onDebug,
+    super.debug,
   }) : super(null) {
     if (!lazy) {
       _loadSync();
@@ -197,7 +198,7 @@ class SyncPersistSignalImpl<T> extends SignalImpl<T>
     required this.read,
     required this.write,
     this.throttle,
-    super.onDebug,
+    super.debug,
   }) : super(null);
 
   /// Synchronous read function.
@@ -290,7 +291,7 @@ class AsyncPersistSignalImpl<T> extends SignalImpl<T>
   /// - [initialValue]: Optional temporary value during loading (null if omitted)
   /// - [lazy]: Defer loading until first access (default: false)
   /// - [throttle]: Delay before writing (null = no throttling)
-  /// - [onDebug]: Optional debug callback
+  /// - [debug]: Optional debug options
   ///
   /// Example:
   /// ```dart
@@ -306,7 +307,7 @@ class AsyncPersistSignalImpl<T> extends SignalImpl<T>
     this.initialValue,
     bool lazy = false,
     this.throttle,
-    super.onDebug,
+    super.debug,
   }) : super(null) {
     if (!lazy) {
       _load();
@@ -318,7 +319,7 @@ class AsyncPersistSignalImpl<T> extends SignalImpl<T>
     required this.write,
     this.initialValue,
     this.throttle,
-    super.onDebug,
+    super.debug,
   }) : super(null);
 
   /// Optional temporary value during async loading (for display).
@@ -480,7 +481,7 @@ abstract interface class PersistSignal<T> implements Signal<T> {
   /// - [write]: Function to write to storage
   /// - [lazy]: Defer loading until first access (default: false)
   /// - [throttle]: Delay before writing (null = no throttling)
-  /// - [onDebug]: Optional debug callback
+  /// - [debug]: Optional debug options
   ///
   /// Example:
   /// ```dart
@@ -494,7 +495,7 @@ abstract interface class PersistSignal<T> implements Signal<T> {
     required FutureOr<void> Function(T value) write,
     bool lazy,
     Duration? throttle,
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) = SyncPersistSignalImpl<T>;
 
   /// Creates a lazy synchronous persistent signal.
@@ -503,7 +504,7 @@ abstract interface class PersistSignal<T> implements Signal<T> {
   /// - [read]: Sync function to read from storage
   /// - [write]: Function to write to storage
   /// - [throttle]: Delay before writing (null = no throttling)
-  /// - [onDebug]: Optional debug callback
+  /// - [debug]: Optional debug options
   ///
   /// Example:
   /// ```dart
@@ -516,7 +517,7 @@ abstract interface class PersistSignal<T> implements Signal<T> {
     required T Function() read,
     required FutureOr<void> Function(T value) write,
     Duration? throttle,
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) = SyncPersistSignalImpl<T>.lazy;
 
   /// Creates an asynchronous persistent signal.
@@ -527,7 +528,7 @@ abstract interface class PersistSignal<T> implements Signal<T> {
   /// - [initialValue]: Optional temporary value during loading (null if omitted)
   /// - [lazy]: Defer loading until first access (default: false)
   /// - [throttle]: Delay before writing (null = no throttling)
-  /// - [onDebug]: Optional debug callback
+  /// - [debug]: Optional debug options
   ///
   /// Example:
   /// ```dart
@@ -543,7 +544,7 @@ abstract interface class PersistSignal<T> implements Signal<T> {
     T Function()? initialValue,
     bool lazy,
     Duration? throttle,
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) = AsyncPersistSignalImpl<T>;
 
   /// Creates a lazy asynchronous persistent signal.
@@ -553,7 +554,7 @@ abstract interface class PersistSignal<T> implements Signal<T> {
   /// - [write]: Function to write to storage
   /// - [initialValue]: Optional temporary value during loading (null if omitted)
   /// - [throttle]: Delay before writing (null = no throttling)
-  /// - [onDebug]: Optional debug callback
+  /// - [debug]: Optional debug options
   ///
   /// Example:
   /// ```dart
@@ -568,7 +569,7 @@ abstract interface class PersistSignal<T> implements Signal<T> {
     required FutureOr<void> Function(T value) write,
     T Function()? initialValue,
     Duration? throttle,
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) = AsyncPersistSignalImpl<T>.lazy;
 
   /// Whether initialized from storage.

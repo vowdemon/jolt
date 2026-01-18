@@ -120,7 +120,7 @@ class _UseFutureHook<T> extends SetupHook<_AsyncSnapshotFutureSignalImpl<T>> {
 class _AsyncSnapshotFutureSignalImpl<T> extends SignalImpl<AsyncSnapshot<T>>
     with _AsyncSnapshotSignalMixin<T>
     implements AsyncSnapshotFutureSignal<T> {
-  _AsyncSnapshotFutureSignalImpl(this.future, {T? initialData})
+  _AsyncSnapshotFutureSignalImpl(this.future, {T? initialData, super.debug})
       : super(initialData == null
             ? AsyncSnapshot<T>.nothing()
             : AsyncSnapshot<T>.withData(ConnectionState.none, initialData)) {

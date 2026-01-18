@@ -19,7 +19,7 @@ final class JoltSignalHookCreator {
   ///
   /// Parameters:
   /// - [value]: The initial value for the signal
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Returns: A [Signal] that can be read and written to
   ///
@@ -36,15 +36,15 @@ final class JoltSignalHookCreator {
   @defineHook
   Signal<T> call<T>(
     T value, {
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) {
-    return useAutoDispose(() => Signal(value, onDebug: onDebug));
+    return useAutoDispose(() => Signal(value, debug: debug));
   }
 
   /// Creates a lazy signal hook without an initial value.
   ///
   /// Parameters:
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Returns: A [Signal] that can be read and written to
   ///
@@ -63,9 +63,9 @@ final class JoltSignalHookCreator {
   /// ```
   @defineHook
   Signal<T> lazy<T>({
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) {
-    return useAutoDispose(() => Signal.lazy(onDebug: onDebug));
+    return useAutoDispose(() => Signal.lazy(debug: debug));
   }
 
   /// Creates a reactive list signal hook.
@@ -74,7 +74,7 @@ final class JoltSignalHookCreator {
   ///
   /// Parameters:
   /// - [value]: The initial list value
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Returns: A [ListSignal] with reactive list operations
   ///
@@ -97,9 +97,9 @@ final class JoltSignalHookCreator {
   @defineHook
   ListSignal<T> list<T>(
     List<T>? value, {
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) {
-    return useAutoDispose(() => ListSignal(value, onDebug: onDebug));
+    return useAutoDispose(() => ListSignal(value, debug: debug));
   }
 
   /// Creates a reactive map signal hook.
@@ -108,7 +108,7 @@ final class JoltSignalHookCreator {
   ///
   /// Parameters:
   /// - [value]: The initial map value
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Returns: A [MapSignal] with reactive map operations
   ///
@@ -123,9 +123,9 @@ final class JoltSignalHookCreator {
   @defineHook
   MapSignal<K, V> map<K, V>(
     Map<K, V>? value, {
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) {
-    return useAutoDispose(() => MapSignal(value, onDebug: onDebug));
+    return useAutoDispose(() => MapSignal(value, debug: debug));
   }
 
   /// Creates a reactive set signal hook.
@@ -134,7 +134,7 @@ final class JoltSignalHookCreator {
   ///
   /// Parameters:
   /// - [value]: The initial set value
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Returns: A [SetSignal] with reactive set operations
   ///
@@ -149,16 +149,16 @@ final class JoltSignalHookCreator {
   @defineHook
   SetSignal<T> set<T>(
     Set<T>? value, {
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) {
-    return useAutoDispose(() => SetSignal(value, onDebug: onDebug));
+    return useAutoDispose(() => SetSignal(value, debug: debug));
   }
 
   /// Creates a reactive iterable signal hook.
   ///
   /// Parameters:
   /// - [getter]: Function that computes the iterable value
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Returns: An [IterableSignal] with reactive iterable operations
   ///
@@ -174,9 +174,9 @@ final class JoltSignalHookCreator {
   @defineHook
   IterableSignal<T> iterable<T>(
     Iterable<T> Function() getter, {
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) {
-    return useAutoDispose(() => IterableSignal<T>(getter, onDebug: onDebug));
+    return useAutoDispose(() => IterableSignal<T>(getter, debug: debug));
   }
 
   /// Creates an async signal hook for managing asynchronous operations.
@@ -187,7 +187,7 @@ final class JoltSignalHookCreator {
   /// Parameters:
   /// - [source]: A function that returns an async source providing the data
   /// - [initialValue]: Optional function that returns the initial async state
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Returns: An [AsyncSignal] that manages async state transitions
   ///
@@ -212,12 +212,10 @@ final class JoltSignalHookCreator {
   AsyncSignal<T> async<T>(
     AsyncSource<T> Function() source, {
     AsyncState<T> Function()? initialValue,
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) {
     return useAutoDispose(() => AsyncSignal(
-        source: source(),
-        initialValue: initialValue?.call(),
-        onDebug: onDebug));
+        source: source(), initialValue: initialValue?.call(), debug: debug));
   }
 }
 
@@ -237,7 +235,7 @@ final class JoltUseComputed {
   ///
   /// Parameters:
   /// - [getter]: Function that computes the derived value
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Returns: A [Computed] that automatically updates when dependencies change
   ///
@@ -253,8 +251,8 @@ final class JoltUseComputed {
   /// ```
   /// {@endtemplate}
   @defineHook
-  Computed<T> call<T>(T Function() getter, {JoltDebugFn? onDebug}) {
-    return useAutoDispose(() => Computed(getter, onDebug: onDebug));
+  Computed<T> call<T>(T Function() getter, {JoltDebugOption? debug}) {
+    return useAutoDispose(() => Computed(getter, debug: debug));
   }
 
   /// Creates a computed value hook with a getter that receives the previous value.
@@ -267,7 +265,7 @@ final class JoltUseComputed {
   /// Parameters:
   /// - [getter]: Function that computes the value, receiving the previous value
   ///   (or `null` on first computation) as a parameter
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Returns: A [Computed] that can access its previous value during computation
   ///
@@ -289,9 +287,8 @@ final class JoltUseComputed {
   /// }
   /// ```
   @defineHook
-  Computed<T> withPrevious<T>(T Function(T?) getter, {JoltDebugFn? onDebug}) {
-    return useAutoDispose(
-        () => Computed.withPrevious(getter, onDebug: onDebug));
+  Computed<T> withPrevious<T>(T Function(T?) getter, {JoltDebugOption? debug}) {
+    return useAutoDispose(() => Computed.withPrevious(getter, debug: debug));
   }
 
   /// Creates a writable computed hook that can be both read and written.
@@ -301,7 +298,7 @@ final class JoltUseComputed {
   /// Parameters:
   /// - [getter]: Function that computes the current value
   /// - [setter]: Function that handles value updates
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Returns: A [WritableComputed] with custom read/write behavior
   ///
@@ -324,9 +321,8 @@ final class JoltUseComputed {
   /// ```
   @defineHook
   Computed<T> writable<T>(T Function() getter, void Function(T) setter,
-      {JoltDebugFn? onDebug}) {
-    return useAutoDispose(
-        () => WritableComputed(getter, setter, onDebug: onDebug));
+      {JoltDebugOption? debug}) {
+    return useAutoDispose(() => WritableComputed(getter, setter, debug: debug));
   }
 
   /// Creates a writable computed hook with a getter that receives the previous value.
@@ -342,7 +338,7 @@ final class JoltUseComputed {
   /// - [getter]: Function that computes the value, receiving the previous value
   ///   (or `null` on first computation) as a parameter
   /// - [setter]: Function called when the computed value is set
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Returns: A [WritableComputed] that can access its previous value during computation
   ///
@@ -367,9 +363,9 @@ final class JoltUseComputed {
   @defineHook
   WritableComputed<T> writableWithPrevious<T>(
       T Function(T?) getter, void Function(T) setter,
-      {JoltDebugFn? onDebug}) {
+      {JoltDebugOption? debug}) {
     return useAutoDispose(
-        () => WritableComputed.withPrevious(getter, setter, onDebug: onDebug));
+        () => WritableComputed.withPrevious(getter, setter, debug: debug));
   }
 }
 
@@ -380,15 +376,15 @@ final useComputed = JoltUseComputed._();
 /// Provides fine-grained control over effect lifecycle and hot reload behavior.
 // ignore: unused_element
 class _UseEffectHook extends SetupHook<EffectImpl> {
-  _UseEffectHook(this.effect, this.lazy, this.onDebug);
+  _UseEffectHook(this.effect, this.lazy, this.debug);
 
   late void Function() effect;
   late bool lazy;
-  late JoltDebugFn? onDebug;
+  late JoltDebugOption? debug;
 
   @override
   EffectImpl build() {
-    return EffectImpl(effect, lazy: lazy, onDebug: onDebug);
+    return EffectImpl(effect, lazy: lazy, debug: debug);
   }
 
   @override
@@ -399,10 +395,10 @@ class _UseEffectHook extends SetupHook<EffectImpl> {
   // coverage:ignore-start
   @override
   void reassemble(covariant _UseEffectHook newHook) {
-    if (onDebug != newHook.onDebug) {
-      onDebug = newHook.onDebug;
-      if (newHook.onDebug != null) {
-        setJoltDebugFn(state, newHook.onDebug!);
+    if (debug != newHook.debug) {
+      debug = newHook.debug;
+      if (newHook.debug?.onDebug != null) {
+        JoltDebug.setDebug(state, newHook.debug!.onDebug!);
       }
     }
     lazy = newHook.lazy;
@@ -429,7 +425,7 @@ final class JoltEffectHookCreator {
   ///   then automatically re-run whenever its reactive dependencies change.
   ///   If `false` (default), the effect will only run when dependencies change,
   ///   not immediately upon creation.
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Returns: An [Effect] that tracks dependencies and runs automatically
   ///
@@ -454,8 +450,8 @@ final class JoltEffectHookCreator {
   /// {@endtemplate}
   @defineHook
   Effect call(void Function() effect,
-      {bool lazy = false, JoltDebugFn? onDebug}) {
-    return useHook(_UseEffectHook(effect, lazy, onDebug));
+      {bool lazy = false, JoltDebugOption? debug}) {
+    return useHook(_UseEffectHook(effect, lazy, debug));
   }
 
   /// Creates an effect hook that runs immediately upon creation.
@@ -466,7 +462,7 @@ final class JoltEffectHookCreator {
   ///
   /// Parameters:
   /// - [effect]: The effect function to execute
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Returns: An [Effect] that executes immediately
   ///
@@ -483,8 +479,8 @@ final class JoltEffectHookCreator {
   /// }
   /// ```
   @defineHook
-  Effect lazy(void Function() effect, {JoltDebugFn? onDebug}) {
-    return useHook(_UseEffectHook(effect, true, onDebug));
+  Effect lazy(void Function() effect, {JoltDebugOption? debug}) {
+    return useHook(_UseEffectHook(effect, true, debug));
   }
 }
 
@@ -492,15 +488,15 @@ final class JoltEffectHookCreator {
 final useEffect = JoltEffectHookCreator._();
 
 class _UseFlutterEffectHook extends SetupHook<FlutterEffectImpl> {
-  _UseFlutterEffectHook(this.effect, this.lazy, this.onDebug);
+  _UseFlutterEffectHook(this.effect, this.lazy, this.debug);
 
   late void Function() effect;
   late bool lazy;
-  late JoltDebugFn? onDebug;
+  late JoltDebugOption? debug;
 
   @override
   FlutterEffectImpl build() {
-    return FlutterEffectImpl(effect, lazy: lazy, onDebug: onDebug);
+    return FlutterEffectImpl(effect, lazy: lazy, debug: debug);
   }
 
   @override
@@ -511,10 +507,10 @@ class _UseFlutterEffectHook extends SetupHook<FlutterEffectImpl> {
   // coverage:ignore-start
   @override
   void reassemble(covariant _UseEffectHook newHook) {
-    if (onDebug != newHook.onDebug) {
-      onDebug = newHook.onDebug;
-      if (newHook.onDebug != null) {
-        setJoltDebugFn(state, newHook.onDebug!);
+    if (debug != newHook.debug) {
+      debug = newHook.debug;
+      if (newHook.debug?.onDebug != null) {
+        JoltDebug.setDebug(state, newHook.debug!.onDebug!);
       }
     }
     lazy = newHook.lazy;
@@ -545,7 +541,7 @@ final class JoltFlutterEffectHookCreator {
   ///   then automatically re-run at frame end whenever its reactive dependencies change.
   ///   If `false` (default), the effect will only run at frame end when dependencies change,
   ///   not immediately upon creation.
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Returns: A [FlutterEffect] that tracks dependencies and runs at frame end
   ///
@@ -570,8 +566,8 @@ final class JoltFlutterEffectHookCreator {
   /// {@endtemplate}
   @defineHook
   FlutterEffect call(void Function() effect,
-      {bool lazy = false, JoltDebugFn? onDebug}) {
-    return useHook(_UseFlutterEffectHook(effect, lazy, onDebug));
+      {bool lazy = false, JoltDebugOption? debug}) {
+    return useHook(_UseFlutterEffectHook(effect, lazy, debug));
   }
 
   /// Creates a Flutter effect hook that runs immediately upon creation.
@@ -582,7 +578,7 @@ final class JoltFlutterEffectHookCreator {
   ///
   /// Parameters:
   /// - [effect]: The effect function to execute
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Returns: A [FlutterEffect] that executes immediately
   ///
@@ -599,8 +595,8 @@ final class JoltFlutterEffectHookCreator {
   /// }
   /// ```
   @defineHook
-  FlutterEffect lazy(void Function() effect, {JoltDebugFn? onDebug}) {
-    return useHook(_UseFlutterEffectHook(effect, true, onDebug));
+  FlutterEffect lazy(void Function() effect, {JoltDebugOption? debug}) {
+    return useHook(_UseFlutterEffectHook(effect, true, debug));
   }
 }
 
@@ -609,18 +605,18 @@ final useFlutterEffect = JoltFlutterEffectHookCreator._();
 
 class _UseWatcherHook<T> extends SetupHook<WatcherImpl<T>> {
   _UseWatcherHook(this.sourcesFn, this.fn,
-      {this.when, this.immediately = false, this.onDebug});
+      {this.when, this.immediately = false, this.debug});
 
   late SourcesFn<T> sourcesFn;
   late WatcherFn<T> fn;
   late WhenFn<T>? when;
   late bool immediately;
-  late JoltDebugFn? onDebug;
+  late JoltDebugOption? debug;
 
   @override
   WatcherImpl<T> build() {
     return WatcherImpl(sourcesFn, fn,
-        when: when, immediately: immediately, onDebug: onDebug);
+        when: when, immediately: immediately, debug: debug);
   }
 
   @override
@@ -641,9 +637,9 @@ class _UseWatcherHook<T> extends SetupHook<WatcherImpl<T>> {
       return;
     }
 
-    if (onDebug != newHook.onDebug) {
-      if (newHook.onDebug != null) {
-        setJoltDebugFn(state, newHook.onDebug!);
+    if (debug != newHook.debug) {
+      if (newHook.debug?.onDebug != null) {
+        JoltDebug.setDebug(state, newHook.debug!.onDebug!);
       }
     }
 
@@ -676,7 +672,7 @@ final class JoltWatcherHookCreator {
   /// - [fn]: Callback function executed when sources change
   /// - [when]: Optional condition function for custom trigger logic
   /// - [immediately]: Whether to execute the callback immediately (default is false)
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Returns: A [Watcher] with fine-grained change detection
   ///
@@ -703,10 +699,10 @@ final class JoltWatcherHookCreator {
     WatcherFn<T> fn, {
     WhenFn<T>? when,
     bool immediately = false,
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) {
     return useHook(_UseWatcherHook<T>(sourcesFn, fn,
-        when: when, immediately: immediately, onDebug: onDebug));
+        when: when, immediately: immediately, debug: debug));
   }
 
   /// Creates a watcher hook that executes immediately upon creation.
@@ -715,7 +711,7 @@ final class JoltWatcherHookCreator {
   /// - [sourcesFn]: Function that returns the values to watch
   /// - [fn]: Callback function executed when sources change
   /// - [when]: Optional condition function for custom trigger logic
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Returns: A [Watcher] that executes immediately
   @defineHook
@@ -723,10 +719,10 @@ final class JoltWatcherHookCreator {
     SourcesFn<T> sourcesFn,
     WatcherFn<T> fn, {
     WhenFn<T>? when,
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) {
     return useHook(_UseWatcherHook<T>(sourcesFn, fn,
-        when: when, immediately: true, onDebug: onDebug));
+        when: when, immediately: true, debug: debug));
   }
 
   /// Creates a watcher hook that executes only once.
@@ -735,7 +731,7 @@ final class JoltWatcherHookCreator {
   /// - [sourcesFn]: Function that returns the values to watch
   /// - [fn]: Callback function executed when sources change
   /// - [when]: Optional condition function for custom trigger logic
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Returns: A [Watcher] that executes only once
   @defineHook
@@ -743,13 +739,13 @@ final class JoltWatcherHookCreator {
     SourcesFn<T> sourcesFn,
     WatcherFn<T> fn, {
     WhenFn<T>? when,
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) {
     late _UseWatcherHook<T> hook;
     hook = _UseWatcherHook<T>(sourcesFn, (newValue, oldValue) {
       fn(newValue, oldValue);
       hook.state.dispose();
-    }, when: when, immediately: false, onDebug: onDebug);
+    }, when: when, immediately: false, debug: debug);
     return useHook(hook);
   }
 }
@@ -769,7 +765,7 @@ final class JoltEffectScopeHookCreator {
   ///
   /// Parameters:
   /// - [detach]: Whether to detach the scope from the current effect context
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Returns: An [EffectScope] for managing effect lifecycles
   ///
@@ -794,9 +790,9 @@ final class JoltEffectScopeHookCreator {
   @defineHook
   EffectScope call({
     bool? detach,
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) {
-    return useAutoDispose(() => EffectScope(detach: detach, onDebug: onDebug));
+    return useAutoDispose(() => EffectScope(detach: detach, debug: debug));
   }
 }
 

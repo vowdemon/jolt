@@ -1,0 +1,3 @@
+[submodule "packages/jolt_devtools_extension/graphview"]
+	path = packages/jolt_devtools_extension/graphview
+	url = git@github.com:vowdemon/graphview.git

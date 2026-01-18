@@ -108,13 +108,11 @@ abstract final class JoltStreamHelper {
     controller = StreamController<T>.broadcast(
       sync: sync,
       onListen: () {
-        watcher = Watcher(
-          () => readable.value,
-          (newValue, __) {
-            controller.add(newValue);
-          },
-          when: IMutableCollection.skipNode(readable),
-        );
+        watcher = Watcher(() => readable.value, (newValue, __) {
+          controller.add(newValue);
+        },
+            when: IMutableCollection.skipNode(readable),
+            debug: const JoltDebugOption.type('Watcher<ToStream>'));
       },
       onCancel: disposer,
     );

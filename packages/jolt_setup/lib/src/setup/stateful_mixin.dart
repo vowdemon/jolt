@@ -221,8 +221,9 @@ mixin SetupMixin<T extends StatefulWidget> on State<T> {
       // we must initialize here.
       setupContext.run(() {
         setupContext.setupBuilder = setup(context);
-        setupContext.renderer =
-            FlutterEffect.lazy((context as Element).markNeedsBuild);
+        setupContext.renderer = FlutterEffect.lazy(
+            (context as Element).markNeedsBuild,
+            debug: JoltDebugOption.type("SetupRenderer<$T>"));
 
         for (var hook in setupContext._hooks) {
           hook.mount();

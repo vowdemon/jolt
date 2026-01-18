@@ -13,6 +13,8 @@ workspace:
   - packages/jolt_surge
   - packages/jolt_lint
   - packages/jolt_setup
+  - packages/jolt_devtools_extension
+  - packages/jolt_devtools_extension/example
   - packages/jolt_hooks/example
   - packages/jolt_surge/example
 

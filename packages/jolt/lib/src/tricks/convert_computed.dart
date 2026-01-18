@@ -31,10 +31,14 @@ class ConvertComputedImpl<T, U> extends WritableComputedImpl<T>
   /// - [source]: The source signal to convert from
   /// - [decode]: Function to convert from source type to target type
   /// - [encode]: Function to convert from target type to source type
-  /// - [onDebug]: Optional debug callback
-  ConvertComputedImpl(this.source,
-      {required this.decode, required this.encode, super.equals, super.onDebug})
-      : super(
+  /// - [debug]: Optional debug options
+  ConvertComputedImpl(
+    this.source, {
+    required this.decode,
+    required this.encode,
+    super.equals,
+    super.debug,
+  }) : super(
           () => decode(source.value),
           (value) => source.value = encode(value),
         );
@@ -75,7 +79,7 @@ abstract interface class ConvertComputed<T, U> implements WritableComputed<T> {
   /// - [source]: The source signal to convert from
   /// - [decode]: Function to convert from source type to target type
   /// - [encode]: Function to convert from target type to source type
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options for reactive system debugging
   ///
   /// Example:
   /// ```dart
@@ -85,9 +89,11 @@ abstract interface class ConvertComputed<T, U> implements WritableComputed<T> {
   ///   encode: (String v) => int.parse(v),
   /// );
   /// ```
-  factory ConvertComputed(WritableNode<U> source,
-      {required T Function(U value) decode,
-      required U Function(T value) encode,
-      EqualFn? equals,
-      JoltDebugFn? onDebug}) = ConvertComputedImpl<T, U>;
+  factory ConvertComputed(
+    WritableNode<U> source, {
+    required T Function(U value) decode,
+    required U Function(T value) encode,
+    EqualFn? equals,
+    JoltDebugOption? debug,
+  }) = ConvertComputedImpl<T, U>;
 }

@@ -342,7 +342,7 @@ class SetSignalImpl<E> extends SignalImpl<Set<E>>
   ///
   /// Parameters:
   /// - [value]: Initial set content, defaults to empty set if null
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Example:
   /// ```dart
@@ -350,7 +350,7 @@ class SetSignalImpl<E> extends SignalImpl<Set<E>>
   /// final tags = SetSignal({'dart', 'flutter'});
   /// final autoSet = SetSignal({'tag1', 'tag2'});
   /// ```
-  SetSignalImpl(Set<E>? value, {super.onDebug}) : super(value ?? {});
+  SetSignalImpl(Set<E>? value, {super.debug}) : super(value ?? {});
 }
 
 /// Interface for reactive set signals.
@@ -372,12 +372,12 @@ abstract interface class SetSignal<E>
   ///
   /// Parameters:
   /// - [value]: Initial set content, defaults to empty set if null
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Example:
   /// ```dart
   /// final emptySet = SetSignal<String>(null); // Creates empty set
   /// final tags = SetSignal({'dart', 'flutter'});
   /// ```
-  factory SetSignal(Set<E>? value, {JoltDebugFn? onDebug}) = SetSignalImpl<E>;
+  factory SetSignal(Set<E>? value, {JoltDebugOption? debug}) = SetSignalImpl<E>;
 }

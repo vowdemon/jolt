@@ -55,7 +55,9 @@ class JoltValueNotifier<T>
   JoltValueNotifier(this.node) {
     final watcher = Watcher(() => node.value, (value, __) {
       notifyListeners();
-    }, when: IMutableCollection.skipNode(node));
+    },
+        when: IMutableCollection.skipNode(node),
+        debug: const JoltDebugOption.type('JoltValueNotifier'));
 
     final finalizerDisposer = JFinalizer.attachToJoltAttachments(node, dispose);
     _disposer = () {

@@ -41,7 +41,9 @@ part 'stateful_mixin.dart';
 /// 2. Mismatched hooks are unmounted and replaced with new instances
 /// 3. New hooks receive [SetupHook.mount] after setup completes
 class JoltSetupContext<T extends Widget> extends EffectScopeImpl {
-  JoltSetupContext(this.context, this.propsNode) : super(detach: true);
+  JoltSetupContext(this.context, this.propsNode)
+      : super(
+            detach: true, debug: JoltDebugOption.type('JoltSetupContext<$T>'));
 
   final BuildContext context;
   final Props<T> propsNode;
@@ -332,7 +334,8 @@ class JoltSetupContext<T extends Widget> extends EffectScopeImpl {
 /// - Disposed when the associated [BuildContext] is unmounted
 class _PropsImpl<T extends Widget> extends ReadonlySignalImpl<T>
     implements Props<T> {
-  _PropsImpl(this._context) : super(null);
+  _PropsImpl(this._context)
+      : super(null, debug: JoltDebugOption.type("SetupProps<$T>"));
 
   final BuildContext _context;
 

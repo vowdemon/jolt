@@ -169,8 +169,11 @@ class SetupWidgetElement<T extends SetupWidget<T>> extends ComponentElement {
   late final _propsNode = _PropsImpl<T>(this);
 
   /// The setup context that manages hooks and reactive state.
-  late final JoltSetupContext<T> setupContext =
-      JoltSetupContext(this, _propsNode);
+  late final JoltSetupContext<T> setupContext = JoltSetupContext(
+    this,
+    _propsNode,
+    resetSetupFn: _doResetSetup,
+  );
 
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
@@ -259,6 +262,79 @@ class SetupWidgetElement<T extends SetupWidget<T>> extends ComponentElement {
   void deactivate() {
     setupContext.notifyDeactivate();
     super.deactivate();
+  }
+
+  /// Resets and re-runs the setup function at runtime.
+  ///
+  /// This method provides a runtime hot-reload mechanism that:
+  /// 1. Unmounts all existing hooks in reverse order
+  /// 2. Disposes the current renderer effect
+  /// 3. Cleans up all EffectScope cleanup functions
+  /// 4. Clears all hook state
+  /// 5. Re-runs the setup function to create new hooks
+  /// 6. Recreates the renderer effect
+  /// 7. Mounts all new hooks
+  ///
+  /// This is similar to hot reload but can be triggered programmatically
+  /// at runtime, allowing for dynamic reconfiguration of the widget's setup.
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// setup(context, props) {
+  ///   final count = useSignal(0);
+  ///
+  ///   // Somewhere in your code, reset the entire setup
+  ///   // This will unmount all hooks, clean up effects, and re-run setup
+  ///   (context as Element).setupContext.setupContext();
+  ///
+  ///   return () => Text('Count: ${count.value}');
+  /// }
+  /// ```
+  void resetSetup() {
+    setupContext.scheduleResetSetup();
+  }
+
+  void _doResetSetup() {
+    // 1. Unmount all existing hooks in reverse order
+    setupContext.unmountHooks();
+
+    // 2. Dispose the current renderer
+    setupContext.renderer?.dispose();
+    setupContext.renderer = null;
+
+    // 3. Clean up all EffectScope cleanup functions registered during setup
+    setupContext.cleanup();
+
+    // 4. Clear all hooks
+    setupContext._hooks.clear();
+
+    assert(() {
+      setupContext._newHooks.clear();
+      setupContext._newlyCreatedHooks.clear();
+      setupContext._newHookConfigs.clear();
+      setupContext._currentHookIndex = 0;
+      setupContext._isReassembling = false;
+      return true;
+    }());
+
+    // 5. Re-run setup function to create new hooks
+    setupContext.run(() {
+      setupContext.setupBuilder = widget.setup(this, _propsNode);
+
+      // 6. Recreate the renderer effect
+      setupContext.renderer = FlutterEffect.lazy(
+        markNeedsBuild,
+      );
+
+      // 7. Mount all new hooks
+      for (var hook in setupContext._hooks) {
+        hook.mount();
+      }
+    });
+
+    // 8. Trigger a rebuild to apply the changes
+    markNeedsBuild();
   }
 
   @override

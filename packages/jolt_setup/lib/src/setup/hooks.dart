@@ -707,3 +707,290 @@ class _UseInheritedHook<T> extends SetupHook<Computed<T>> {
 Computed<T> useInherited<T>(T Function(BuildContext) getter) {
   return useHook(_UseInheritedHook<T>(getter));
 }
+
+/// {@template jolt_reset_hook_creator}
+/// Helper class for creating reset setup hooks in SetupWidget.
+///
+/// This class provides methods to reset and re-run the setup function
+/// programmatically, similar to hot reload but triggered at runtime.
+/// Use [useReset] to access these methods.
+/// {@endtemplate}
+final class JoltResetHookCreator {
+  /// Helper class for creating reset setup hooks in SetupWidget.
+  const JoltResetHookCreator._();
+
+  /// Gets a reference to the resetSetup function.
+  ///
+  /// This hook returns a function that can be called to reset and re-run
+  /// the setup function at runtime, similar to hot reload but triggered
+  /// programmatically.
+  ///
+  /// Example:
+  /// ```dart
+  /// @override
+  /// setup(context, props) {
+  ///   final reset = useReset();
+  ///
+  ///   // Later, call reset to reset the entire setup
+  ///   onMounted(() {
+  ///     if (shouldReset) {
+  ///       reset();
+  ///     }
+  ///   });
+  ///
+  ///   return () => Text('Hello');
+  /// }
+  /// ```
+  @defineHook
+  void Function() call() {
+    final currentContext = JoltSetupContext.current;
+    assert(currentContext != null, 'SetupWidgetElement is not exists');
+
+    return currentContext!._resetSetupFn;
+  }
+
+  /// Listens to Listenables and calls resetSetup when they notify.
+  ///
+  /// This hook subscribes to one or more Listenables and automatically calls
+  /// resetSetup whenever any of them notifies. This is useful for resetting
+  /// the setup when external state changes.
+  ///
+  /// Parameters:
+  /// - [watcher]: A function that returns an iterable of Listenables to subscribe to
+  ///
+  /// Example:
+  /// ```dart
+  /// @override
+  /// setup(context, props) {
+  ///   final notifier = ValueNotifier(0);
+  ///
+  ///   // Reset setup whenever notifier changes
+  ///   useReset.listen(() => [notifier]);
+  ///
+  ///   return () => Text('Count: ${notifier.value}');
+  /// }
+  /// ```
+  @defineHook
+  void listen(Iterable<Listenable> Function() watcher) {
+    final currentContext = JoltSetupContext.current;
+    assert(currentContext != null, 'SetupWidgetElement is not exists');
+
+    useHook(_ResetSetupOnListenableHook(
+      watcher,
+      currentContext!._resetSetupFn,
+    ));
+  }
+
+  /// Watches reactive signals and calls resetSetup when they change.
+  ///
+  /// This hook uses an Effect to watch reactive signals. Whenever any
+  /// signal accessed within the watch function changes, resetSetup is called.
+  ///
+  /// Parameters:
+  /// - [watchFn]: A function that returns an iterable of Readable signals to watch.
+  ///   The effect will track all signals in the returned iterable.
+  ///
+  /// Example:
+  /// ```dart
+  /// @override
+  /// setup(context, props) {
+  ///   final count = useSignal(0);
+  ///   final name = useSignal('Alice');
+  ///
+  ///   // Reset setup whenever count or name changes
+  ///   useReset.watch(() => [count, name]);
+  ///
+  ///   return () => Text('${name.value}: ${count.value}');
+  /// }
+  /// ```
+  @defineHook
+  void watch(Iterable<Readable> Function() watchFn) {
+    final currentContext = JoltSetupContext.current;
+    assert(currentContext != null, 'SetupWidgetElement is not exists');
+
+    final resetSetup = currentContext!._resetSetupFn;
+    useHook(_ResetSetupWatchHook(watchFn, resetSetup));
+  }
+
+  /// Selects a value from reactive state and resets setup when it changes.
+  ///
+  /// This hook uses an Effect to track a selector function. Whenever the
+  /// selected value changes (compared using `!=`), resetSetup is called.
+  /// This is useful when you only want to reset when a derived value changes,
+  /// not when individual signals change.
+  ///
+  /// Parameters:
+  /// - [selector]: A function that selects a value from reactive state.
+  ///   The effect will track all signals accessed within this function.
+  ///
+  /// Example:
+  /// ```dart
+  /// @override
+  /// setup(context, props) {
+  ///   final count = useSignal(0);
+  ///   final name = useSignal('Alice');
+  ///
+  ///   // Reset setup only when the combined string changes
+  ///   useReset.select(() => '${name.value}: ${count.value}');
+  ///
+  ///   return () => Text('${name.value}: ${count.value}');
+  /// }
+  /// ```
+  @defineHook
+  void select<T>(T Function() selector) {
+    final currentContext = JoltSetupContext.current;
+    assert(currentContext != null, 'SetupWidgetElement is not exists');
+
+    final resetSetup = currentContext!._resetSetupFn;
+    useHook(_ResetSetupSelectHook(selector, resetSetup));
+  }
+}
+
+/// {@macro jolt_reset_hook_creator}
+final useReset = JoltResetHookCreator._();
+
+/// Hook that listens to a Listenable and calls resetSetup when it notifies.
+class _ResetSetupOnListenableHook extends SetupHook<Iterable<Listenable>> {
+  _ResetSetupOnListenableHook(this.watcher, this.resetSetup);
+
+  late Iterable<Listenable> Function() watcher;
+  late void Function() resetSetup;
+
+  void _listener() {
+    resetSetup();
+  }
+
+  @override
+  Iterable<Listenable> build() {
+    final listenables = watcher();
+    for (final listenable in listenables) {
+      listenable.addListener(_listener);
+    }
+    return listenables;
+  }
+
+  @override
+  void unmount() {
+    for (final listenable in state) {
+      listenable.removeListener(_listener);
+    }
+  }
+
+  // coverage:ignore-start
+  @override
+  void reassemble(covariant _ResetSetupOnListenableHook newHook) {
+    final oldList = state.toList();
+    final newList = newHook.watcher().toList();
+
+    bool hasNewListenable = oldList.length != newList.length;
+    if (!hasNewListenable) {
+      for (int i = 0; i < oldList.length; i++) {
+        if (oldList[i] != newList[i]) {
+          hasNewListenable = true;
+          break;
+        }
+      }
+    }
+
+    if (hasNewListenable) {
+      for (final listenable in state) {
+        listenable.removeListener(_listener);
+      }
+      watcher = newHook.watcher;
+      for (final listenable in newList) {
+        listenable.addListener(_listener);
+      }
+    }
+    resetSetup = newHook.resetSetup;
+  }
+  // coverage:ignore-end
+}
+
+/// Hook that watches reactive signals and calls resetSetup when they change.
+class _ResetSetupWatchHook extends SetupHook<FlutterEffect> {
+  _ResetSetupWatchHook(this.watchFn, this.resetSetup);
+
+  late Iterable<Readable> Function() watchFn;
+  late void Function() resetSetup;
+
+  void _watcher() {
+    for (final readable in watchFn()) {
+      readable.value;
+    }
+  }
+
+  @override
+  FlutterEffect build() {
+    return FlutterEffect(() {
+      _watcher();
+      resetSetup();
+    }, lazy: true);
+  }
+
+  @override
+  void mount() {
+    trackWithEffect(_watcher, state, false);
+  }
+
+  @override
+  void unmount() {
+    state.dispose();
+  }
+
+  // coverage:ignore-start
+  @override
+  void reassemble(covariant _ResetSetupWatchHook newHook) {
+    if (watchFn != newHook.watchFn) {
+      trackWithEffect(_watcher, state, true);
+      watchFn = newHook.watchFn;
+    }
+    resetSetup = newHook.resetSetup;
+  }
+  // coverage:ignore-end
+}
+
+/// Hook that selects a value and calls resetSetup when it changes.
+class _ResetSetupSelectHook<T> extends SetupHook<FlutterEffect> {
+  _ResetSetupSelectHook(this.selector, this.resetSetup);
+
+  late T Function() selector;
+  late void Function() resetSetup;
+  T? _prevValue;
+
+  void _select() {
+    final currentValue = selector();
+    if (_prevValue != null && currentValue != _prevValue) {
+      resetSetup();
+    }
+    _prevValue = currentValue;
+  }
+
+  @override
+  FlutterEffect build() {
+    return FlutterEffect(_select, lazy: true);
+  }
+
+  @override
+  void mount() {
+    // Initialize prevValue on first mount
+    _prevValue = selector();
+    // Track dependencies for reactive updates
+    trackWithEffect(_select, state, false);
+  }
+
+  @override
+  void unmount() {
+    state.dispose();
+  }
+
+  // coverage:ignore-start
+  @override
+  void reassemble(covariant _ResetSetupSelectHook<T> newHook) {
+    if (selector != newHook.selector) {
+      _prevValue = newHook.selector();
+    }
+    selector = newHook.selector;
+    resetSetup = newHook.resetSetup;
+  }
+  // coverage:ignore-end
+}

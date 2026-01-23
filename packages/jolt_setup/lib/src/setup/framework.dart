@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:jolt_flutter/core.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
@@ -41,12 +43,22 @@ part 'stateful_mixin.dart';
 /// 2. Mismatched hooks are unmounted and replaced with new instances
 /// 3. New hooks receive [SetupHook.mount] after setup completes
 class JoltSetupContext<T extends Widget> extends EffectScopeImpl {
-  JoltSetupContext(this.context, this.propsNode)
-      : super(
+  JoltSetupContext(
+    this.context,
+    this.propsNode, {
+    required void Function() resetSetupFn,
+  })  : _resetSetupFn = resetSetupFn,
+        super(
             detach: true, debug: JoltDebugOption.type('JoltSetupContext<$T>'));
 
   final BuildContext context;
   final Props<T> propsNode;
+
+  /// Callback function to reset and re-run the setup function.
+  final void Function() _resetSetupFn;
+
+  /// Whether resetSetup has been scheduled for the current frame.
+  bool _isResetSetupScheduled = false;
 
   /// The setup function that returns the widget builder.
   WidgetFunction<T>? setupBuilder;
@@ -253,6 +265,32 @@ class JoltSetupContext<T extends Widget> extends EffectScopeImpl {
     }
   }
 
+  /// Schedules resetSetup to run at the end of the current frame.
+  ///
+  /// This method ensures that multiple calls to resetSetup within the same
+  /// frame are debounced to a single execution, improving performance and
+  /// preventing unnecessary repeated setup executions.
+  ///
+  /// The resetSetup will be executed once at the end of the current frame,
+  /// even if this method is called multiple times within the same frame.
+  void scheduleResetSetup() {
+    // If already scheduled for this frame, skip
+    if (_isResetSetupScheduled) {
+      return;
+    }
+
+    // Mark as scheduled
+    _isResetSetupScheduled = true;
+
+    // Schedule for end of frame
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      _isResetSetupScheduled = false;
+      if (!isDisposed) {
+        _resetSetupFn();
+      }
+    });
+  }
+
   @override
   void onDispose() {
     _hooks.clear();
@@ -267,8 +305,14 @@ class JoltSetupContext<T extends Widget> extends EffectScopeImpl {
 
     renderer?.dispose();
     renderer = null;
+    _isResetSetupScheduled = false;
 
     super.onDispose();
+  }
+
+  @internal
+  void cleanup() {
+    doCleanup();
   }
 
   /* -------------------------------- Static -------------------------------- */

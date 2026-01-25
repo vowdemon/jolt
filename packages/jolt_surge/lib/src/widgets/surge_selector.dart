@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:jolt_flutter/core.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
 import 'package:provider/provider.dart';
 
@@ -267,7 +268,7 @@ class _SurgeSelectorState<T extends Surge<S>, S, C>
       _selectorValue = newSelectorValue;
 
       (context as StatefulElement).markNeedsBuild();
-    });
+    }, debug: JoltDebugOption.type('SurgeSelector<$T,$C>'));
   }
 
   void _stopEffect() {

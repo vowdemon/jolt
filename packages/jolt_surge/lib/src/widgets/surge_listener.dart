@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:jolt_flutter/core.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
 import 'package:provider/provider.dart';
 
@@ -253,7 +254,7 @@ class _SurgeListenerState<T extends Surge<S>, S>
       (context as StatefulElement).markNeedsBuild();
 
       _state = state;
-    });
+    }, debug: JoltDebugOption.type('SurgeListener<$T>'));
   }
 
   void _stopEffect() {

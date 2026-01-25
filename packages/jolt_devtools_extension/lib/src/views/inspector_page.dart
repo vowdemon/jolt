@@ -46,7 +46,7 @@ class _JoltInspectorPageState extends State<JoltInspectorPage> {
                   builder: (context) => const SearchSyntaxDialog(),
                 );
               },
-              tooltip: '搜索语法帮助',
+              tooltip: 'Search Syntax Help',
             ),
             JoltBuilder(builder: (context) {
               return IconButton(

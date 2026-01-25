@@ -1,3 +1,33 @@
+## 3.2.0-dev.0
+
+ - **FEAT**(setup): useReset hook for reset-setup. ([50111813](https://github.com/vowdemon/jolt/commit/501118130ff55f2a7f7f1a3c83b0cb8fe3136270))
+ - **FEAT**: devtools. ([a243e172](https://github.com/vowdemon/jolt/commit/a243e172061babc7031267eb5e4696c9064d778c))
+
+### useReset Hook
+
+The `useReset` hook provides a runtime mechanism to reset and re-run the setup function, similar to hot reload but triggered programmatically. This is useful when you need to completely reinitialize all hooks and state in response to external changes.
+
+**Why is it needed?**
+
+In some scenarios, you may need to completely reset the widget's setup rather than just updating individual hooks:
+
+1. **External state changes**: When external state (like a global configuration or theme) changes, you may want to reinitialize all hooks with the new state
+2. **Dynamic reconfiguration**: When the widget needs to be reconfigured based on runtime conditions
+3. **State synchronization**: When you need to ensure all hooks are recreated to match a new state snapshot
+
+**Usage:**
+
+The `useReset` hook provides four methods: `useReset()` for manual reset, `useReset.listen()` to listen to Listenable changes, `useReset.watch()` to watch reactive signal changes, and `useReset.select()` to watch selected value changes.
+
+When reset is triggered, the setup function is completely re-run:
+- All existing hooks are unmounted in reverse order
+- All effects and cleanup functions are disposed
+- All hook state is cleared
+- The setup function is re-executed to create new hooks
+- New hooks are mounted
+
+This ensures a clean slate for the widget's reactive state.
+
 ## 3.1.1
 
  - **REFACTOR**: implement fine-grained hot reload for partial hooks. ([53226b34](https://github.com/vowdemon/jolt/commit/53226b34753f70d3177521666b10289fe43a86a8))

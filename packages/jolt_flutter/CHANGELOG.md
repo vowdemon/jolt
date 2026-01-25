@@ -1,3 +1,7 @@
+## 3.1.0-dev.0
+
+ - **FEAT**: devtools. ([a243e172](https://github.com/vowdemon/jolt/commit/a243e172061babc7031267eb5e4696c9064d778c))
+
 ## 3.0.1
 
  - **REFACTOR**: implement fine-grained hot reload for partial hooks. ([53226b34](https://github.com/vowdemon/jolt/commit/53226b34753f70d3177521666b10289fe43a86a8))

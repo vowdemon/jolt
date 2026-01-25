@@ -19,8 +19,8 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_hooks: ^0.21.3+1
-  jolt_hooks: ^3.0.1
-  jolt_flutter: ^3.0.1
+  jolt_hooks: ^3.1.0-dev.0
+  jolt_flutter: ^3.1.0-dev.0
 
 dev_dependencies:
   flutter_test:

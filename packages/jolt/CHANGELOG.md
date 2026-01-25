@@ -1,3 +1,42 @@
+## 3.2.0-dev.0
+
+ - **FEAT**: devtools. ([a243e172](https://github.com/vowdemon/jolt/commit/a243e172061babc7031267eb5e4696c9064d778c))
+
+### JoltDebug.init() and onDebug Usage
+
+#### New: JoltDebug.init()
+
+To enable Jolt DevTools support, call `JoltDebug.init()` at app startup.
+
+**Usage:**
+
+Call `JoltDebug.init()` in the `main()` function:
+
+```dart
+void main() {
+  // Initialize DevTools at app startup
+  JoltDebug.init();
+  runApp(MyApp());
+}
+```
+
+`JoltDebug.init()` only takes effect in debug mode and is a no-op in release mode, so it's safe to keep in your code.
+
+#### onDebug Usage
+
+The `onDebug` callback can still be used through `JoltDebugOption`, and the usage remains unchanged:
+
+```dart
+final signal = Signal(
+  0,
+  debug: JoltDebugOption.fn(
+    (type, node, {link}) {
+      print('Debug: $type on $node');
+    },
+  ),
+);
+```
+
 ## 3.1.0
 
  - **REFACTOR**: implement fine-grained hot reload for partial hooks. ([53226b34](https://github.com/vowdemon/jolt/commit/53226b34753f70d3177521666b10289fe43a86a8))

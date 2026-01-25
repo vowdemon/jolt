@@ -3,6 +3,48 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-01-26
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`jolt` - `v3.2.0-dev.0`](#jolt---v320-dev0)
+ - [`jolt_flutter` - `v3.1.0-dev.0`](#jolt_flutter---v310-dev0)
+ - [`jolt_hooks` - `v3.1.0-dev.0`](#jolt_hooks---v310-dev0)
+ - [`jolt_setup` - `v3.2.0-dev.0`](#jolt_setup---v320-dev0)
+ - [`jolt_surge` - `v3.1.0-dev.0`](#jolt_surge---v310-dev0)
+
+---
+
+#### `jolt` - `v3.2.0-dev.0`
+
+ - **FEAT**: devtools. ([a243e172](https://github.com/vowdemon/jolt/commit/a243e172061babc7031267eb5e4696c9064d778c))
+
+#### `jolt_flutter` - `v3.1.0-dev.0`
+
+ - **FEAT**: devtools. ([a243e172](https://github.com/vowdemon/jolt/commit/a243e172061babc7031267eb5e4696c9064d778c))
+
+#### `jolt_hooks` - `v3.1.0-dev.0`
+
+ - **FEAT**: devtools. ([a243e172](https://github.com/vowdemon/jolt/commit/a243e172061babc7031267eb5e4696c9064d778c))
+
+#### `jolt_setup` - `v3.2.0-dev.0`
+
+ - **FEAT**(setup): useReset hook for reset-setup. ([50111813](https://github.com/vowdemon/jolt/commit/501118130ff55f2a7f7f1a3c83b0cb8fe3136270))
+ - **FEAT**: devtools. ([a243e172](https://github.com/vowdemon/jolt/commit/a243e172061babc7031267eb5e4696c9064d778c))
+
+#### `jolt_surge` - `v3.1.0-dev.0`
+
+ - **FEAT**: devtools. ([a243e172](https://github.com/vowdemon/jolt/commit/a243e172061babc7031267eb5e4696c9064d778c))
+
+
 ## 2026-01-14
 
 ### Changes

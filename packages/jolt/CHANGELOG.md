@@ -1,4 +1,4 @@
-## 3.2.0-dev.0
+## 3.2.0-dev.1
 
  - **FEAT**: devtools. ([a243e172](https://github.com/vowdemon/jolt/commit/a243e172061babc7031267eb5e4696c9064d778c))
 

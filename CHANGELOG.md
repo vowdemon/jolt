@@ -15,7 +15,7 @@ Packages with breaking changes:
 
 Packages with other changes:
 
- - [`jolt` - `v3.2.0-dev.0`](#jolt---v320-dev0)
+ - [`jolt` - `v3.2.0-dev.1`](#jolt---v320-dev1)
  - [`jolt_flutter` - `v3.1.0-dev.0`](#jolt_flutter---v310-dev0)
  - [`jolt_hooks` - `v3.1.0-dev.0`](#jolt_hooks---v310-dev0)
  - [`jolt_setup` - `v3.2.0-dev.0`](#jolt_setup---v320-dev0)
@@ -23,7 +23,7 @@ Packages with other changes:
 
 ---
 
-#### `jolt` - `v3.2.0-dev.0`
+#### `jolt` - `v3.2.0-dev.1`
 
  - **FEAT**: devtools. ([a243e172](https://github.com/vowdemon/jolt/commit/a243e172061babc7031267eb5e4696c9064d778c))
 

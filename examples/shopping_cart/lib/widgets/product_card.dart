@@ -76,7 +76,7 @@ class ProductCard extends StatelessWidget {
             ),
             const SizedBox(width: 16),
             // Add button - Use SurgeSelector to only listen to this product's cart quantity
-            SurgeSelector<CartSurge, CartState, int>(
+            SurgeSelector<CartSurge, CartState, int>.full(
               selector: (state, _) => state.getQuantity(product.id),
               builder: (context, quantity, _) {
                 if (quantity > 0) {

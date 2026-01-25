@@ -16,7 +16,7 @@ class ProductList extends StatelessWidget {
         title: const Text('Products'),
         actions: [
           // Use SurgeSelector to only listen to cart item quantity changes
-          SurgeSelector<CartSurge, CartState, int>(
+          SurgeSelector<CartSurge, CartState, int>.full(
             selector: (state, surge) => state.totalQuantity,
             builder: (context, quantity, _) => CartBadge(
               count: quantity,
@@ -35,7 +35,7 @@ class ProductList extends StatelessWidget {
           // Search box
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: SurgeBuilder<ProductSurge, List<Product>>(
+            child: SurgeBuilder<ProductSurge, List<Product>>.full(
               builder: (context, products, surge) {
                 return TextField(
                   decoration: InputDecoration(
@@ -58,7 +58,7 @@ class ProductList extends StatelessWidget {
           ),
           // Product list
           Expanded(
-            child: SurgeBuilder<ProductSurge, List<Product>>(
+            child: SurgeBuilder<ProductSurge, List<Product>>.full(
               builder: (context, products, _) {
                 if (products.isEmpty) {
                   return const Center(

@@ -13,7 +13,7 @@ class CartPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Shopping Cart'),
       ),
-      body: SurgeBuilder<CartSurge, CartState>(
+      body: SurgeBuilder<CartSurge, CartState>.full(
         builder: (context, cartState, surge) {
           if (cartState.isEmpty) {
             return const EmptyCart();
@@ -55,7 +55,7 @@ class CartPage extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    SurgeSelector<CartSurge, CartState, double>(
+                    SurgeSelector<CartSurge, CartState, double>.full(
                       selector: (state, _) => state.totalPrice,
                       builder: (context, totalPrice, _) {
                         return Row(

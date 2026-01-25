@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:jolt/jolt.dart';
 import 'package:jolt_flutter/core.dart';
-import 'package:jolt_flutter/setup.dart';
-import 'package:jolt_flutter_hooks/jolt_flutter_hooks.dart';
+import 'package:jolt_setup/hooks.dart';
+import 'package:jolt_setup/jolt_setup.dart';
 
 enum FilterType { all, active, completed }
 
@@ -662,6 +662,7 @@ class _AnimatedTodoItem extends SetupWidget<_AnimatedTodoItem> {
 }
 
 void main() {
+  JoltDebug.init();
   runApp(const MyApp());
 }
 

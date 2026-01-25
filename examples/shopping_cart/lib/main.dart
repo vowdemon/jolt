@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jolt/core.dart';
 import 'package:jolt_surge/jolt_surge.dart';
 import 'surges/product_surge.dart';
 import 'surges/cart_surge.dart';
@@ -7,6 +8,7 @@ import 'widgets/cart_page.dart';
 import 'widgets/checkout_page.dart';
 
 void main() {
+  JoltDebug.init();
   runApp(const ShoppingCartApp());
 }
 

@@ -5,6 +5,11 @@ on:
   #  tags:
   #    - '*'
   workflow_dispatch:
+    inputs:
+      package_name:
+        description: "Package name to publish"
+        required: false
+        type: string
 
 jobs:
   publish-release-packages:
@@ -18,6 +23,16 @@ jobs:
         with:
           fetch-depth: 0
       - uses: ./.github/actions/prepare
+      - name: Build DevTools Extension for jolt package
+        run: |
+          PACKAGE_NAME="${{ inputs.package_name }}"
+          if [ "$PACKAGE_NAME" = "jolt" ]; then
+            echo "Building DevTools Extension for jolt package..."
+            bash packages/jolt_devtools_extension/build_extension.sh
+          else
+            echo "Skipping DevTools Extension build for package: $PACKAGE_NAME"
+          fi
+        continue-on-error: false
       - uses: bluefireteam/melos-action@v3
         with:
           publish: true

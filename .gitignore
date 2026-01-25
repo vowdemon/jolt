@@ -20,7 +20,7 @@ packages/**/example/test/
 packages/**/example/build/
 packages/**/example/pubspec.lock
 
-pacakges/jolt/extensions/devtools/build
+**/build/
 packages/jolt_devtools_extension/example
 
 devtools_options.yaml

@@ -1,3 +1,4 @@
+import "package:jolt/core.dart";
 import "package:jolt/extension.dart";
 import "package:jolt/jolt.dart";
 import "package:meta/meta.dart";
@@ -22,9 +23,13 @@ class _TestPerson {
 
 void main() {
   group("Signal", () {
+    setUpAll(() {
+      JoltDebug.init();
+    });
     test("should create signal with initial value", () {
       final counter = DebugCounter();
-      final signal = Signal(42, onDebug: counter.onDebug);
+      final signal =
+          Signal(42, debug: JoltDebugOption.of(onDebug: counter.onDebug));
 
       expect(signal.value, equals(42));
       expect(signal.peek, equals(42));
@@ -39,7 +44,8 @@ void main() {
 
     test("should update signal value by set and value", () {
       final counter = DebugCounter();
-      final signal = Signal(1, onDebug: counter.onDebug);
+      final signal =
+          Signal(1, debug: JoltDebugOption.of(onDebug: counter.onDebug));
       expect(signal.value, equals(1));
 
       signal.value = 2;

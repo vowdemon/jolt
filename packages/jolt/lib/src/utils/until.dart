@@ -1,5 +1,6 @@
 import "dart:async";
 
+import "package:jolt/core.dart";
 import "package:jolt/jolt.dart";
 
 /// Extension methods for reactive values.
@@ -35,7 +36,7 @@ extension JoltUtilsUntilExtension<T> on ReadableNode<T> {
       if (predicate(value)) {
         completer.complete(value);
       }
-    });
+    }, debug: JoltDebugOption.type('Until<$T>'));
 
     trackWithEffect(() => value, effect);
 

@@ -1,9 +1,9 @@
 import "dart:async";
 
+import "package:jolt/core.dart";
 import "package:jolt/extension.dart";
 import "package:jolt/jolt.dart";
 import "package:jolt/src/core/reactive.dart" as reactive;
-import "package:jolt/src/core/reactive.dart";
 import "package:jolt/src/jolt/signal.dart";
 import "package:test/test.dart";
 
@@ -70,7 +70,7 @@ class DebouncedSignal<T> extends SignalImpl<T> {
   DebouncedSignal(
     super.value, {
     required this.delay,
-    super.onDebug,
+    super.debug,
   });
   final Duration delay;
   Timer? _timer;
@@ -92,13 +92,16 @@ class DebouncedSignal<T> extends SignalImpl<T> {
 
 void main() {
   group("Custom Features", () {
+    setUpAll(() {
+      JoltDebug.init();
+    });
     group("DebouncedSignal", () {
       test("should delay value update", () async {
         final counter = DebugCounter();
         final signal = DebouncedSignal(
           0,
           delay: const Duration(milliseconds: 100),
-          onDebug: counter.onDebug,
+          debug: JoltDebugOption.of(onDebug: counter.onDebug),
         );
 
         expect(signal.value, equals(0));
@@ -122,7 +125,7 @@ void main() {
         final signal = DebouncedSignal(
           0,
           delay: const Duration(milliseconds: 100),
-          onDebug: counter.onDebug,
+          debug: JoltDebugOption.of(onDebug: counter.onDebug),
         );
         // test code
         // ignore: cascade_invocations
@@ -147,7 +150,7 @@ void main() {
         final signal = DebouncedSignal(
           0,
           delay: const Duration(milliseconds: 100),
-          onDebug: counter.onDebug,
+          debug: JoltDebugOption.of(onDebug: counter.onDebug),
         );
 
         final initialValue = signal.value;
@@ -166,7 +169,7 @@ void main() {
         final signal = DebouncedSignal(
           0,
           delay: const Duration(milliseconds: 100),
-          onDebug: counter.onDebug,
+          debug: JoltDebugOption.of(onDebug: counter.onDebug),
         );
 
         final values = <int>[];

@@ -51,7 +51,9 @@ class JoltValueListenable<T>
   JoltValueListenable(this.node) {
     final watcher = Watcher(() => node.value, (value, __) {
       notifyListeners();
-    }, when: IMutableCollection.skipNode(node));
+    },
+        when: IMutableCollection.skipNode(node),
+        debug: const JoltDebugOption.type('JoltValueListenable'));
 
     final finalizerDisposer = JFinalizer.attachToJoltAttachments(node, dispose);
     _disposer = () {

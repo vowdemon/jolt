@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:jolt_flutter/core.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
 import 'package:provider/provider.dart';
 
@@ -248,7 +249,7 @@ class _SurgeBuilderState<T extends Surge<S>, S>
       }
 
       _state = state;
-    });
+    }, debug: JoltDebugOption.type('SurgeBuilder<$T>'));
   }
 
   void _stopEffect() {

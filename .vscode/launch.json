@@ -1,0 +1,22 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Jolt DevTools Extension - Debug",
+            "cwd": "packages/jolt_devtools_extension",
+            "request": "launch",
+            "type": "dart",
+            "args": [
+                "--dart-define=use_simulated_environment=true"
+            ],
+            "program": "lib/main.dart"
+        },
+        {
+            "name": "Jolt Extension - Build",
+            "type": "node-terminal",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/packages/jolt_devtools_extension",
+            "command": "dart run devtools_extensions build_and_copy --source=. --dest=../jolt/extension/devtools"
+        }
+    ],
+}

@@ -70,7 +70,7 @@ class IterableSignalImpl<E> extends ComputedImpl<Iterable<E>>
   /// final source = Signal([1, 2, 3]);
   /// final doubled = IterableSignal(() => source.value.map((x) => x * 2));
   /// ```
-  IterableSignalImpl(super.getter, {super.onDebug});
+  IterableSignalImpl(super.getter, {super.debug});
 }
 
 /// Interface for reactive iterable signals.
@@ -94,7 +94,7 @@ abstract interface class IterableSignal<E>
   ///
   /// Parameters:
   /// - [getter]: Function that computes the iterable value
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Example:
   /// ```dart
@@ -102,13 +102,13 @@ abstract interface class IterableSignal<E>
   /// final doubled = IterableSignal(() => source.value.map((x) => x * 2));
   /// ```
   factory IterableSignal(Iterable<E> Function() getter,
-      {JoltDebugFn? onDebug}) = IterableSignalImpl<E>;
+      {JoltDebugOption? debug}) = IterableSignalImpl<E>;
 
   /// Creates a reactive iterable from a static iterable value.
   ///
   /// Parameters:
   /// - [iterable]: The static iterable to wrap
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Returns: An IterableSignal that always returns the given iterable
   ///
@@ -125,6 +125,7 @@ abstract interface class IterableSignal<E>
   ///   print('Items: ${reactiveIterable.toList()}');
   /// });
   /// ```
-  factory IterableSignal.value(Iterable<E> iterable, {JoltDebugFn? onDebug}) =>
-      IterableSignalImpl(() => iterable, onDebug: onDebug);
+  factory IterableSignal.value(Iterable<E> iterable,
+          {JoltDebugOption? debug}) =>
+      IterableSignalImpl(() => iterable, debug: debug);
 }

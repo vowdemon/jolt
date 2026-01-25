@@ -7,6 +7,18 @@
 
 Jolt is a lightweight reactive state management library for Dart and Flutter. It provides signals, computed values, effects, async states, and reactive collections with automatic dependency tracking and efficient updates.
 
+## 🛠️ DevTools Extension
+
+Jolt includes a DevTools extension for inspecting and debugging reactive signals in your app! When you add Jolt to your project, you'll automatically get access to signal inspection tools in Dart DevTools.
+
+Features:
+- 🔍 Signal inspection
+- 📊 Dependency visualization
+- ⚡ Performance tracking
+- 🐛 Debug utilities
+
+To use it, simply run your Flutter app and open DevTools - you'll see a "Jolt" tab!
+
 ## Documentation
 
 [Official Documentation](https://jolt.vowdemon.com)

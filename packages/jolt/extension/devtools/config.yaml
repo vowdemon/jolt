@@ -1,0 +1,5 @@
+name: jolt
+issueTracker: https://github.com/vowdemon/jolt/issues
+version: 3.1.0
+materialIconCodePoint: "0xe801"
+requiresConnection: true

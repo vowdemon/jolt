@@ -31,7 +31,7 @@ class SignalImpl<T> extends SignalReactiveNode<T>
   ///
   /// Parameters:
   /// - [value]: The initial value of the signal
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Example:
   /// ```dart
@@ -39,9 +39,9 @@ class SignalImpl<T> extends SignalReactiveNode<T>
   /// final counter = Signal(0);
   /// ```
   /// {@endtemplate}
-  SignalImpl(T? value, {JoltDebugFn? onDebug})
+  SignalImpl(T? value, {JoltDebugOption? debug})
       : super(flags: ReactiveFlags.mutable, pendingValue: value) {
-    JoltDebug.create(this, onDebug);
+    JoltDebug.create(this, debug);
   }
 
   /// Returns the current value without establishing a reactive dependency.
@@ -152,16 +152,16 @@ class ReadonlySignalImpl<T> extends SignalReactiveNode<T>
   ///
   /// Parameters:
   /// - [value]: The initial value of the signal
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Example:
   /// ```dart
   /// final name = Signal('Alice');
   /// final counter = Signal(0);
   /// ```
-  ReadonlySignalImpl(T? value, {JoltDebugFn? onDebug})
+  ReadonlySignalImpl(T? value, {JoltDebugOption? debug})
       : super(flags: ReactiveFlags.mutable, pendingValue: value) {
-    JoltDebug.create(this, onDebug);
+    JoltDebug.create(this, debug);
   }
 
   /// Returns the current value without establishing a reactive dependency.
@@ -270,19 +270,19 @@ abstract interface class ReadonlySignal<T> implements ReadableNode<T> {
 abstract interface class Signal<T>
     implements WritableNode<T>, ReadonlySignal<T> {
   /// {@macro jolt_signal_impl}
-  factory Signal(T value, {JoltDebugFn? onDebug}) = SignalImpl;
+  factory Signal(T value, {JoltDebugOption? debug}) = SignalImpl;
 
   /// Creates a new lazy signal.
   ///
   /// Parameters:
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Example:
   /// ```dart
   /// final name = Signal<String>.lazy();
   /// ```
-  factory Signal.lazy({JoltDebugFn? onDebug}) =>
-      SignalImpl(null, onDebug: onDebug);
+  factory Signal.lazy({JoltDebugOption? debug}) =>
+      SignalImpl(null, debug: debug);
 }
 
 class _ConstantSignalImpl<T> implements ReadonlySignal<T> {

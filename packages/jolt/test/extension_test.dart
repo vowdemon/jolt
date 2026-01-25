@@ -1,3 +1,4 @@
+import "package:jolt/core.dart";
 import "package:jolt/extension.dart";
 import "package:jolt/jolt.dart";
 import "package:test/test.dart";
@@ -53,9 +54,13 @@ void main() {
     });
 
     group("JoltWritableExtension", () {
+      setUpAll(() {
+        JoltDebug.init();
+      });
       test("should update signal value using update method", () {
         final counter = DebugCounter();
-        final signal = Signal(5, onDebug: counter.onDebug);
+        final signal =
+            Signal(5, debug: JoltDebugOption.of(onDebug: counter.onDebug));
         expect(signal.value, equals(5));
 
         // Update using increment

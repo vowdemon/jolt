@@ -115,10 +115,13 @@ class JoltWidgetHook<T extends Widget> extends Hook<T> {
   /// Parameters:
   /// - [builder]: The builder function that creates the widget
   /// - [keys]: Optional keys for hook memoization
-  const JoltWidgetHook(this.builder, {super.keys});
+  const JoltWidgetHook(this.builder, {super.keys, this.debug});
 
   /// The builder function that creates the widget.
   final T Function() builder;
+
+  /// The debug options for the hook.
+  final JoltDebugOption? debug;
 
   @override
   JoltWidgetHookState<T> createState() => JoltWidgetHookState();
@@ -140,7 +143,7 @@ class JoltWidgetHookState<T extends Widget>
 
   @override
   void initHook() {
-    _effect = Effect.lazy(_effectFn);
+    _effect = Effect.lazy(_effectFn, debug: hook.debug);
   }
 
   void _effectFn() {

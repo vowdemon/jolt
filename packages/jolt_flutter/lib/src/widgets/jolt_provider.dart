@@ -226,9 +226,10 @@ class JoltProviderElement<T> extends ComponentElement {
 
   @override
   void mount(Element? parent, Object? newSlot) {
-    _scope = EffectScope()
+    _scope = EffectScope(debug: JoltDebugOption.type('JoltProvider'))
       ..run(() {
-        _effect = FlutterEffect.lazy(markNeedsBuild);
+        _effect = FlutterEffect.lazy(markNeedsBuild,
+            debug: const JoltDebugOption.type('JoltProvider'));
       });
 
     super.mount(parent, newSlot);

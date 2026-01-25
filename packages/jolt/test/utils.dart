@@ -52,7 +52,7 @@ class DebugCounter {
   String toString() =>
       "DebugCounter(createCount: $createCount, disposeCount: $disposeCount, notifyCount: $notifyCount, setCount: $setCount, getCount: $getCount, linkedCount: $linked, unlinkedCount: $unlinked, effectCount: $effectCount, count: $count)";
 
-  void onDebug(DebugNodeOperationType type, _) {
+  void onDebug(DebugNodeOperationType type, _, {link}) {
     increment(type);
   }
 }

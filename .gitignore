@@ -8,6 +8,7 @@ examples/**/web/
 examples/**/windows/
 examples/**/test/
 examples/**/pubspec.lock
+examples/**/build/
 
 packages/**/example/android/
 packages/**/example/ios/
@@ -16,7 +17,11 @@ packages/**/example/macos/
 packages/**/example/web/
 packages/**/example/windows/
 packages/**/example/test/
+packages/**/example/build/
 packages/**/example/pubspec.lock
+
+**/build/
+packages/jolt_devtools_extension/example
 
 devtools_options.yaml
 .fvmrc

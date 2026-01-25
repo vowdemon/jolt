@@ -96,7 +96,8 @@ class JoltWatchBuilderElement extends StatelessElement {
 
   @override
   void mount(Element? parent, Object? newSlot) {
-    _effect = FlutterEffect.lazy(markNeedsBuild);
+    _effect = FlutterEffect.lazy(markNeedsBuild,
+        debug: const JoltDebugOption.type('JoltWatchBuilder'));
 
     super.mount(parent, newSlot);
   }

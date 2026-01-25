@@ -36,15 +36,15 @@ mixin _ValueNotifierMixin<T> {
 ///
 /// Parameters:
 /// - [notifier]: The ValueListenable to wrap
-/// - [onDebug]: Optional debug callback
+/// - [debug]: Optional debug options
 /// - [expando]: Expando for caching the helper
 ///
 /// Returns: A DelegatedRefCountHelper managing the signal
 DelegatedRefCountHelper<SignalImpl<T>> _createDelegatedSignalImpl<T>(
     ValueListenable<T> notifier,
-    {JoltDebugFn? onDebug,
+    {JoltDebugOption? debug,
     required Expando<dynamic> expando}) {
-  final source = SignalImpl<T>(notifier.value, onDebug: onDebug);
+  final source = SignalImpl<T>(notifier.value, debug: debug);
   Disposer? watcherDisposer;
 
   return DelegatedRefCountHelper(source, onCreate: (source) {

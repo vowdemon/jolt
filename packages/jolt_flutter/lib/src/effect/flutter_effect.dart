@@ -36,7 +36,7 @@ class FlutterEffectImpl extends EffectReactiveNode
   ///   then automatically re-run whenever its reactive dependencies change.
   ///   If `false` (default), the effect will only run when dependencies change,
   ///   not immediately upon creation.
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// The effect function will be called at the end of the current Flutter frame,
   /// batching multiple triggers within the same frame into a single execution.
@@ -55,9 +55,9 @@ class FlutterEffectImpl extends EffectReactiveNode
   /// // Effect executes once at end of frame with signal.value = 2
   /// ```
   /// {@endtemplate}
-  FlutterEffectImpl(this.fn, {bool lazy = false, JoltDebugFn? onDebug})
+  FlutterEffectImpl(this.fn, {bool lazy = false, JoltDebugOption? debug})
       : super(flags: ReactiveFlags.watching | ReactiveFlags.recursedCheck) {
-    JoltDebug.create(this, onDebug);
+    JoltDebug.create(this, debug);
 
     final prevSub = getActiveSub();
     if (prevSub != null) {
@@ -87,7 +87,7 @@ class FlutterEffectImpl extends EffectReactiveNode
   ///
   /// Parameters:
   /// - [fn]: The effect function to execute
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Returns: A new [FlutterEffect] instance that executes immediately
   ///
@@ -106,8 +106,8 @@ class FlutterEffectImpl extends EffectReactiveNode
   /// signal.value = 20; // Effect schedules for end of frame
   /// ```
   /// {@endtemplate}
-  factory FlutterEffectImpl.lazy(void Function() fn, {JoltDebugFn? onDebug}) {
-    return FlutterEffectImpl(fn, lazy: true, onDebug: onDebug);
+  factory FlutterEffectImpl.lazy(void Function() fn, {JoltDebugOption? debug}) {
+    return FlutterEffectImpl(fn, lazy: true, debug: debug);
   }
 
   /// The function that defines the effect's behavior.
@@ -229,11 +229,11 @@ abstract class FlutterEffect implements EffectNode {
   factory FlutterEffect(
     void Function() fn, {
     bool lazy,
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) = FlutterEffectImpl;
 
   /// {@macro flutter_effect_impl.lazy}
-  factory FlutterEffect.lazy(void Function() fn, {JoltDebugFn? onDebug}) =
+  factory FlutterEffect.lazy(void Function() fn, {JoltDebugOption? debug}) =
       FlutterEffectImpl.lazy;
 
   /// Manually runs the effect function immediately, bypassing frame scheduling.

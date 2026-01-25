@@ -212,7 +212,8 @@ class SetupWidgetElement<T extends SetupWidget<T>> extends ComponentElement {
       // First build: initialize setup
       setupContext.run(() {
         setupContext.setupBuilder = widget.setup(this, _propsNode);
-        setupContext.renderer = FlutterEffect.lazy(markNeedsBuild);
+        setupContext.renderer = FlutterEffect.lazy(markNeedsBuild,
+            debug: JoltDebugOption.type("SetupRenderer<$T>"));
 
         for (var hook in setupContext._hooks) {
           hook.mount();

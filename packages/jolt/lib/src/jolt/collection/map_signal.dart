@@ -278,7 +278,7 @@ class MapSignalImpl<K, V> extends SignalImpl<Map<K, V>>
   ///
   /// Parameters:
   /// - [value]: Initial map content, defaults to empty map if null
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Example:
   /// ```dart
@@ -286,7 +286,7 @@ class MapSignalImpl<K, V> extends SignalImpl<Map<K, V>>
   /// final userMap = MapSignal({'name': 'Alice', 'age': 30});
   /// final autoMap = MapSignal({'key': 'value'});
   /// ```
-  MapSignalImpl(Map<K, V>? value, {super.onDebug}) : super(value ?? {});
+  MapSignalImpl(Map<K, V>? value, {super.debug}) : super(value ?? {});
 }
 
 /// Interface for reactive map signals.
@@ -308,13 +308,13 @@ abstract interface class MapSignal<K, V>
   ///
   /// Parameters:
   /// - [value]: Initial map content, defaults to empty map if null
-  /// - [onDebug]: Optional debug callback for reactive system debugging
+  /// - [debug]: Optional debug options
   ///
   /// Example:
   /// ```dart
   /// final emptyMap = MapSignal<String, int>(null); // Creates empty map
   /// final userMap = MapSignal({'name': 'Alice', 'age': 30});
   /// ```
-  factory MapSignal(Map<K, V>? value, {JoltDebugFn? onDebug}) =
+  factory MapSignal(Map<K, V>? value, {JoltDebugOption? debug}) =
       MapSignalImpl<K, V>;
 }

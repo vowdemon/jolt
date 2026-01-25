@@ -11,7 +11,7 @@ extension JoltValueListenableSignalExtension<T> on ValueListenable<T> {
   /// but Signal cannot be modified.
   ///
   /// Parameters:
-  /// - [onDebug]: Optional debug callback
+  /// - [debug]: Optional debug options
   ///
   /// Returns: A ReadonlySignal synchronized with this ValueListenable
   ///
@@ -21,8 +21,8 @@ extension JoltValueListenableSignalExtension<T> on ValueListenable<T> {
   /// final signal = notifier.toListenableSignal();
   /// notifier.value = 1; // signal.value becomes 1
   /// ```
-  ReadonlySignal<T> toListenableSignal({JoltDebugFn? onDebug}) {
-    return ValueListenableSignal.from(this, onDebug: onDebug);
+  ReadonlySignal<T> toListenableSignal({JoltDebugOption? debug}) {
+    return ValueListenableSignal.from(this, debug: debug);
   }
 }
 
@@ -38,24 +38,24 @@ class ValueListenableSignal<T> extends DelegatedReadonlySignal<T> {
   ///
   /// Parameters:
   /// - [listenable]: The ValueListenable to wrap
-  /// - [onDebug]: Optional debug callback
+  /// - [debug]: Optional debug options
   ///
   /// Returns: A ReadonlySignal synchronized with the ValueListenable
   static ReadonlySignal<T> from<T>(ValueListenable<T> listenable,
-      {JoltDebugFn? onDebug}) {
+      {JoltDebugOption? debug}) {
     if (listenable is JoltValueListenable<T>) {
       final node = listenable.node;
       if (node is ReadonlySignal<T>) {
         return node;
       }
     }
-    final delegated = _getOrCreateDelegated(listenable, onDebug: onDebug);
+    final delegated = _getOrCreateDelegated(listenable, debug: debug);
     return ValueListenableSignal.delegated(delegated);
   }
 
   static DelegatedRefCountHelper<SignalImpl<T>> _getOrCreateDelegated<T>(
     ValueListenable<T> listenable, {
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) {
     var delegated = _delegatedValueListenableSignals[listenable]
         as DelegatedRefCountHelper<SignalImpl<T>>?;
@@ -65,7 +65,7 @@ class ValueListenableSignal<T> extends DelegatedReadonlySignal<T> {
           delegated = _createDelegatedSignalImpl<T>(
         listenable,
         expando: _delegatedValueListenableSignals,
-        onDebug: onDebug,
+        debug: debug,
       );
     }
 

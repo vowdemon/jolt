@@ -10,7 +10,7 @@ extension JoltValueNotifierSignalExtension<T> on ValueNotifier<T> {
   /// Changes to either ValueNotifier or Signal are synchronized.
   ///
   /// Parameters:
-  /// - [onDebug]: Optional debug callback
+  /// - [debug]: Optional debug options
   ///
   /// Returns: A Signal synchronized with this ValueNotifier
   ///
@@ -21,8 +21,8 @@ extension JoltValueNotifierSignalExtension<T> on ValueNotifier<T> {
   /// notifier.value = 1; // signal.value becomes 1
   /// signal.value = 2;   // notifier.value becomes 2
   /// ```
-  Signal<T> toNotifierSignal({JoltDebugFn? onDebug}) {
-    return ValueNotifierSignal.from(this, onDebug: onDebug);
+  Signal<T> toNotifierSignal({JoltDebugOption? debug}) {
+    return ValueNotifierSignal.from(this, debug: debug);
   }
 }
 
@@ -41,10 +41,11 @@ class ValueNotifierSignal<T> extends DelegatedSignal<T> {
   ///
   /// Parameters:
   /// - [notifier]: The ValueNotifier to wrap
-  /// - [onDebug]: Optional debug callback
+  /// - [debug]: Optional debug options
   ///
   /// Returns: A Signal synchronized with the ValueNotifier
-  static Signal<T> from<T>(ValueNotifier<T> notifier, {JoltDebugFn? onDebug}) {
+  static Signal<T> from<T>(ValueNotifier<T> notifier,
+      {JoltDebugOption? debug}) {
     if (notifier is JoltValueNotifier<T>) {
       final node = notifier.node;
       if (node is Signal<T>) {
@@ -52,13 +53,13 @@ class ValueNotifierSignal<T> extends DelegatedSignal<T> {
       }
     }
 
-    final delegated = _getOrCreateDelegated(notifier, onDebug: onDebug);
+    final delegated = _getOrCreateDelegated(notifier, debug: debug);
     return ValueNotifierSignal.delegated(delegated, notifier);
   }
 
   static DelegatedRefCountHelper<SignalImpl<T>> _getOrCreateDelegated<T>(
     ValueNotifier<T> notifier, {
-    JoltDebugFn? onDebug,
+    JoltDebugOption? debug,
   }) {
     var delegated = _delegatedValueNotifierSignals[notifier]
         as DelegatedRefCountHelper<SignalImpl<T>>?;
@@ -68,7 +69,7 @@ class ValueNotifierSignal<T> extends DelegatedSignal<T> {
           delegated = _createDelegatedSignalImpl<T>(
         notifier,
         expando: _delegatedValueNotifierSignals,
-        onDebug: onDebug,
+        debug: debug,
       );
     }
 

@@ -1,3 +1,4 @@
+import "package:jolt/core.dart";
 import "package:jolt/jolt.dart";
 import "package:test/test.dart";
 
@@ -5,10 +6,13 @@ import "../utils.dart";
 
 void main() {
   group("Debug", () {
+    setUpAll(() {
+      JoltDebug.init();
+    });
     test("debug signal", () {
       final counter = DebugCounter();
 
-      final s = Signal(0, onDebug: counter.onDebug);
+      final s = Signal(0, debug: JoltDebugOption.of(onDebug: counter.onDebug));
       expect(counter.createCount, equals(1));
       expect(counter.count, equals(1));
 
@@ -33,7 +37,8 @@ void main() {
     test("debug computed", () {
       final counter = DebugCounter();
 
-      final c = Computed(() => 1, onDebug: counter.onDebug);
+      final c = Computed(() => 1,
+          debug: JoltDebugOption.of(onDebug: counter.onDebug));
       expect(counter.createCount, equals(1));
       expect(counter.count, equals(1));
 
@@ -57,7 +62,8 @@ void main() {
     test("debug effect", () {
       final counter = DebugCounter();
 
-      final e = Effect(() => 1, lazy: true, onDebug: counter.onDebug);
+      final e = Effect(() => 1,
+          lazy: true, debug: JoltDebugOption.of(onDebug: counter.onDebug));
 
       expect(counter.createCount, equals(1));
       expect(counter.count, equals(1));
@@ -75,7 +81,8 @@ void main() {
     test("debug watcher", () {
       final counter = DebugCounter();
 
-      final w = Watcher(() => 1, (value, _) => 1, onDebug: counter.onDebug);
+      final w = Watcher(() => 1, (value, _) => 1,
+          debug: JoltDebugOption.of(onDebug: counter.onDebug));
 
       expect(counter.createCount, equals(1));
       expect(counter.count, equals(1));
@@ -92,7 +99,8 @@ void main() {
     test("debug effect scope", () {
       final counter = DebugCounter();
 
-      final e = EffectScope(onDebug: counter.onDebug)..run(() => 1);
+      final e = EffectScope(debug: JoltDebugOption.of(onDebug: counter.onDebug))
+        ..run(() => 1);
 
       expect(counter.createCount, equals(1));
       expect(counter.count, equals(2));
@@ -114,22 +122,25 @@ void main() {
       final esCounter = DebugCounter();
       final wCounter = DebugCounter();
 
-      final s = Signal(0, onDebug: sCounter.onDebug);
-      final c = Computed(() => s.value, onDebug: cCounter.onDebug);
+      final s = Signal(0, debug: JoltDebugOption.of(onDebug: sCounter.onDebug));
+      final c = Computed(() => s.value,
+          debug: JoltDebugOption.of(onDebug: cCounter.onDebug));
       late Effect e;
       late Watcher w;
-      final es = EffectScope(onDebug: esCounter.onDebug)
-        ..run(
-          () {
-            e = Effect(() => c.value, onDebug: eCounter.onDebug);
-            w = Watcher(
-              () => c.value,
-              (value, _) => value,
-              onDebug: wCounter.onDebug,
-              when: (newValue, oldValue) => true,
+      final es =
+          EffectScope(debug: JoltDebugOption.of(onDebug: esCounter.onDebug))
+            ..run(
+              () {
+                e = Effect(() => c.value,
+                    debug: JoltDebugOption.of(onDebug: eCounter.onDebug));
+                w = Watcher(
+                  () => c.value,
+                  (value, _) => value,
+                  debug: JoltDebugOption.of(onDebug: wCounter.onDebug),
+                  when: (newValue, oldValue) => true,
+                );
+              },
             );
-          },
-        );
 
       expect(sCounter.linked, equals(1));
       expect(cCounter.linked, equals(2));

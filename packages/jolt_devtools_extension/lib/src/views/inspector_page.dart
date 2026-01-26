@@ -17,6 +17,11 @@ class JoltInspectorPage extends StatefulWidget {
 class _JoltInspectorPageState extends State<JoltInspectorPage> {
   late final JoltInspectorController _controller;
 
+  static const double _detailsWidthMin = 200;
+  static const double _detailsWidthMax = 600;
+  static const double _detailsWidthDefault = 350;
+  double _detailsWidth = _detailsWidthDefault;
+
   @override
   void initState() {
     super.initState();
@@ -75,24 +80,50 @@ class _JoltInspectorPageState extends State<JoltInspectorPage> {
         Expanded(
           child: NodesListPanel(),
         ),
-        // VerticalDivider(width: 1, color: Colors.grey.shade700),
-        // SizedBox(
-        //   width: 320,
-        //   child: RelationshipsPanel(
-        //     controller: _controller,
-        //   ),
-        // ),
-        // Right panel: Node details (if node selected)
         if (_controller.$selectedNode.value != null) ...[
-          VerticalDivider(width: 1, color: Colors.grey.shade700),
+          _ResizableDetailsDivider(
+            onDrag: (dx) {
+              setState(() {
+                _detailsWidth = (_detailsWidth - dx)
+                    .clamp(_detailsWidthMin, _detailsWidthMax);
+              });
+            },
+          ),
           SizedBox(
-            width: 350,
+            width: _detailsWidth,
             child: NodeDetailsPanel(
               node: _controller.$selectedNode.value!,
             ),
           ),
         ],
       ],
+    );
+  }
+}
+
+/// Draggable divider for resizing the details panel width.
+class _ResizableDetailsDivider extends StatelessWidget {
+  final void Function(double dx) onDrag;
+
+  const _ResizableDetailsDivider({required this.onDrag});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onHorizontalDragUpdate: (details) => onDrag(details.delta.dx),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.resizeColumn,
+        child: Container(
+          width: 6,
+          color: Colors.transparent,
+          alignment: Alignment.center,
+          child: Container(
+            width: 1,
+            color: Colors.grey.shade700,
+          ),
+        ),
+      ),
     );
   }
 }

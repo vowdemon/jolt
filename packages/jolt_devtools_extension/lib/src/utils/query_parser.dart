@@ -336,16 +336,12 @@ List<String> tokenizeQuery(String input) {
           input[i] != '(' &&
           input[i] != ')' &&
           input[i] != '|') {
-        // Check for OR keyword
-        if (i + 1 < input.length &&
-            input.substring(i, i + 2).toLowerCase() == 'or') {
-          if (i + 2 >= input.length || input[i + 2].trim().isEmpty) {
-            break; // Stop before OR keyword
-          }
-        }
         i++;
       }
-      tokens.add(input.substring(start, i));
+      final token = input.substring(start, i);
+      if (token.isNotEmpty) {
+        tokens.add(token);
+      }
     }
   }
   return tokens;

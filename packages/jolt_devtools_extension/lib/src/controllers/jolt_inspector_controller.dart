@@ -150,6 +150,9 @@ class JoltInspectorController {
             if ($selectedNodeId.value == disposedNodeId) {
               $selectedNodeId.value = null;
             }
+
+            // Invalidate VM value cache for disposed node
+            joltService.invalidateVmValueCache(disposedNodeId);
           }
         }
       } else if (update.operation == 'nodeUpdated') {
@@ -182,6 +185,11 @@ class JoltInspectorController {
               node.valueType.value = update.valueType!;
             }
           });
+
+          // Invalidate VM value cache when node value is updated
+          if (update.nodeId != null) {
+            joltService.invalidateVmValueCache(update.nodeId!);
+          }
         }
       } else if (update.operation == 'link' || update.operation == 'unlink') {
         // Handle link/unlink operations for dependencies and subscribers
@@ -270,121 +278,12 @@ class JoltInspectorController {
       return false;
     }
 
-    final tasks = <Future<void>>[];
     if (node.creationStack.value == null) {
-      tasks.add(() async {
-        final creationStack = await joltService.getCreationStack(nodeId);
-        node.creationStack.value = creationStack;
-      }());
-    }
-    if (node.isReadable) {
-      tasks.add(loadVmValue(node));
-    }
-    if (tasks.isNotEmpty) {
-      await Future.wait(tasks);
+      final creationStack = await joltService.getCreationStack(nodeId);
+      node.creationStack.value = creationStack;
     }
 
     return true;
-  }
-
-  Future<void> loadVmValue(JoltNode node, {bool force = false}) async {
-    if (!node.isReadable) {
-      return;
-    }
-
-    final current = node.vmValue.value;
-    if (current.isLoading) {
-      return;
-    }
-    if (!force && current.hasValue) {
-      return;
-    }
-
-    node.vmValue.value = const VmValueState.loading();
-    final result = await joltService.getVmValueTree(node.id);
-    node.vmValue.value = result;
-  }
-
-  Future<void> loadVmChildren(JoltNode node, VmValueNode target) async {
-    if (!node.isReadable) {
-      return;
-    }
-    if (!target.isExpandable || target.objectId == null) {
-      return;
-    }
-    if (target.childrenLoaded || target.isLoading) {
-      return;
-    }
-
-    _updateVmNode(node, target.key,
-        (value) => value.copyWith(isLoading: true, error: null));
-
-    try {
-      final children = await joltService.getVmChildren(target);
-      _updateVmNode(
-        node,
-        target.key,
-        (value) => value.copyWith(
-          children: children,
-          childrenLoaded: true,
-          isLoading: false,
-        ),
-      );
-    } catch (e) {
-      _updateVmNode(node, target.key,
-          (value) => value.copyWith(isLoading: false, error: e.toString()));
-    }
-  }
-
-  void _updateVmNode(
-    JoltNode node,
-    String key,
-    VmValueNode Function(VmValueNode node) update,
-  ) {
-    final state = node.vmValue.value;
-    final root = state.root;
-    if (root == null) {
-      return;
-    }
-
-    final updatedRoot = _updateVmNodeRecursive(root, key, update);
-    if (updatedRoot == null) {
-      return;
-    }
-
-    node.vmValue.value = VmValueState.success(updatedRoot);
-  }
-
-  VmValueNode? _updateVmNodeRecursive(
-    VmValueNode current,
-    String key,
-    VmValueNode Function(VmValueNode node) update,
-  ) {
-    if (current.key == key) {
-      return update(current);
-    }
-
-    if (current.children.isEmpty) {
-      return null;
-    }
-
-    var updated = false;
-    final nextChildren = <VmValueNode>[];
-    for (final child in current.children) {
-      final updatedChild = _updateVmNodeRecursive(child, key, update);
-      if (updatedChild != null) {
-        nextChildren.add(updatedChild);
-        updated = true;
-      } else {
-        nextChildren.add(child);
-      }
-    }
-
-    if (!updated) {
-      return null;
-    }
-
-    return current.copyWith(children: nextChildren);
   }
 
   void setFilter(String value) {

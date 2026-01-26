@@ -4,77 +4,7 @@ library;
 import 'package:jolt_devtools_extension/src/models/jolt_debug.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
 
-class VmValueNode {
-  final String key;
-  final String label;
-  final String display;
-  final String? type;
-  final String? kind;
-  final String? objectId;
-  final bool isExpandable;
-  final bool childrenLoaded;
-  final bool isLoading;
-  final String? error;
-  final List<VmValueNode> children;
-
-  const VmValueNode({
-    required this.key,
-    required this.label,
-    required this.display,
-    this.type,
-    this.kind,
-    this.objectId,
-    this.isExpandable = false,
-    this.childrenLoaded = false,
-    this.isLoading = false,
-    this.error,
-    this.children = const [],
-  });
-
-  VmValueNode copyWith({
-    String? display,
-    String? type,
-    bool? isExpandable,
-    bool? childrenLoaded,
-    bool? isLoading,
-    String? error,
-    List<VmValueNode>? children,
-  }) {
-    return VmValueNode(
-      key: key,
-      label: label,
-      display: display ?? this.display,
-      type: type ?? this.type,
-      kind: kind,
-      objectId: objectId,
-      isExpandable: isExpandable ?? this.isExpandable,
-      childrenLoaded: childrenLoaded ?? this.childrenLoaded,
-      isLoading: isLoading ?? this.isLoading,
-      error: error ?? this.error,
-      children: children ?? this.children,
-    );
-  }
-}
-
-class VmValueState {
-  final bool isLoading;
-  final VmValueNode? root;
-  final String? error;
-
-  const VmValueState._({
-    this.isLoading = false,
-    this.root,
-    this.error,
-  });
-
-  const VmValueState.idle() : this._();
-  const VmValueState.loading() : this._(isLoading: true);
-  const VmValueState.success(VmValueNode root) : this._(root: root);
-  const VmValueState.error(String error) : this._(error: error);
-
-  bool get hasValue => root != null;
-  bool get hasError => error != null;
-}
+export 'package:jolt_devtools_extension/src/models/vm_node.dart';
 
 /// Represents a Jolt reactive node in the inspector.
 class JoltNode {
@@ -86,7 +16,6 @@ class JoltNode {
   final Signal<int> flags;
   final Signal<dynamic> value;
   final Signal<String> valueType;
-  final Signal<VmValueState> vmValue;
   final ListSignal<int> dependencies;
   final ListSignal<int> subscribers;
   final Signal<String?> creationStack;
@@ -107,7 +36,6 @@ class JoltNode {
   })  : value = Signal(value),
         flags = Signal(flags),
         valueType = Signal(valueType),
-        vmValue = Signal(const VmValueState.idle()),
         dependencies = ListSignal(dependencies),
         subscribers = ListSignal(subscribers),
         creationStack = Signal(creationStack),

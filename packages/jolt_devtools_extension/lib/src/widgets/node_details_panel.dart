@@ -4,6 +4,7 @@ import 'package:jolt_devtools_extension/src/models/jolt_node.dart';
 import 'package:jolt_devtools_extension/src/widgets/detail_section.dart';
 import 'package:jolt_devtools_extension/src/widgets/detail_row.dart';
 import 'package:jolt_devtools_extension/src/widgets/node_icon.dart';
+import 'package:jolt_devtools_extension/src/widgets/node_link_list_section.dart';
 import 'package:jolt_devtools_extension/src/widgets/value_root.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
 import 'package:jolt_setup/jolt_setup.dart';
@@ -117,110 +118,18 @@ class _NodeDetailsPanelState extends State<NodeDetailsPanel>
                 ],
               ),
             ],
-            JoltBuilder(builder: (context) {
-              final deps = widget.node.dependencies.value;
-              if (deps.isNotEmpty) {
-                return Column(
-                  children: [
-                    const SizedBox(height: 16),
-                    DetailSection(
-                      title: 'Dependencies (${deps.length})',
-                      collapseSignal: $hideDependencies,
-                      onToggle: () =>
-                          $hideDependencies.value = !$hideDependencies.value,
-                      children: [
-                        ConstrainedBox(
-                          constraints: BoxConstraints(
-                            maxHeight: MediaQuery.of(context).size.height * 0.2,
-                          ),
-                          child: SingleChildScrollView(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: deps.map((depId) {
-                                final depNode = controller.$nodes[depId];
-                                return Padding(
-                                  padding: const EdgeInsets.only(
-                                      left: 8.0, top: 4.0, bottom: 4.0),
-                                  child: InkWell(
-                                    onTap: () => controller.selectNode(
-                                      depId,
-                                      reason: SelectionReason.depJump,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        NodeIcon(
-                                            type: depNode?.type ?? 'Unknown'),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                            child: Text(
-                                                depNode?.label ?? 'Unknown')),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                );
-              }
-              return const SizedBox.shrink();
-            }),
-            JoltBuilder(builder: (context) {
-              final subs = widget.node.subscribers.value;
-              if (subs.isNotEmpty) {
-                return Column(
-                  children: [
-                    const SizedBox(height: 16),
-                    DetailSection(
-                      title: 'Subscribers (${subs.length})',
-                      collapseSignal: $hideSubscribers,
-                      onToggle: () =>
-                          $hideSubscribers.value = !$hideSubscribers.value,
-                      children: [
-                        ConstrainedBox(
-                          constraints: BoxConstraints(
-                            maxHeight: MediaQuery.of(context).size.height * 0.2,
-                          ),
-                          child: SingleChildScrollView(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: subs.map((subId) {
-                                final subNode = controller.$nodes[subId];
-                                return Padding(
-                                  padding: const EdgeInsets.only(
-                                      left: 8.0, top: 4.0, bottom: 4.0),
-                                  child: InkWell(
-                                    onTap: () => controller.selectNode(
-                                      subId,
-                                      reason: SelectionReason.depJump,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        NodeIcon(
-                                            type: subNode?.type ?? 'Unknown'),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                            child: Text(
-                                                subNode?.label ?? 'Unknown')),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                );
-              }
-              return const SizedBox.shrink();
-            }),
+            NodeLinkListSection(
+              title: 'Dependencies',
+              nodeIds: widget.node.dependencies,
+              controller: controller,
+              collapseSignal: $hideDependencies,
+            ),
+            NodeLinkListSection(
+              title: 'Subscribers',
+              nodeIds: widget.node.subscribers,
+              controller: controller,
+              collapseSignal: $hideSubscribers,
+            ),
             if (widget.node.creationStack.value != null) ...[
               const SizedBox(height: 16),
               DetailSection(

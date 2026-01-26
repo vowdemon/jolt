@@ -1,3 +1,7 @@
+## 3.2.0-dev.1
+
+ - **FIX**(setup): renderer debug. ([8a596c27](https://github.com/vowdemon/jolt/commit/8a596c271bd753481ef9f8e2e5e7f4fa7623e0fd))
+
 ## 3.2.0-dev.0
 
  - **FEAT**(setup): useReset hook for reset-setup. ([50111813](https://github.com/vowdemon/jolt/commit/501118130ff55f2a7f7f1a3c83b0cb8fe3136270))

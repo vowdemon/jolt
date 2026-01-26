@@ -1,6 +1,6 @@
 name: jolt_setup
 description: "Setup Widget API and Flutter hooks for building reactive widgets with Jolt signals, featuring automatic resource cleanup and lifecycle management."
-version: 3.2.0-dev.0
+version: 3.2.0-dev.1
 
 repository: https://github.com/vowdemon/jolt
 homepage: https://jolt.vowdemon.com

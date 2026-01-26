@@ -15,6 +15,30 @@ Packages with breaking changes:
 
 Packages with other changes:
 
+ - [`jolt` - `v3.2.0-dev.2`](#jolt---v320-dev2)
+ - [`jolt_setup` - `v3.2.0-dev.1`](#jolt_setup---v320-dev1)
+
+---
+
+#### `jolt` - `v3.2.0-dev.2`
+
+#### `jolt_setup` - `v3.2.0-dev.1`
+
+ - **FIX**(setup): renderer debug. ([8a596c27](https://github.com/vowdemon/jolt/commit/8a596c271bd753481ef9f8e2e5e7f4fa7623e0fd))
+
+
+## 2026-01-26
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
  - [`jolt` - `v3.2.0-dev.1`](#jolt---v320-dev1)
  - [`jolt_flutter` - `v3.1.0-dev.0`](#jolt_flutter---v310-dev0)
  - [`jolt_hooks` - `v3.1.0-dev.0`](#jolt_hooks---v310-dev0)

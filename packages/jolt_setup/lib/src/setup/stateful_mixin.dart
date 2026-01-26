@@ -256,8 +256,8 @@ mixin SetupMixin<T extends StatefulWidget> on State<T> {
 
       // 6. Recreate the renderer effect
       setupContext.renderer = FlutterEffect.lazy(
-        (context as Element).markNeedsBuild,
-      );
+          (context as Element).markNeedsBuild,
+          debug: JoltDebugOption.type("SetupRenderer<$T>"));
 
       // 7. Mount all new hooks
       for (var hook in setupContext._hooks) {

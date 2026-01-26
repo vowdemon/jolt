@@ -325,6 +325,7 @@ class SetupWidgetElement<T extends SetupWidget<T>> extends ComponentElement {
       // 6. Recreate the renderer effect
       setupContext.renderer = FlutterEffect.lazy(
         markNeedsBuild,
+        debug: JoltDebugOption.type("SetupRenderer<$T>"),
       );
 
       // 7. Mount all new hooks

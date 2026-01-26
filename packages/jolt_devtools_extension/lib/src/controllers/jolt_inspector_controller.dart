@@ -30,6 +30,7 @@ class JoltInspectorController {
   String _parsedQuerySource = '';
 
   Timer? _refreshTimer;
+  Timer? _searchThrottleTimer;
 
   JoltInspectorController() {
     _checkConnection();
@@ -291,8 +292,16 @@ class JoltInspectorController {
   }
 
   void setSearchQuery(String value) {
+    // Update UI immediately
     $searchQuery.value = value;
-    _parseQuery();
+
+    // Cancel previous throttle timer
+    _searchThrottleTimer?.cancel();
+
+    // Set up new throttle timer (50ms, trailing)
+    _searchThrottleTimer = Timer(const Duration(milliseconds: 50), () {
+      _parseQuery();
+    });
   }
 
   void closeNodeDetails() {
@@ -601,6 +610,7 @@ class JoltInspectorController {
   }
 
   void dispose() {
+    _searchThrottleTimer?.cancel();
     _updateSubscription?.cancel();
     _refreshTimer?.cancel();
     if (_connectionListener != null) {

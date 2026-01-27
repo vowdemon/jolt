@@ -1,3 +1,5 @@
+import 'package:meta/meta_meta.dart';
+
 /// Annotation used to mark hook functions.
 ///
 /// This annotation is used by the lint rule to identify hook functions
@@ -12,6 +14,7 @@
 ///   return useAutoDispose(() => Signal(value));
 /// }
 /// ```
+@Target({TargetKind.function, TargetKind.method, TargetKind.topLevelVariable})
 class DefineHook {
   const DefineHook();
 }

@@ -45,8 +45,21 @@ const useTimer = TimerHookCreator._();
 /// Return type of the timer hook; implements [Timer]'s [cancel], [isActive], [tick], etc.
 ///
 /// Cancelled automatically on unmount; call [cancel] to cancel earlier if needed.
-abstract class TimerHook implements Timer {}
+/// Use [pause] / [resume] to temporarily stop and restart without losing the hook;
+/// use [reset] to restart from the beginning (for one-shot, resets the delay).
+abstract class TimerHook implements Timer {
+  /// Stops the timer without cancelling; call [resume] to run again.
+  void pause();
 
+  /// Restarts the timer after [pause].
+  void resume();
+
+  /// Stops and restarts: equivalent to [pause] then [resume].
+  /// For one-shot, resets the delay; for periodic, restarts from tick 0.
+  void reset();
+}
+
+/// Base implementation for one-shot and periodic timer hooks.
 abstract class _TimerBaseHook extends SetupHook<TimerHook>
     implements TimerHook {
   _TimerBaseHook({required this.duration, required this.immediately});
@@ -55,12 +68,33 @@ abstract class _TimerBaseHook extends SetupHook<TimerHook>
   Timer? timer;
   final bool immediately;
 
+  /// True after [cancel]; [resume] will no longer start.
+  bool isCancelled = false;
+
+  /// Starts the underlying [Timer]; no-op if already running or cancelled.
   void start();
 
   @override
   void cancel() {
+    isCancelled = true;
+    pause();
+  }
+
+  @override
+  void pause() {
     timer?.cancel();
     timer = null;
+  }
+
+  @override
+  void resume() {
+    start();
+  }
+
+  @override
+  void reset() {
+    pause();
+    start();
   }
 
   @override
@@ -101,6 +135,7 @@ abstract class _TimerBaseHook extends SetupHook<TimerHook>
   // coverage:ignore-end
 }
 
+/// One-shot timer: fires [callback] once after [duration].
 class _TimerHook extends _TimerBaseHook {
   _TimerHook(
       {required super.duration,
@@ -109,14 +144,12 @@ class _TimerHook extends _TimerBaseHook {
 
   late void Function() callback;
 
-  void callbackFn() {
-    callback();
-  }
+  void _onTimer() => callback();
 
   @override
   void start() {
-    if (timer != null) return;
-    timer = Timer(duration, callbackFn);
+    if (timer != null || isCancelled || !context.mounted) return;
+    timer = Timer(duration, _onTimer);
   }
 
   // coverage:ignore-start
@@ -128,6 +161,7 @@ class _TimerHook extends _TimerBaseHook {
   // coverage:ignore-end
 }
 
+/// Periodic timer: invokes [callback] every [duration] with the current [Timer].
 class _TimerPeriodicHook extends _TimerBaseHook {
   _TimerPeriodicHook(
       {required super.duration,
@@ -135,14 +169,12 @@ class _TimerPeriodicHook extends _TimerBaseHook {
       required this.callback});
   late void Function(Timer timer) callback;
 
-  void callbackFn(Timer timer) {
-    callback(timer);
-  }
+  void _onTick(Timer t) => callback(t);
 
   @override
   void start() {
-    if (timer != null) return;
-    timer = Timer.periodic(duration, callbackFn);
+    if (timer != null || isCancelled || !context.mounted) return;
+    timer = Timer.periodic(duration, _onTick);
   }
 
   // coverage:ignore-start

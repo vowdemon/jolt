@@ -182,6 +182,223 @@ void main() {
       expect(hook!.tick, greaterThanOrEqualTo(2));
     });
   });
+
+  group('pause, resume, reset', () {
+    testWidgets('pause stops periodic timer callbacks', (tester) async {
+      TimerHook? hook;
+      const tickKey = Key('tick');
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final tickCount = useSignal(0);
+          hook = useTimer.periodic(
+            const Duration(milliseconds: 50),
+            (_) => tickCount.value++,
+            immediately: true,
+          );
+          return () => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('${tickCount.value}', key: tickKey),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () => hook!.pause(),
+                        child: const Text('Pause'),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+        }),
+      ));
+
+      await tester.pumpAndSettle(const Duration(milliseconds: 150));
+      final countBeforePause =
+          int.tryParse((tester.widget<Text>(find.byKey(tickKey))).data ?? '') ??
+              0;
+      expect(countBeforePause, greaterThanOrEqualTo(2),
+          reason: 'Periodic should have fired before pause');
+
+      await tester.tap(find.text('Pause'));
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+      final countAfterPause =
+          int.tryParse((tester.widget<Text>(find.byKey(tickKey))).data ?? '') ??
+              0;
+      expect(countAfterPause, countBeforePause,
+          reason: 'Ticks should not increase after pause');
+    });
+
+    testWidgets('resume restarts periodic timer after pause', (tester) async {
+      TimerHook? hook;
+      const tickKey = Key('tick');
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final tickCount = useSignal(0);
+          hook = useTimer.periodic(
+            const Duration(milliseconds: 50),
+            (_) => tickCount.value++,
+            immediately: true,
+          );
+          return () => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('${tickCount.value}', key: tickKey),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () => hook!.pause(),
+                        child: const Text('Pause'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => hook!.resume(),
+                        child: const Text('Resume'),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+        }),
+      ));
+
+      await tester.pumpAndSettle(const Duration(milliseconds: 100));
+      await tester.tap(find.text('Pause'));
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pump();
+      final countWhilePaused =
+          int.tryParse((tester.widget<Text>(find.byKey(tickKey))).data ?? '') ??
+              0;
+
+      await tester.tap(find.text('Resume'));
+      await tester.pumpAndSettle();
+      await tester.pumpAndSettle(const Duration(milliseconds: 200));
+      final countAfterResume =
+          int.tryParse((tester.widget<Text>(find.byKey(tickKey))).data ?? '') ??
+              0;
+      expect(countAfterResume, greaterThan(countWhilePaused),
+          reason: 'Ticks should increase again after resume');
+    });
+
+    testWidgets('reset restarts periodic timer', (tester) async {
+      TimerHook? hook;
+      const tickKey = Key('tick');
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final tickCount = useSignal(0);
+          hook = useTimer.periodic(
+            const Duration(milliseconds: 50),
+            (_) => tickCount.value++,
+            immediately: true,
+          );
+          return () => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('${tickCount.value}', key: tickKey),
+                  ElevatedButton(
+                    onPressed: () => hook!.reset(),
+                    child: const Text('Reset'),
+                  ),
+                ],
+              );
+        }),
+      ));
+
+      await tester.pumpAndSettle(const Duration(milliseconds: 150));
+      await tester.tap(find.text('Reset'));
+      await tester.pumpAndSettle();
+      await tester.pumpAndSettle(const Duration(milliseconds: 150));
+      final countAfterReset =
+          int.tryParse((tester.widget<Text>(find.byKey(tickKey))).data ?? '') ??
+              0;
+      expect(countAfterReset, greaterThanOrEqualTo(2),
+          reason: 'Timer should run again after reset');
+    });
+
+    testWidgets('pause prevents one-shot callback until resume',
+        (tester) async {
+      TimerHook? hook;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final invoked = useSignal(false);
+          hook = useTimer(
+            const Duration(milliseconds: 80),
+            () => invoked.value = true,
+            immediately: true,
+          );
+          return () => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(invoked.value ? 'done' : 'waiting'),
+                  ElevatedButton(
+                    onPressed: () => hook!.pause(),
+                    child: const Text('Pause'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => hook!.resume(),
+                    child: const Text('Resume'),
+                  ),
+                ],
+              );
+        }),
+      ));
+
+      expect(find.text('waiting'), findsOneWidget);
+      await tester.tap(find.text('Pause'));
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pump();
+      expect(find.text('waiting'), findsOneWidget,
+          reason: 'Callback should not fire while paused');
+
+      await tester.tap(find.text('Resume'));
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 150));
+      await tester.pump();
+      expect(find.text('done'), findsOneWidget,
+          reason: 'Callback should fire after resume');
+    });
+
+    testWidgets('reset restarts one-shot timer', (tester) async {
+      TimerHook? hook;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final invoked = useSignal(false);
+          hook = useTimer(
+            const Duration(milliseconds: 100),
+            () => invoked.value = true,
+            immediately: true,
+          );
+          return () => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(invoked.value ? 'done' : 'waiting'),
+                  ElevatedButton(
+                    onPressed: () => hook!.reset(),
+                    child: const Text('Reset'),
+                  ),
+                ],
+              );
+        }),
+      ));
+
+      expect(find.text('waiting'), findsOneWidget);
+      await tester.tap(find.text('Reset'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 150));
+      await tester.pump();
+      expect(find.text('done'), findsOneWidget,
+          reason: 'One-shot should fire after reset and full duration');
+    });
+  });
 }
 
 class _RebuildTestWidget extends StatefulWidget {

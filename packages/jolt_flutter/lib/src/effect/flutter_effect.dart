@@ -25,7 +25,7 @@ import 'package:shared_interfaces/shared_interfaces.dart';
 /// ```
 class FlutterEffectImpl extends EffectReactiveNode
     with DisposableNodeMixin, EffectCleanupMixin
-    implements FlutterEffect, EffectScheduler {
+    implements FlutterEffect, EffectScheduler, EffectNode {
   /// {@template flutter_effect_impl}
   /// Creates a new Flutter effect with the given function.
   ///

@@ -1,3 +1,7 @@
+## 3.2.0-dev.4
+
+ - **REFACTOR**: debug API and DevTools behavior. ([e66ce708](https://github.com/vowdemon/jolt/commit/e66ce7080dd99268b61fe8dee3cc61bae53fd9cd))
+
 ## 3.2.0-dev.2
 
 ## 3.2.0-dev.1

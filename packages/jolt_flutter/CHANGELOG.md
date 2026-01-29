@@ -1,3 +1,7 @@
+## 3.1.0-dev.1
+
+ - **FIX**(setup): flutter effect's implement class. ([13533f04](https://github.com/vowdemon/jolt/commit/13533f043891fc766a4b6480ae010cc651fab9b9))
+
 ## 3.1.0-dev.0
 
  - **FEAT**: devtools. ([a243e172](https://github.com/vowdemon/jolt/commit/a243e172061babc7031267eb5e4696c9064d778c))

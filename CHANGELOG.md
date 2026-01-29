@@ -3,6 +3,39 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-01-29
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`jolt` - `v3.2.0-dev.4`](#jolt---v320-dev4)
+ - [`jolt_flutter` - `v3.1.0-dev.1`](#jolt_flutter---v310-dev1)
+ - [`jolt_setup` - `v3.2.0-dev.2`](#jolt_setup---v320-dev2)
+
+---
+
+#### `jolt` - `v3.2.0-dev.4`
+
+ - **REFACTOR**: debug API and DevTools behavior. ([e66ce708](https://github.com/vowdemon/jolt/commit/e66ce7080dd99268b61fe8dee3cc61bae53fd9cd))
+
+#### `jolt_flutter` - `v3.1.0-dev.1`
+
+ - **FIX**(setup): flutter effect's implement class. ([13533f04](https://github.com/vowdemon/jolt/commit/13533f043891fc766a4b6480ae010cc651fab9b9))
+
+#### `jolt_setup` - `v3.2.0-dev.2`
+
+ - **FIX**(setup): restrict DefineHook annotation to valid targets. ([644804d0](https://github.com/vowdemon/jolt/commit/644804d0e3d9fb26612ff1fa9dc99872936b9ccb))
+ - **FEAT**: add pause / resume / reset to useTimer. ([e2d0c162](https://github.com/vowdemon/jolt/commit/e2d0c162ddab009f21c04b4f57f8146fea12511b))
+ - **FEAT**(setup): add useTimer timer hook. ([68ccab81](https://github.com/vowdemon/jolt/commit/68ccab81dd7ca13eba945b5108cf60628886998e))
+
+
 ## 2026-01-26
 
 ### Changes

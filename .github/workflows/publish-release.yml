@@ -23,6 +23,10 @@ jobs:
         with:
           fetch-depth: 0
       - uses: ./.github/actions/prepare
-      - uses: bluefireteam/melos-action@v3
-        with:
-          publish: true
+      - name: Build Jolt DevTools Extension
+        if: inputs.package_name == 'jolt'
+        run: ./packages/jolt_devtools_extension/build_extension.sh
+        shell: bash
+      - name: Melos publish
+        run: melos publish -y --no-dry-run --scope=${{ inputs.package_name }}
+        shell: bash

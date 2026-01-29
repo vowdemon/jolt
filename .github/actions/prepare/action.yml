@@ -4,10 +4,14 @@ description: Prepare flutter and dart dependencies
 runs:
   using: "composite"
   steps:
-    - name: Set up Flutter
+    - name: Install Flutter
       uses: subosito/flutter-action@v2
       with:
         channel: stable
         cache: true
-    - name: Setup melos
-      uses: bluefireteam/melos-action@v3
+    - name: Install melos
+      run: dart pub global activate melos
+      shell: bash
+    - name: Run melos bootstrap
+      run: melos bootstrap
+      shell: bash

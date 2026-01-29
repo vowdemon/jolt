@@ -21,6 +21,10 @@ packages/**/example/build/
 packages/**/example/pubspec.lock
 
 packages/jolt_devtools_extension/example
+packages/jolt_devtools_extension/build
+packages/jolt_devtools_extension/web
+
+**/build/
 
 devtools_options.yaml
 .fvmrc

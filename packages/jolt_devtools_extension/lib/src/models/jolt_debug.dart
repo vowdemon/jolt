@@ -27,6 +27,9 @@ class JoltDebugNode {
   final String valueType;
   final List<int> dependencies;
   final List<int> subscribers;
+  final int? createdAt;
+  final int? count;
+  final int? updatedAt;
 
   JoltDebugNode({
     required this.id,
@@ -39,6 +42,9 @@ class JoltDebugNode {
     required this.valueType,
     this.dependencies = const [],
     this.subscribers = const [],
+    this.createdAt,
+    this.count,
+    this.updatedAt,
   });
 
   factory JoltDebugNode.fromJson(Map<String, dynamic> json) {
@@ -56,6 +62,9 @@ class JoltDebugNode {
       valueType: json['valueType'] as String? ?? 'Unknown',
       dependencies: dependencies,
       subscribers: subscribers,
+      createdAt: json['createdAt'] as int?,
+      count: json['count'] as int?,
+      updatedAt: json['updatedAt'] as int?,
     );
   }
 

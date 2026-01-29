@@ -101,7 +101,7 @@ void main() {
         final signal = DebouncedSignal(
           0,
           delay: const Duration(milliseconds: 100),
-          debug: JoltDebugOption.of(onDebug: counter.onDebug),
+          debug: JoltDebugOption.fn(counter.onDebug),
         );
 
         expect(signal.value, equals(0));
@@ -125,7 +125,7 @@ void main() {
         final signal = DebouncedSignal(
           0,
           delay: const Duration(milliseconds: 100),
-          debug: JoltDebugOption.of(onDebug: counter.onDebug),
+          debug: JoltDebugOption.fn(counter.onDebug),
         );
         // test code
         // ignore: cascade_invocations
@@ -150,7 +150,7 @@ void main() {
         final signal = DebouncedSignal(
           0,
           delay: const Duration(milliseconds: 100),
-          debug: JoltDebugOption.of(onDebug: counter.onDebug),
+          debug: JoltDebugOption.fn(counter.onDebug),
         );
 
         final initialValue = signal.value;
@@ -169,7 +169,7 @@ void main() {
         final signal = DebouncedSignal(
           0,
           delay: const Duration(milliseconds: 100),
-          debug: JoltDebugOption.of(onDebug: counter.onDebug),
+          debug: JoltDebugOption.fn(counter.onDebug),
         );
 
         final values = <int>[];

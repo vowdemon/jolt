@@ -23,8 +23,8 @@ void main() {
     });
     test("should create with initial value", () {
       final counter = DebugCounter();
-      final signal = ReadonlySignalImpl(42,
-          debug: JoltDebugOption.of(onDebug: counter.onDebug));
+      final signal =
+          ReadonlySignalImpl(42, debug: JoltDebugOption.fn(counter.onDebug));
 
       expect(signal.value, equals(42));
       expect(signal.peek, equals(42));
@@ -40,8 +40,8 @@ void main() {
 
     test("should read value via get()", () {
       final counter = DebugCounter();
-      final signal = ReadonlySignalImpl(10,
-          debug: JoltDebugOption.of(onDebug: counter.onDebug));
+      final signal =
+          ReadonlySignalImpl(10, debug: JoltDebugOption.fn(counter.onDebug));
 
       expect(signal.get(), equals(10));
       expect(counter.getCount, equals(1));
@@ -49,8 +49,8 @@ void main() {
 
     test("should read value via call()", () {
       final counter = DebugCounter();
-      final signal = ReadonlySignalImpl(5,
-          debug: JoltDebugOption.of(onDebug: counter.onDebug));
+      final signal =
+          ReadonlySignalImpl(5, debug: JoltDebugOption.fn(counter.onDebug));
 
       expect(signal(), equals(5));
       expect(counter.getCount, equals(1));
@@ -58,8 +58,8 @@ void main() {
 
     test("should read value via value getter", () {
       final counter = DebugCounter();
-      final signal = ReadonlySignalImpl(7,
-          debug: JoltDebugOption.of(onDebug: counter.onDebug));
+      final signal =
+          ReadonlySignalImpl(7, debug: JoltDebugOption.fn(counter.onDebug));
 
       expect(signal.value, equals(7));
       expect(counter.getCount, equals(1));
@@ -67,8 +67,8 @@ void main() {
 
     test("should read value via peek without dependency", () {
       final counter = DebugCounter();
-      final signal = ReadonlySignalImpl(3,
-          debug: JoltDebugOption.of(onDebug: counter.onDebug));
+      final signal =
+          ReadonlySignalImpl(3, debug: JoltDebugOption.fn(counter.onDebug));
 
       expect(signal.peek, equals(3));
       expect(counter.getCount, equals(0)); // peek doesn't call get
@@ -186,14 +186,13 @@ void main() {
 
     test("should support onDebug callback", () {
       int getCount = 0;
-      void onDebug(DebugNodeOperationType type, ReactiveNode node, {link}) {
+      void onDebug(DebugNodeOperationType type, ReactiveNode node, _) {
         if (type == DebugNodeOperationType.get) {
           getCount++;
         }
       }
 
-      final signal =
-          ReadonlySignalImpl(42, debug: JoltDebugOption.of(onDebug: onDebug));
+      final signal = ReadonlySignalImpl(42, debug: JoltDebugOption.fn(onDebug));
       signal.value;
       signal.peek;
 

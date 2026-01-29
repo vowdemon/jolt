@@ -153,34 +153,6 @@ class JoltService {
     valueService.invalidateVmValueCache(nodeId);
   }
 
-  /// Sets the value of a Signal node.
-  Future<bool> setSignalValue(int nodeId, String value) async {
-    if (serviceManager.service == null) {
-      return false;
-    }
-
-    try {
-      final isolateId = await _getIsolateId();
-      if (isolateId == null) {
-        developer.log('[Jolt Service] No isolate available for setSignalValue');
-        return false;
-      }
-
-      await _service.callServiceExtension(
-        'ext.jolt.setSignalValue',
-        isolateId: isolateId,
-        args: {
-          'nodeId': nodeId.toString(),
-          'value': value,
-        },
-      );
-      return true;
-    } catch (e) {
-      developer.log('Error setting signal value: $e');
-      return false;
-    }
-  }
-
   /// Manually triggers an Effect node to execute.
   Future<bool> triggerEffect(int nodeId) async {
     if (serviceManager.service == null) {

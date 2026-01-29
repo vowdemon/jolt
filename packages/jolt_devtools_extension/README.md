@@ -59,7 +59,6 @@ View where nodes were created to help understand code execution flow:
 
 ### 5. Interactive Operations
 
-- **Edit Signal Values**: Modify Signal values directly in DevTools
 - **Trigger Effects**: Manually trigger Effect execution
 
 ## Usage

@@ -101,11 +101,12 @@ EffectScopeReactiveNode? activeScope;
 @pragma("dart2js:prefer-inline")
 @override
 bool updateNode(ReactiveNode node) {
-  return switch (node) {
+  final result = switch (node) {
     ComputedReactiveNode() => updateComputed(node),
     SignalReactiveNode() => updateSignal(node),
     _ => updateCustom(node),
   };
+  return result;
 }
 
 /// Enqueues an [EffectReactiveNode] chain for execution.
@@ -361,6 +362,11 @@ bool updateComputed<T>(ComputedReactiveNode<T> computed) {
       return false;
     }
     computed.pendingValue = newValue;
+    assert(() {
+      JoltDebug.set(computed);
+
+      return true;
+    }());
     return true;
   } finally {
     activeSub = prevSub;
@@ -421,8 +427,19 @@ bool updateCustom<T>(ReactiveNode node) {
   node.flags = ReactiveFlags.mutable;
 
   if (node is CustomReactiveNode) {
-    return node.updateNode();
+    final result = node.updateNode();
+    assert(() {
+      if (result) {
+        JoltDebug.set(node);
+      }
+      return true;
+    }());
+    return result;
   } else {
+    assert(() {
+      JoltDebug.set(node);
+      return true;
+    }());
     return true;
   }
 }
@@ -555,8 +572,6 @@ T getComputed<T>(ComputedReactiveNode<T> computed) {
       if (subs != null) {
         shallowPropagate(subs);
       }
-
-      JoltDebug.set(computed);
     }
   } else if (flags == (ReactiveFlags.none)) {
     computed.flags = ReactiveFlags.mutable | ReactiveFlags.recursedCheck;

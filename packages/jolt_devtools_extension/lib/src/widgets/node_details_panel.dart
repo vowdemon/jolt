@@ -89,6 +89,29 @@ class _NodeDetailsPanelState extends State<NodeDetailsPanel>
                     label: 'Debug Type',
                     value: widget.node.debugType,
                     showCopyButton: true),
+                if (widget.node.createdAt != null)
+                  JoltBuilder(builder: (context) {
+                    controller.$now.value;
+                    return DetailRow(
+                      label: 'Created',
+                      value: controller.formatTimeAgo(widget.node.createdAt),
+                    );
+                  }),
+                JoltBuilder(builder: (context) {
+                  controller.$now.value;
+                  return DetailRow(
+                    label: 'Updated',
+                    value:
+                        controller.formatTimeAgo(widget.node.updatedAt.value),
+                  );
+                }),
+                JoltBuilder(builder: (context) {
+                  widget.node.count.value;
+                  return DetailRow(
+                    label: 'Count',
+                    value: widget.node.count.value.toString(),
+                  );
+                }),
                 if (widget.node.isReadable) ...[
                   JoltBuilder(builder: (context) {
                     final valueType = widget.node.valueType.value;
@@ -97,7 +120,7 @@ class _NodeDetailsPanelState extends State<NodeDetailsPanel>
                   JoltBuilder(builder: (context) {
                     return DetailRow(
                       label: 'Value',
-                      value: widget.node.value.value,
+                      value: controller.formatValue(widget.node.value.value),
                       showCopyButton: true,
                     );
                   }),
@@ -164,83 +187,25 @@ class _NodeDetailsPanelState extends State<NodeDetailsPanel>
             ],
             const SizedBox(height: 16),
           ])),
-          // Actions
-          Container(
-            padding: const EdgeInsets.all(16.0),
-            decoration: BoxDecoration(
-              border: Border(top: BorderSide(color: Colors.grey.shade700)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (widget.node.type == 'Signal')
-                  ElevatedButton.icon(
-                    onPressed: () => _editSignalValue(context, widget.node),
-                    icon: const Icon(Icons.edit),
-                    label: const Text('Edit Value'),
-                  ),
-                if (widget.node.type == 'Effect')
+          // Actions (Effect only)
+          if (widget.node.type == 'Effect')
+            Container(
+              padding: const EdgeInsets.all(16.0),
+              decoration: BoxDecoration(
+                border: Border(top: BorderSide(color: Colors.grey.shade700)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
                   ElevatedButton.icon(
                     onPressed: () => _triggerEffect(context, widget.node.id),
                     icon: const Icon(Icons.play_arrow),
                     label: const Text('Trigger Effect'),
                   ),
-              ],
-            ),
-          )
+                ],
+              ),
+            )
         ]);
-  }
-
-  Future<void> _editSignalValue(
-    BuildContext context,
-    JoltNode node,
-  ) async {
-    final textController = TextEditingController(
-      text: node.value.value?.toString() ?? '',
-    );
-
-    final result = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Edit ${node.label}'),
-        content: TextField(
-          controller: textController,
-          decoration: const InputDecoration(
-            labelText: 'New Value',
-            hintText: 'Enter new value',
-          ),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(textController.text),
-            child: const Text('Update'),
-          ),
-        ],
-      ),
-    );
-
-    if (result != null && context.mounted) {
-      final success =
-          await controller.joltService.setSignalValue(node.id, result);
-      if (success && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Signal value updated')),
-        );
-        // Reload nodes to see the update
-        controller.loadNodes();
-      } else if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to update signal')),
-        );
-      }
-    }
-
-    textController.dispose();
   }
 
   Future<void> _triggerEffect(BuildContext context, int nodeId) async {

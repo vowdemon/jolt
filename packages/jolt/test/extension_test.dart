@@ -59,8 +59,7 @@ void main() {
       });
       test("should update signal value using update method", () {
         final counter = DebugCounter();
-        final signal =
-            Signal(5, debug: JoltDebugOption.of(onDebug: counter.onDebug));
+        final signal = Signal(5, debug: JoltDebugOption.fn(counter.onDebug));
         expect(signal.value, equals(5));
 
         // Update using increment

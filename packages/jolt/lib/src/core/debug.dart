@@ -3,6 +3,7 @@ import "dart:convert";
 import "dart:developer" as developer;
 
 import "package:jolt/core.dart";
+import "package:jolt/jolt.dart";
 import "package:meta/meta.dart";
 
 /// Types of operations that can be debugged in the reactive system.
@@ -45,8 +46,8 @@ enum DebugNodeOperationType {
 /// - [node]: The reactive node involved in the operation
 /// - [link]: Optional link information, provided when the operation
 ///   is related to dependency linking/unlinking
-typedef JoltDebugFn = void
-    Function(DebugNodeOperationType type, ReactiveNode node, {Link? link});
+typedef JoltDebugFn = void Function(
+    DebugNodeOperationType type, ReactiveNode node, Link? link);
 
 /// Debug options for reactive nodes.
 ///
@@ -71,7 +72,7 @@ final class JoltDebugOption {
   /// - [debugLabel]: An optional label for the node in DevTools
   /// - [onDebug]: An optional callback function that will be called
   ///   when debug operations occur for this node
-  const JoltDebugOption.of({this.debugLabel, this.onDebug}) : debugType = null;
+  const JoltDebugOption.of(this.debugLabel, this.onDebug) : debugType = null;
 
   /// Creates a debug option with only a label.
   ///
@@ -165,7 +166,7 @@ abstract final class JoltDebug {
       // Call per-node debug function if provided
       if (option?.onDebug != null) {
         setDebug(target, option!.onDebug!);
-        option.onDebug!.call(DebugNodeOperationType.create, target);
+        option.onDebug!.call(DebugNodeOperationType.create, target, null);
       }
 
       // Call global hook if available (for DevTools)
@@ -184,7 +185,7 @@ abstract final class JoltDebug {
   @pragma("dart2js:prefer-inline")
   static void dispose(ReactiveNode target) {
     assert(() {
-      getDebug(target)?.call(DebugNodeOperationType.dispose, target);
+      getDebug(target)?.call(DebugNodeOperationType.dispose, target, null);
       // Also call global hook if available
       JoltDevTools.handleNodeLifecycle(DebugNodeOperationType.dispose, target);
       return true;
@@ -200,7 +201,7 @@ abstract final class JoltDebug {
   @pragma("dart2js:prefer-inline")
   static void linked(ReactiveNode target, Link link) {
     assert(() {
-      getDebug(target)?.call(DebugNodeOperationType.linked, target, link: link);
+      getDebug(target)?.call(DebugNodeOperationType.linked, target, link);
       JoltDevTools.handleNodeLifecycle(DebugNodeOperationType.linked, target,
           link: link);
       return true;
@@ -216,8 +217,7 @@ abstract final class JoltDebug {
   @pragma("dart2js:prefer-inline")
   static void unlinked(ReactiveNode target, Link link) {
     assert(() {
-      getDebug(target)
-          ?.call(DebugNodeOperationType.unlinked, target, link: link);
+      getDebug(target)?.call(DebugNodeOperationType.unlinked, target, link);
       JoltDevTools.handleNodeLifecycle(DebugNodeOperationType.unlinked, target,
           link: link);
       return true;
@@ -232,7 +232,7 @@ abstract final class JoltDebug {
   @pragma("dart2js:prefer-inline")
   static void get(ReactiveNode target) {
     assert(() {
-      getDebug(target)?.call(DebugNodeOperationType.get, target);
+      getDebug(target)?.call(DebugNodeOperationType.get, target, null);
       JoltDevTools.handleNodeLifecycle(DebugNodeOperationType.get, target);
       return true;
     }(), "");
@@ -246,7 +246,7 @@ abstract final class JoltDebug {
   @pragma("dart2js:prefer-inline")
   static void set(ReactiveNode target) {
     assert(() {
-      getDebug(target)?.call(DebugNodeOperationType.set, target);
+      getDebug(target)?.call(DebugNodeOperationType.set, target, null);
       JoltDevTools.handleNodeLifecycle(DebugNodeOperationType.set, target);
       return true;
     }(), "");
@@ -261,7 +261,7 @@ abstract final class JoltDebug {
   @pragma("dart2js:prefer-inline")
   static void notify(ReactiveNode target) {
     assert(() {
-      getDebug(target)?.call(DebugNodeOperationType.notify, target);
+      getDebug(target)?.call(DebugNodeOperationType.notify, target, null);
       JoltDevTools.handleNodeLifecycle(DebugNodeOperationType.notify, target);
       return true;
     }(), "");
@@ -275,7 +275,7 @@ abstract final class JoltDebug {
   @pragma("dart2js:prefer-inline")
   static void effect(ReactiveNode target) {
     assert(() {
-      getDebug(target)?.call(DebugNodeOperationType.effect, target);
+      getDebug(target)?.call(DebugNodeOperationType.effect, target, null);
       JoltDevTools.handleNodeLifecycle(DebugNodeOperationType.effect, target);
       return true;
     }(), "");
@@ -293,23 +293,41 @@ int nextNodeId = 0;
 
 /// Debug information for a reactive node.
 ///
-/// This record type stores debugging metadata for reactive nodes,
-/// including a unique ID, optional label and type, and the stack trace
-/// from when the node was created.
+/// Stores debugging metadata for reactive nodes, including a unique ID,
+/// optional label and type, and the stack trace from when the node was created.
 @internal
-typedef DebugInfo = ({
+final class DebugInfo {
+  DebugInfo({
+    required this.id,
+    this.label,
+    this.type,
+    this.creationStack,
+    required this.createdAt,
+    this.count = 0,
+    this.updatedAt,
+  });
+
   /// Unique identifier for the node.
-  int id,
+  final int id;
 
   /// Optional user-defined label for the node.
-  String? label,
+  final String? label;
 
   /// Optional user-defined type/category for the node.
-  String? type,
+  final String? type;
 
   /// Stack trace from when the node was created.
-  StackTrace? creationStack,
-});
+  final StackTrace? creationStack;
+
+  /// When the node was created (ms since epoch).
+  final int createdAt;
+
+  /// For Signal/Computed = number of set/notify; for Effect = run count.
+  int count;
+
+  /// When the node was last updated (set/notify/effect), ms since epoch.
+  int? updatedAt;
+}
 
 /// Expando for storing node debug information.
 @internal
@@ -356,16 +374,6 @@ abstract final class JoltDevTools {
     );
 
     developer.registerExtension(
-      'ext.jolt.setSignalValue',
-      (method, parameters) async {
-        final nodeId = int.parse(parameters['nodeId']!);
-        final valueStr = parameters['value']!;
-        _setSignalValue(nodeId, valueStr);
-        return developer.ServiceExtensionResponse.result('{"success": true}');
-      },
-    );
-
-    developer.registerExtension(
       'ext.jolt.triggerEffect',
       (method, parameters) async {
         final nodeId = int.parse(parameters['nodeId']!);
@@ -385,13 +393,14 @@ abstract final class JoltDevTools {
   /// Notifies DevTools about a node update.
   @internal
   static void notifyUpdate(int nodeId, String operation, dynamic value,
-      [String? valueType]) {
+      [String? valueType, int? count, int? updatedAt]) {
     _updateController.add({
       'nodeId': nodeId,
       'operation': operation,
       'value': _serializeValue(value),
       ...valueType == null ? {} : {'valueType': valueType},
-      'timestamp': DateTime.now().millisecondsSinceEpoch,
+      ...count == null ? {} : {'count': count},
+      'timestamp': updatedAt ?? DateTime.now().millisecondsSinceEpoch,
     });
   }
 
@@ -408,13 +417,16 @@ abstract final class JoltDevTools {
       // Use runtimeType as default debugType if not provided
       final effectiveDebugType = debugType ?? node.runtimeType.toString();
 
-      debugInfo[node] = (
+      final createdAt = DateTime.now().millisecondsSinceEpoch;
+      debugInfo[node] = DebugInfo(
         id: nodeId,
         label: debugLabel,
         type: effectiveDebugType,
         creationStack: StackTrace.current,
+        createdAt: createdAt,
       );
-      _notifyNodeCreated(node, nodeId);
+
+      _notifyNodeCreated(node, nodeId, createdAt);
       JFinalizer.attachToJoltAttachments(node, () {
         _notifyNodeDisposed(nodeId);
         debugNodes.remove(nodeId);
@@ -430,16 +442,32 @@ abstract final class JoltDevTools {
 
     switch (type) {
       case DebugNodeOperationType.set:
-        notifyUpdate(
-            nodeId, 'set', _getNodeValue(node), _getNodeValueType(node));
-        break;
+        {
+          final now = DateTime.now().millisecondsSinceEpoch;
+          info.count++;
+          info.updatedAt = now;
+          notifyUpdate(nodeId, 'set', _getNodeValue(node),
+              _getNodeValueType(node), info.count, now);
+          break;
+        }
       case DebugNodeOperationType.notify:
-        notifyUpdate(
-            nodeId, 'notify', _getNodeValue(node), _getNodeValueType(node));
-        break;
+        {
+          final now = DateTime.now().millisecondsSinceEpoch;
+          info.count++;
+          info.updatedAt = now;
+          notifyUpdate(nodeId, 'notify', _getNodeValue(node),
+              _getNodeValueType(node), info.count, now);
+          break;
+        }
       case DebugNodeOperationType.effect:
-        notifyUpdate(nodeId, 'effect', _getNodeValue(node));
-        break;
+        {
+          final now = DateTime.now().millisecondsSinceEpoch;
+          info.count++;
+          info.updatedAt = now;
+          notifyUpdate(
+              nodeId, 'effect', _getNodeValue(node), null, info.count, now);
+          break;
+        }
       case DebugNodeOperationType.dispose:
         _notifyNodeDisposed(nodeId);
         break;
@@ -457,7 +485,7 @@ abstract final class JoltDevTools {
     }
   }
 
-  static void _notifyNodeCreated(ReactiveNode node, int nodeId) {
+  static void _notifyNodeCreated(ReactiveNode node, int nodeId, int createdAt) {
     _updateController.add({
       'operation': 'nodeCreated',
       'node': {
@@ -471,6 +499,9 @@ abstract final class JoltDevTools {
         'valueType': _getNodeValueType(node),
         'dependencies': _getNodeDeps(node),
         'subscribers': _getNodeSubs(node),
+        'createdAt': createdAt,
+        'count': debugInfo[node]!.count,
+        'updatedAt': createdAt,
       },
       'timestamp': DateTime.now().millisecondsSinceEpoch,
     });
@@ -510,11 +541,12 @@ abstract final class JoltDevTools {
 
       final nodeType = _getNodeType(node);
 
+      final info = debugInfo[node];
       result.add({
         'id': entry.key,
         'nodeType': nodeType, // Use 'nodeType' instead of 'type'
-        'label': debugInfo[node]?.label ?? 'Unnamed',
-        'type': debugInfo[node]?.type ??
+        'label': info?.label ?? 'Unnamed',
+        'type': info?.type ??
             node.runtimeType
                 .toString(), // debugType (user-defined category, fallback to runtimeType)
         'flags': node.flags,
@@ -523,6 +555,9 @@ abstract final class JoltDevTools {
         'valueType': _getNodeValueType(node),
         'dependencies': _getNodeDeps(node),
         'subscribers': _getNodeSubs(node),
+        if (info != null) 'createdAt': info.createdAt,
+        if (info != null) 'count': info.count,
+        if (info != null) 'updatedAt': info.updatedAt ?? info.createdAt,
       });
     }
 
@@ -530,10 +565,12 @@ abstract final class JoltDevTools {
   }
 
   static String _getNodeType(ReactiveNode node) {
-    if (node is SignalReactiveNode) return 'Signal';
-    if (node is ComputedReactiveNode) return 'Computed';
-    if (node is EffectReactiveNode) return 'Effect';
-    if (node is EffectScopeReactiveNode) return 'EffectScope';
+    if (node is WritableNode) return 'Signal';
+    if (node is ReadableNode) return 'Computed';
+    if (node is Watcher) return 'Watcher';
+    if (node is Effect) return 'Effect';
+    if (node is EffectScope) return 'EffectScope';
+    if (node is EffectNode) return 'Effect';
     return 'Unknown';
   }
 
@@ -608,42 +645,35 @@ abstract final class JoltDevTools {
     return subs.toList();
   }
 
-  static void _setSignalValue(int nodeId, String valueStr) {
-    final node = debugNodes[nodeId]?.target;
-    if (node == null) return;
-
-    if (node is! SignalReactiveNode) {
-      throw Exception('Node $nodeId is not a Signal');
-    }
-
-    // Try to parse the value
-    dynamic newValue;
-    try {
-      // Try JSON parsing first
-      newValue = json.decode(valueStr);
-    } catch (e) {
-      // If JSON parsing fails, use the string as-is
-      newValue = valueStr;
-    }
-
-    // Set the signal value
-    if (node is SignalImpl) {
-      node.value = newValue;
-    }
-  }
-
   static void _triggerEffect(int nodeId) {
     final node = debugNodes[nodeId]?.target;
     if (node == null) return;
 
-    if (node is! EffectReactiveNode) {
-      throw Exception('Node $nodeId is not an Effect');
+    if (node is! EffectNode) {
+      developer.log('Node $nodeId is not an Effect');
     }
 
-    // Manually trigger the effect by setting dirty flag and calling via dynamic
-    node.flags |= ReactiveFlags.dirty;
-    (node as dynamic).runEffect();
+    switch (node) {
+      case Effect effect:
+        effect.run();
+        break;
+      case Watcher watcher:
+        watcher.run();
+        break;
+      default:
+        try {
+          (node as dynamic).trigger();
+        } catch (_) {
+          try {
+            (node as dynamic).run();
+          } catch (_) {
+            developer.log('Error triggering effect: $node');
+          }
+        }
+    }
   }
+
+  static const int _maxSerializedValueLength = 500;
 
   static dynamic _serializeValue(dynamic value) {
     if (value == null) return null;
@@ -654,10 +684,11 @@ abstract final class JoltDevTools {
     if (value is Map) {
       return value.map((k, v) => MapEntry(k.toString(), _serializeValue(v)));
     }
-    // For complex objects, return type name and toString
-    return {
-      'type': value.runtimeType.toString(),
-      'value': value.toString(),
-    };
+    // For complex objects: type + truncated toString
+    final s = value.toString();
+    final truncated = s.length > _maxSerializedValueLength
+        ? '${s.substring(0, _maxSerializedValueLength)}...'
+        : s;
+    return {'type': value.runtimeType.toString(), 'value': truncated};
   }
 }

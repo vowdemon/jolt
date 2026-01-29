@@ -7,31 +7,6 @@
 
 Jolt is a lightweight reactive state management library for Dart and Flutter. It provides signals, computed values, effects, async states, and reactive collections with automatic dependency tracking and efficient updates.
 
-## 🛠️ DevTools Extension
-
-Jolt includes a powerful DevTools extension for inspecting and debugging reactive signals, computed values, and effects in your Flutter app. When you add Jolt to your project, you'll automatically get access to comprehensive debugging tools in Flutter DevTools.
-
-**Key Features:**
-- 🔍 **Search and Filter** - Powerful query syntax to find nodes by label, type, ID, and more
-- 📊 **Node Details** - View complete information including values, types, and dependencies
-- 🔗 **Dependency Graph** - Visualize relationships between nodes
-- 💾 **VM Value Inspection** - Deep dive into actual values in the Dart VM
-- 📝 **Creation Stack Traces** - See where nodes were created for easier debugging
-- ⚡ **Interactive Operations** - Edit Signal values and trigger Effects directly from DevTools
-
-To use it, simply enable Jolt Debug in your app and open Flutter DevTools - you'll see a "Jolt Inspector" tab!
-
-```dart
-import 'package:jolt/core.dart';
-
-void main() {
-  JoltDebug.init(); // Enable DevTools
-  runApp(MyApp());
-}
-```
-
-For more details, see the [DevTools Extension README](../jolt_devtools_extension/README.md).
-
 ## Documentation
 
 [Official Documentation](https://jolt.vowdemon.com)
@@ -419,6 +394,21 @@ if (settings.isInitialized) {
 - Use `peekCached` to access cached value without recomputing
 - Use `peek` to recompute without creating dependencies
 - Use `derived()` extension method for concise computed creation
+
+## 🛠️ DevTools Extension
+
+Jolt ships with a DevTools extension: search/filter nodes, view details and dependency graph, inspect VM values, and trigger effects from Flutter DevTools. Enable debug and open the "Jolt Inspector" tab:
+
+```dart
+import 'package:jolt/core.dart';
+
+void main() {
+  JoltDebug.init();
+  runApp(MyApp());
+}
+```
+
+See [jolt_devtools_extension](../jolt_devtools_extension/README.md) for details.
 
 ## Related Packages
 

@@ -29,11 +29,20 @@ class ValueRootState extends State<ValueRoot> {
   final $error = Signal<String?>(null);
   final $root = Signal<VmValueNode?>(null);
 
-  int? _loadedNodeId;
+  FlutterEffect? _effect;
 
   @override
   void initState() {
     super.initState();
+    _effect = FlutterEffect(updateValue);
+    _loadVmValue();
+  }
+
+  void updateValue() {
+    widget.node.updatedAt.value;
+    widget.node.count.value;
+
+    $root.value = null;
     _loadVmValue();
   }
 
@@ -41,8 +50,15 @@ class ValueRootState extends State<ValueRoot> {
   void didUpdateWidget(ValueRoot oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.node.id != widget.node.id) {
-      _loadVmValue();
+      _effect?.run();
     }
+  }
+
+  @override
+  void dispose() {
+    _effect?.dispose();
+    _effect = null;
+    super.dispose();
   }
 
   Future<void> _loadVmValue() async {
@@ -51,9 +67,6 @@ class ValueRootState extends State<ValueRoot> {
     }
 
     final nodeId = widget.node.id;
-    if (_loadedNodeId == nodeId && $root.value != null) {
-      return;
-    }
 
     $isLoading.value = true;
     $error.value = null;
@@ -64,7 +77,7 @@ class ValueRootState extends State<ValueRoot> {
       if (widget.node.id != nodeId) {
         return;
       }
-      _loadedNodeId = nodeId;
+
       $root.value = result;
       if (result == null) {
         $error.value = 'Failed to load VM value';
@@ -252,7 +265,9 @@ class ValueRootState extends State<ValueRoot> {
               child: _ValueContent(
                 valueRootState: this,
                 onRefresh: () {
-                  _loadedNodeId = null;
+                  widget.controller.joltService
+                      .invalidateVmValueCache(widget.node.id);
+                  $root.value = null;
                   _loadVmValue();
                 },
                 onCopy: _copyValueString,

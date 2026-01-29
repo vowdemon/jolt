@@ -19,6 +19,9 @@ class JoltNode {
   final ListSignal<int> dependencies;
   final ListSignal<int> subscribers;
   final Signal<String?> creationStack;
+  final Signal<int?> updatedAt;
+  final int? createdAt;
+  final Signal<int> count;
   final bool isReadable;
 
   JoltNode({
@@ -33,12 +36,17 @@ class JoltNode {
     List<int> dependencies = const [],
     List<int> subscribers = const [],
     String? creationStack,
+    int? updatedAt,
+    this.createdAt,
+    int count = 0,
   })  : value = Signal(value),
         flags = Signal(flags),
         valueType = Signal(valueType),
         dependencies = ListSignal(dependencies),
         subscribers = ListSignal(subscribers),
         creationStack = Signal(creationStack),
+        updatedAt = Signal<int?>(updatedAt),
+        count = Signal(count),
         isReadable = type == 'Signal' || type == 'Computed';
 
   factory JoltNode.fromJson(Map<String, dynamic> json) {
@@ -56,6 +64,9 @@ class JoltNode {
       valueType: json['valueType'] as String? ?? 'Unknown',
       dependencies: dependencies,
       subscribers: subscribers,
+      updatedAt: json['updatedAt'] as int?,
+      createdAt: json['createdAt'] as int?,
+      count: json['count'] as int? ?? 0,
     );
   }
 
@@ -70,7 +81,10 @@ class JoltNode {
         flags: node.flags,
         valueType: node.valueType,
         dependencies: node.dependencies,
-        subscribers: node.subscribers);
+        subscribers: node.subscribers,
+        updatedAt: node.updatedAt,
+        createdAt: node.createdAt,
+        count: node.count ?? 0);
   }
 
   @override
@@ -87,6 +101,7 @@ class NodeUpdate {
   final JoltNode? node; // For nodeCreated operation
   final int? depId; // For link/unlink operations
   final int? subId; // For link/unlink operations
+  final int? count; // New count after set/notify/effect
 
   NodeUpdate({
     this.nodeId,
@@ -97,6 +112,7 @@ class NodeUpdate {
     this.node,
     this.depId,
     this.subId,
+    this.count,
   });
 
   factory NodeUpdate.fromJson(Map<String, dynamic> json) {
@@ -111,6 +127,7 @@ class NodeUpdate {
           : null,
       depId: json['depId'] as int?,
       subId: json['subId'] as int?,
+      count: json['count'] as int?,
     );
   }
 

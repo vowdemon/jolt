@@ -31,6 +31,10 @@ class NodeIcon extends StatelessWidget {
         icon = Icons.folder;
         color = Colors.purple;
         break;
+      case 'Watcher':
+        icon = Icons.visibility;
+        color = Colors.teal;
+        break;
       default:
         icon = Icons.help;
         color = Colors.grey;

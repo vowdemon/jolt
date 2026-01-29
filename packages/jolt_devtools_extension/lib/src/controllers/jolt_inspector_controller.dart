@@ -25,12 +25,14 @@ class JoltInspectorController {
   final $selectedNodeId = Signal<int?>(null);
   final $nodes = MapSignal(<int, JoltNode>{});
   late final $selectedNode = Computed(() => $nodes[$selectedNodeId.value]);
+  final $now = Signal(DateTime.now().millisecondsSinceEpoch);
 
   QueryExpression? _parsedQuery;
   String _parsedQuerySource = '';
 
   Timer? _refreshTimer;
   Timer? _searchThrottleTimer;
+  Timer? _clockTimer;
 
   JoltInspectorController() {
     _checkConnection();
@@ -57,6 +59,8 @@ class JoltInspectorController {
           _listenToUpdates();
         } else {
           _updateSubscription?.cancel();
+          _clockTimer?.cancel();
+          _clockTimer = null;
         }
       }
     };
@@ -81,6 +85,8 @@ class JoltInspectorController {
             existing.flags.value = node.flags;
             existing.dependencies.value = node.dependencies;
             existing.subscribers.value = node.subscribers;
+            existing.updatedAt.value = node.updatedAt;
+            existing.count.value = node.count ?? 0;
           });
         } else {
           $nodes[node.id] = JoltNode.fromDebugNode(node);
@@ -101,13 +107,19 @@ class JoltInspectorController {
 
   void _listenToUpdates() {
     _updateSubscription?.cancel();
+    _clockTimer?.cancel();
 
     // Start streaming
     joltService.startStreaming();
 
+    _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      $now.value = DateTime.now().millisecondsSinceEpoch;
+    });
+
     _updateSubscription = joltService.updates.listen((update) {
       if (update.operation == 'nodeCreated') {
         if (update.node != null) {
+          update.node!.updatedAt.value = update.timestamp;
           $nodes[update.node!.id] = update.node!;
         }
       } else if (update.operation == 'nodeDisposed') {
@@ -154,42 +166,6 @@ class JoltInspectorController {
 
             // Invalidate VM value cache for disposed node
             joltService.invalidateVmValueCache(disposedNodeId);
-          }
-        }
-      } else if (update.operation == 'nodeUpdated') {
-        // Node update (value, flags, dependencies, subscribers)
-        final node = $nodes[update.nodeId];
-        if (node != null) {
-          batch(() {
-            if (update.value != null) {
-              final data = update.value as Map<String, dynamic>?;
-              if (data != null) {
-                if (data.containsKey('value')) {
-                  node.value.value = data['value'];
-                }
-                if (data.containsKey('flags')) {
-                  node.flags.value = data['flags'] as int;
-                }
-                if (data.containsKey('dependencies')) {
-                  final deps =
-                      (data['dependencies'] as List?)?.cast<int>() ?? [];
-                  node.dependencies.value = deps;
-                }
-                if (data.containsKey('subscribers')) {
-                  final subs =
-                      (data['subscribers'] as List?)?.cast<int>() ?? [];
-                  node.subscribers.value = subs;
-                }
-              }
-            }
-            if (update.valueType != null) {
-              node.valueType.value = update.valueType!;
-            }
-          });
-
-          // Invalidate VM value cache when node value is updated
-          if (update.nodeId != null) {
-            joltService.invalidateVmValueCache(update.nodeId!);
           }
         }
       } else if (update.operation == 'link' || update.operation == 'unlink') {
@@ -240,27 +216,44 @@ class JoltInspectorController {
           }
         }
       } else {
-        // Value update (legacy)
+        // Value update (set/notify/effect)
         final node = $nodes[update.nodeId];
         if (node != null) {
           batch(() {
+            if (update.operation != 'effect' && update.nodeId != null) {
+              joltService.invalidateVmValueCache(update.nodeId!);
+            }
+            node.updatedAt.value = update.timestamp;
+            if (update.count != null) {
+              node.count.value = update.count!;
+            }
             node.value.value = update.value;
             if (update.valueType != null) {
               node.valueType.value = update.valueType!;
             }
-            if (update.value is Map) {
-              final data = update.value as Map<String, dynamic>;
-              if (data.containsKey('flags')) {
-                node.flags.value = data['flags'] as int;
+            if (update.value != null) {
+              final data = update.value as Map<String, dynamic>?;
+              if (data != null) {
+                if (data.containsKey('value')) {
+                  node.value.value = data['value'];
+                }
+                if (data.containsKey('flags')) {
+                  node.flags.value = data['flags'] as int;
+                }
+                if (data.containsKey('dependencies')) {
+                  final deps =
+                      (data['dependencies'] as List?)?.cast<int>() ?? [];
+                  node.dependencies.value = deps;
+                }
+                if (data.containsKey('subscribers')) {
+                  final subs =
+                      (data['subscribers'] as List?)?.cast<int>() ?? [];
+                  node.subscribers.value = subs;
+                }
               }
-              if (data.containsKey('dependencies')) {
-                final deps = (data['dependencies'] as List?)?.cast<int>() ?? [];
-                node.dependencies.value = deps;
-              }
-              if (data.containsKey('subscribers')) {
-                final subs = (data['subscribers'] as List?)?.cast<int>() ?? [];
-                node.subscribers.value = subs;
-              }
+            }
+            if (update.valueType != null) {
+              node.valueType.value = update.valueType!;
             }
           });
         }
@@ -385,10 +378,16 @@ class JoltInspectorController {
         return _matchesNumeric(node.dependencies.length, value);
       case 'subs':
         return _matchesNumeric(node.subscribers.length, value);
+      case 'count':
+        return _matchesNumeric(node.count.value, value);
       case 'has':
         return _matchesHas(node, value);
       case 'value':
         return _matchesValue(node, value);
+      case 'updated':
+        return _matchesUpdated(node, now, value);
+      case 'created':
+        return _matchesCreated(node, now, value);
 
       default:
         return _matchesFreeText(node, '$key:$value');
@@ -484,10 +483,66 @@ class JoltInspectorController {
   }
 
   bool _matchesHas(JoltNode node, String value) {
-    if (value.toLowerCase() == 'label') {
-      return node.label.isNotEmpty && node.label != 'Unnamed';
+    switch (value.toLowerCase()) {
+      case 'label':
+        return node.label.isNotEmpty && node.label != 'Unnamed';
+      case 'value':
+        return node.isReadable; // Signal and Computed
+      default:
+        return false;
     }
-    return false;
+  }
+
+  /// Match update age: update:10s (>=10s), update:>=10s, update:<=5m.
+  /// Units: ms, s, m, h, d. Default `:` is >=.
+  bool _matchesUpdated(JoltNode node, DateTime now, String value) {
+    final parsed = _parseDurationPredicate(value);
+    if (parsed == null) return false;
+    final (op, thresholdMs) = parsed;
+    final last = node.updatedAt.value;
+    if (last == null) return false;
+    final ageMs = now.millisecondsSinceEpoch - last;
+    if (ageMs < 0) return false;
+    return switch (op) {
+      '>=' => ageMs >= thresholdMs,
+      '<=' => ageMs <= thresholdMs,
+      _ => false,
+    };
+  }
+
+  /// Match created age: created:10s (>=10s), created:>=10s, created:<=5m.
+  /// Units: ms, s, m, h, d. Default `:` is >=.
+  bool _matchesCreated(JoltNode node, DateTime now, String value) {
+    final parsed = _parseDurationPredicate(value);
+    if (parsed == null) return false;
+    final (op, thresholdMs) = parsed;
+    final createdAt = node.createdAt;
+    if (createdAt == null) return false;
+    final ageMs = now.millisecondsSinceEpoch - createdAt;
+    if (ageMs < 0) return false;
+    return switch (op) {
+      '>=' => ageMs >= thresholdMs,
+      '<=' => ageMs <= thresholdMs,
+      _ => false,
+    };
+  }
+
+  static (String op, int thresholdMs)? _parseDurationPredicate(String value) {
+    final m = RegExp(r'^(>=|<=)?(\d+)(ms|s|m|h|d)$').firstMatch(value.trim());
+    if (m == null) return null;
+    final op = m.group(1) ?? '>=';
+    final numVal = int.tryParse(m.group(2) ?? '');
+    if (numVal == null) return null;
+    final unit = m.group(3) ?? 's';
+    final mul = switch (unit) {
+      'ms' => 1,
+      's' => 1000,
+      'm' => 60 * 1000,
+      'h' => 3600 * 1000,
+      'd' => 86400 * 1000,
+      _ => 1000,
+    };
+    return (op, numVal * mul);
   }
 
   bool _matchesValue(JoltNode node, String value) {
@@ -609,10 +664,34 @@ class JoltInspectorController {
     });
   }
 
+  /// Formats [updatedAt] (ms since epoch) as "X ms/s/m/h/d ago" using [\$now].
+  /// Uses at most two units, e.g. "6m 2s ago", "2d 3h ago".
+  String formatTimeAgo(int? updatedAtMs) {
+    if (updatedAtMs == null) return '—';
+    final now = $now.value;
+    final diff = now - updatedAtMs;
+    if (diff < 0) return '—';
+    if (diff < 1000) return diff < 1 ? '<1ms' : '${diff}ms ago';
+    var rem = diff ~/ 1000;
+    final d = rem ~/ 86400;
+    rem %= 86400;
+    final h = rem ~/ 3600;
+    rem %= 3600;
+    final m = rem ~/ 60;
+    final s = rem % 60;
+    final parts = <String>[];
+    if (d > 0) parts.add('${d}d');
+    if (h > 0) parts.add('${h}h');
+    if (m > 0) parts.add('${m}m');
+    if (s > 0) parts.add('${s}s');
+    return '${parts.take(2).join(' ')} ago';
+  }
+
   void dispose() {
     _searchThrottleTimer?.cancel();
     _updateSubscription?.cancel();
     _refreshTimer?.cancel();
+    _clockTimer?.cancel();
     if (_connectionListener != null) {
       serviceManager.connectedState.removeListener(_connectionListener!);
     }

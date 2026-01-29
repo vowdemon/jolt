@@ -28,8 +28,7 @@ void main() {
     });
     test("should create signal with initial value", () {
       final counter = DebugCounter();
-      final signal =
-          Signal(42, debug: JoltDebugOption.of(onDebug: counter.onDebug));
+      final signal = Signal(42, debug: JoltDebugOption.fn(counter.onDebug));
 
       expect(signal.value, equals(42));
       expect(signal.peek, equals(42));
@@ -44,8 +43,7 @@ void main() {
 
     test("should update signal value by set and value", () {
       final counter = DebugCounter();
-      final signal =
-          Signal(1, debug: JoltDebugOption.of(onDebug: counter.onDebug));
+      final signal = Signal(1, debug: JoltDebugOption.fn(counter.onDebug));
       expect(signal.value, equals(1));
 
       signal.value = 2;

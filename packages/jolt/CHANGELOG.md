@@ -32,7 +32,7 @@ The `onDebug` callback can still be used through `JoltDebugOption`, and the usag
 final signal = Signal(
   0,
   debug: JoltDebugOption.fn(
-    (type, node, {link}) {
+    (type, node, link) {
       print('Debug: $type on $node');
     },
   ),

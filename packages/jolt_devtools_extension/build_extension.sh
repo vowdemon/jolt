@@ -8,6 +8,8 @@ set -e
 echo "Building Jolt DevTools Extension..."
 cd "$(dirname "$0")"
 
+flutter create . --platforms web
+
 # Build the extension
 flutter build web --pwa-strategy=none --no-tree-shake-icons
 

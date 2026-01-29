@@ -8,6 +8,7 @@ Set-Location $scriptPath
 
 # Build the extension
 Write-Host "Building web app..." -ForegroundColor Yellow
+flutter create . --platforms web
 flutter build web --pwa-strategy=none --no-tree-shake-icons
 
 if ($LASTEXITCODE -ne 0) {

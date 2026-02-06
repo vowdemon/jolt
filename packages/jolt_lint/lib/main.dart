@@ -1,9 +1,3 @@
-/// Jolt lint tool for reactive state management.
-///
-/// This package provides lint rules, quick fixes, and code assists
-/// for the Jolt reactive state management ecosystem.
-library;
-
 import 'package:analysis_server_plugin/plugin.dart';
 import 'package:analysis_server_plugin/registry.dart';
 import 'package:jolt_lint/src/assists/convert_stateless_from_setup_widget.dart';

@@ -33,9 +33,13 @@ class _HookCallVisitor extends SimpleAstVisitor<void> {
 
   @override
   void visitFunctionExpressionInvocation(FunctionExpressionInvocation node) {
-    // useXXX() - method call()
-    if (node.function is SimpleIdentifier) {
-      final identifier = node.function as SimpleIdentifier;
+    // (useXXX)() or useXXX() as function expression
+    Expression functionExpr = node.function;
+    if (functionExpr is ParenthesizedExpression) {
+      functionExpr = functionExpr.expression;
+    }
+    if (functionExpr is SimpleIdentifier) {
+      final identifier = functionExpr;
       if (!_checkAnnotation(node.element ?? identifier.element)) {
         return;
       }
@@ -88,11 +92,7 @@ class _HookCallVisitor extends SimpleAstVisitor<void> {
       method.body,
     )?.returnExpression;
     if (setupReturnExpression != null) {
-      for (
-        AstNode? current = node.parent;
-        current != null;
-        current = current.parent
-      ) {
+      for (AstNode? current = node; current != null; current = current.parent) {
         if (current == setupReturnExpression) {
           return false;
         }
@@ -111,18 +111,19 @@ class _HookCallVisitor extends SimpleAstVisitor<void> {
         final returnExpression = getReturnExpression(
           functionExpression.body,
         )?.returnExpression;
-        if (returnExpression != null) {
-          for (
-            AstNode? current = node.parent;
-            current != null;
-            current = current.parent
-          ) {
-            if (current == returnExpression) {
-              return false;
-            }
-          }
+        if (returnExpression == null) {
           return true;
         }
+        for (
+          AstNode? current = node;
+          current != null;
+          current = current.parent
+        ) {
+          if (current == returnExpression) {
+            return false;
+          }
+        }
+        return true;
       }
     }
 

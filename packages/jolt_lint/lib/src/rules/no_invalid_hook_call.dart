@@ -36,7 +36,7 @@ class _HookCallVisitor extends SimpleAstVisitor<void> {
     // useXXX() - method call()
     if (node.function is SimpleIdentifier) {
       final identifier = node.function as SimpleIdentifier;
-      if (!_checkAnnotation(identifier.element)) {
+      if (!_checkAnnotation(node.element ?? identifier.element)) {
         return;
       }
 

@@ -117,7 +117,10 @@ abstract final class JoltStreamHelper {
       onCancel: disposer,
     );
 
-    JFinalizer.attachToJoltAttachments(readable, disposer);
+    JFinalizer.attachToJoltAttachments(readable, () {
+      disposer();
+      controller.close();
+    });
 
     return controller;
   }

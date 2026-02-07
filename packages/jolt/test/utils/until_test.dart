@@ -84,6 +84,96 @@ void main() {
         expect(values, equals([0, 6]));
       });
 
+      test("detach keeps effect from scope, until continues after scope dispose",
+          () async {
+        final signal = Signal(0);
+        late Until<int> until;
+
+        final scope = EffectScope()
+          ..run(() {
+            until = Until(signal, (v) => v >= 5, detach: true);
+          });
+        scope.dispose();
+
+        signal.value = 5;
+        await Future.delayed(const Duration(milliseconds: 1));
+        expect(await until, equals(5));
+      });
+
+      test("Until.when factory works", () async {
+        final signal = Signal(0);
+        final until = Until<int>.when(signal, 5);
+
+        signal.value = 5;
+        await Future.delayed(const Duration(milliseconds: 1));
+        expect(await until, equals(5));
+      });
+
+      test("Until.changed factory works", () async {
+        final signal = Signal(0);
+        final until = Until<int>.changed(signal);
+
+        signal.value = 5;
+        await Future.delayed(const Duration(milliseconds: 1));
+        expect(await until, equals(5));
+      });
+
+      test("Until constructor works", () async {
+        final signal = Signal(0);
+        final until = Until(signal, (value) => value >= 5);
+
+        expect(until, isA<Until>());
+        signal.value = 5;
+        await Future.delayed(const Duration(milliseconds: 1));
+        expect(await until, equals(5));
+      });
+
+      test("until returns Until with cancel method", () {
+        final signal = Signal(0);
+        final until = signal.until((value) => value >= 5);
+
+        expect(until, isA<Until>());
+        expect(until.cancel, isA<Function>());
+      });
+
+      test("isCompleted and isCancelled", () async {
+        final signal = Signal(0);
+        final until = signal.until((value) => value >= 5);
+
+        expect(until.isCompleted, isFalse);
+        expect(until.isCancelled, isFalse);
+
+        signal.value = 5;
+        await Future.delayed(const Duration(milliseconds: 1));
+        expect(until.isCompleted, isTrue);
+        expect(until.isCancelled, isFalse);
+      });
+
+      test("isCancelled after cancel", () {
+        final signal = Signal(0);
+        final until = signal.until((value) => value >= 5);
+
+        until.cancel();
+        expect(until.isCancelled, isTrue);
+      });
+
+      test("cancel disposes effect, future stays pending", () async {
+        final signal = Signal(0);
+        final until = signal.until((value) => value >= 5);
+
+        until.cancel();
+        expect(until.isCancelled, isTrue);
+        expect(until.isCompleted, isFalse);
+      });
+
+      test("cancel has no effect if condition already met", () async {
+        final signal = Signal(10);
+        final until = signal.until((value) => value >= 5);
+
+        expect(await until, equals(10));
+        until.cancel(); // No-op, should not throw
+      });
+
       test("handles multiple until calls on same signal", () async {
         final signal = Signal(0);
         final future1 = signal.until((value) => value >= 5);
@@ -173,6 +263,38 @@ void main() {
         await Future.delayed(const Duration(milliseconds: 1));
 
         expect(await future, isNull);
+      });
+    });
+
+    group("untilChanged() method", () {
+      test("waits until value changes from current", () async {
+        final signal = Signal(0);
+        final future = signal.untilChanged();
+
+        signal.value = 0;
+        await Future.delayed(const Duration(milliseconds: 1));
+
+        signal.value = 5;
+        await Future.delayed(const Duration(milliseconds: 1));
+        expect(await future, equals(5));
+      });
+
+      test("completes with first value that changes", () async {
+        final signal = Signal(0);
+        final future = signal.untilChanged();
+
+        signal.value = 3;
+        await Future.delayed(const Duration(milliseconds: 1));
+        expect(await future, equals(3));
+      });
+
+      test("works with different types", () async {
+        final signal = Signal("a");
+        final future = signal.untilChanged();
+
+        signal.value = "b";
+        await Future.delayed(const Duration(milliseconds: 1));
+        expect(await future, equals("b"));
       });
     });
   });

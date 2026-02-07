@@ -46,7 +46,7 @@ mixin SetSignalMixin<E>
   /// Only notifies subscribers if the element was actually removed.
   @override
   bool remove(Object? element) {
-    final result = value.remove(element);
+    final result = peek.remove(element);
     if (result) {
       notify(true);
     }

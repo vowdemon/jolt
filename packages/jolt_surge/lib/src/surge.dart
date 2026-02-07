@@ -146,6 +146,7 @@ abstract class Surge<State> implements ChainedDisposable {
   void dispose() {
     if (_isDisposed) return;
     onDispose();
+    _state.dispose();
     _isDisposed = true;
   }
 

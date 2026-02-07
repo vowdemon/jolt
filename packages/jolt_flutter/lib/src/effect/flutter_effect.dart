@@ -195,6 +195,8 @@ class FlutterEffectImpl extends EffectReactiveNode
   @override
   @protected
   void onDispose() {
+    // Mark as scheduled so schedule() returns early and no new frame callback
+    // is queued. Any pending callback will see isDisposed and skip execution.
     _isScheduled = true;
     doCleanup();
     disposeNode(this);

@@ -30,7 +30,7 @@
 /// ```
 library;
 
-export "src/utils/until.dart";
+export "src/utils/until.dart" show Until, JoltUtilsUntilExtension;
 export "src/utils/readable.dart";
 export "src/utils/writable.dart";
 export "src/utils/stream.dart" show JoltUtilsStreamExtension;

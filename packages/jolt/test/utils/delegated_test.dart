@@ -47,6 +47,16 @@ void main() {
       expect(helper.count, equals(0));
     });
 
+    test("release should throw StateError when called more than acquire", () {
+      final source = Signal(42);
+      final helper = DelegatedRefCountHelper<Signal<int>>(source);
+
+      helper.acquire();
+      helper.release();
+
+      expect(() => helper.release(), throwsA(isA<StateError>()));
+    });
+
     test("release should call dispose when ref count reaches zero", () {
       bool onDisposeCalled = false;
       final source = Signal(42);
@@ -225,7 +235,7 @@ void main() {
 
       delegated.dispose();
 
-      expect(() => delegated.value = 100, throwsA(isA<AssertionError>()));
+      expect(() => delegated.value = 100, throwsA(isA<StateError>()));
     });
 
     test("dispose should be idempotent", () {

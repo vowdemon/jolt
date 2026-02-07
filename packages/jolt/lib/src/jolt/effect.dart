@@ -238,6 +238,8 @@ class EffectImpl extends EffectReactiveNode
   ///   dependencies until you call [run]. If `false` (default), the effect
   ///   runs immediately on creation and then automatically re-runs whenever
   ///   its reactive dependencies change.
+  /// - [detach]: If true, the effect will not be bound to the current scope
+  ///   and will not be disposed when the scope is disposed.
   /// - [debug]: Optional debug options
   ///
   /// The effect function will be called immediately upon creation (if [lazy] is false)
@@ -260,13 +262,15 @@ class EffectImpl extends EffectReactiveNode
   /// signal.value = 1; // Only the immediate effect runs
   /// ```
   /// {@endtemplate}
-  EffectImpl(this.fn, {bool lazy = false, JoltDebugOption? debug})
+  EffectImpl(this.fn, {bool lazy = false, bool? detach, JoltDebugOption? debug})
       : super(flags: ReactiveFlags.watching | ReactiveFlags.recursedCheck) {
     JoltDebug.create(this, debug);
 
-    final prevSub = getActiveSub();
-    if (prevSub != null) {
-      link(this, prevSub, 0);
+    if (!(detach ?? false)) {
+      final prevSub = getActiveSub();
+      if (prevSub != null) {
+        link(this, prevSub, 0);
+      }
     }
 
     if (!lazy) {
@@ -292,6 +296,7 @@ class EffectImpl extends EffectReactiveNode
   ///
   /// Parameters:
   /// - [fn]: The effect function to execute
+  /// - [detach]: If true, the effect will not be bound to the current scope
   /// - [debug]: Optional debug options
   ///
   /// Returns: A new [Effect] instance that starts in deferred mode
@@ -315,8 +320,9 @@ class EffectImpl extends EffectReactiveNode
   /// expect(values, equals([10, 20]));
   /// ```
   /// {@endtemplate}
-  factory EffectImpl.lazy(void Function() fn, {JoltDebugOption? debug}) {
-    return EffectImpl(fn, lazy: true, debug: debug);
+  factory EffectImpl.lazy(void Function() fn,
+      {bool? detach, JoltDebugOption? debug}) {
+    return EffectImpl(fn, lazy: true, detach: detach, debug: debug);
   }
 
   @pragma("vm:prefer-inline")
@@ -391,12 +397,13 @@ abstract class Effect implements EffectNode {
   factory Effect(
     void Function() fn, {
     bool lazy,
+    bool? detach,
     JoltDebugOption? debug,
   }) = EffectImpl;
 
   /// {@macro jolt_effect_impl.lazy}
-  factory Effect.lazy(void Function() fn, {JoltDebugOption? debug}) =
-      EffectImpl.lazy;
+  factory Effect.lazy(void Function() fn,
+      {bool? detach, JoltDebugOption? debug}) = EffectImpl.lazy;
 
   /// Manually runs the effect function.
   ///
@@ -947,14 +954,12 @@ abstract class Watcher<T> implements EffectNode {
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
 void onEffectCleanup(Disposer fn, {EffectCleanupMixin? owner}) {
-  assert(
-      owner != null ||
-          getActiveSub() is EffectCleanupMixin ||
-          Watcher.activeWatcher != null,
-      "onCleanup can only be used within an effect or watcher");
-
-  ((owner ?? Watcher.activeWatcher ?? getActiveSub()!) as EffectCleanupMixin)
-      .onCleanUp(fn);
+  final effectiveOwner = owner ?? Watcher.activeWatcher ?? getActiveSub();
+  if (effectiveOwner == null || effectiveOwner is! EffectCleanupMixin) {
+    throw StateError(
+        'onEffectCleanup can only be used within an effect or watcher');
+  }
+  effectiveOwner.onCleanUp(fn);
 }
 
 /// Registers a cleanup function to be executed when the current effect scope is disposed.

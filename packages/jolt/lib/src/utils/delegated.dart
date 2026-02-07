@@ -56,8 +56,13 @@ class DelegatedRefCountHelper<T> {
   /// Decrements reference count and disposes if count reaches zero.
   ///
   /// Returns: `true` if resource was disposed, `false` otherwise
+  ///
+  /// Throws [StateError] if called more times than [acquire].
   bool release() {
     _refCount--;
+    if (_refCount < 0) {
+      throw StateError('release() called more times than acquire()');
+    }
     if (_refCount == 0) {
       dispose();
       return true;
@@ -162,10 +167,10 @@ class DelegatedSignal<T> implements Signal<T> {
 
   @override
   set value(T value) {
-    assert(!isDisposed, "$runtimeType is disposed");
-    if (!isDisposed) {
-      delegated.source.value = value;
+    if (isDisposed) {
+      throw StateError('$runtimeType is disposed');
     }
+    delegated.source.value = value;
   }
 
   @override

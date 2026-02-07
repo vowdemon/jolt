@@ -420,11 +420,11 @@ final class JoltEffectHookCreator {
   ///
   /// Parameters:
   /// - [effect]: The effect function to execute
-  /// - [lazy]: Whether to run the effect immediately upon creation.
-  ///   If `true`, the effect will execute once immediately when created,
-  ///   then automatically re-run whenever its reactive dependencies change.
-  ///   If `false` (default), the effect will only run when dependencies change,
-  ///   not immediately upon creation.
+  /// - [lazy]: Whether to defer running the effect on creation.
+  ///   If `true`, the effect will NOT run immediately and will not track
+  ///   dependencies until you call [run] on the returned effect. If `false`
+  ///   (default), the effect runs immediately on creation and then re-runs
+  ///   whenever its reactive dependencies change.
   /// - [debug]: Optional debug options
   ///
   /// Returns: An [Effect] that tracks dependencies and runs automatically
@@ -454,17 +454,18 @@ final class JoltEffectHookCreator {
     return useHook(_UseEffectHook(effect, lazy, debug));
   }
 
-  /// Creates an effect hook that runs immediately upon creation.
+  /// Creates an effect hook that does not run automatically upon creation.
   ///
   /// This method is a convenience constructor for creating an effect
-  /// with [lazy] set to `true`. The effect will execute once immediately when
-  /// created, then automatically re-run whenever its reactive dependencies change.
+  /// with [lazy] set to `true`. The effect will not execute until you call
+  /// [run]. After the first manual run, it will track dependencies and re-run
+  /// when they change.
   ///
   /// Parameters:
   /// - [effect]: The effect function to execute
   /// - [debug]: Optional debug options
   ///
-  /// Returns: An [Effect] that executes immediately
+  /// Returns: An [Effect] that starts in deferred mode
   ///
   /// Example:
   /// ```dart
@@ -472,7 +473,7 @@ final class JoltEffectHookCreator {
   ///   final count = useSignal(10);
   ///
   ///   useEffect.lazy(() {
-  ///     print('Count is: ${count.value}'); // Executes immediately
+  ///     print('Count is: ${count.value}'); // Does not run automatically
   ///   });
   ///
   ///   return () => Text('Count: ${count.value}');
@@ -536,11 +537,11 @@ final class JoltFlutterEffectHookCreator {
   ///
   /// Parameters:
   /// - [effect]: The effect function to execute
-  /// - [lazy]: Whether to run the effect immediately upon creation.
-  ///   If `true`, the effect will execute once immediately when created,
-  ///   then automatically re-run at frame end whenever its reactive dependencies change.
-  ///   If `false` (default), the effect will only run at frame end when dependencies change,
-  ///   not immediately upon creation.
+  /// - [lazy]: Whether to defer running the effect on creation.
+  ///   If `true`, the effect will NOT run immediately and will not track
+  ///   dependencies until you call [run] on the returned effect. If `false`
+  ///   (default), the effect runs immediately on creation and then re-runs
+  ///   at frame end whenever its reactive dependencies change.
   /// - [debug]: Optional debug options
   ///
   /// Returns: A [FlutterEffect] that tracks dependencies and runs at frame end
@@ -570,17 +571,18 @@ final class JoltFlutterEffectHookCreator {
     return useHook(_UseFlutterEffectHook(effect, lazy, debug));
   }
 
-  /// Creates a Flutter effect hook that runs immediately upon creation.
+  /// Creates a Flutter effect hook that does not run automatically upon creation.
   ///
   /// This method is a convenience constructor for creating a Flutter effect
-  /// with [lazy] set to `true`. The effect will execute once immediately when
-  /// created, then automatically re-run at frame end whenever its reactive dependencies change.
+  /// with [lazy] set to `true`. The effect will not execute until you call
+  /// [run]. After the first manual run, it will track dependencies and re-run
+  /// at frame end whenever its reactive dependencies change.
   ///
   /// Parameters:
   /// - [effect]: The effect function to execute
   /// - [debug]: Optional debug options
   ///
-  /// Returns: A [FlutterEffect] that executes immediately
+  /// Returns: A [FlutterEffect] that starts in deferred mode
   ///
   /// Example:
   /// ```dart
@@ -588,7 +590,7 @@ final class JoltFlutterEffectHookCreator {
   ///   final count = useSignal(10);
   ///
   ///   useFlutterEffect.lazy(() {
-  ///     print('Count is: ${count.value}'); // Executes immediately
+  ///     print('Count is: ${count.value}'); // Does not run automatically
   ///   });
   ///
   ///   return () => Text('Count: ${count.value}');

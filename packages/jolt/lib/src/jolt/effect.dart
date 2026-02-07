@@ -233,14 +233,14 @@ class EffectImpl extends EffectReactiveNode
   ///
   /// Parameters:
   /// - [fn]: The effect function to execute
-  /// - [lazy]: Whether to run the effect immediately upon creation.
-  ///   If `true`, the effect will execute once immediately when created,
-  ///   then automatically re-run whenever its reactive dependencies change.
-  ///   If `false` (default), the effect will only run when dependencies change,
-  ///   not immediately upon creation.
+  /// - [lazy]: Whether to defer running the effect on creation.
+  ///   If `true`, the effect will NOT run immediately and will not track
+  ///   dependencies until you call [run]. If `false` (default), the effect
+  ///   runs immediately on creation and then automatically re-runs whenever
+  ///   its reactive dependencies change.
   /// - [debug]: Optional debug options
   ///
-  /// The effect function will be called immediately upon creation (if [lazy] is true)
+  /// The effect function will be called immediately upon creation (if [lazy] is false)
   /// and then automatically whenever any of its reactive dependencies change.
   ///
   /// Example:
@@ -250,14 +250,14 @@ class EffectImpl extends EffectReactiveNode
   /// // Effect runs immediately and whenever signal changes
   /// final effect = Effect(() {
   ///   print('Signal value: ${signal.value}');
-  /// }, lazy: true);
-  ///
-  /// // Effect only runs when signal changes (not immediately)
-  /// final delayedEffect = Effect(() {
-  ///   print('Signal value: ${signal.value}');
   /// }, lazy: false);
   ///
-  /// signal.value = 1; // Both effects run
+  /// // Effect does not run until manually triggered
+  /// final delayedEffect = Effect(() {
+  ///   print('Signal value: ${signal.value}');
+  /// }, lazy: true);
+  ///
+  /// signal.value = 1; // Only the immediate effect runs
   /// ```
   /// {@endtemplate}
   EffectImpl(this.fn, {bool lazy = false, JoltDebugOption? debug})
@@ -283,17 +283,18 @@ class EffectImpl extends EffectReactiveNode
   }
 
   /// {@template jolt_effect_impl.lazy}
-  /// Creates a new effect that runs immediately upon creation.
+  /// Creates a new effect that does not run automatically upon creation.
   ///
   /// This factory method is a convenience constructor for creating an effect
-  /// with [lazy] set to `true`. The effect will execute once immediately when
-  /// created, then automatically re-run whenever its reactive dependencies change.
+  /// with [lazy] set to `true`. The effect will not execute until you call
+  /// [run]. After the first manual run, it will track dependencies and re-run
+  /// when they change.
   ///
   /// Parameters:
   /// - [fn]: The effect function to execute
   /// - [debug]: Optional debug options
   ///
-  /// Returns: A new [Effect] instance that executes immediately
+  /// Returns: A new [Effect] instance that starts in deferred mode
   ///
   /// Example:
   /// ```dart
@@ -304,10 +305,13 @@ class EffectImpl extends EffectReactiveNode
   ///   values.add(signal.value);
   /// });
   ///
-  /// // Effect executed immediately with value 10
+  /// // Effect has not run yet
+  /// expect(values, isEmpty);
+  ///
+  /// effect.run(); // Start tracking and run once
   /// expect(values, equals([10]));
   ///
-  /// signal.value = 20; // Effect runs again
+  /// signal.value = 20; // Effect runs again after tracking starts
   /// expect(values, equals([10, 20]));
   /// ```
   /// {@endtemplate}

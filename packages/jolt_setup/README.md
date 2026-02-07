@@ -480,7 +480,7 @@ Setup Widget provides hooks for all Jolt reactive primitives:
 | Hook | Description |
 |------|-------------|
 | `useEffect(fn)` | Create an effect |
-| `useEffect.lazy(fn)` | Create an immediately-executing effect |
+| `useEffect.lazy(fn)` | Create a deferred effect (call `run()` to start) |
 | `useWatcher(sourcesFn, fn)` | Create a watcher |
 | `useWatcher.immediately(...)` | Create an immediately-executing watcher |
 | `useWatcher.once(...)` | Create a one-time watcher |

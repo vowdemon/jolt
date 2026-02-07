@@ -98,7 +98,7 @@ class TodoListWidget extends HookWidget {
 | Hook | Description |
 |------|-------------|
 | `useJoltEffect(fn, {lazy})` | Creates a reactive effect that runs when dependencies change |
-| `useJoltEffect.lazy(fn)` | Creates an effect that runs immediately upon creation |
+| `useJoltEffect.lazy(fn)` | Creates an effect that does not run automatically (call `run()` to start) |
 
 ### Watcher Hooks
 

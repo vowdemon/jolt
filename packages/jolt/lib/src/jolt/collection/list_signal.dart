@@ -267,16 +267,20 @@ mixin ListSignalMixin<E>
 
     int i = index;
 
-    // First pass: compare
+    // First pass: compare (with bounds check)
     while (iter.moveNext()) {
-      if (!needNotify && peek[i] != iter.current) {
-        needNotify = true;
-        // DO NOT break, we must continue consuming iterator for alignment
+      if (i < peek.length) {
+        if (!needNotify && peek[i] != iter.current) {
+          needNotify = true;
+          break;
+        }
+      } else {
+        needNotify = true; // More elements in iterable than current list
+        break;
       }
       i++;
     }
 
-    // Second pass: perform mutation
     peek.setAll(index, iterable);
 
     if (needNotify) notify(true);
@@ -294,8 +298,10 @@ mixin ListSignalMixin<E>
     }
 
     for (int i = start; i < end; i++) {
-      if (!iter.moveNext()) break;
-
+      if (!iter.moveNext()) {
+        changed = true; // Replacing with fewer elements
+        break;
+      }
       if (!changed && peek[i] != iter.current) {
         changed = true;
       }

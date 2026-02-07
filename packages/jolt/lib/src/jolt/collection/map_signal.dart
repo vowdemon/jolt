@@ -91,10 +91,9 @@ mixin MapSignalMixin<K, V>
   /// This operation triggers reactive updates.
   @override
   void operator []=(K key, V value) {
-    if (peek.containsKey(key) && peek[key] == value) {
-      peek[key] = value;
-    } else {
-      peek[key] = value;
+    final needNotify = !peek.containsKey(key) || peek[key] != value;
+    peek[key] = value;
+    if (needNotify) {
       notify(true);
     }
   }

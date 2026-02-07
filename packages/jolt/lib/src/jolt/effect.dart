@@ -350,7 +350,7 @@ class EffectImpl extends EffectReactiveNode
   /// ```
   @override
   void run() {
-    assert(!isDisposed, "Watcher is disposed");
+    assert(!isDisposed, "Effect is disposed");
     flags |= ReactiveFlags.dirty;
     runEffect();
   }
@@ -859,7 +859,7 @@ abstract class Watcher<T> implements EffectNode {
   /// watcher.resume();
   ///
   /// // Resume and try to run immediately
-  /// watcher.resume(tryRun: true);
+  /// watcher.resume(true);
   /// ```
   void resume([bool tryRun = false]);
 

@@ -85,17 +85,14 @@ class ComputedImpl<T> extends ComputedReactiveNode<T>
   /// Returns the current computed value without establishing a reactive dependency.
   ///
   /// Use this when you need to read the value without triggering reactivity.
-  /// Note that the value may be stale if dependencies have changed.
-  ///
-  /// Unlike [peekCached], this method always recomputes the value (if needed)
-  /// rather than returning a cached value. This ensures you get the latest
-  /// computed result, but may be less efficient if you just need a quick
-  /// cached value check.
+  /// Unlike [peekCached], this method always recomputes the value if needed,
+  /// ensuring you get the latest result. Use [peekCached] when you need a
+  /// quick cached value and can tolerate staleness.
   ///
   /// Example:
   /// ```dart
   /// final computed = Computed(() => expensiveCalculation());
-  /// print(computed.peek); // Doesn't trigger recomputation but may recompute internally
+  /// print(computed.peek); // Gets latest value without creating dependency
   /// ```
   @override
   T get peek {

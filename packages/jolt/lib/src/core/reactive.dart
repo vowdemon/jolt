@@ -313,7 +313,9 @@ void startBatch() {
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
 void endBatch() {
-  if (!((--batchDepth) != 0)) {
+  batchDepth--;
+  assert(batchDepth >= 0, "endBatch called without matching startBatch");
+  if (batchDepth == 0) {
     flushEffects();
   }
 }

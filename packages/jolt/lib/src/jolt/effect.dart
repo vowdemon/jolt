@@ -97,7 +97,10 @@ class EffectScopeImpl extends EffectScopeReactiveNode
   /// ```
   EffectScopeImpl({bool? detach, JoltDebugOption? debug})
       : super(flags: ReactiveFlags.none) {
-    JoltDebug.create(this, debug);
+    assert(() {
+      JoltDebug.create(this, debug);
+      return true;
+    }());
     if (!(detach ?? false)) {
       final prevSub = getActiveSub();
       if (prevSub != null) {
@@ -129,7 +132,10 @@ class EffectScopeImpl extends EffectScopeReactiveNode
     try {
       final result = fn();
 
-      JoltDebug.effect(this);
+      assert(() {
+        JoltDebug.effect(this);
+        return true;
+      }());
 
       return result;
     } finally {
@@ -262,7 +268,10 @@ class EffectImpl extends EffectReactiveNode
   /// {@endtemplate}
   EffectImpl(this.fn, {bool lazy = false, bool? detach, JoltDebugOption? debug})
       : super(flags: ReactiveFlags.watching | ReactiveFlags.recursedCheck) {
-    JoltDebug.create(this, debug);
+    assert(() {
+      JoltDebug.create(this, debug);
+      return true;
+    }());
 
     if (!(detach ?? false)) {
       final prevSub = getActiveSub();
@@ -329,7 +338,10 @@ class EffectImpl extends EffectReactiveNode
   void _effectFn() {
     doCleanup();
     wrappedFn();
-    JoltDebug.effect(this);
+    assert(() {
+      JoltDebug.effect(this);
+      return true;
+    }());
   }
 
   @pragma("vm:prefer-inline")
@@ -493,7 +505,10 @@ class WatcherImpl<T> extends EffectReactiveNode
   WatcherImpl(this.sourcesFn, this.fn,
       {bool immediately = false, this.when, JoltDebugOption? debug})
       : super(flags: ReactiveFlags.watching) {
-    JoltDebug.create(this, debug);
+    assert(() {
+      JoltDebug.create(this, debug);
+      return true;
+    }());
 
     final prevSub = setActiveSub(this);
     if (prevSub != null) {
@@ -511,7 +526,10 @@ class WatcherImpl<T> extends EffectReactiveNode
             Watcher.activeWatcher = prevWatcher;
           }
         });
-        JoltDebug.effect(this);
+        assert(() {
+          JoltDebug.effect(this);
+          return true;
+        }());
       }
     } finally {
       setActiveSub(prevSub);
@@ -639,7 +657,10 @@ class WatcherImpl<T> extends EffectReactiveNode
       trigger(sources: sources);
     } else {
       prevSources = sources;
-      JoltDebug.effect(this);
+      assert(() {
+        JoltDebug.effect(this);
+        return true;
+      }());
     }
   }
 
@@ -662,7 +683,10 @@ class WatcherImpl<T> extends EffectReactiveNode
         prevSources = current;
       }
     });
-    JoltDebug.effect(this);
+    assert(() {
+      JoltDebug.effect(this);
+      return true;
+    }());
   }
 
   @override

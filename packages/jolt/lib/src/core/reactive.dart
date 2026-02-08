@@ -603,7 +603,10 @@ T getComputed<T>(ComputedReactiveNode<T> computed) {
     link(computed, sub, cycle);
   }
 
-  JoltDebug.get(computed);
+  assert(() {
+    JoltDebug.get(computed);
+    return true;
+  }());
 
   return computed.pendingValue as T;
 }
@@ -647,7 +650,10 @@ void notifyComputed<T>(ComputedReactiveNode<T> computed, [bool force = false]) {
     flushEffects();
   }
 
-  JoltDebug.notify(computed);
+  assert(() {
+    JoltDebug.notify(computed);
+    return true;
+  }());
 }
 
 /// Assigns a new pending value to a signal and schedules subscribers.
@@ -678,7 +684,10 @@ T setSignal<T>(SignalReactiveNode<T> signal, T newValue) {
       }
     }
 
-    JoltDebug.set(signal);
+    assert(() {
+      JoltDebug.set(signal);
+      return true;
+    }());
   }
   return newValue;
 }
@@ -716,7 +725,10 @@ T getSignal<T>(SignalReactiveNode<T> signal) {
     sub = sub.subs?.sub;
   }
 
-  JoltDebug.get(signal);
+  assert(() {
+    JoltDebug.get(signal);
+    return true;
+  }());
 
   return signal.cachedValue as T;
 }
@@ -751,7 +763,10 @@ void notifySignal<T>(SignalReactiveNode signal) {
     }
   }
 
-  JoltDebug.notify(signal);
+  assert(() {
+    JoltDebug.notify(signal);
+    return true;
+  }());
 }
 
 /// Invalidates a custom reactive node so that subscribers re-evaluate without
@@ -789,7 +804,10 @@ void notifyCustom<T>(ReactiveNode node) {
     }
   }
 
-  JoltDebug.notify(node);
+  assert(() {
+    JoltDebug.notify(node);
+    return true;
+  }());
 }
 
 @pragma("vm:prefer-inline")
@@ -806,7 +824,10 @@ void getCustom(ReactiveNode node) {
     sub = sub.subs?.sub;
   }
 
-  JoltDebug.get(node);
+  assert(() {
+    JoltDebug.get(node);
+    return true;
+  }());
 }
 
 /// Disposes a reactive node: marks it [ReactiveFlags.disposed], detaches
@@ -821,7 +842,10 @@ void getCustom(ReactiveNode node) {
 /// disposeNode(effectNode);
 /// ```
 void disposeNode(ReactiveNode e) {
-  JoltDebug.dispose(e);
+  assert(() {
+    JoltDebug.dispose(e);
+    return true;
+  }());
 
   e
     ..depsTail = null

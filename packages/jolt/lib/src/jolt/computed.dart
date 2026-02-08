@@ -45,7 +45,10 @@ class ComputedImpl<T> extends ComputedReactiveNode<T>
     super.equals,
     JoltDebugOption? debug,
   }) : super(flags: ReactiveFlags.none) {
-    JoltDebug.create(this, debug);
+    assert(() {
+      JoltDebug.create(this, debug);
+      return true;
+    }());
   }
 
   /// {@template jolt_computed_impl_with_previous}

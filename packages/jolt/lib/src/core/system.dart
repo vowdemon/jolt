@@ -264,7 +264,10 @@ void link(ReactiveNode dep, ReactiveNode sub, int version) {
     dep.subs = newLink;
   }
 
-  JoltDebug.linked(dep, newLink);
+  assert(() {
+    JoltDebug.linked(dep, newLink);
+    return true;
+  }());
 }
 
 /// Unlinks a dependency from a subscriber.
@@ -312,7 +315,10 @@ Link? unlink(Link link, [ReactiveNode? sub]) {
     unwatched(dep);
   }
 
-  JoltDebug.unlinked(dep, link);
+  assert(() {
+    JoltDebug.unlinked(dep, link);
+    return true;
+  }());
   return nextDep;
 }
 

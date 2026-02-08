@@ -41,7 +41,10 @@ class SignalImpl<T> extends SignalReactiveNode<T>
   /// {@endtemplate}
   SignalImpl(T? value, {JoltDebugOption? debug})
       : super(flags: ReactiveFlags.mutable, pendingValue: value) {
-    JoltDebug.create(this, debug);
+    assert(() {
+      JoltDebug.create(this, debug);
+      return true;
+    }());
   }
 
   /// Returns the current value without establishing a reactive dependency.
@@ -157,7 +160,10 @@ class ReadonlySignalImpl<T> extends SignalReactiveNode<T>
   /// ```
   ReadonlySignalImpl(T? value, {JoltDebugOption? debug})
       : super(flags: ReactiveFlags.mutable, pendingValue: value) {
-    JoltDebug.create(this, debug);
+    assert(() {
+      JoltDebug.create(this, debug);
+      return true;
+    }());
   }
 
   /// Returns the current value without establishing a reactive dependency.

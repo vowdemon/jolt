@@ -101,6 +101,41 @@ void main() {
       expect(setupCount, 1);
       expect(identical(fromSetup, fromBuild), isTrue);
     });
+
+    testWidgets('cancels old Until and creates new one on hot reload',
+        (tester) async {
+      late Until<int> oldUntil;
+      late Signal<int> count;
+      final oldThenFired = <bool>[false];
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          count = useSignal(0);
+          final until = useUntil(count, (v) => v >= 5);
+          oldUntil = until;
+          onMounted(() {
+            oldUntil.then((_) => oldThenFired[0] = true);
+          });
+          return () => Text('${count.value}');
+        }),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(oldUntil.isCancelled, isFalse);
+
+      final rootElement = tester.binding.rootElement;
+      assert(rootElement != null, 'Root element must exist');
+      rootElement!.owner!.reassemble(rootElement);
+      await tester.pump();
+
+      expect(oldUntil.isCancelled, isTrue);
+
+      count.value = 5;
+      await tester.pumpAndSettle();
+
+      expect(oldThenFired[0], isFalse,
+          reason: 'Old Until .then must not fire after reassemble');
+    });
   });
 
   group('useUntil.when', () {

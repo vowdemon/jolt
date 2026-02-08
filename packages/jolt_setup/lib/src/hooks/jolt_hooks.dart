@@ -844,6 +844,17 @@ class _UseUntilHook<T> extends SetupHook<Until<T>> {
   void unmount() {
     state.cancel();
   }
+
+  // coverage:ignore-start
+  @override
+  void reassemble(covariant _UseUntilHook<T> newHook) {
+    state.cancel();
+    source = newHook.source;
+    predicate = newHook.predicate;
+    detach = newHook.detach;
+    rawState = build();
+  }
+  // coverage:ignore-end
 }
 
 class _UseUntilWhenHook<T> extends SetupHook<Until<T>> {
@@ -860,6 +871,17 @@ class _UseUntilWhenHook<T> extends SetupHook<Until<T>> {
   void unmount() {
     state.cancel();
   }
+
+  // coverage:ignore-start
+  @override
+  void reassemble(covariant _UseUntilWhenHook<T> newHook) {
+    state.cancel();
+    source = newHook.source;
+    value = newHook.value;
+    detach = newHook.detach;
+    rawState = build();
+  }
+  // coverage:ignore-end
 }
 
 class _UseUntilChangedHook<T> extends SetupHook<Until<T>> {
@@ -875,6 +897,16 @@ class _UseUntilChangedHook<T> extends SetupHook<Until<T>> {
   void unmount() {
     state.cancel();
   }
+
+  // coverage:ignore-start
+  @override
+  void reassemble(covariant _UseUntilChangedHook<T> newHook) {
+    state.cancel();
+    source = newHook.source;
+    detach = newHook.detach;
+    rawState = build();
+  }
+  // coverage:ignore-end
 }
 
 /// Helper class for creating Until hooks in SetupWidget.

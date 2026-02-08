@@ -829,3 +829,137 @@ final useEffectScope = JoltEffectScopeHookCreator._();
 Stream<T> useJoltStream<T>(Readable<T> value) {
   return useMemoized(() => value.stream);
 }
+
+class _UseUntilHook<T> extends SetupHook<Until<T>> {
+  _UseUntilHook(this.source, this.predicate, {this.detach});
+
+  late ReadableNode<T> source;
+  late bool Function(T value) predicate;
+  late bool? detach;
+
+  @override
+  Until<T> build() => Until<T>(source, predicate, detach: detach);
+
+  @override
+  void unmount() {
+    state.cancel();
+  }
+}
+
+class _UseUntilWhenHook<T> extends SetupHook<Until<T>> {
+  _UseUntilWhenHook(this.source, this.value, {this.detach});
+
+  late ReadableNode<T> source;
+  late T value;
+  late bool? detach;
+
+  @override
+  Until<T> build() => Until<T>.when(source, value, detach: detach);
+
+  @override
+  void unmount() {
+    state.cancel();
+  }
+}
+
+class _UseUntilChangedHook<T> extends SetupHook<Until<T>> {
+  _UseUntilChangedHook(this.source, {this.detach});
+
+  late ReadableNode<T> source;
+  late bool? detach;
+
+  @override
+  Until<T> build() => Until<T>.changed(source, detach: detach);
+
+  @override
+  void unmount() {
+    state.cancel();
+  }
+}
+
+/// Helper class for creating Until hooks in SetupWidget.
+final class JoltUseUntilCreator {
+  /// Helper class for creating Until hooks in SetupWidget.
+  const JoltUseUntilCreator._();
+
+  /// Creates an [Until] hook that waits for [source] to satisfy [predicate].
+  ///
+  /// The returned [Until] implements [Future] and completes when the predicate
+  /// returns true for the current value. Automatically cancels when the widget
+  /// unmounts.
+  ///
+  /// Parameters:
+  /// - [source]: The reactive value to observe
+  /// - [predicate]: Returns `true` when the condition is met
+  /// - [detach]: If true, the underlying effect is not bound to the current scope
+  ///
+  /// Returns: An [Until] that can be awaited; call [Until.cancel] to stop waiting
+  ///
+  /// Example:
+  /// ```dart
+  /// setup(context, props) {
+  ///   final count = useSignal(0);
+  ///   final until = useUntil(count, (v) => v >= 5);
+  ///
+  ///   onMounted(() async {
+  ///     final result = await until;
+  ///     print('Reached: $result');
+  ///   });
+  ///
+  ///   return () => Text('Count: ${count.value}');
+  /// }
+  /// ```
+  @defineHook
+  Until<T> call<T>(
+    ReadableNode<T> source,
+    bool Function(T value) predicate, {
+    bool? detach,
+  }) {
+    return useHook(_UseUntilHook<T>(source, predicate, detach: detach));
+  }
+
+  /// Creates an [Until] hook that waits for [source] to equal [value].
+  ///
+  /// Equivalent to `useUntil(source, (v) => v == value)`.
+  ///
+  /// Example:
+  /// ```dart
+  /// setup(context, props) {
+  ///   final status = useSignal('loading');
+  ///   final until = useUntil.when(status, 'ready');
+  ///   // await until; // waits for status == 'ready'
+  ///   return () => Text(status.value);
+  /// }
+  /// ```
+  @defineHook
+  Until<T> when<T>(
+    ReadableNode<T> source,
+    T value, {
+    bool? detach,
+  }) {
+    return useHook(_UseUntilWhenHook<T>(source, value, detach: detach));
+  }
+
+  /// Creates an [Until] hook that waits for [source] to change from its current value.
+  ///
+  /// Example:
+  /// ```dart
+  /// setup(context, props) {
+  ///   final status = useSignal('idle');
+  ///   status.value = 'loading';
+  ///   final until = useUntil.changed(status);
+  ///   // await until; // waits for status != 'loading'
+  ///   return () => Text(status.value);
+  /// }
+  /// ```
+  @defineHook
+  Until<T> changed<T>(
+    ReadableNode<T> source, {
+    bool? detach,
+  }) {
+    return useHook(_UseUntilChangedHook<T>(source, detach: detach));
+  }
+}
+
+/// Creates an Until hook that waits for a reactive value to satisfy a condition.
+final useUntil = JoltUseUntilCreator._();

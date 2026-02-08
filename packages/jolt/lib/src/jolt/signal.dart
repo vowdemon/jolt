@@ -126,7 +126,7 @@ class SignalImpl<T> extends SignalReactiveNode<T>
 
   /// Disposes the signal and cleans up resources.
   ///
-  /// Removes the signal from the reactive system and clears stored values.
+  /// The signal is no longer reactive and will not participate in updates or propagation.
   ///
   /// Example:
   /// ```dart

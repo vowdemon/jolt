@@ -1,3 +1,4 @@
+import "package:jolt/core.dart";
 import "package:jolt/extension.dart";
 import "package:jolt/jolt.dart";
 import "package:test/test.dart";
@@ -261,6 +262,76 @@ void main() {
         expect(() => computed.value, throwsA(isA<AssertionError>()));
       },
     );
+
+    group("disposed computed no longer reactive", () {
+      test("disposed computed does not propagate to its subscribers", () {
+        final s = Signal(1);
+        final c = Computed<int>(() => s.value * 2);
+        var runCount = 0;
+        Effect(() {
+          runCount++;
+          c.value;
+        });
+        expect(runCount, equals(1));
+
+        c.dispose();
+        s.value = 2;
+        expect(runCount, equals(1),
+            reason: "effect must not run after C disposed");
+        expect(getComputed(c as ComputedReactiveNode<int>), equals(2),
+            reason: "disposed computed keeps old value");
+      });
+
+      test("propagate skips disposed computed in chain", () {
+        final s = Signal(1);
+        final c = Computed<int>(() => s.value * 2);
+        var runCount = 0;
+        Effect(() {
+          runCount++;
+          c.value;
+        });
+        expect(runCount, equals(1));
+
+        c.dispose();
+        s.value = 2;
+        expect(runCount, equals(1));
+        expect(getComputed(c as ComputedReactiveNode<int>), equals(2),
+            reason: "disposed computed keeps old value");
+      });
+
+      test("computed disposed during getter does not propagate", () {
+        final s1 = Signal(1);
+        final s2 = Signal(0);
+        final c = Computed<int>(() {
+          s1.value;
+          s2.value = 1;
+          return s1.value;
+        });
+        Effect(() => c.value);
+        Effect(() {
+          s2.value;
+          c.dispose();
+        });
+        expect(c.isDisposed, isTrue,
+            reason: "effect runs when C's getter sets S2 and disposes C");
+        expect(getComputed(c as ComputedReactiveNode<int>), equals(1),
+            reason: "disposed computed keeps old value");
+      });
+
+      test("S -> C -> E: after C disposed, S change does not run E", () {
+        final s = Signal(1);
+        final c = Computed<int>(() => s.value + 1);
+        final values = <int>[];
+        Effect(() => values.add(c.value));
+        expect(values, equals([2]));
+
+        c.dispose();
+        s.value = 10;
+        expect(values, equals([2]));
+        expect(getComputed(c as ComputedReactiveNode<int>), equals(2),
+            reason: "disposed computed keeps old value");
+      });
+    });
 
     test("should work with batch updates", () {
       final signal1 = Signal(1);

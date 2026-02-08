@@ -182,6 +182,9 @@ void main() {
       outerEffect.dispose();
       signal1.value = 4;
       expect(innerEffect1.every((e) => e.isDisposed), isTrue);
+      for (final e in innerEffect2) {
+        e.dispose();
+      }
       expect(innerEffect2.every((e) => e.isDisposed), isTrue);
       expect(outerEffect.isDisposed, isTrue);
       expect(outerValues, equals([1, 3, 3]));
@@ -211,6 +214,34 @@ void main() {
       signal.value = 2;
 
       expect(values, equals([1]));
+    });
+
+    test("disposed effect does not run when flushed from queue", () {
+      final signal = Signal(1);
+      final values = <int>[];
+      final effect = Effect(() => values.add(signal.value));
+      expect(values, equals([1]));
+
+      batch(() {
+        signal.value = 2;
+        effect.dispose();
+      });
+      expect(values, equals([1]),
+          reason: "effect was disposed before flush, must not run");
+    });
+
+    test("disposed effect run does not collect dependencies", () {
+      final signal = Signal(1);
+      final values = <int>[];
+      final effect = Effect(() => values.add(signal.value));
+      expect(values, equals([1]));
+
+      effect.dispose();
+      defaultRunEffect(effect as EffectReactiveNode, () => signal.value);
+
+      signal.value = 2;
+      expect(values, equals([1]),
+          reason: "disposed effect must not collect deps when run");
     });
 
     test("should handle effect errors", () {

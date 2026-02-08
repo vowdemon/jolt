@@ -356,9 +356,12 @@ class EffectImpl extends EffectReactiveNode
   /// ```
   @override
   void run() {
-    assert(!isDisposed, "Effect is disposed");
-    flags |= ReactiveFlags.dirty;
-    runEffect();
+    if (!isDisposed) {
+      flags |= ReactiveFlags.dirty;
+      runEffect();
+    } else {
+      untracked(_effectFn);
+    }
   }
 
   @override
@@ -383,6 +386,10 @@ class EffectImpl extends EffectReactiveNode
 /// Effects are side-effect functions that run in response to reactive state
 /// changes. They automatically track their dependencies and re-run when
 /// any dependency changes.
+///
+/// Nested effects created inside an effect are not automatically disposed when
+/// the parent effect is disposed. The caller is responsible for managing the
+/// lifecycle of nested effects.
 ///
 /// Example:
 /// ```dart

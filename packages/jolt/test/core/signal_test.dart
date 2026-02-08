@@ -157,6 +157,85 @@ void main() {
       expect(signal.notify, throwsA(isA<AssertionError>()));
     });
 
+    group("disposed signal no longer reactive", () {
+      test("disposed signal setSignal does not trigger effect", () {
+        final a = Signal(0);
+        final values = <int>[];
+        final e = Effect(() {
+          values.add(a.value);
+        });
+        expect(values, equals([0]));
+
+        a.dispose();
+
+        setSignal(a as SignalReactiveNode<int>, 1);
+        expect(a.isDisposed, isTrue);
+        expect(values, equals([0]),
+            reason: "effect must not run after signal disposed");
+
+        e.dispose();
+      });
+
+      test("disposed signal does not trigger its subscribers", () {
+        final s = Signal(1);
+        var runCount = 0;
+        Effect(() {
+          runCount++;
+          s.value;
+        });
+        expect(runCount, equals(1));
+
+        s.dispose();
+        setSignal(s as SignalReactiveNode<int>, 2);
+        expect(s.isDisposed, isTrue);
+        expect(runCount, equals(1),
+            reason: "effect must not run after signal disposed");
+
+        final s2 = Signal(10);
+        Effect(() {
+          runCount++;
+          s2.value;
+        });
+        expect(runCount, equals(2));
+        s2.value = 20;
+        expect(runCount, equals(3), reason: "only second effect should run");
+      });
+
+      test("batch with one disposed dependency runs once", () {
+        final a = Signal(0);
+        final b = Signal(0);
+        final values = <int>[];
+        Effect(() {
+          values.add(b.value);
+        });
+        expect(values, equals([0]));
+
+        a.dispose();
+        setSignal(a as SignalReactiveNode<int>, 1);
+        batch(() {
+          b.value = 2;
+        });
+        expect(a.isDisposed, isTrue);
+        expect(values, equals([0, 2]), reason: "effect runs once for b change");
+      });
+
+      test("multiple subscribers with one disposed", () {
+        final s = Signal(1);
+        final v1 = <int>[];
+        final v2 = <int>[];
+        final e1 = Effect(() => v1.add(s.value));
+        final e2 = Effect(() => v2.add(s.value));
+        expect(v1, equals([1]));
+        expect(v2, equals([1]));
+
+        e1.dispose();
+        s.value = 2;
+        expect(v1, equals([1]));
+        expect(v2, equals([1, 2]));
+        e2.dispose();
+      });
+    });
+
     test("should work with different data types", () {
       // String signal
       final stringSignal = Signal("hello");

@@ -348,6 +348,8 @@ int getBatchDepth() => batchDepth;
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
 bool updateComputed<T>(ComputedReactiveNode<T> computed) {
+  if (computed.flags & ReactiveFlags.disposed != 0) return false;
+
   ++cycle;
   computed
     ..depsTail = null
@@ -395,7 +397,9 @@ bool updateComputed<T>(ComputedReactiveNode<T> computed) {
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
 bool updateSignal<T>(SignalReactiveNode<T> signal) {
-  signal.flags = ReactiveFlags.mutable;
+  if (signal.flags & ReactiveFlags.disposed != 0) return false;
+
+  signal.flags &= ReactiveFlags.mutable;
 
   return signal.cachedValue != (signal.cachedValue = signal.pendingValue);
 }
@@ -426,6 +430,8 @@ bool updateSignal<T>(SignalReactiveNode<T> signal) {
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
 bool updateCustom<T>(ReactiveNode node) {
+  if (node.flags & ReactiveFlags.disposed != 0) return false;
+
   node.flags = ReactiveFlags.mutable;
 
   if (node is CustomReactiveNode) {
@@ -484,6 +490,8 @@ bool _removePending(ReactiveNode e, int flags) {
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
 void defaultRunEffect(EffectReactiveNode e, void Function() fn) {
+  if (e.flags & ReactiveFlags.disposed != 0) return;
+
   final flags = e.flags;
   if (flags & (ReactiveFlags.dirty) != 0 ||
       (flags & (ReactiveFlags.pending) != 0 && checkDirty(e.deps!, e))) {
@@ -565,8 +573,8 @@ void flushEffects() {
 @pragma("dart2js:prefer-inline")
 T getComputed<T>(ComputedReactiveNode<T> computed) {
   final flags = computed.flags;
-  if (flags & (ReactiveFlags.dirty) != 0 ||
-      (flags & (ReactiveFlags.pending) != 0 &&
+  if (flags & ReactiveFlags.dirty != 0 ||
+      (flags & ReactiveFlags.pending != 0 &&
           (checkDirty(computed.deps!, computed) ||
               _removePending(computed, flags)))) {
     if (updateComputed(computed)) {
@@ -575,7 +583,7 @@ T getComputed<T>(ComputedReactiveNode<T> computed) {
         shallowPropagate(subs);
       }
     }
-  } else if (flags == (ReactiveFlags.none)) {
+  } else if (flags == ReactiveFlags.none) {
     computed.flags = ReactiveFlags.mutable | ReactiveFlags.recursedCheck;
     final prevSub = setActiveSub(computed);
     try {
@@ -618,6 +626,8 @@ T getComputed<T>(ComputedReactiveNode<T> computed) {
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
 void notifyComputed<T>(ComputedReactiveNode<T> computed, [bool force = false]) {
+  if (computed.flags & ReactiveFlags.disposed != 0) return;
+
   final updated = updateComputed(computed);
 
   if (!force && !updated) return;
@@ -652,6 +662,8 @@ void notifyComputed<T>(ComputedReactiveNode<T> computed, [bool force = false]) {
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
 T setSignal<T>(SignalReactiveNode<T> signal, T newValue) {
+  if (signal.flags & ReactiveFlags.disposed != 0) return newValue;
+
   if (signal.pendingValue != (signal.pendingValue = newValue)) {
     signal.flags = ReactiveFlags.mutable | ReactiveFlags.dirty;
 
@@ -721,6 +733,7 @@ T getSignal<T>(SignalReactiveNode<T> signal) {
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
 void notifySignal<T>(SignalReactiveNode signal) {
+  if (signal.flags & ReactiveFlags.disposed != 0) return;
   // Mark as changed even if the underlying reference didn't change (e.g. in-place mutations).
   signal.flags = ReactiveFlags.mutable | ReactiveFlags.dirty;
 
@@ -761,6 +774,8 @@ void notifySignal<T>(SignalReactiveNode signal) {
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
 void notifyCustom<T>(ReactiveNode node) {
+  if (node.flags & ReactiveFlags.disposed != 0) return;
+
   node.flags = ReactiveFlags.mutable | ReactiveFlags.dirty;
 
   final subs = node.subs;
@@ -791,7 +806,8 @@ void getCustom(ReactiveNode node) {
   JoltDebug.get(node);
 }
 
-/// Disposes any reactive node and detaches all dependencies/subscribers.
+/// Disposes a reactive node: marks it [ReactiveFlags.disposed], detaches
+/// dependencies/subscribers. The node no longer participates in updates or propagation.
 ///
 /// Parameters:
 /// - [e]: Node to dispose
@@ -806,7 +822,7 @@ void disposeNode(ReactiveNode e) {
 
   e
     ..depsTail = null
-    ..flags = ReactiveFlags.none;
+    ..flags = ReactiveFlags.disposed;
   purgeDeps(e);
   final sub = e.subs;
   if (sub != null) {

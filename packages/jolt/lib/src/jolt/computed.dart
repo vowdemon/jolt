@@ -183,7 +183,7 @@ class ComputedImpl<T> extends ComputedReactiveNode<T>
 
   /// Disposes the computed value and cleans up resources.
   ///
-  /// Removes the computed value from the reactive system and clears stored values.
+  /// The computed is no longer reactive and will not participate in updates or propagation.
   ///
   /// Example:
   /// ```dart

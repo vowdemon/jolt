@@ -73,8 +73,9 @@ abstract interface class DisposableNode implements Disposable {
 
   /// Disposes this node and cleans up resources.
   ///
-  /// Marks the node as disposed, invokes [onDispose] for custom cleanup,
-  /// and notifies the finalizer system for chained disposers.
+  /// Marks the node as disposed; it is no longer reactive and will not
+  /// participate in updates or propagation. Invokes [onDispose] for custom
+  /// cleanup and notifies the finalizer system for chained disposers.
   ///
   /// Example:
   /// ```dart
@@ -88,8 +89,8 @@ abstract interface class DisposableNode implements Disposable {
 
 /// Mixin providing base disposal functionality for reactive nodes.
 ///
-/// Implements common disposal logic and state management. Automatically
-/// tracks disposal state and calls [onDispose] for custom cleanup.
+/// Sets [ReactiveFlags.disposed] so the node is no longer reactive.
+/// Implements common disposal logic and calls [onDispose] for custom cleanup.
 ///
 /// Example:
 /// ```dart
@@ -100,19 +101,17 @@ abstract interface class DisposableNode implements Disposable {
 ///   }
 /// }
 /// ```
-mixin DisposableNodeMixin implements DisposableNode, ChainedDisposable {
+mixin DisposableNodeMixin
+    implements DisposableNode, ChainedDisposable, ReactiveNode {
   /// Whether this node has been disposed.
   @override
-  bool get isDisposed => _isDisposed;
-
-  @protected
-  bool _isDisposed = false;
+  bool get isDisposed => flags == ReactiveFlags.disposed;
 
   @override
   @mustCallSuper
   void dispose() {
-    if (_isDisposed) return;
-    _isDisposed = true;
+    if (isDisposed) return;
+    flags = ReactiveFlags.disposed;
     // allow unawaited futures
     // ignore: discarded_futures
     onDispose();

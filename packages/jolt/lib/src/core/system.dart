@@ -175,6 +175,12 @@ abstract final class ReactiveFlags {
 
   /// Node is pending update.
   static const pending = 1 << 5;
+
+  /// Node has been disposed.
+  ///
+  /// When set, update and propagation are skipped for this node.
+  /// [none] is the special initial state; [disposed] is set when the node is disposed.
+  static const disposed = 1 << 6;
 }
 
 /// Abstract reactive system for managing dependency tracking.

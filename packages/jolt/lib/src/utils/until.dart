@@ -105,7 +105,7 @@ class UntilImpl<T> implements Until<T> {
       _effect = Effect.lazy(() {
         if (_completer.isCompleted) return;
         if (predicate(source.value)) _completer.complete(source.value);
-      }, detach: detach, debug: JoltDebugOption.type('Until<$T>'));
+      }, detach: detach ?? true, debug: JoltDebugOption.type('Until<$T>'));
       trackWithEffect(() => source.value, _effect!);
       _completer.future.whenComplete(_effect!.dispose);
     }

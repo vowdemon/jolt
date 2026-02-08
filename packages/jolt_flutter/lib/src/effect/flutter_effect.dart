@@ -36,6 +36,9 @@ class FlutterEffectImpl extends EffectReactiveNode
   ///   dependencies until you call [run]. If `false` (default), the effect
   ///   runs immediately on creation and then re-runs at frame end whenever
   ///   its reactive dependencies change.
+  /// - [detach]: Whether to detach this effect from the current effect scope.
+  ///   If true, the effect will not be automatically disposed when its parent
+  ///   scope is disposed.
   /// - [debug]: Optional debug options
   ///
   /// The effect function will be called at the end of the current Flutter frame,
@@ -55,13 +58,15 @@ class FlutterEffectImpl extends EffectReactiveNode
   /// // Effect executes once at end of frame with signal.value = 2
   /// ```
   /// {@endtemplate}
-  FlutterEffectImpl(this.fn, {bool lazy = false, JoltDebugOption? debug})
+  FlutterEffectImpl(this.fn, {bool lazy = false, bool? detach, JoltDebugOption? debug})
       : super(flags: ReactiveFlags.watching | ReactiveFlags.recursedCheck) {
     JoltDebug.create(this, debug);
 
-    final prevSub = getActiveSub();
-    if (prevSub != null) {
-      link(this, prevSub, 0);
+    if (!(detach ?? false)) {
+      final prevSub = getActiveSub();
+      if (prevSub != null) {
+        link(this, prevSub, 0);
+      }
     }
 
     if (!lazy) {
@@ -87,6 +92,7 @@ class FlutterEffectImpl extends EffectReactiveNode
   ///
   /// Parameters:
   /// - [fn]: The effect function to execute
+  /// - [detach]: Whether to detach this effect from the current effect scope
   /// - [debug]: Optional debug options
   ///
   /// Returns: A new [FlutterEffect] instance that starts in deferred mode
@@ -109,8 +115,9 @@ class FlutterEffectImpl extends EffectReactiveNode
   /// signal.value = 20; // Effect schedules for end of frame
   /// ```
   /// {@endtemplate}
-  factory FlutterEffectImpl.lazy(void Function() fn, {JoltDebugOption? debug}) {
-    return FlutterEffectImpl(fn, lazy: true, debug: debug);
+  factory FlutterEffectImpl.lazy(void Function() fn,
+      {bool? detach, JoltDebugOption? debug}) {
+    return FlutterEffectImpl(fn, lazy: true, detach: detach, debug: debug);
   }
 
   /// The function that defines the effect's behavior.
@@ -237,12 +244,13 @@ abstract class FlutterEffect implements EffectNode {
   factory FlutterEffect(
     void Function() fn, {
     bool lazy,
+    bool? detach,
     JoltDebugOption? debug,
   }) = FlutterEffectImpl;
 
   /// {@macro flutter_effect_impl.lazy}
-  factory FlutterEffect.lazy(void Function() fn, {JoltDebugOption? debug}) =
-      FlutterEffectImpl.lazy;
+  factory FlutterEffect.lazy(void Function() fn,
+      {bool? detach, JoltDebugOption? debug}) = FlutterEffectImpl.lazy;
 
   /// Manually runs the effect function immediately, bypassing frame scheduling.
   ///

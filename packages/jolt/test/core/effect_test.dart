@@ -2175,4 +2175,147 @@ void main() {
       expect(scope.isDisposed, isTrue);
     });
   });
+
+  group("Watcher detach parameter", () {
+    test("should link to parent scope by default", () {
+      late EffectScope scope;
+      late Watcher<int> watcher;
+
+      scope = EffectScope()
+        ..run(() {
+          final signal = Signal(0);
+          watcher = Watcher(() => signal.value, (_, __) {});
+        });
+
+      expect(scope.isDisposed, isFalse);
+      expect(watcher.isDisposed, isFalse);
+
+      scope.dispose();
+
+      expect(scope.isDisposed, isTrue);
+      expect(watcher.isDisposed, isTrue);
+    });
+
+    test("should not link to parent scope when detach is true", () {
+      late EffectScope scope;
+      late Watcher<int> watcher;
+
+      scope = EffectScope()
+        ..run(() {
+          final signal = Signal(0);
+          watcher = Watcher(() => signal.value, (_, __) {}, detach: true);
+        });
+
+      expect(scope.isDisposed, isFalse);
+      expect(watcher.isDisposed, isFalse);
+
+      scope.dispose();
+
+      expect(scope.isDisposed, isTrue);
+      expect(watcher.isDisposed, isFalse);
+
+      watcher.run();
+      expect(watcher.isDisposed, isFalse);
+
+      watcher.dispose();
+      expect(watcher.isDisposed, isTrue);
+    });
+
+    test("should link to parent scope when detach is explicitly false", () {
+      late EffectScope scope;
+      late Watcher<int> watcher;
+
+      scope = EffectScope()
+        ..run(() {
+          final signal = Signal(0);
+          watcher = Watcher(
+            () => signal.value,
+            (_, __) {},
+            detach: false,
+          );
+        });
+
+      expect(scope.isDisposed, isFalse);
+      expect(watcher.isDisposed, isFalse);
+
+      scope.dispose();
+
+      expect(scope.isDisposed, isTrue);
+      expect(watcher.isDisposed, isTrue);
+    });
+
+    test("should work with detach in nested scopes", () {
+      late EffectScope outerScope;
+      late EffectScope midScope;
+      late Watcher<int> watcher;
+
+      outerScope = EffectScope()
+        ..run(() {
+          midScope = EffectScope(detach: true)
+            ..run(() {
+              final signal = Signal(0);
+              watcher = Watcher(() => signal.value, (_, __) {});
+            });
+        });
+
+      expect(outerScope.isDisposed, isFalse);
+      expect(midScope.isDisposed, isFalse);
+      expect(watcher.isDisposed, isFalse);
+
+      outerScope.dispose();
+
+      expect(outerScope.isDisposed, isTrue);
+      expect(midScope.isDisposed, isFalse);
+      expect(watcher.isDisposed, isFalse);
+
+      midScope.dispose();
+
+      expect(midScope.isDisposed, isTrue);
+      expect(watcher.isDisposed, isTrue);
+    });
+
+    test("Watcher.immediately with detach should not link to scope", () {
+      late EffectScope scope;
+      late Watcher<int> watcher;
+
+      scope = EffectScope()
+        ..run(() {
+          final signal = Signal(0);
+          watcher = Watcher.immediately(
+            () => signal.value,
+            (_, __) {},
+            detach: true,
+          );
+        });
+
+      scope.dispose();
+
+      expect(scope.isDisposed, isTrue);
+      expect(watcher.isDisposed, isFalse);
+
+      watcher.dispose();
+    });
+
+    test("Watcher.once with detach should not link to scope", () {
+      late EffectScope scope;
+      late Watcher<int> watcher;
+
+      scope = EffectScope()
+        ..run(() {
+          final signal = Signal(0);
+          watcher = Watcher.once(
+            () => signal.value,
+            (_, __) {},
+            detach: true,
+          );
+        });
+
+      scope.dispose();
+
+      expect(scope.isDisposed, isTrue);
+      expect(watcher.isDisposed, isFalse);
+
+      watcher.dispose();
+    });
+  });
 }

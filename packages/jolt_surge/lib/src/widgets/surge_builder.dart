@@ -249,7 +249,7 @@ class _SurgeBuilderState<T extends Surge<S>, S>
       }
 
       _state = state;
-    }, debug: JoltDebugOption.type('SurgeBuilder<$T>'));
+    }, detach: true, debug: JoltDebugOption.type('SurgeBuilder<$T>'));
   }
 
   void _stopEffect() {

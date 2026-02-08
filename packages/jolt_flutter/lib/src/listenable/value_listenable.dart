@@ -53,6 +53,7 @@ class JoltValueListenable<T>
       notifyListeners();
     },
         when: IMutableCollection.skipNode(node),
+        detach: true,
         debug: const JoltDebugOption.type('JoltValueListenable'));
 
     final finalizerDisposer = JFinalizer.attachToJoltAttachments(node, dispose);

@@ -124,7 +124,7 @@ class JoltSelectorElement<T> extends ComponentElement {
       } else {
         _isFirstBuildEffect = false;
       }
-    }, debug: const JoltDebugOption.type('JoltSelector'));
+    }, detach: true, debug: const JoltDebugOption.type('JoltSelector'));
 
     super.mount(parent, newSlot);
   }

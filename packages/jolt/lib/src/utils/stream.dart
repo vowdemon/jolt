@@ -105,6 +105,7 @@ abstract final class JoltStreamHelper {
           controller.add(newValue);
         },
             when: IMutableCollection.skipNode(readable),
+            detach: true,
             debug: const JoltDebugOption.type('Watcher<ToStream>'));
       },
       onCancel: disposer,

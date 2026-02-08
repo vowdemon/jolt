@@ -254,7 +254,7 @@ class _SurgeListenerState<T extends Surge<S>, S>
       (context as StatefulElement).markNeedsBuild();
 
       _state = state;
-    }, debug: JoltDebugOption.type('SurgeListener<$T>'));
+    }, detach: true, debug: JoltDebugOption.type('SurgeListener<$T>'));
   }
 
   void _stopEffect() {

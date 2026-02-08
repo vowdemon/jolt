@@ -489,6 +489,10 @@ class WatcherImpl<T> extends EffectReactiveNode
   /// - [fn]: Callback function executed when sources change
   /// - [immediately]: Whether to execute the callback immediately
   /// - [when]: Optional condition function for custom trigger logic
+  /// - [detach]: Whether to detach this watcher from the current effect scope.
+  ///   If true, the watcher will not be automatically disposed when its parent
+  ///   scope is disposed.
+  /// - [debug]: Optional debug options
   ///
   /// Example:
   /// ```dart
@@ -503,7 +507,7 @@ class WatcherImpl<T> extends EffectReactiveNode
   /// ```
   /// {@endtemplate}
   WatcherImpl(this.sourcesFn, this.fn,
-      {bool immediately = false, this.when, JoltDebugOption? debug})
+      {bool immediately = false, this.when, bool? detach, JoltDebugOption? debug})
       : super(flags: ReactiveFlags.watching) {
     assert(() {
       JoltDebug.create(this, debug);
@@ -511,7 +515,7 @@ class WatcherImpl<T> extends EffectReactiveNode
     }());
 
     final prevSub = setActiveSub(this);
-    if (prevSub != null) {
+    if (!(detach ?? false) && prevSub != null) {
       link(this, prevSub, 0);
     }
     try {
@@ -548,6 +552,7 @@ class WatcherImpl<T> extends EffectReactiveNode
   /// - [sourcesFn]: Function that returns the values to watch
   /// - [fn]: Callback function executed when sources change
   /// - [when]: Optional condition function for custom trigger logic
+  /// - [detach]: Whether to detach this watcher from the current effect scope
   /// - [debug]: Optional debug options
   ///
   /// Returns: A new [Watcher] instance that executes immediately
@@ -572,9 +577,9 @@ class WatcherImpl<T> extends EffectReactiveNode
   /// ```
   /// {@endtemplate}
   factory WatcherImpl.immediately(SourcesFn<T> sourcesFn, WatcherFn<T> fn,
-      {WhenFn<T>? when, JoltDebugOption? debug}) {
+      {WhenFn<T>? when, bool? detach, JoltDebugOption? debug}) {
     return WatcherImpl(sourcesFn, fn,
-        immediately: true, when: when, debug: debug);
+        immediately: true, when: when, detach: detach, debug: debug);
   }
 
   /// {@template jolt_watcher_impl.once}
@@ -589,6 +594,7 @@ class WatcherImpl<T> extends EffectReactiveNode
   /// - [sourcesFn]: Function that returns the values to watch
   /// - [fn]: Callback function executed on first change
   /// - [when]: Optional condition function for custom trigger logic
+  /// - [detach]: Whether to detach this watcher from the current effect scope
   /// - [debug]: Optional debug options
   ///
   /// Returns: A new [Watcher] instance that auto-disposes after first execution
@@ -617,13 +623,13 @@ class WatcherImpl<T> extends EffectReactiveNode
   /// ```
   /// {@endtemplate}
   factory WatcherImpl.once(SourcesFn<T> sourcesFn, WatcherFn<T> fn,
-      {WhenFn<T>? when, JoltDebugOption? debug}) {
+      {WhenFn<T>? when, bool? detach, JoltDebugOption? debug}) {
     late WatcherImpl<T> watcher;
 
     watcher = WatcherImpl(sourcesFn, (newValue, oldValue) {
       fn(newValue, oldValue);
       watcher.dispose();
-    }, when: when, immediately: false, debug: debug);
+    }, when: when, immediately: false, detach: detach, debug: debug);
 
     return watcher;
   }
@@ -767,6 +773,7 @@ abstract class Watcher<T> implements EffectNode {
     WatcherFn<T> fn, {
     bool immediately,
     WhenFn<T>? when,
+    bool? detach,
     JoltDebugOption? debug,
   }) = WatcherImpl<T>;
 
@@ -775,6 +782,7 @@ abstract class Watcher<T> implements EffectNode {
     SourcesFn<T> sourcesFn,
     WatcherFn<T> fn, {
     WhenFn<T>? when,
+    bool? detach,
     JoltDebugOption? debug,
   }) = WatcherImpl.immediately;
 
@@ -783,6 +791,7 @@ abstract class Watcher<T> implements EffectNode {
     SourcesFn<T> sourcesFn,
     WatcherFn<T> fn, {
     WhenFn<T>? when,
+    bool? detach,
     JoltDebugOption? debug,
   }) = WatcherImpl.once;
 

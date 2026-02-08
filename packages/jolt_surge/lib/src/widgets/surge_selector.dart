@@ -268,7 +268,7 @@ class _SurgeSelectorState<T extends Surge<S>, S, C>
       _selectorValue = newSelectorValue;
 
       (context as StatefulElement).markNeedsBuild();
-    }, debug: JoltDebugOption.type('SurgeSelector<$T,$C>'));
+    }, detach: true, debug: JoltDebugOption.type('SurgeSelector<$T,$C>'));
   }
 
   void _stopEffect() {

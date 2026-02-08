@@ -166,7 +166,7 @@ void main() {
       expect(values, equals([1, 2]));
     });
 
-    test("should throw when reading disposed signal in batch", () {
+    test("batch with disposed signal completes", () {
       final signal1 = Signal(1);
       final signal2 = Signal(2);
       final computed = Computed<int>(() => signal1.value + signal2.value);
@@ -178,13 +178,12 @@ void main() {
 
       expect(values, equals([3]));
 
-      expect(
-          () => batch(() {
-                signal1.value = 10;
-                signal1.dispose();
-                signal2.value = 20;
-              }),
-          throwsA(isA<AssertionError>()));
+      batch(() {
+        signal1.value = 10;
+        signal1.dispose();
+        signal2.value = 20;
+      });
+      expect(values, equals([3, 21]));
     });
 
     test("should handle batch with rapid updates", () {

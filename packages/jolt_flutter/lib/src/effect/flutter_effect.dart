@@ -187,9 +187,12 @@ class FlutterEffectImpl extends EffectReactiveNode
   /// ```
   @override
   void run() {
-    assert(!isDisposed, "FlutterEffect is disposed");
-    flags |= ReactiveFlags.dirty;
-    runEffect();
+    if (!isDisposed) {
+      flags |= ReactiveFlags.dirty;
+      runEffect();
+    } else {
+      untracked(_effectFn);
+    }
   }
 
   @override

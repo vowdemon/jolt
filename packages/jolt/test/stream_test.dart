@@ -310,13 +310,13 @@ void main() {
     });
 
     group("Error Handling", () {
-      test("Disposed signal throws assertion error", () {
+      test("Disposed signal stream works as container", () {
         final signal = Signal(1);
         final _ = signal.stream; // Create stream first
 
         signal.dispose();
 
-        expect(() => signal.stream, throwsA(isA<AssertionError>()));
+        expect(signal.stream, isNotNull);
       });
     });
 
@@ -450,8 +450,8 @@ void main() {
         // Dispose signal should clean up watcher
         signal.dispose();
 
-        // Should not be able to create new stream after disposal
-        expect(() => signal.stream, throwsA(isA<AssertionError>()));
+        // Disposed signal stream still works as container
+        expect(signal.stream, isNotNull);
       });
 
       test("Stream holder reuse across multiple accesses", () {

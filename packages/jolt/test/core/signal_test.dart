@@ -149,12 +149,12 @@ void main() {
       expect(values2, equals([2]));
     });
 
-    test("should throw AssertionError when accessing disposed signal", () {
+    test("disposed signal works as container", () {
       final signal = Signal(42)..dispose();
 
-      expect(() => signal.value, throwsA(isA<AssertionError>()));
-      expect(() => signal.value = 1, throwsA(isA<AssertionError>()));
-      expect(signal.notify, throwsA(isA<AssertionError>()));
+      expect(signal.value, equals(42));
+      signal.value = 1;
+      signal.notify();
     });
 
     group("disposed signal no longer reactive", () {

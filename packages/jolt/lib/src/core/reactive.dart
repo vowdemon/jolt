@@ -572,6 +572,9 @@ void flushEffects() {
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
 T getComputed<T>(ComputedReactiveNode<T> computed) {
+  if ((computed.flags & ReactiveFlags.disposed) != 0) {
+    return computed.pendingValue as T;
+  }
   final flags = computed.flags;
   if (flags & ReactiveFlags.dirty != 0 ||
       (flags & ReactiveFlags.pending != 0 &&

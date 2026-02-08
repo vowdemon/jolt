@@ -228,14 +228,16 @@ void main() {
       expect(delegated.isDisposed, isTrue);
     });
 
-    test("set value should throw when disposed", () {
+    test("set value when disposed works as container", () {
       final source = Signal(42);
       final helper = DelegatedRefCountHelper<Signal<int>>(source);
       final delegated = DelegatedSignal(helper);
 
       delegated.dispose();
 
-      expect(() => delegated.value = 100, throwsA(isA<StateError>()));
+
+      delegated.value = 100;
+      expect(delegated.value, 42);
     });
 
     test("dispose should be idempotent", () {

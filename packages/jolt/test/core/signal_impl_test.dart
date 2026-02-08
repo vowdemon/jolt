@@ -11,7 +11,6 @@ class TestReadonlySignalWithInternalSet<T> extends ReadonlySignalImpl<T> {
 
   /// Expose internalSet for testing
   T testInternalSet(T value) {
-    assert(!isDisposed, "Signal is disposed");
     return setSignal(this, value);
   }
 }
@@ -90,27 +89,27 @@ void main() {
       effect.dispose();
     });
 
-    test("should throw when accessing value after dispose", () {
+    test("disposed signal works as container", () {
       final signal = ReadonlySignalImpl(42);
       signal.dispose();
 
-      expect(() => signal.value, throwsA(isA<AssertionError>()));
-      expect(() => signal.get(), throwsA(isA<AssertionError>()));
-      expect(() => signal(), throwsA(isA<AssertionError>()));
+      expect(signal.value, equals(42));
+      expect(signal.get(), equals(42));
+      expect(signal(), equals(42));
     });
 
-    test("should throw when accessing peek after dispose", () {
+    test("disposed signal peek returns value", () {
       final signal = ReadonlySignalImpl(42);
       signal.dispose();
 
-      expect(() => signal.peek, throwsA(isA<AssertionError>()));
+      expect(signal.peek, equals(42));
     });
 
-    test("should throw when calling notify after dispose", () {
+    test("disposed signal notify is no-op", () {
       final signal = ReadonlySignalImpl(42);
       signal.dispose();
 
-      expect(() => signal.notify(), throwsA(isA<AssertionError>()));
+      signal.notify();
     });
 
     test("should track in computed", () {
@@ -165,11 +164,11 @@ void main() {
       effect.dispose();
     });
 
-    test("internalSet should throw when signal is disposed", () {
+    test("internalSet works when signal is disposed", () {
       final signal = TestReadonlySignalWithInternalSet(42);
       signal.dispose();
 
-      expect(() => signal.testInternalSet(100), throwsA(isA<AssertionError>()));
+      expect(signal.testInternalSet(100), equals(100));
     });
 
     test("internalSet should return the set value", () {

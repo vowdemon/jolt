@@ -59,7 +59,6 @@ class SignalImpl<T> extends SignalReactiveNode<T>
   @pragma("dart2js:prefer-inline")
   @override
   T get peek {
-    assert(!isDisposed, "Signal is disposed");
     return pendingValue as T;
   }
 
@@ -78,7 +77,6 @@ class SignalImpl<T> extends SignalReactiveNode<T>
   @pragma("dart2js:prefer-inline")
   @override
   T get value {
-    assert(!isDisposed, "Signal is disposed");
     return getSignal(this);
   }
 
@@ -102,7 +100,6 @@ class SignalImpl<T> extends SignalReactiveNode<T>
   @pragma("dart2js:prefer-inline")
   @override
   set value(T value) {
-    assert(!isDisposed, "Signal is disposed");
     setSignal(this, value);
   }
 
@@ -120,7 +117,6 @@ class SignalImpl<T> extends SignalReactiveNode<T>
   @pragma("dart2js:prefer-inline")
   @override
   void notify([bool force = true]) {
-    assert(!isDisposed, "Signal is disposed");
     notifySignal(this);
   }
 
@@ -179,7 +175,6 @@ class ReadonlySignalImpl<T> extends SignalReactiveNode<T>
   @pragma("dart2js:prefer-inline")
   @override
   T get peek {
-    assert(!isDisposed, "Signal is disposed");
     return pendingValue as T;
   }
 
@@ -198,8 +193,6 @@ class ReadonlySignalImpl<T> extends SignalReactiveNode<T>
   @pragma("dart2js:prefer-inline")
   @override
   T get value {
-    assert(!isDisposed, "Signal is disposed");
-
     return getSignal(this);
   }
 
@@ -217,7 +210,6 @@ class ReadonlySignalImpl<T> extends SignalReactiveNode<T>
   @pragma("dart2js:prefer-inline")
   @override
   void notify([bool force = true]) {
-    assert(!isDisposed, "Signal is disposed");
     notifySignal(this);
   }
 

@@ -78,8 +78,6 @@ class ValueNotifierSignal<T> extends DelegatedSignal<T> {
 
   @override
   set value(T value) {
-    assert(!isDisposed, "ValueNotifierSignal is disposed");
-
     notifier.value = value;
   }
 }

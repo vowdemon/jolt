@@ -250,18 +250,15 @@ void main() {
       expect(computed2.value, equals(7));
     });
 
-    test(
-      "should throw ComputedAssertionError when accessing disposed computed",
-      () async {
-        final signal = Signal(1);
-        final computed = Computed<int>(() => signal.value * 2);
+    test("disposed computed works as container", () async {
+      final signal = Signal(1);
+      final computed = Computed<int>(() => signal.value * 2);
 
-        expect(computed.value, equals(2));
+      expect(computed.value, equals(2));
 
-        computed.dispose();
-        expect(() => computed.value, throwsA(isA<AssertionError>()));
-      },
-    );
+      computed.dispose();
+      expect(computed.value, equals(2));
+    });
 
     group("disposed computed no longer reactive", () {
       test("disposed computed does not propagate to its subscribers", () {
@@ -482,25 +479,20 @@ void main() {
       expect(signal.value, equals([1, 2, 3, 4, 5]));
     });
 
-    test(
-      "should throw ComputedAssertionError when accessing disposed dual computed",
-      () {
-        final signal = Signal(1);
-        final dualComputed = WritableComputed<int>(
-          () => signal.value * 2,
-          (value) => signal.value = value ~/ 2,
-        );
+    test("disposed dual computed works as container", () {
+      final signal = Signal(1);
+      final dualComputed = WritableComputed<int>(
+        () => signal.value * 2,
+        (value) => signal.value = value ~/ 2,
+      );
 
-        expect(dualComputed.value, equals(2));
+      expect(dualComputed.value, equals(2));
 
-        dualComputed.dispose();
-        expect(() => dualComputed.value, throwsA(isA<AssertionError>()));
-        expect(
-          () => dualComputed.value = 10,
-          throwsA(isA<AssertionError>()),
-        );
-      },
-    );
+      dualComputed.dispose();
+      expect(dualComputed.value, equals(2));
+      dualComputed.value = 10;
+      expect(signal.value, equals(5));
+    });
 
     test("should work with batch updates", () {
       final signal = Signal(1);

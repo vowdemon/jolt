@@ -247,12 +247,12 @@ void main() {
 
       streamSignal.dispose();
 
-      // 等待一段时间确保流已取消
+
       await Future.delayed(const Duration(milliseconds: 100));
 
-      // dispose后不允许再读取，应该抛出AssertionError
-      expect(() => streamSignal.data, throwsA(isA<AssertionError>()));
-      expect(() => streamSignal.value, throwsA(isA<AssertionError>()));
+
+      expect(streamSignal.data, isA<int>());
+      expect(streamSignal.value, isA<AsyncSuccess<int>>());
     });
   });
 
@@ -264,7 +264,6 @@ void main() {
       expect(asyncSignal.value, isA<AsyncLoading<String>>());
       expect(asyncSignal.data, isNull);
 
-      // 等待 fetch 完成，以确保 dispose 被调用
       await Future.delayed(const Duration(milliseconds: 1));
 
       asyncSignal.dispose();

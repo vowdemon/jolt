@@ -71,13 +71,6 @@ abstract final class JoltStreamHelper {
 
   static StreamController<T> getOrCreateStreamController<T>(
       Readable<T> readable) {
-    assert(() {
-      if (readable is ReadableNode) {
-        return !(readable as ReadableNode).isDisposed;
-      }
-      return true;
-    }(), "${readable.runtimeType} is disposed");
-
     StreamController<T>? controller =
         _readableStreams[readable] as StreamController<T>?;
 

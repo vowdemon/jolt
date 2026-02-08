@@ -96,8 +96,6 @@ class ComputedImpl<T> extends ComputedReactiveNode<T>
   /// ```
   @override
   T get peek {
-    assert(!isDisposed, "Computed is disposed");
-
     return untracked(() => getComputed(this));
   }
 
@@ -124,8 +122,6 @@ class ComputedImpl<T> extends ComputedReactiveNode<T>
   /// ```
   @override
   T get peekCached {
-    assert(!isDisposed, "Computed is disposed");
-
     if (flags == ReactiveFlags.none) {
       return untracked(() => getComputed(this));
     }
@@ -148,8 +144,6 @@ class ComputedImpl<T> extends ComputedReactiveNode<T>
   @pragma("dart2js:prefer-inline")
   @override
   T get value {
-    assert(!isDisposed, "Computed is disposed");
-
     return getComputed(this);
   }
 
@@ -177,7 +171,6 @@ class ComputedImpl<T> extends ComputedReactiveNode<T>
   @pragma("dart2js:prefer-inline")
   @override
   void notify([bool force = false]) {
-    assert(!isDisposed, "Computed is disposed");
     notifyComputed(this, force);
   }
 
@@ -363,7 +356,6 @@ class WritableComputedImpl<T> extends ComputedImpl<T>
   @pragma("dart2js:prefer-inline")
   @override
   set value(T newValue) {
-    assert(!isDisposed, "WritableComputed is disposed");
     startBatch();
     try {
       setter(newValue);

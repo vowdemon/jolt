@@ -29,7 +29,6 @@ class JoltService {
   /// Gets the selected isolate ID, or the main isolate if none selected.
   Future<String?> _getIsolateId() async {
     try {
-      // 尝试从 isolateManager 获取选中的 isolate
       final isolateRef = serviceManager.isolateManager.selectedIsolate.value;
       if (isolateRef != null) {
         developer
@@ -37,7 +36,6 @@ class JoltService {
         return isolateRef.id;
       }
 
-      // 如果没有选中，获取第一个可用的 isolate
       final vm = await _service.getVM();
       final isolateId = vm.isolates?.firstOrNull?.id;
       if (isolateId != null) {

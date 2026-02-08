@@ -27,8 +27,6 @@ mixin EffectCleanupMixin {
   /// });
   /// ```
   void onCleanUp(Disposer fn) {
-    assert(!isDisposed, "$runtimeType is disposed");
-
     _cleanups.add(fn);
   }
 
@@ -669,7 +667,6 @@ class WatcherImpl<T> extends EffectReactiveNode
 
   @override
   void run() {
-    assert(!isDisposed, "Watcher is disposed");
     trigger(sources: null);
   }
 
@@ -695,7 +692,6 @@ class WatcherImpl<T> extends EffectReactiveNode
 
   @override
   void pause() {
-    assert(!isDisposed, "Watcher is disposed");
     _isPaused = true;
     cycle++;
     depsTail = null;
@@ -705,7 +701,6 @@ class WatcherImpl<T> extends EffectReactiveNode
 
   @override
   void resume([bool tryRun = false]) {
-    assert(!isDisposed, "Watcher is disposed");
     _isPaused = false;
 
     if (!tryRun) {
@@ -717,8 +712,6 @@ class WatcherImpl<T> extends EffectReactiveNode
 
   @override
   U ignoreUpdates<U>(U Function() fn) {
-    assert(!isDisposed, "Watcher is disposed");
-
     return batch(() {
       int prevFlags = flags;
       try {

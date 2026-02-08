@@ -167,9 +167,6 @@ class DelegatedSignal<T> implements Signal<T> {
 
   @override
   set value(T value) {
-    if (isDisposed) {
-      throw StateError('$runtimeType is disposed');
-    }
     delegated.source.value = value;
   }
 

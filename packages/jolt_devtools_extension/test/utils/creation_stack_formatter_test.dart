@@ -1,5 +1,5 @@
 import 'package:jolt_devtools_extension/src/utils/creation_stack_formatter.dart';
-import 'package:test/test.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('formatCreationStackForDisplay', () {

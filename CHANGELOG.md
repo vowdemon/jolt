@@ -3,6 +3,52 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-04-07
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`jolt` - `v3.2.0`](#jolt---v320)
+ - [`jolt_flutter` - `v3.1.0`](#jolt_flutter---v310)
+ - [`jolt_hooks` - `v3.1.0`](#jolt_hooks---v310)
+ - [`jolt_setup` - `v3.2.0`](#jolt_setup---v320)
+ - [`jolt_surge` - `v3.1.0`](#jolt_surge---v310)
+ - [`jolt_lint` - `v3.0.3`](#jolt_lint---v303)
+
+Packages graduated to a stable release (see pre-releases prior to the stable version for changelog entries):
+
+ - `jolt` - `v3.2.0`
+ - `jolt_flutter` - `v3.1.0`
+ - `jolt_hooks` - `v3.1.0`
+ - `jolt_setup` - `v3.2.0`
+ - `jolt_surge` - `v3.1.0`
+
+---
+
+#### `jolt` - `v3.2.0`
+
+#### `jolt_flutter` - `v3.1.0`
+
+#### `jolt_hooks` - `v3.1.0`
+
+#### `jolt_setup` - `v3.2.0`
+
+#### `jolt_surge` - `v3.1.0`
+
+#### `jolt_lint` - `v3.0.3`
+
+ - **FIX**(jolt_lint): fix no_invalid_hook_call and add rule tests. ([a37f43a3](https://github.com/vowdemon/jolt/commit/a37f43a3ce508bc0d6ee038be476e45982ecb4f3))
+ - **FIX**(jolt_lint): fix no_invalid_hook_call annotation check for call invocations. ([30c09f8d](https://github.com/vowdemon/jolt/commit/30c09f8debbfc4d26294386113c171e42106a8b1))
+ - **DOCS**: align setup and hook documentation with current APIs. ([d594929a](https://github.com/vowdemon/jolt/commit/d594929a99ac076d2c2744615ecbb52c373165b4))
+
+
 ## 2026-01-29
 
 ### Changes

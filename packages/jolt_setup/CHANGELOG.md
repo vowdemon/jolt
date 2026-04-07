@@ -1,16 +1,10 @@
-## 3.2.0-dev.2
-
- - **FIX**(setup): restrict DefineHook annotation to valid targets. ([644804d0](https://github.com/vowdemon/jolt/commit/644804d0e3d9fb26612ff1fa9dc99872936b9ccb))
- - **FEAT**(setup): add useTimer timer hook. ([68ccab81](https://github.com/vowdemon/jolt/commit/68ccab81dd7ca13eba945b5108cf60628886998e))
-
-## 3.2.0-dev.1
-
- - **FIX**(setup): renderer debug. ([8a596c27](https://github.com/vowdemon/jolt/commit/8a596c271bd753481ef9f8e2e5e7f4fa7623e0fd))
-
-## 3.2.0-dev.0
+## 3.2.0
 
  - **FEAT**(setup): useReset hook for reset-setup. ([50111813](https://github.com/vowdemon/jolt/commit/501118130ff55f2a7f7f1a3c83b0cb8fe3136270))
  - **FEAT**: devtools. ([a243e172](https://github.com/vowdemon/jolt/commit/a243e172061babc7031267eb5e4696c9064d778c))
+ - **FIX**(setup): renderer debug. ([8a596c27](https://github.com/vowdemon/jolt/commit/8a596c271bd753481ef9f8e2e5e7f4fa7623e0fd))
+ - **FIX**(setup): restrict DefineHook annotation to valid targets. ([644804d0](https://github.com/vowdemon/jolt/commit/644804d0e3d9fb26612ff1fa9dc99872936b9ccb))
+ - **FEAT**(setup): add useTimer timer hook. ([68ccab81](https://github.com/vowdemon/jolt/commit/68ccab81dd7ca13eba945b5108cf60628886998e))
 
 ### useReset Hook
 
@@ -36,6 +30,16 @@ When reset is triggered, the setup function is completely re-run:
 - New hooks are mounted
 
 This ensures a clean slate for the widget's reactive state.
+
+### useUntil Hook
+
+This release also adds `useUntil` for setup-based widgets. It exposes the
+updated `Until<T>` waiting model inside `SetupWidget` / `SetupBuilder`, including:
+
+- `useUntil(source, predicate)`
+- `useUntil.when(source, value)`
+- `useUntil.changed(source)`
+- automatic cancellation when the widget unmounts
 
 ## 3.1.1
 

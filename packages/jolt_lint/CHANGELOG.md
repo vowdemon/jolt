@@ -1,3 +1,9 @@
+## 3.0.3
+
+ - **FIX**(jolt_lint): fix no_invalid_hook_call and add rule tests. ([a37f43a3](https://github.com/vowdemon/jolt/commit/a37f43a3ce508bc0d6ee038be476e45982ecb4f3))
+ - **FIX**(jolt_lint): fix no_invalid_hook_call annotation check for call invocations. ([30c09f8d](https://github.com/vowdemon/jolt/commit/30c09f8debbfc4d26294386113c171e42106a8b1))
+ - **DOCS**: align setup and hook documentation with current APIs. ([d594929a](https://github.com/vowdemon/jolt/commit/d594929a99ac076d2c2744615ecbb52c373165b4))
+
 ## 3.0.2
 
  - **REFACTOR**: use annotation to mark hook functions instead of naming convention check. ([f25bdad9](https://github.com/vowdemon/jolt/commit/f25bdad98a6b57816188435ea19c5a6449905401))

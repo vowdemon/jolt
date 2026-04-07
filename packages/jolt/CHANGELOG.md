@@ -1,12 +1,25 @@
-## 3.2.0-dev.4
-
- - **REFACTOR**: debug API and DevTools behavior. ([e66ce708](https://github.com/vowdemon/jolt/commit/e66ce7080dd99268b61fe8dee3cc61bae53fd9cd))
-
-## 3.2.0-dev.2
-
-## 3.2.0-dev.1
+## 3.2.0
 
  - **FEAT**: devtools. ([a243e172](https://github.com/vowdemon/jolt/commit/a243e172061babc7031267eb5e4696c9064d778c))
+ - **REFACTOR**: debug API and DevTools behavior. ([e66ce708](https://github.com/vowdemon/jolt/commit/e66ce7080dd99268b61fe8dee3cc61bae53fd9cd))
+ - **REFACTOR**(until): redesign waiting utilities around `Until`. ([0ef06363](https://github.com/vowdemon/jolt/commit/0ef06363dc18fc786b95ff5e4ce8b0881ab6f0ef))
+ - **FEAT**(effect): add `detach` parameter to `Watcher` and default detach behavior for utility helpers. ([4ff573f6](https://github.com/vowdemon/jolt/commit/4ff573f6c528c37b8bd155c3639409855a07945e))
+
+### DevTools
+
+This release adds the Jolt DevTools integration for inspecting reactive nodes
+in Flutter DevTools. The initial support focuses on node discovery, lifecycle
+debug data, and runtime inspection through `JoltDebug.init()`.
+
+### Until
+
+`until()` now returns an `Until<T>` object instead of a plain `Future<T>`.
+`Until<T>` still implements `Future<T>`, and also adds:
+
+- `Until(source, predicate)` constructor
+- `Until.when(source, value)` for equality checks
+- `Until.changed(source)` for waiting on the next value change
+- `cancel()` support for stopping an active wait
 
 ### JoltDebug.init() and onDebug Usage
 

@@ -4,8 +4,6 @@ library;
 import 'package:jolt_devtools_extension/src/models/jolt_debug.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
 
-export 'package:jolt_devtools_extension/src/models/vm_node.dart';
-
 /// Represents a Jolt reactive node in the inspector.
 class JoltNode {
   final int id;
@@ -89,6 +87,25 @@ class JoltNode {
 
   @override
   String toString() => 'JoltNode($label: $value)';
+
+  JoltNode detachedDisposedSnapshot() {
+    return JoltNode(
+      id: id,
+      type: type,
+      label: label,
+      debugType: debugType,
+      isDisposed: true,
+      value: value.value,
+      flags: flags.value,
+      valueType: valueType.value,
+      dependencies: dependencies.value,
+      subscribers: subscribers.value,
+      creationStack: creationStack.value,
+      updatedAt: updatedAt.value,
+      createdAt: createdAt,
+      count: count.value,
+    );
+  }
 }
 
 /// Represents a real-time node update.

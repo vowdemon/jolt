@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:jolt_devtools_extension/src/controllers/jolt_inspector_controller.dart';
+import 'package:jolt_devtools_extension/src/inspector_value/widgets/jolt_value_inspector_root.dart';
 import 'package:jolt_devtools_extension/src/models/jolt_node.dart';
 import 'package:jolt_devtools_extension/src/widgets/detail_section.dart';
 import 'package:jolt_devtools_extension/src/widgets/detail_row.dart';
 import 'package:jolt_devtools_extension/src/widgets/node_icon.dart';
 import 'package:jolt_devtools_extension/src/widgets/node_link_list_section.dart';
-import 'package:jolt_devtools_extension/src/widgets/value_root.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
 import 'package:jolt_setup/jolt_setup.dart';
 import 'package:provider/provider.dart';
@@ -134,9 +134,9 @@ class _NodeDetailsPanelState extends State<NodeDetailsPanel>
                 collapseSignal: $hideVmValue,
                 onToggle: () => $hideVmValue.value = !$hideVmValue.value,
                 children: [
-                  ValueRoot(
+                  JoltValueInspectorRoot(
                     node: widget.node,
-                    controller: controller,
+                    service: controller.joltService.valueInspectorService,
                   ),
                 ],
               ),

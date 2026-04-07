@@ -11,7 +11,7 @@ Jolt DevTools Extension provides a complete visualization and management tool fo
 - 🔍 **Search and Filter Nodes** - Powerful query syntax supporting filtering by label, type, ID, and more
 - 📊 **Node Details Panel** - View complete node information including values, types, dependencies, and more
 - 🔗 **Dependency Visualization** - View node dependencies and subscribers
-- 💾 **VM Value Inspection** - Deep dive into actual values in the Dart VM, with support for expanding complex objects
+- 💾 **VM Value Inspection** - Path-driven VM inspection with refresh-safe expansion state and explicit error states
 - 📝 **Creation Stack Trace** - View where nodes were created for easier debugging
 
 ## Key Features
@@ -33,13 +33,26 @@ The node list panel displays all reactive nodes (Signal, Computed, Effect) with 
 Click on a node to view detailed information:
 
 - **Basic Information**: ID, type, debug type, value type, current value
-- **VM Value Tree**: Deep dive into actual value structures in the Dart VM
-  - Support for expanding/collapsing complex objects
-  - Display collections, records, enums, and other types
-  - Support for copying values to clipboard
-  - Support for refreshing values (re-fetch from VM)
+- **VM Value Inspector**: Deep dive into actual value structures in the Dart VM
+  - Stable expansion paths are keyed by `JoltValuePath`
+  - Refresh keeps the current browsing context whenever the path identity is still valid
+  - Values are normalized into `loading`, `unavailable`, `stale`, and `error` states
+  - Internal fields and dependency-private fields can be toggled independently
+  - Root scalar `Signal` values support controlled inline editing
 
 ![VM Value Inspection](../../docs/src/assets/devtools/vm-value.png)
+
+### VM Value Inspector Architecture
+
+The value section now runs on the dedicated inspector stack in
+[`lib/src/inspector_value/`](/Users/vowzero/projects/jolt/packages/jolt_devtools_extension/lib/src/inspector_value):
+
+- `JoltValuePath` provides stable root, field, list-index, and map-entry paths.
+- `JoltInspectedValue` converts `vm_service` responses into a UI-oriented value model.
+- `JoltValueInspectorService` resolves roots lazily and caches root refs, per-path refs, normalized values, and filtered child rows.
+- `JoltValueInspectorRoot` renders the tree directly from path-bound state instead of the old ad-hoc VM tree widgets.
+
+Current write support is intentionally narrow: only root scalar `Signal` values are editable. Nested fields and complex objects remain read-only.
 
 ### 3. Dependencies
 

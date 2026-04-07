@@ -18,13 +18,16 @@ class JoltInspectorController {
   final joltService = JoltService(serviceManager);
   StreamSubscription? _updateSubscription;
   VoidCallback? _connectionListener;
+  VoidCallback? _isolateListener;
 
   final $isConnected = Signal(false);
   final $isLoading = Signal(false);
   final $searchQuery = Signal('');
   final $selectedNodeId = Signal<int?>(null);
+  final $selectedDetachedNode = Signal<JoltNode?>(null);
   final $nodes = MapSignal(<int, JoltNode>{});
-  late final $selectedNode = Computed(() => $nodes[$selectedNodeId.value]);
+  late final $selectedNode = Computed(
+      () => $selectedDetachedNode.value ?? $nodes[$selectedNodeId.value]);
   final $now = Signal(DateTime.now().millisecondsSinceEpoch);
 
   QueryExpression? _parsedQuery;
@@ -55,9 +58,11 @@ class JoltInspectorController {
         $isConnected.value = connected;
 
         if (connected) {
+          joltService.clearValueInspectorCaches();
           loadNodes();
           _listenToUpdates();
         } else {
+          joltService.clearValueInspectorCaches();
           _updateSubscription?.cancel();
           _clockTimer?.cancel();
           _clockTimer = null;
@@ -65,6 +70,12 @@ class JoltInspectorController {
       }
     };
     serviceManager.connectedState.addListener(_connectionListener!);
+
+    _isolateListener = () {
+      joltService.clearValueInspectorCaches();
+    };
+    serviceManager.isolateManager.selectedIsolate
+        .addListener(_isolateListener!);
   }
 
   Future<void> loadNodes() async {
@@ -159,13 +170,16 @@ class JoltInspectorController {
             // Remove the node itself
             $nodes.remove(disposedNodeId);
 
-            // Clear selection if this node was selected
-            if ($selectedNodeId.value == disposedNodeId) {
-              $selectedNodeId.value = null;
-            }
+            joltService.markValueInspectorUnavailable(
+              disposedNodeId,
+              reason: 'disposed',
+            );
 
-            // Invalidate VM value cache for disposed node
-            joltService.invalidateVmValueCache(disposedNodeId);
+            // Keep disposed node details visible as unavailable snapshot.
+            if ($selectedNodeId.value == disposedNodeId) {
+              $selectedDetachedNode.value =
+                  disposedNode.detachedDisposedSnapshot();
+            }
           }
         }
       } else if (update.operation == 'link' || update.operation == 'unlink') {
@@ -220,8 +234,8 @@ class JoltInspectorController {
         final node = $nodes[update.nodeId];
         if (node != null) {
           batch(() {
-            if (update.operation != 'effect' && update.nodeId != null) {
-              joltService.invalidateVmValueCache(update.nodeId!);
+            if (update.nodeId != null) {
+              joltService.invalidateValueInspector(update.nodeId!);
             }
             node.updatedAt.value = update.timestamp;
             if (update.count != null) {
@@ -265,6 +279,7 @@ class JoltInspectorController {
     int nodeId, {
     String? reason,
   }) async {
+    $selectedDetachedNode.value = null;
     $selectedNodeId.value = nodeId;
 
     final node = $nodes[nodeId];
@@ -298,6 +313,7 @@ class JoltInspectorController {
   }
 
   void closeNodeDetails() {
+    $selectedDetachedNode.value = null;
     $selectedNodeId.value = null;
   }
 
@@ -694,6 +710,10 @@ class JoltInspectorController {
     _clockTimer?.cancel();
     if (_connectionListener != null) {
       serviceManager.connectedState.removeListener(_connectionListener!);
+    }
+    if (_isolateListener != null) {
+      serviceManager.isolateManager.selectedIsolate
+          .removeListener(_isolateListener!);
     }
   }
 }

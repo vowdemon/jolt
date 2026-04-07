@@ -2,18 +2,17 @@ import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:devtools_app_shared/service.dart';
+import 'package:jolt_devtools_extension/src/inspector_value/service/jolt_value_inspector_service.dart';
 import 'package:jolt_devtools_extension/src/models/jolt_debug.dart';
 import 'package:jolt_devtools_extension/src/models/jolt_node.dart';
-import 'package:jolt_devtools_extension/src/service/value_service.dart';
 
 import 'package:vm_service/vm_service.dart';
-
-export 'package:jolt_devtools_extension/src/service/value_service.dart';
 
 /// Client for communicating with Jolt's VM Service extensions.
 class JoltService {
   final ServiceManager<Object?> serviceManager;
-  late final ValueService valueService = ValueService(serviceManager);
+  late final JoltValueInspectorService valueInspectorService =
+      JoltValueInspectorService(serviceManager);
 
   JoltService(this.serviceManager);
 
@@ -119,36 +118,16 @@ class JoltService {
     }
   }
 
-  /// Gets the real VM value for a readable node as a tree.
-  Future<VmValueNode?> getVmValueTree(int nodeId) =>
-      valueService.getVmValueTree(nodeId);
+  void invalidateValueInspector(int nodeId) {
+    valueInspectorService.invalidateNode(nodeId);
+  }
 
-  Future<List<VmValueNode>> getVmChildren(VmValueNode node) =>
-      valueService.getVmChildren(node);
+  void markValueInspectorUnavailable(int nodeId, {String reason = 'disposed'}) {
+    valueInspectorService.markNodeUnavailable(nodeId, reason: reason);
+  }
 
-  /// Gets the string representation of a VM value instance.
-  Future<String?> getVmValueString(int nodeId) =>
-      valueService.getVmValueString(nodeId);
-
-  /// Gets the string representation of a VM value instance by objectId.
-  /// May return null if the object has been GC'd.
-  Future<String?> getVmValueStringByObjectId(String objectId) =>
-      valueService.getVmValueStringByObjectId(objectId);
-
-  /// Gets the string representation of a field or getter value from a parent object.
-  Future<String?> getVmValueStringByFieldOrGetter(
-    String parentObjectId,
-    String fieldOrGetterName,
-  ) =>
-      valueService.getVmValueStringByFieldOrGetter(
-        parentObjectId,
-        fieldOrGetterName,
-      );
-
-  /// Invalidates the VM value cache for a specific node.
-  /// Should be called when a node is updated or disposed.
-  void invalidateVmValueCache(int nodeId) {
-    valueService.invalidateVmValueCache(nodeId);
+  void clearValueInspectorCaches() {
+    valueInspectorService.clearCaches();
   }
 
   /// Manually triggers an Effect node to execute.

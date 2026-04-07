@@ -68,6 +68,16 @@ final data = await isLoading.until((value) => !value);
 print('加载完成');
 ```
 
+`until()` 返回 `Until<T>`。它既可以像 `Future<T>` 一样 `await`，也可以在
+条件不会再满足时主动取消等待：
+
+```dart
+final until = count.until((value) => value >= 5);
+
+// await until;
+until.cancel(); // 停止追踪，并让 Future 保持 pending
+```
+
 ## Writable 扩展方法
 
 `Writable<T>` 接口的扩展方法，适用于所有可写响应式值（如 `Signal`、`WritableComputed` 等）。
@@ -113,19 +123,32 @@ print(readonlyComputed.value); // OK
 
 ### untilWhen
 
-等待响应式值满足某个条件，可以访问前一个值。
+等待响应式值等于某个指定值。
 
 ```dart
-final count = Signal(0);
+final status = Signal('loading');
 
-// 等待 count 达到 5，同时追踪前一个值
-final future = count.untilWhen((value, previous) => value >= 5);
+// 等待 status 变为 ready
+final future = status.untilWhen('ready');
 
-count.value = 1; // 仍在等待，previous 是 0
-count.value = 3; // 仍在等待，previous 是 1
-count.value = 5; // Future 完成，值为 5，previous 是 3
+status.value = 'idle'; // 仍在等待
+status.value = 'ready'; // Future 完成，值为 'ready'
 
-final result = await future; // result 是 5
+final result = await future; // result 是 'ready'
+```
+
+### untilChanged
+
+等待响应式值从当前值发生变化。
+
+```dart
+final status = Signal('idle');
+
+final future = status.untilChanged();
+
+status.value = 'loading'; // Future 完成，值为 'loading'
+
+final result = await future; // result 是 'loading'
 ```
 
 ### call

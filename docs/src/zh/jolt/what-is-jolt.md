@@ -148,7 +148,7 @@ Effect(() {
 #### 扩展方法
 
 - **stream / listen**：将响应式值转换为流
-- **until / untilWhen**：等待响应式值满足条件
+- **until / untilWhen / untilChanged**：等待响应式值满足谓词、匹配指定值或发生变化
 - **readonly**：获取只读视图
 - **update**：使用更新函数修改值
 - **derived**：从 Readable 创建计算值

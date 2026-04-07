@@ -5,7 +5,7 @@
 [![jolt_lint](https://img.shields.io/pub/v/jolt_lint?label=jolt_lint)](https://pub.dev/packages/jolt_lint)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/vowdemon/jolt/blob/main/LICENSE)
 
-A lint tool designed for the Jolt reactive state management ecosystem, providing code transformation assists, quick fixes, and rule checks.
+A lint tool for the Jolt reactive state management ecosystem. It provides code transformation assists, quick fixes, and rule checks.
 
 ## Installation
 
@@ -197,7 +197,7 @@ Convert a `State` class using `SetupMixin` back to a standard `StatefulWidget`. 
 
 ### 📦 Widget Wrapping Assists
 
-Multiple quick-assist features to wrap widgets, helping you rapidly integrate Jolt's reactive components.
+Quick assists for wrapping widgets with Jolt components.
 
 #### Wrap with JoltBuilder
 
@@ -344,12 +344,15 @@ Enforces correct placement of hook calls (useXXX and lifecycle hooks like onMoun
 This rule ensures that hook calls are only placed in valid locations:
 - Inside `setup` methods (but not inside the returned function)
 - Inside `SetupBuilder`'s `setup` parameter method (but not inside the returned function)
+- Inside functions annotated with `@DefineHook`
 - As arguments to other hook calls
 
 **Checks**:
 - ❌ Hook calls inside the returned function from `setup`
+- ❌ Hook calls used directly as the `return` expression of `setup`
 - ✅ Hook calls in `setup` method body (outside the return statement)
 - ✅ Hook calls in `SetupBuilder`'s `setup` parameter method body (outside the return statement)
+- ✅ Hook calls inside another `@DefineHook` function or callback
 - ✅ Hook calls as arguments to other hook calls
 
 **Correct Example**:

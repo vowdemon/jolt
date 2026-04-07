@@ -5,7 +5,7 @@
 [![jolt](https://img.shields.io/pub/v/jolt?label=jolt)](https://pub.dev/packages/jolt)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/vowdemon/jolt/blob/main/LICENSE)
 
-Jolt is a lightweight reactive state management library for Dart and Flutter. It provides signals, computed values, effects, async states, and reactive collections with automatic dependency tracking and efficient updates.
+Jolt is a reactive state management library for Dart and Flutter. It provides signals, computed values, effects, async states, and reactive collections with automatic dependency tracking.
 
 ## Documentation
 
@@ -103,10 +103,11 @@ count.value = 2; // Effect runs again
 // values = [0, 1, 2]
 
 // Effects run immediately by default
-// Use lazy: true to defer execution
-Effect(() {
+// Use lazy: true to create a deferred effect, then start it manually
+final deferredEffect = Effect(() {
   print('Deferred effect');
 }, lazy: true);
+deferredEffect.run();
 ```
 
 ### Effect Scopes
@@ -252,6 +253,25 @@ count.value = 3; // Still waiting
 count.value = 5; // Future completes with value 5
 
 final result = await future; // result is 5
+```
+
+`until()` now returns an `Until<T>`, which still implements `Future<T>` but also
+supports cancellation when the awaited condition will never be met:
+
+```dart
+final until = count.until((value) => value >= 5);
+
+// await until;
+until.cancel(); // Stops tracking and leaves the future pending
+```
+
+Use the equality and change helpers for common cases:
+
+```dart
+final status = Signal('idle');
+
+await status.untilWhen('ready');
+await status.untilChanged();
 ```
 
 ## Advanced Features
@@ -412,7 +432,7 @@ See [jolt_devtools_extension](../jolt_devtools_extension/README.md) for details.
 
 ## Related Packages
 
-Jolt is part of the Jolt ecosystem. Explore these related packages:
+Jolt is part of the Jolt ecosystem:
 
 | Package | Description |
 |---------|-------------|

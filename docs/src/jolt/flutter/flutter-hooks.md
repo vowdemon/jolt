@@ -91,7 +91,7 @@ useJoltEffect(() {
 
 ### Extension Methods
 
-- **`useJoltEffect.lazy()`**: Create side effect with lazy dependency collection
+- **`useJoltEffect.lazy()`**: Create a deferred effect; call `run()` before it starts tracking dependencies
 
 ## useWatcher
 
@@ -209,4 +209,3 @@ Widget build(BuildContext context) {
 - [Computed](../core/computed.md) - Learn about computed property usage
 - [Effect](../core/effect.md) - Learn about side effect usage
 - [SetupWidget](./setup-widget.md) - Learn about SetupWidget and Flutter resource Hooks
-

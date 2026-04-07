@@ -5,15 +5,15 @@
 [![jolt_hooks](https://img.shields.io/pub/v/jolt_hooks?label=jolt_hooks)](https://pub.dev/packages/jolt_hooks)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/vowdemon/jolt/blob/main/LICENSE)
 
-A Flutter hooks integration package for [Jolt](https://pub.dev/packages/jolt) reactive state management. Jolt Hooks provides a comprehensive Hooks API built on [flutter_hooks](https://pub.dev/packages/flutter_hooks), enabling you to use Jolt's reactive primitives seamlessly within Flutter's hook system. All hooks automatically dispose their resources when the widget is removed from the tree, ensuring memory safety and preventing leaks.
+A Flutter hooks integration package for [Jolt](https://pub.dev/packages/jolt) reactive state management. It provides hook APIs built on [flutter_hooks](https://pub.dev/packages/flutter_hooks) for using Jolt primitives inside Flutter's hook system. Hook-owned resources are disposed when the widget is removed from the tree.
 
 ## Features
 
-- **Unified API**: All hooks use a consistent class-based API with method chaining for better extensibility
-- **Type-safe**: Full type safety with Dart's type system
-- **Automatic disposal**: All reactive resources are automatically cleaned up when widgets are disposed
-- **Comprehensive**: Supports signals, computed values, effects, watchers, and reactive collections
-- **Flexible**: Works seamlessly with both `HookWidget` and `HookBuilder` patterns
+- **Unified API**: Class-based hook API with method chaining
+- **Type-safe**: Uses Dart's type system
+- **Automatic disposal**: Reactive resources are cleaned up when widgets are disposed
+- **Coverage**: Supports signals, computed values, effects, watchers, and reactive collections
+- **HookWidget / HookBuilder**: Works with both patterns
 
 
 
@@ -118,7 +118,7 @@ class TodoListWidget extends HookWidget {
 
 ## Related Packages
 
-Jolt Hooks is part of the Jolt ecosystem. Explore these related packages:
+Jolt Hooks is part of the Jolt ecosystem:
 
 | Package | Description |
 |---------|-------------|

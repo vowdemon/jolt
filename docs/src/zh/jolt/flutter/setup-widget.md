@@ -13,26 +13,26 @@
 > - **Setup Widget**：`setup` 函数在 Widget 创建时**只执行一次**（类似 Vue / SolidJS），然后重建由响应式系统驱动
 > - **flutter_hooks**：Hook 函数在**每次构建时**都会执行（类似 React Hooks）
 >
-> 这是两种根本不同的模型。避免混合使用它们以防止混淆。
+> 这是两种不同的执行模型。在同一个组件里混用时，Hook 行为通常会更难判断。
 
 ## 为什么选择 Setup Widget？
 
-Setup Widget 将 Vue Composition API 的简洁性和强大功能带到 Flutter，显著减少样板代码，同时使代码更易维护和理解。
+Setup Widget 为 Flutter 提供组合式 API。它在组件创建时执行一次 `setup`，并负责 hook 清理。
 
 ### 核心特性
 
-✨ **基于组合的逻辑** - 按功能组织代码，而非生命周期  
-🎯 **自动资源清理** - 无需手动 dispose()，一切自动清理  
-⚡ **更好的性能** - `setup` 只运行一次，而非每次重建（不同于 React hooks）  
-🔄 **默认响应式** - 基于 Jolt 的 Signal 系统实现细粒度响应式  
-🪝 **丰富的 Hook 库** - 用于控制器、焦点节点、动画等的声明式 API  
-🔧 **灵活性** - 可根据需要使用 SetupWidget、SetupMixin 或 SetupBuilder  
+- 基于组合的逻辑  
+- 自动资源清理  
+- `setup` 只运行一次，不会在每次重建时执行  
+- 基于 Jolt signals  
+- 提供控制器、焦点节点、动画和生命周期等 hook API  
+- 可配合 `SetupWidget`、`SetupMixin` 和 `SetupBuilder` 使用  
 
-### 快速对比
+### 对比
 
-看看区别 - 使用 Setup Widget 与传统 StatefulWidget 的相同组件：
+下面的例子展示了同一个组件分别用 `SetupWidget` 和 `StatefulWidget` 实现的写法。
 
-**使用 Setup Widget（36 行）：**
+**使用 Setup Widget：**
 
 ```dart
 class HookExample extends SetupWidget<HookExample> {
@@ -74,7 +74,7 @@ class HookExample extends SetupWidget<HookExample> {
 }
 ```
 
-**传统 StatefulWidget（64 行）：**
+**传统 StatefulWidget：**
 
 ```dart
 class NormalExample extends StatefulWidget {
@@ -143,16 +143,14 @@ class _NormalExampleState extends State<NormalExample>
 }
 ```
 
-**区别：**
-- ✅ **更少代码** - 36 行 vs 64 行
-- ✅ **无需手动清理** - 自动资源释放
-- ✅ **无需 mixins** - 通过简单的 hooks 实现一切
-- ✅ **更好的组织** - 按功能分组逻辑，而非分散在生命周期方法中
-- ✅ **更易测试** - 组合式使单元测试更直接
+**这个例子里的差异：**
+- 生命周期方法更少
+- Widget 代码里不需要手动移除监听
+- 逻辑集中在 `setup` 内部
 
-## 推荐：与 jolt_lint 搭配使用
+## 与 jolt_lint 搭配使用
 
-为获得最佳开发体验，**强烈推荐**将 `jolt_setup` 与 [`jolt_lint`](https://pub.dev/packages/jolt_lint) 一起使用：
+`jolt_lint` 会为 `setup` 和 hook 用法补充静态检查与辅助：
 
 ```yaml
 # analysis_options.yaml
@@ -161,15 +159,14 @@ plugins:
   jolt_lint: ^3.0.0
 ```
 
-**jolt_lint 提供：**
-- 🔍 **Hook 规则强制** - 确保 hooks 只在 setup 或其他 hooks 中调用
-- 🚫 **防止常见错误** - 在编译时捕获异步/回调中的 hook 使用
-- 💡 **代码辅助** - 提供模式转换的快速修复
-- 🎯 **更好的 DX** - 立即获得 hook 使用违规的反馈
+**jolt_lint 包含：**
+- Hook 规则检查
+- 对异步/回调中非法 hook 调用的编译期诊断
+- 常见转换的代码辅助
 
-没有 `jolt_lint`，hook 规则违规只能在运行时被捕获。有了它，你可以获得编译时安全和有用的 IDE 警告。
+没有 `jolt_lint` 时，一些 hook 位置错误只能在运行时发现。
 
-**了解更多：**查看 [jolt_lint 文档](https://pub.dev/packages/jolt_lint) 了解设置和配置。
+查看 [jolt_lint 文档](https://pub.dev/packages/jolt_lint) 了解设置和配置。
 
 ## 基本概念
 
@@ -179,7 +176,7 @@ plugins:
 
 ## SetupBuilder
 
-`SetupBuilder` 是使用 Setup Widget 的最简单方式，适合快速原型、简单组件或内联响应式 Widget：
+`SetupBuilder` 是这个 API 最小的入口形式：
 
 ```dart
 import 'package:jolt_setup/jolt_setup.dart';
@@ -202,16 +199,16 @@ SetupBuilder(
 ```
 
 **何时使用 SetupBuilder：**
-- 快速原型或实验响应式状态
+- 组件内联或局部状态
 - 创建简单的、自包含的组件
 - 不需要自定义 Widget 属性
-- 组件逻辑简单直接
+- 组件逻辑可以集中写在一个地方
 
 **何时使用 SetupWidget 子类：**
 - 需要自定义属性（title、count、callback 等）
 - 构建可复用的组件，具有清晰的 API
 - 组件复杂或将在多个地方使用
-- 需要更好的 IDE 支持和属性类型检查
+- 希望有独立的组件类型和属性入口
 
 ## SetupWidget vs SetupMixin
 
@@ -445,7 +442,7 @@ Setup Widget 为所有 Jolt 响应式原语提供 hooks：
 >
 > ```dart
 > setup(context, props) {
->   // 使用 hooks - 推荐，自动生命周期管理
+>   // 使用 hooks - 由 hook 管理生命周期
 >   final count = useSignal(0);
 >   
 >   // 不使用 hooks - 也可以，在 widget unmount 后会被 GC
@@ -483,7 +480,7 @@ Setup Widget 为所有 Jolt 响应式原语提供 hooks：
 | Hook | 描述 |
 |------|------|
 | `useEffect(fn)` | 创建副作用 |
-| `useEffect.lazy(fn)` | 创建立即执行的副作用 |
+| `useEffect.lazy(fn)` | 创建延迟启动的副作用（调用 `run()` 后开始追踪） |
 | `useWatcher(sourcesFn, fn)` | 创建观察者 |
 | `useWatcher.immediately(...)` | 创建立即执行的观察者 |
 | `useWatcher.once(...)` | 创建一次性观察者 |
@@ -507,6 +504,9 @@ Setup Widget 为所有 Jolt 响应式原语提供 hooks：
 | `useSetupContext()` | 获取 JoltSetupContext |
 | `useEffectScope()` | 创建 effect scope |
 | `useJoltStream(value)` | 从响应式值创建流 |
+| `useUntil(source, predicate)` | 等待响应式值满足条件 |
+| `useUntil.when(source, value)` | 等待响应式值等于指定值 |
+| `useUntil.changed(source)` | 等待响应式值从当前值发生变化 |
 | `useMemoized(creator, [disposer])` | 记忆化值，带可选的清理函数 |
 | `useAutoDispose(creator)` | 自动清理资源 |
 | `useHook(hook)` | 使用自定义 hook |

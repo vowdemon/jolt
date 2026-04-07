@@ -417,10 +417,14 @@ final class JoltEffectHookCreator {
   /// ```dart
   /// Widget build(BuildContext context) {
   ///   final count = useSignal(10);
-  ///
-  ///   useJoltEffect.lazy(() {
-  ///     print('Count is: ${count.value}'); // Does not run automatically
+  ///   final effect = useJoltEffect.lazy(() {
+  ///     print('Count is: ${count.value}');
   ///   });
+  ///
+  ///   useEffect(() {
+  ///     effect.run();
+  ///     return null;
+  ///   }, const []);
   ///
   ///   return Text('Count: ${count.value}');
   /// }

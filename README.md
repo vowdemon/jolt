@@ -10,7 +10,7 @@
 [![jolt_lint](https://img.shields.io/pub/v/jolt_lint?label=jolt_lint)](https://pub.dev/packages/jolt_lint)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/vowdemon/jolt/blob/main/LICENSE)
 
-Reactive state management for Dart and Flutter using signals, computed values, effects, and reactive collections. Focused on developer experience and efficiency with a concise API. Built on alien_signals for performance.
+Reactive state management for Dart and Flutter using signals, computed values, effects, and reactive collections. Built on alien_signals.
 
 ## Documentation
 
@@ -43,7 +43,7 @@ Composition API similar to Vue's Composition API for Flutter, with automatic res
 - `SetupMixin` - Add composition API to existing StatefulWidgets
 - `SetupBuilder` - Inline composition API for quick prototyping
 - Automatic resource cleanup - No manual dispose() needed
-- Rich hook library - Controllers, focus nodes, animations, lifecycle, and more
+- Hook APIs for controllers, focus nodes, animations, lifecycle, and more
 
 ### [jolt_hooks](packages/jolt_hooks/) - Flutter Hooks Integration
 
@@ -53,7 +53,7 @@ Integration with flutter_hooks for using Jolt primitives in HookWidget:
 - `useJoltEffect()` - Side effects with automatic cleanup
 - `useJoltWidget()` - Fine-grained reactive widgets
 - Collection variants: `useSignal.list()`, `useSignal.map()`, `useSignal.set()`
-- Compatible with Flutter Hooks patterns - runs on every build
+- HookWidget-compatible API that runs on every build
 
 ### [jolt_surge](packages/jolt_surge/) - Signal-Powered Cubit Pattern
 

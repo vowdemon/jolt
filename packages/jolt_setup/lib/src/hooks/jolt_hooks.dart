@@ -471,10 +471,11 @@ final class JoltEffectHookCreator {
   /// ```dart
   /// setup(context, props) {
   ///   final count = useSignal(10);
-  ///
-  ///   useEffect.lazy(() {
-  ///     print('Count is: ${count.value}'); // Does not run automatically
+  ///   final effect = useEffect.lazy(() {
+  ///     print('Count is: ${count.value}');
   ///   });
+  ///
+  ///   onMounted(effect.run);
   ///
   ///   return () => Text('Count: ${count.value}');
   /// }
@@ -588,10 +589,11 @@ final class JoltFlutterEffectHookCreator {
   /// ```dart
   /// setup(context, props) {
   ///   final count = useSignal(10);
-  ///
-  ///   useFlutterEffect.lazy(() {
-  ///     print('Count is: ${count.value}'); // Does not run automatically
+  ///   final effect = useFlutterEffect.lazy(() {
+  ///     print('Count is: ${count.value}');
   ///   });
+  ///
+  ///   onMounted(effect.run);
   ///
   ///   return () => Text('Count: ${count.value}');
   /// }

@@ -13,26 +13,26 @@
 > - **Setup Widget**: The `setup` function executes **only once** when the Widget is created (similar to Vue / SolidJS), then rebuilds are driven by the reactive system
 > - **flutter_hooks**: Hook functions execute on **every build** (similar to React Hooks)
 >
-> These are two fundamentally different models. Avoid mixing them to prevent confusion.
+> These are different execution models. Mixing them in the same component usually makes hook behavior harder to reason about.
 
 ## Why Setup Widget?
 
-Setup Widget brings the simplicity and power of Vue's Composition API to Flutter, dramatically reducing boilerplate while making your code more maintainable and easier to understand.
+Setup Widget uses a composition-style API for Flutter widgets. It runs `setup` once at creation time and handles hook cleanup automatically.
 
 ### Key Features
 
-✨ **Composition-Based Logic** - Organize code by feature, not lifecycle  
-🎯 **Automatic Resource Cleanup** - No more manual dispose(), everything cleans up automatically  
-⚡ **Better Performance** - `setup` runs once, not on every rebuild (unlike React hooks)  
-🔄 **Reactive by Default** - Built on Jolt's Signal system for fine-grained reactivity  
-🪝 **Rich Hook Library** - Declarative APIs for controllers, focus nodes, animations, and more  
-🔧 **Flexible** - Use with SetupWidget, SetupMixin, or SetupBuilder based on your needs  
+- Composition-based logic  
+- Automatic resource cleanup  
+- `setup` runs once instead of on every rebuild  
+- Built on Jolt signals  
+- Hook APIs for controllers, focus nodes, animations, and lifecycle  
+- Works with `SetupWidget`, `SetupMixin`, and `SetupBuilder`  
 
-### Quick Comparison
+### Comparison
 
-See the difference yourself - the same widget with Setup Widget vs traditional StatefulWidget:
+The example below shows the same widget implemented with `SetupWidget` and with a `StatefulWidget`.
 
-**With Setup Widget (36 lines):**
+**With Setup Widget:**
 
 ```dart
 class HookExample extends SetupWidget<HookExample> {
@@ -74,7 +74,7 @@ class HookExample extends SetupWidget<HookExample> {
 }
 ```
 
-**Traditional StatefulWidget (64 lines):**
+**Traditional StatefulWidget:**
 
 ```dart
 class NormalExample extends StatefulWidget {
@@ -143,16 +143,14 @@ class _NormalExampleState extends State<NormalExample>
 }
 ```
 
-**The Difference:**
-- ✅ **Less code** - 36 lines vs 64 lines
-- ✅ **No manual cleanup** - Automatic resource disposal
-- ✅ **No mixins needed** - Everything through simple hooks
-- ✅ **Better organization** - Logic grouped by feature, not scattered across lifecycle methods
-- ✅ **Easier to test** - Composition makes unit testing straightforward
+**Differences in this example:**
+- Fewer lifecycle methods
+- No manual listener disposal in the widget code
+- Logic is grouped inside `setup`
 
-## Recommended: Use with jolt_lint
+## Use with jolt_lint
 
-For the best development experience, it's **highly recommended** to use `jolt_setup` with [`jolt_lint`](https://pub.dev/packages/jolt_lint):
+`jolt_lint` adds static checks and assists for `setup` and hook usage:
 
 ```yaml
 # analysis_options.yaml
@@ -161,15 +159,14 @@ plugins:
   jolt_lint: ^3.0.0
 ```
 
-**What jolt_lint provides:**
-- 🔍 **Hook Rules Enforcement** - Ensures hooks are only called in setup or other hooks
-- 🚫 **Prevents Common Mistakes** - Catches async/callback hook usage at compile time
-- 💡 **Code Assists** - Quick fixes for converting between patterns
-- 🎯 **Better DX** - Get immediate feedback on hook usage violations
+**jolt_lint includes:**
+- Hook rule checks
+- Compile-time diagnostics for invalid async/callback hook usage
+- Code assists for common conversions
 
-Without `jolt_lint`, hook rule violations will only be caught at runtime. With it, you get compile-time safety and helpful IDE warnings.
+Without `jolt_lint`, some hook placement errors are only detected at runtime.
 
-**Learn more:** See [jolt_lint documentation](https://pub.dev/packages/jolt_lint) for setup and configuration.
+See [jolt_lint documentation](https://pub.dev/packages/jolt_lint) for setup and configuration.
 
 ## Basic Concepts
 
@@ -179,7 +176,7 @@ The core idea of `SetupWidget` is to separate Widget build logic into two parts:
 
 ## SetupBuilder
 
-`SetupBuilder` is the simplest way to use Setup Widget, suitable for rapid prototyping, simple components, or inline reactive Widgets:
+`SetupBuilder` is the smallest entry point for the API:
 
 ```dart
 import 'package:jolt_setup/jolt_setup.dart';
@@ -202,16 +199,16 @@ SetupBuilder(
 ```
 
 **When to use SetupBuilder:**
-- Rapid prototyping or experimenting with reactive state
+- Inline or local widget state
 - Creating simple, self-contained components
 - Don't need custom Widget properties
-- Component logic is simple and straightforward
+- Component logic fits in one place
 
 **When to use SetupWidget subclass:**
 - Need custom properties (title, count, callback, etc.)
 - Building reusable components with clear APIs
 - Component is complex or will be used in multiple places
-- Need better IDE support and property type checking
+- Want a dedicated widget type and property surface
 
 ## SetupWidget vs SetupMixin
 
@@ -413,19 +410,12 @@ class _CounterWidgetState extends State<CounterWidget>
 
 ## Choosing the Right Pattern
 
-> **💡 There's No Right or Wrong**
->
-> In Jolt, there's no single "correct" way to build Widgets. SetupWidget, SetupMixin, and traditional Flutter patterns (StatelessWidget, StatefulWidget) are all first-class citizens. Each pattern has advantages in different scenarios—what's important is knowing when to use which, keeping code clear and maintainable.
->
-> The Setup API itself is completely optional. If your team is familiar with standard Flutter patterns and they work well, there's no need to change. You can also use Riverpod, flutter_hooks, or any other state management solution you prefer, and even mix them in the same project.
->
-> When you need composition-based logic, reactive state, or Vue/Solid-style patterns, the Setup API can provide additional capabilities—without forcing you to rewrite existing code.
+SetupWidget, SetupMixin, and standard Flutter widget patterns solve different constraints. Use the one that matches the widget shape and lifecycle needs of the code you are writing.
 
 **When to use SetupWidget:**
 - Creating simple, immutable Widgets (similar to `StatelessWidget`)
 - Want pure Composition API
 - Don't need instance methods, mutable fields, or `this` reference
-- Prefer cleaner, more concise code
 - All logic can be expressed through reactive hooks
 
 **When to use SetupMixin:**
@@ -445,7 +435,7 @@ Setup Widget provides hooks for all Jolt reactive primitives:
 >
 > ```dart
 > setup(context, props) {
->   // Using hooks - Recommended, automatic lifecycle management
+>   // Using hooks - hook-managed lifecycle
 >   final count = useSignal(0);
 >   
 >   // Not using hooks - Also fine, will be GC'd after widget unmount
@@ -483,7 +473,7 @@ Setup Widget provides hooks for all Jolt reactive primitives:
 | Hook | Description |
 |------|-------------|
 | `useEffect(fn)` | Create side effect |
-| `useEffect.lazy(fn)` | Create side effect with lazy dependency collection |
+| `useEffect.lazy(fn)` | Create deferred side effect (call `run()` to start tracking) |
 | `useWatcher(sourcesFn, fn)` | Create watcher |
 | `useWatcher.immediately(...)` | Create immediately executing watcher |
 | `useWatcher.once(...)` | Create one-time watcher |
@@ -507,6 +497,9 @@ Setup Widget provides hooks for all Jolt reactive primitives:
 | `useSetupContext()` | Get JoltSetupContext |
 | `useEffectScope()` | Create effect scope |
 | `useJoltStream(value)` | Create stream from reactive value |
+| `useUntil(source, predicate)` | Wait for a reactive value to satisfy a condition |
+| `useUntil.when(source, value)` | Wait for a reactive value to equal a specific value |
+| `useUntil.changed(source)` | Wait for a reactive value to change from its current value |
 | `useMemoized(creator, [disposer])` | Memoize value with optional cleanup function |
 | `useAutoDispose(creator)` | Auto-dispose resource |
 | `useHook(hook)` | Use custom hook |
@@ -858,4 +851,3 @@ class LoginForm extends SetupWidget<LoginForm> {
    - `useValueListenable` / `useListenable`
    
    When you modify these hooks' parameters (such as effect functions, watcher callbacks, future sources, or listener callbacks) during hot reload, the hooks will automatically update their internal state without requiring a full widget rebuild.
-

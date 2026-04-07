@@ -91,7 +91,7 @@ useJoltEffect(() {
 
 ### 扩展方法
 
-- **`useJoltEffect.lazy()`**: 创建延迟收集依赖的副作用
+- **`useJoltEffect.lazy()`**：创建延迟启动的副作用；调用 `run()` 后才开始收集依赖
 
 ## useWatcher
 

@@ -147,7 +147,7 @@ Effect(() {
 #### Extension Methods
 
 - **stream / listen**: Convert reactive values to streams
-- **until / untilWhen**: Wait for reactive values to satisfy conditions
+- **until / untilWhen / untilChanged**: Wait for reactive values to satisfy predicates, match exact values, or change
 - **readonly**: Get read-only views
 - **update**: Modify values using update functions
 - **derived**: Create computed values from Readable

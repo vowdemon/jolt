@@ -11,7 +11,7 @@ Add to `analysis_options.yaml`:
 
 ```yaml
 plugins:
-  jolt_lint: ^2.0.0-beta.1
+  jolt_lint: ^3.0.0
 ```
 
 ## Requirements
@@ -141,6 +141,37 @@ SetupBuilder(setup: (context) { return ()=> MyWidget()})
 
 ## Lint Rules
 
+### no_invalid_hook_call
+
+Restricts hook calls to valid hook contexts.
+
+**Rule Description**:
+
+This rule ensures that `useXxx()` calls and lifecycle hooks are only used in
+places where Jolt can preserve hook ordering:
+
+- ✅ Inside `setup` bodies
+- ✅ Inside functions annotated with `@DefineHook`
+- ✅ As arguments passed to other hook calls
+- ❌ Inside the function returned from `setup`
+- ❌ As the direct return expression of `setup`
+- ❌ In regular methods, callbacks, or top-level functions without hook context
+
+**Example**:
+```dart
+class MyWidget extends SetupWidget {
+  @override
+  setup(BuildContext context, MyWidget props) {
+    final count = useSignal(0); // OK
+
+    return () {
+      // useSignal(1); // Invalid: inside returned builder
+      return Text(count.value.toString());
+    };
+  }
+}
+```
+
 ### no_setup_this
 
 Prohibits direct or indirect access to instance members (through `this` or implicit access) in `SetupWidget`'s `setup` method.
@@ -232,7 +263,7 @@ Widget setup(BuildContext context, MyWidget props) {
 After configuration, your IDE (such as VS Code, Android Studio) will automatically provide:
 
 - **Code Assists**: Place cursor on variable or Widget, press `Ctrl+.` (or `Cmd+.`) to view available transformation options
-- **Real-time Checking**: Code violating the `no_setup_this` rule will show error hints and automatic fix suggestions
+- **Real-time Checking**: Code violating rules such as `no_setup_this` and `no_invalid_hook_call` will show diagnostics and fix suggestions when available
 
 ## Important Notes
 
@@ -240,4 +271,3 @@ After configuration, your IDE (such as VS Code, Android Studio) will automatical
 2. **Scope Limitations**: Code transformation features automatically update all references within the variable's scope
 3. **Type Safety**: All transformations maintain type safety and won't break code type checking
 4. **Batch Fix**: The `no_setup_this` rule supports batch fixes, allowing you to fix all related issues in the file at once
-

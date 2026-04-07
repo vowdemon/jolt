@@ -68,6 +68,16 @@ final data = await isLoading.until((value) => !value);
 print('Loading complete');
 ```
 
+`until()` returns an `Until<T>`, so it can be awaited like a `Future<T>` and
+also cancelled if the condition will never be met:
+
+```dart
+final until = count.until((value) => value >= 5);
+
+// await until;
+until.cancel(); // Stops tracking and leaves the future pending
+```
+
 ## Writable Extension Methods
 
 Extension methods for the `Writable<T>` interface, applicable to all writable reactive values (such as `Signal`, `WritableComputed`, etc.).
@@ -113,19 +123,32 @@ print(readonlyComputed.value); // OK
 
 ### untilWhen
 
-Wait for a reactive value to satisfy a condition, with access to the previous value.
+Wait for a reactive value to equal a specific value.
 
 ```dart
-final count = Signal(0);
+final status = Signal('loading');
 
-// Wait for count to reach 5, with previous value tracking
-final future = count.untilWhen((value, previous) => value >= 5);
+// Wait for status to become ready
+final future = status.untilWhen('ready');
 
-count.value = 1; // Still waiting, previous is 0
-count.value = 3; // Still waiting, previous is 1
-count.value = 5; // Future completes, value is 5, previous is 3
+status.value = 'idle'; // Still waiting
+status.value = 'ready'; // Future completes, value is 'ready'
 
-final result = await future; // result is 5
+final result = await future; // result is 'ready'
+```
+
+### untilChanged
+
+Wait for a reactive value to change from its current value.
+
+```dart
+final status = Signal('idle');
+
+final future = status.untilChanged();
+
+status.value = 'loading'; // Future completes, value is 'loading'
+
+final result = await future; // result is 'loading'
 ```
 
 ### call
@@ -190,4 +213,3 @@ counter.watch((value) => Text('Count: $value'))
 3. **Type Safety**: Extension methods maintain complete type safety with compile-time type checking.
 
 4. **Stream Subscriptions**: Subscriptions created using `listen` or `stream` need manual cancellation to avoid memory leaks.
-

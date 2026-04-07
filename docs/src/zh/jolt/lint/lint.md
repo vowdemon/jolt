@@ -11,7 +11,7 @@
 
 ```yaml
 plugins:
-  jolt_lint: ^2.0.0-beta.1
+  jolt_lint: ^3.0.0
 ```
 
 ## 要求
@@ -141,6 +141,37 @@ SetupBuilder(setup: (context) { return ()=> MyWidget()})
 
 ## Lint 规则
 
+### no_invalid_hook_call
+
+限制 Hook 只能出现在合法的 Hook 上下文中。
+
+**规则描述**：
+
+此规则确保 `useXxx()` 调用和生命周期 Hook 只出现在 Jolt 能稳定维护
+Hook 顺序的位置：
+
+- ✅ `setup` 方法体内
+- ✅ 使用 `@DefineHook` 标注的函数内
+- ✅ 作为其他 Hook 调用的参数
+- ❌ `setup` 返回的函数内部
+- ❌ `setup` 的直接返回表达式中
+- ❌ 普通方法、普通回调或顶层函数中
+
+**示例**：
+```dart
+class MyWidget extends SetupWidget {
+  @override
+  setup(BuildContext context, MyWidget props) {
+    final count = useSignal(0); // 合法
+
+    return () {
+      // useSignal(1); // 非法：位于返回的 builder 内部
+      return Text(count.value.toString());
+    };
+  }
+}
+```
+
 ### no_setup_this
 
 禁止在 `SetupWidget` 的 `setup` 方法中直接或间接访问实例成员（通过 `this` 或隐式访问）。
@@ -232,7 +263,7 @@ Widget setup(BuildContext context, MyWidget props) {
 配置完成后，你的 IDE（如 VS Code、Android Studio）会自动提供：
 
 - **代码辅助**：将光标放在变量或 Widget 上，按 `Ctrl+.`（或 `Cmd+.`）查看可用的转换选项
-- **实时检查**：违反 `no_setup_this` 规则的代码会显示错误提示和自动修复建议
+- **实时检查**：违反 `no_setup_this`、`no_invalid_hook_call` 等规则的代码会显示诊断信息，并在支持时提供修复建议
 
 ## 注意事项
 
@@ -240,4 +271,3 @@ Widget setup(BuildContext context, MyWidget props) {
 2. **作用域限制**：代码转换功能会在变量的作用域内自动更新所有引用
 3. **类型安全**：所有转换都保持类型安全，不会破坏代码的类型检查
 4. **批量修复**：`no_setup_this` 规则支持批量修复，可以一次性修复文件中的所有相关问题
-

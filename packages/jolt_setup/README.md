@@ -5,24 +5,24 @@
 [![jolt_setup](https://img.shields.io/pub/v/jolt_setup?label=jolt_setup)](https://pub.dev/packages/jolt_setup)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/vowdemon/jolt/blob/main/LICENSE)
 
-Setup Widget API and Flutter hooks for [Jolt](https://pub.dev/packages/jolt). Provides a composition API similar to Vue's Composition API for building Flutter widgets, along with declarative hooks for managing common Flutter resources such as controllers, focus nodes, and lifecycle states with automatic cleanup.
+Setup Widget API and Flutter hooks for [Jolt](https://pub.dev/packages/jolt). Provides a composition API similar to Vue's Composition API for building Flutter widgets, along with hooks for managing Flutter resources such as controllers, focus nodes, and lifecycle states with automatic cleanup.
 
 ## Why Setup Widget?
 
-Setup Widget brings the simplicity and power of Vue's Composition API to Flutter, dramatically reducing boilerplate while making your code more maintainable and easier to understand.
+Setup Widget uses a composition-style API for Flutter widgets. It runs `setup` once at creation time and handles hook cleanup automatically.
 
 ### Key Features
 
-✨ **Composition-Based Logic** - Organize code by feature, not lifecycle  
-🎯 **Automatic Resource Cleanup** - No more manual dispose(), everything cleans up automatically  
-⚡ **Better Performance** - `setup` runs once, not on every rebuild (unlike React hooks)  
-🔄 **Reactive by Default** - Built on Jolt's Signal system for fine-grained reactivity  
-🪝 **Rich Hook Library** - Declarative APIs for controllers, focus nodes, animations, and more  
-🔧 **Flexible** - Use with SetupWidget, SetupMixin, or SetupBuilder based on your needs  
+- Composition-based logic  
+- Automatic resource cleanup  
+- `setup` runs once instead of on every rebuild  
+- Built on Jolt signals  
+- Hook APIs for controllers, focus nodes, animations, and lifecycle  
+- Works with `SetupWidget`, `SetupMixin`, and `SetupBuilder`  
 
-### Quick Comparison
+### Comparison
 
-See the difference yourself. Here's the same widget implemented both ways:
+The example below shows the same widget implemented with `SetupWidget` and with a `StatefulWidget`.
 
 **With Setup Widget:**
 
@@ -135,12 +135,10 @@ class _NormalExampleState extends State<NormalExample>
 }
 ```
 
-**The Difference:**
-- ✅ **Less code** - 36 lines vs 64 lines
-- ✅ **No manual cleanup** - Automatic resource disposal
-- ✅ **No mixins needed** - Everything through simple hooks
-- ✅ **Better organization** - Logic grouped by feature, not scattered across lifecycle methods
-- ✅ **Easier to test** - Composition makes unit testing straightforward
+**Differences in this example:**
+- Fewer lifecycle methods
+- No manual listener disposal in the widget code
+- Logic is grouped inside `setup`
 
 ## Quick Start
 
@@ -174,9 +172,9 @@ class MyWidget extends SetupWidget {
 }
 ```
 
-## Recommended: Use with jolt_lint
+## Use with jolt_lint
 
-For the best development experience, it's **highly recommended** to use `jolt_setup` with [`jolt_lint`](https://pub.dev/packages/jolt_lint):
+`jolt_lint` adds static checks and assists for `setup` and hook usage:
 
 ```yaml
 # analysis_options.yaml
@@ -185,15 +183,14 @@ plugins:
   jolt_lint: ^3.0.0
 ```
 
-**What jolt_lint provides:**
-- 🔍 **Hook Rules Enforcement** - Ensures hooks are only called in setup or other hooks
-- 🚫 **Prevents Common Mistakes** - Catches async/callback hook usage at compile time
-- 💡 **Code Assists** - Quick fixes for converting between patterns
-- 🎯 **Better DX** - Get immediate feedback on hook usage violations
+**jolt_lint includes:**
+- Hook rule checks
+- Compile-time diagnostics for invalid async/callback hook usage
+- Code assists for common conversions
 
-Without `jolt_lint`, hook rule violations will only be caught at runtime. With it, you get compile-time safety and helpful IDE warnings.
+Without `jolt_lint`, some hook placement errors are only detected at runtime.
 
-**Learn more:** See [jolt_lint documentation](https://pub.dev/packages/jolt_lint) for setup and configuration.
+See [jolt_lint documentation](https://pub.dev/packages/jolt_lint) for setup and configuration.
 
 ## Setup Widget
 
@@ -205,13 +202,13 @@ Without `jolt_lint`, hook rule violations will only be caught at runtime. With i
 > - **Setup Widget**: The `setup` function runs **once** when the widget is created (like Vue / SolidJS), then rebuilds are driven by the reactive system
 > - **flutter_hooks**: Hook functions run **on every build** (like React Hooks)
 >
-> These are fundamentally different models. Avoid mixing them to prevent confusion.
+> These are different execution models. Mixing them in the same component usually makes hook behavior harder to reason about.
 
-Setup Widget provides a composition API similar to Vue's Composition API for building Flutter widgets. The key difference from React hooks: the `setup` function executes only once when the widget is created, not on every rebuild. This provides better performance and a more predictable execution model.
+Setup Widget provides a composition API similar to Vue's Composition API for building Flutter widgets. The key difference from React hooks is that `setup` executes only once when the widget is created, not on every rebuild.
 
 ### SetupBuilder
 
-The simplest way to use Setup Widget is with `SetupBuilder`:
+`SetupBuilder` is the smallest entry point for the API:
 
 ```dart
 import 'package:jolt_setup/setup.dart';
@@ -412,19 +409,12 @@ class _CounterWidgetState extends State<CounterWidget>
 
 ### Choosing the Right Pattern
 
-> **💡 No Right or Wrong Choice**
->
-> There's no single "correct" way to build widgets in Jolt. SetupWidget, SetupMixin, and traditional Flutter patterns (StatelessWidget, StatefulWidget) are all first-class citizens. Each shines in different scenarios—what matters is knowing when to use which, keeping your code clear and maintainable.
->
-> The Setup API itself is entirely optional. If your team is comfortable with standard Flutter patterns and they're working well, there's no need to change. You can also use Riverpod, flutter_hooks, or any other state management solution you prefer, even mixing them in the same project.
->
-> When you need composition-based logic, reactive state, or Vue/Solid-style patterns, the Setup API is there to give you that extra power—without forcing you to rewrite existing code.
+SetupWidget, SetupMixin, and standard Flutter widget patterns solve different constraints. Use the one that matches the widget shape and lifecycle needs of the code you are writing.
 
 **When to Use SetupWidget:**
 - Creating simple, immutable widgets (like `StatelessWidget`)
 - Want a pure composition-based API
 - No need for instance methods, mutable fields, or `this` reference
-- Prefer cleaner, more concise code
 - All logic can be expressed through reactive hooks
 
 **When to Use SetupMixin:**
@@ -504,6 +494,9 @@ Setup Widget provides hooks for all Jolt reactive primitives:
 | `useSetupContext()` | Get JoltSetupContext |
 | `useEffectScope()` | Create an effect scope |
 | `useJoltStream(value)` | Create a stream from reactive value |
+| `useUntil(source, predicate)` | Wait for a reactive value to satisfy a condition |
+| `useUntil.when(source, value)` | Wait for a reactive value to equal a specific value |
+| `useUntil.changed(source)` | Wait for a reactive value to change from its current value |
 | `useMemoized(creator, [disposer])` | Memoize value with optional cleanup |
 | `useAutoDispose(creator)` | Auto-dispose resource |
 | `useHook(hook)` | Use a custom hook |
@@ -799,7 +792,7 @@ Declarative hooks for managing common Flutter resources such as controllers, foc
 
 ## Related Packages
 
-Jolt Setup is part of the Jolt ecosystem. Explore these related packages:
+Jolt Setup is part of the Jolt ecosystem:
 
 | Package | Description |
 |---------|-------------|
@@ -812,4 +805,3 @@ Jolt Setup is part of the Jolt ecosystem. Explore these related packages:
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-

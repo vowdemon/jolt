@@ -103,6 +103,35 @@ void main() {
       expect(setupCount, 1);
       expect(identical(fromSetup, fromBuild), isTrue);
     });
+
+    testWidgets('hot reload updates one-shot callback and duration',
+        (tester) async {
+      final fired = <String>[];
+      var duration = const Duration(milliseconds: 50);
+      var label = 'v1';
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          useTimer(duration, () {
+            fired.add(label);
+          }, immediately: true);
+          return () => const SizedBox();
+        }),
+      ));
+
+      await tester.pump(const Duration(milliseconds: 30));
+
+      duration = const Duration(milliseconds: 120);
+      label = 'v2';
+      tester.binding.reassembleApplication();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 40));
+      expect(fired, isEmpty);
+
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(fired, equals(['v2']));
+    });
   });
 
   group('useTimer.periodic', () {
@@ -180,6 +209,38 @@ void main() {
       expect(find.textContaining('tick:'), findsOneWidget);
       await tester.pump(const Duration(milliseconds: 100));
       expect(hook!.tick, greaterThanOrEqualTo(2));
+    });
+
+    testWidgets('hot reload updates periodic callback and duration',
+        (tester) async {
+      final fired = <String>[];
+      var duration = const Duration(milliseconds: 40);
+      var label = 'v1';
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          useTimer.periodic(duration, (_) {
+            fired.add(label);
+          }, immediately: true);
+          return () => const SizedBox();
+        }),
+      ));
+
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(fired, isNotEmpty);
+      fired.clear();
+
+      duration = const Duration(milliseconds: 120);
+      label = 'v2';
+      tester.binding.reassembleApplication();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 60));
+      expect(fired, isEmpty);
+
+      await tester.pump(const Duration(milliseconds: 80));
+      expect(fired, isNotEmpty);
+      expect(fired.every((value) => value == 'v2'), isTrue);
     });
   });
 

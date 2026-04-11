@@ -3,6 +3,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jolt_setup/hooks.dart';
 import 'package:jolt_setup/jolt_setup.dart';
+import '../shared/helper.dart';
 
 void main() {
   group('useSingleTickerProvider', () {
@@ -71,6 +72,53 @@ void main() {
       // Both should be cleaned up correctly on unmount
       await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('throws when creating multiple tickers from one provider',
+        (tester) async {
+      TickerProvider? provider;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          provider = useSingleTickerProvider();
+          return () => const Text('Test');
+        }),
+      ));
+
+      final firstTicker = provider!.createTicker((_) {});
+      expect(
+        () => provider!.createTicker((_) {}),
+        throwsA(isA<FlutterError>()),
+      );
+
+      firstTicker.dispose();
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+    });
+
+    testWidgets('throws on unmount with an active ticker', (tester) async {
+      Ticker? ticker;
+
+      await tester.pumpWidget(MaterialApp(
+        home: TickerMode(
+          enabled: false,
+          child: SetupBuilder(setup: (context) {
+            final provider = useSingleTickerProvider();
+            ticker = provider.createTicker((_) {});
+            return () => const Text('Test');
+          }),
+        ),
+      ));
+      await tester.pump();
+
+      ticker!.start();
+      expect(ticker!.isActive, isTrue);
+
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+      await tester.pump();
+
+      expect(tester.takeException(), isA<FlutterError>());
+
+      ticker!.dispose();
     });
 
     testWidgets('updates on dependency change', (tester) async {
@@ -147,6 +195,42 @@ void main() {
       // _update() should have been called, ticker should be muted when TickerMode is disabled
       expect(ticker, isNotNull);
       expect(ticker!.muted, isTrue);
+    });
+
+    testWidgets('updates ticker mode when reactivated under a new ancestor',
+        (tester) async {
+      final key = GlobalKey();
+      var placeInEnabledSlot = true;
+      Ticker? ticker;
+
+      Widget buildHost() => buildReparentableHost(
+            key: key,
+            placeInFirstSlot: placeInEnabledSlot,
+            buildTarget: (key) => SetupBuilder(
+              key: key,
+              setup: (context) {
+                final provider = useSingleTickerProvider();
+                ticker ??= provider.createTicker((_) {});
+                return () => const Text('Test');
+              },
+            ),
+            wrapFirstSlot: (child) => TickerMode(enabled: true, child: child),
+            wrapSecondSlot: (child) =>
+                TickerMode(enabled: false, child: child),
+          );
+
+      await tester.pumpWidget(buildHost());
+      await tester.pumpAndSettle();
+      expect(ticker!.muted, isFalse);
+
+      placeInEnabledSlot = false;
+      await tester.pumpWidget(buildHost());
+      await tester.pumpAndSettle();
+
+      expect(ticker!.muted, isTrue);
+
+      ticker!.dispose();
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
     });
 
     testWidgets('_update called on multiple dependency changes',
@@ -345,6 +429,37 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('throws on unmount with active tickers', (tester) async {
+      Ticker? ticker1;
+      Ticker? ticker2;
+
+      await tester.pumpWidget(MaterialApp(
+        home: TickerMode(
+          enabled: false,
+          child: SetupBuilder(setup: (context) {
+            final provider = useTickerProvider();
+            ticker1 = provider.createTicker((_) {});
+            ticker2 = provider.createTicker((_) {});
+            return () => const Text('Test');
+          }),
+        ),
+      ));
+      await tester.pump();
+
+      ticker1!.start();
+      ticker2!.start();
+      expect(ticker1!.isActive, isTrue);
+      expect(ticker2!.isActive, isTrue);
+
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+      await tester.pump();
+
+      expect(tester.takeException(), isA<FlutterError>());
+
+      ticker1!.dispose();
+      ticker2!.dispose();
+    });
+
     testWidgets('works with multiple animation controllers', (tester) async {
       AnimationController? controller1;
       AnimationController? controller2;
@@ -469,6 +584,47 @@ void main() {
       expect(ticker1!.muted, isFalse);
       expect(ticker2!.muted, isFalse);
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('updates tickers when reactivated under a new ancestor',
+        (tester) async {
+      final key = GlobalKey();
+      var placeInEnabledSlot = true;
+      Ticker? ticker1;
+      Ticker? ticker2;
+
+      Widget buildHost() => buildReparentableHost(
+            key: key,
+            placeInFirstSlot: placeInEnabledSlot,
+            buildTarget: (key) => SetupBuilder(
+              key: key,
+              setup: (context) {
+                final provider = useTickerProvider();
+                ticker1 ??= provider.createTicker((_) {});
+                ticker2 ??= provider.createTicker((_) {});
+                return () => const Text('Test');
+              },
+            ),
+            wrapFirstSlot: (child) => TickerMode(enabled: true, child: child),
+            wrapSecondSlot: (child) =>
+                TickerMode(enabled: false, child: child),
+          );
+
+      await tester.pumpWidget(buildHost());
+      await tester.pumpAndSettle();
+      expect(ticker1!.muted, isFalse);
+      expect(ticker2!.muted, isFalse);
+
+      placeInEnabledSlot = false;
+      await tester.pumpWidget(buildHost());
+      await tester.pumpAndSettle();
+
+      expect(ticker1!.muted, isTrue);
+      expect(ticker2!.muted, isTrue);
+
+      ticker1!.dispose();
+      ticker2!.dispose();
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
     });
   });
 }

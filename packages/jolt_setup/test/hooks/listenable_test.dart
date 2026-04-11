@@ -96,6 +96,68 @@ void main() {
       await tester.pumpAndSettle();
       expect(values.length, countBefore);
     });
+
+    testWidgets('hot reload updates listened ValueListenable', (tester) async {
+      final notifierA = ValueNotifier(0);
+      final notifierB = ValueNotifier(0);
+      final values = <int>[];
+      var useSecondNotifier = false;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          useValueListenable(
+            useSecondNotifier ? notifierB : notifierA,
+            (value) => values.add(value),
+          );
+          return () => const Text('Test');
+        }),
+      ));
+
+      await tester.pumpAndSettle();
+
+      useSecondNotifier = true;
+      tester.binding.reassembleApplication();
+      await tester.pump();
+
+      notifierA.value = 1;
+      await tester.pumpAndSettle();
+      expect(values, isNot(contains(1)));
+
+      notifierB.value = 2;
+      await tester.pumpAndSettle();
+      expect(values, contains(2));
+    });
+
+    testWidgets(
+        'hot reload updates callback for the same listened ValueListenable',
+        (tester) async {
+      final notifier = ValueNotifier(0);
+      final firstValues = <int>[];
+      final secondValues = <int>[];
+      var useSecondCallback = false;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          useValueListenable(
+            notifier,
+            useSecondCallback ? secondValues.add : firstValues.add,
+          );
+          return () => const Text('Test');
+        }),
+      ));
+
+      await tester.pumpAndSettle();
+
+      useSecondCallback = true;
+      tester.binding.reassembleApplication();
+      await tester.pump();
+
+      notifier.value = 1;
+      await tester.pumpAndSettle();
+
+      expect(firstValues, isEmpty);
+      expect(secondValues, [1]);
+    });
   });
 
   group('useListenable', () {
@@ -126,6 +188,69 @@ void main() {
       notifier.notifyListeners();
       await tester.pumpAndSettle();
       expect(callCount, countBefore);
+    });
+
+    testWidgets('hot reload updates listened Listenable', (tester) async {
+      final notifierA = ChangeNotifier();
+      final notifierB = ChangeNotifier();
+      int callCount = 0;
+      var useSecondNotifier = false;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          useListenable(
+            useSecondNotifier ? notifierB : notifierA,
+            () => callCount++,
+          );
+          return () => const Text('Test');
+        }),
+      ));
+
+      await tester.pumpAndSettle();
+
+      useSecondNotifier = true;
+      tester.binding.reassembleApplication();
+      await tester.pump();
+
+      notifierA.notifyListeners();
+      await tester.pumpAndSettle();
+      expect(callCount, 0);
+
+      notifierB.notifyListeners();
+      await tester.pumpAndSettle();
+      expect(callCount, 1);
+    });
+
+    testWidgets('hot reload updates callback for the same listened Listenable',
+        (tester) async {
+      final notifier = ChangeNotifier();
+      int firstCallCount = 0;
+      int secondCallCount = 0;
+      var useSecondCallback = false;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          useListenable(
+            notifier,
+            useSecondCallback
+                ? () => secondCallCount++
+                : () => firstCallCount++,
+          );
+          return () => const Text('Test');
+        }),
+      ));
+
+      await tester.pumpAndSettle();
+
+      useSecondCallback = true;
+      tester.binding.reassembleApplication();
+      await tester.pump();
+
+      notifier.notifyListeners();
+      await tester.pumpAndSettle();
+
+      expect(firstCallCount, 0);
+      expect(secondCallCount, 1);
     });
   });
 

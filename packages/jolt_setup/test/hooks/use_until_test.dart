@@ -123,9 +123,7 @@ void main() {
 
       expect(oldUntil.isCancelled, isFalse);
 
-      final rootElement = tester.binding.rootElement;
-      assert(rootElement != null, 'Root element must exist');
-      rootElement!.owner!.reassemble(rootElement);
+      tester.binding.reassembleApplication();
       await tester.pump();
 
       expect(oldUntil.isCancelled, isTrue);
@@ -193,6 +191,38 @@ void main() {
 
       expect(until.isCancelled, isTrue);
     });
+
+    testWidgets('cancels old Until.when and creates new one on hot reload',
+        (tester) async {
+      late Until<int> oldUntil;
+      late Signal<int> count;
+      var targetValue = 5;
+      final oldThenFired = <bool>[false];
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          count = useSignal(0);
+          final until = useUntil.when(count, targetValue);
+          oldUntil = until;
+          onMounted(() {
+            oldUntil.then((_) => oldThenFired[0] = true);
+          });
+          return () => Text('${count.value}');
+        }),
+      ));
+      await tester.pumpAndSettle();
+
+      targetValue = 10;
+      tester.binding.reassembleApplication();
+      await tester.pump();
+
+      expect(oldUntil.isCancelled, isTrue);
+
+      count.value = 5;
+      await tester.pumpAndSettle();
+
+      expect(oldThenFired[0], isFalse);
+    });
   });
 
   group('useUntil.changed', () {
@@ -233,6 +263,37 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(until.isCancelled, isTrue);
+    });
+
+    testWidgets('cancels old Until.changed and creates new one on hot reload',
+        (tester) async {
+      late Until<int> oldUntil;
+      var sourceSignal = Signal(0);
+      final oldThenFired = <bool>[false];
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final until = useUntil.changed(sourceSignal);
+          oldUntil = until;
+          onMounted(() {
+            oldUntil.then((_) => oldThenFired[0] = true);
+          });
+          return () => Text('${sourceSignal.value}');
+        }),
+      ));
+      await tester.pumpAndSettle();
+
+      final oldSourceSignal = sourceSignal;
+      sourceSignal = Signal(100);
+      tester.binding.reassembleApplication();
+      await tester.pump();
+
+      expect(oldUntil.isCancelled, isTrue);
+
+      oldSourceSignal.value = 1;
+      await tester.pumpAndSettle();
+
+      expect(oldThenFired[0], isFalse);
     });
   });
 }

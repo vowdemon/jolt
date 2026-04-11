@@ -145,7 +145,6 @@ mixin SetupMixin<T extends StatefulWidget> on State<T> {
 
   /* --------------------------- Lifecycle hooks --------------------------- */
 
-  // coverage:ignore-start
   @override
   @mustCallSuper
   void reassemble() {
@@ -155,7 +154,6 @@ mixin SetupMixin<T extends StatefulWidget> on State<T> {
       return true;
     }());
   }
-  // coverage:ignore-end
 
   @override
   @mustCallSuper
@@ -171,14 +169,12 @@ mixin SetupMixin<T extends StatefulWidget> on State<T> {
     super.didChangeDependencies();
   }
 
-  // coverage:ignore-start
   @override
   @mustCallSuper
   void activate() {
     super.activate();
     setupContext.notifyActivate();
   }
-  // coverage:ignore-end
 
   @override
   @mustCallSuper
@@ -196,19 +192,16 @@ mixin SetupMixin<T extends StatefulWidget> on State<T> {
     super.dispose();
   }
 
-  /// Resets and re-runs the setup function at runtime.
+  /// Schedules a reset of the current `setup`.
   ///
-  /// This method provides a runtime hot-reload mechanism that:
-  /// 1. Unmounts all existing hooks in reverse order
-  /// 2. Disposes the current renderer effect
-  /// 3. Cleans up all EffectScope cleanup functions
-  /// 4. Clears all hook state
-  /// 5. Re-runs the setup function to create new hooks
-  /// 6. Recreates the renderer effect
-  /// 7. Mounts all new hooks
+  /// It runs at the end of the current frame. Multiple calls in the same
+  /// frame are coalesced into one.
   ///
-  /// This is similar to hot reload but can be triggered programmatically
-  /// at runtime, allowing for dynamic reconfiguration of the widget's setup.
+  /// When executed, it unmounts the current hooks, cleans up resources
+  /// created by `setup`, then runs `setup` again and creates a new hook set.
+  ///
+  /// This is closer to a local rebuild of the current setup subtree.
+  /// It is not a normal rebuild, and it is not development-time hot reload.
   ///
   /// ## Example
   ///
@@ -216,8 +209,7 @@ mixin SetupMixin<T extends StatefulWidget> on State<T> {
   /// setup(context) {
   ///   final count = useSignal(0);
   ///
-  ///   // Somewhere in your code, reset the entire setup
-  ///   // This will unmount all hooks, clean up effects, and re-run setup
+  ///   // Somewhere in your code, reset the current setup
   ///   setupContext.setupContext();
   ///
   ///   return () => Text('Count: ${count.value}');
@@ -271,7 +263,6 @@ mixin SetupMixin<T extends StatefulWidget> on State<T> {
 
   /* ------------------------------ Build flow ----------------------------- */
 
-  // coverage:ignore-start
   void _reload() {
     assert(() {
       setupContext.run(() {
@@ -284,7 +275,6 @@ mixin SetupMixin<T extends StatefulWidget> on State<T> {
       return true;
     }());
   }
-  // coverage:ignore-end
 
   @override
   @mustCallSuper
@@ -308,14 +298,12 @@ mixin SetupMixin<T extends StatefulWidget> on State<T> {
       _isFirstBuild = false;
     }
 
-    // coverage:ignore-start
     assert(() {
       if (setupContext._isReassembling) {
         _reload();
       }
       return true;
     }());
-    // coverage:ignore-end
 
     return setupContext.run(() => trackWithEffect(
         () => setupContext.setupBuilder!(), setupContext.renderer!));

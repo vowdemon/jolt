@@ -246,12 +246,10 @@ class _OnActivatedHook extends _LifeCycleHook {
   @override
   _LifeCycleHookType get hookType => _LifeCycleHookType.activated;
 
-  // coverage:ignore-start
   @override
   void activate() {
     callback();
   }
-  // coverage:ignore-end
 }
 
 /// Registers a callback to run when the widget is reactivated.
@@ -280,12 +278,10 @@ class _OnDeactivatedHook extends _LifeCycleHook {
   @override
   _LifeCycleHookType get hookType => _LifeCycleHookType.deactivated;
 
-  // coverage:ignore-start
   @override
   void deactivate() {
     callback();
   }
-  // coverage:ignore-end
 }
 
 /// Registers a callback to run when the widget is deactivated.
@@ -462,8 +458,6 @@ abstract class SetupHook<T> {
   /// the [state] of this hook.
   T build();
 
-  // coverage:ignore-start
-
   /// Called after the hook is created and added to the widget.
   ///
   /// This is called after [build] for new hooks, or after hot reload for
@@ -524,7 +518,6 @@ abstract class SetupHook<T> {
 
   /// Called when the widget is deactivated.
   void deactivate() {}
-  // coverage:ignore-end
 }
 
 extension<T> on SetupHook<T> {
@@ -709,21 +702,33 @@ Computed<T> useInherited<T>(T Function(BuildContext) getter) {
 }
 
 /// {@template jolt_reset_hook_creator}
-/// Helper class for creating reset setup hooks in SetupWidget.
+/// Provides setup-level reset APIs.
 ///
-/// This class provides methods to reset and re-run the setup function
-/// programmatically, similar to hot reload but triggered at runtime.
-/// Use [useReset] to access these methods.
+/// `useReset` is an experimental API.
+/// It destroys the hooks / effects / cleanup created by the current `setup`,
+/// then runs `setup` again.
+///
+/// This is not a normal state update mechanism.
+/// In most cases, prefer ordinary reactive updates, or rebuild boundaries
+/// expressed through widget splitting / keys.
+///
+/// Only use `useReset` when the current setup initialization boundary really
+/// needs to be rebuilt as a whole.
 /// {@endtemplate}
 final class JoltResetHookCreator {
   /// Helper class for creating reset setup hooks in SetupWidget.
   const JoltResetHookCreator._();
 
-  /// Gets a reference to the resetSetup function.
+  /// Returns the reset function for the current `setup`.
   ///
-  /// This hook returns a function that can be called to reset and re-run
-  /// the setup function at runtime, similar to hot reload but triggered
-  /// programmatically.
+  /// Calling it schedules a setup reset at the end of the current frame.
+  /// This discards the current hook state inside `setup` and runs `setup`
+  /// again.
+  ///
+  /// This is for cases where the current setup needs to be rebuilt as a
+  /// whole, not for ordinary value updates, UI refreshes, or effect reruns.
+  ///
+  /// This is experimental and should be used carefully.
   ///
   /// Example:
   /// ```dart
@@ -742,6 +747,7 @@ final class JoltResetHookCreator {
   /// }
   /// ```
   @defineHook
+  @experimental
   void Function() call() {
     final currentContext = JoltSetupContext.current;
     assert(currentContext != null, 'SetupWidgetElement is not exists');
@@ -749,14 +755,13 @@ final class JoltResetHookCreator {
     return currentContext!._resetSetupFn;
   }
 
-  /// Listens to Listenables and calls resetSetup when they notify.
+  /// Listens to [Listenable]s and schedules a `setup` reset when they notify.
   ///
-  /// This hook subscribes to one or more Listenables and automatically calls
-  /// resetSetup whenever any of them notifies. This is useful for resetting
-  /// the setup when external state changes.
+  /// This is not an incremental update. It maps an external change to a
+  /// setup-level rebuild.
   ///
-  /// Parameters:
-  /// - [watcher]: A function that returns an iterable of Listenables to subscribe to
+  /// If you only need to respond to value changes, prefer more ordinary
+  /// reactive APIs.
   ///
   /// Example:
   /// ```dart
@@ -771,6 +776,7 @@ final class JoltResetHookCreator {
   /// }
   /// ```
   @defineHook
+  @experimental
   void listen(Iterable<Listenable> Function() watcher) {
     final currentContext = JoltSetupContext.current;
     assert(currentContext != null, 'SetupWidgetElement is not exists');
@@ -781,14 +787,13 @@ final class JoltResetHookCreator {
     ));
   }
 
-  /// Watches reactive signals and calls resetSetup when they change.
+  /// Tracks reactive sources and schedules a `setup` reset when they change.
   ///
-  /// This hook uses an Effect to watch reactive signals. Whenever any
-  /// signal accessed within the watch function changes, resetSetup is called.
+  /// Unlike `useWatcher`, this does not run incremental logic.
+  /// It rebuilds the current setup as a whole.
   ///
-  /// Parameters:
-  /// - [watchFn]: A function that returns an iterable of Readable signals to watch.
-  ///   The effect will track all signals in the returned iterable.
+  /// Only use this when the setup initialization boundary itself needs to be
+  /// recreated.
   ///
   /// Example:
   /// ```dart
@@ -804,6 +809,7 @@ final class JoltResetHookCreator {
   /// }
   /// ```
   @defineHook
+  @experimental
   void watch(Iterable<Readable> Function() watchFn) {
     final currentContext = JoltSetupContext.current;
     assert(currentContext != null, 'SetupWidgetElement is not exists');
@@ -812,16 +818,13 @@ final class JoltResetHookCreator {
     useHook(_ResetSetupWatchHook(watchFn, resetSetup));
   }
 
-  /// Selects a value from reactive state and resets setup when it changes.
+  /// Tracks a derived value and schedules a `setup` reset when it changes.
   ///
-  /// This hook uses an Effect to track a selector function. Whenever the
-  /// selected value changes (compared using `!=`), resetSetup is called.
-  /// This is useful when you only want to reset when a derived value changes,
-  /// not when individual signals change.
+  /// Like [watch], this is for rebuilding the current setup, not for normal
+  /// derived updates.
   ///
-  /// Parameters:
-  /// - [selector]: A function that selects a value from reactive state.
-  ///   The effect will track all signals accessed within this function.
+  /// It is useful when multiple dependencies should be collapsed into a
+  /// single "should reset setup" condition.
   ///
   /// Example:
   /// ```dart
@@ -837,6 +840,7 @@ final class JoltResetHookCreator {
   /// }
   /// ```
   @defineHook
+  @experimental
   void select<T>(T Function() selector) {
     final currentContext = JoltSetupContext.current;
     assert(currentContext != null, 'SetupWidgetElement is not exists');
@@ -847,6 +851,7 @@ final class JoltResetHookCreator {
 }
 
 /// {@macro jolt_reset_hook_creator}
+@experimental
 final useReset = JoltResetHookCreator._();
 
 /// Hook that listens to a Listenable and calls resetSetup when it notifies.
@@ -876,7 +881,6 @@ class _ResetSetupOnListenableHook extends SetupHook<Iterable<Listenable>> {
     }
   }
 
-  // coverage:ignore-start
   @override
   void reassemble(covariant _ResetSetupOnListenableHook newHook) {
     final oldList = state.toList();
@@ -896,14 +900,14 @@ class _ResetSetupOnListenableHook extends SetupHook<Iterable<Listenable>> {
       for (final listenable in state) {
         listenable.removeListener(_listener);
       }
-      watcher = newHook.watcher;
+      rawState = newList;
       for (final listenable in newList) {
         listenable.addListener(_listener);
       }
     }
+    watcher = newHook.watcher;
     resetSetup = newHook.resetSetup;
   }
-  // coverage:ignore-end
 }
 
 /// Hook that watches reactive signals and calls resetSetup when they change.
@@ -937,16 +941,12 @@ class _ResetSetupWatchHook extends SetupHook<FlutterEffect> {
     state.dispose();
   }
 
-  // coverage:ignore-start
   @override
   void reassemble(covariant _ResetSetupWatchHook newHook) {
-    if (watchFn != newHook.watchFn) {
-      trackWithEffect(_watcher, state, true);
-      watchFn = newHook.watchFn;
-    }
+    watchFn = newHook.watchFn;
     resetSetup = newHook.resetSetup;
+    trackWithEffect(_watcher, state, true);
   }
-  // coverage:ignore-end
 }
 
 /// Hook that selects a value and calls resetSetup when it changes.
@@ -956,13 +956,15 @@ class _ResetSetupSelectHook<T> extends SetupHook<FlutterEffect> {
   late T Function() selector;
   late void Function() resetSetup;
   T? _prevValue;
+  bool _hasPrevValue = false;
 
   void _select() {
     final currentValue = selector();
-    if (_prevValue != null && currentValue != _prevValue) {
+    if (_hasPrevValue && currentValue != _prevValue) {
       resetSetup();
     }
     _prevValue = currentValue;
+    _hasPrevValue = true;
   }
 
   @override
@@ -974,6 +976,7 @@ class _ResetSetupSelectHook<T> extends SetupHook<FlutterEffect> {
   void mount() {
     // Initialize prevValue on first mount
     _prevValue = selector();
+    _hasPrevValue = true;
     // Track dependencies for reactive updates
     trackWithEffect(_select, state, false);
   }
@@ -983,14 +986,12 @@ class _ResetSetupSelectHook<T> extends SetupHook<FlutterEffect> {
     state.dispose();
   }
 
-  // coverage:ignore-start
   @override
   void reassemble(covariant _ResetSetupSelectHook<T> newHook) {
-    if (selector != newHook.selector) {
-      _prevValue = newHook.selector();
-    }
     selector = newHook.selector;
     resetSetup = newHook.resetSetup;
+    _prevValue = untracked(selector);
+    _hasPrevValue = true;
+    trackWithEffect(_select, state, true);
   }
-  // coverage:ignore-end
 }

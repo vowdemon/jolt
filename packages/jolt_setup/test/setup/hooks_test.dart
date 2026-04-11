@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jolt_flutter/core.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
 import 'package:jolt_flutter/extension.dart';
 import 'package:jolt_setup/hooks.dart';
@@ -334,6 +335,127 @@ void main() {
       expect(effectCount, 1); // Runs when manually triggered
     });
 
+    testWidgets('useEffect hot reload updates effect callback', (tester) async {
+      final events = <String>[];
+      late Signal<int> signal;
+      var useSecondVersion = false;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          signal = useSignal(0);
+          if (useSecondVersion) {
+            useEffect(() {
+              events.add('v2:${signal.value}');
+            });
+          } else {
+            useEffect(() {
+              events.add('v1:${signal.value}');
+            });
+          }
+          return () => Text('Value: ${signal.value}');
+        }),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(events, ['v1:0']);
+
+      useSecondVersion = true;
+      tester.binding.reassembleApplication();
+      await tester.pumpAndSettle();
+
+      expect(events, ['v1:0'],
+          reason: 'hot reload must not eagerly dispose/recreate the effect');
+
+      signal.value = 1;
+      await tester.pumpAndSettle();
+
+      expect(events, ['v1:0', 'v2:1']);
+    });
+
+    testWidgets('useEffect.lazy hot reload updates callback without eager run',
+        (tester) async {
+      final events = <String>[];
+      late Effect effect;
+      late Signal<int> signal;
+      var useSecondVersion = false;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          signal = useSignal(0);
+          effect = useSecondVersion
+              ? useEffect.lazy(() {
+                  events.add('v2:${signal.value}');
+                })
+              : useEffect.lazy(() {
+                  events.add('v1:${signal.value}');
+                });
+          return () => Text('Value: ${signal.value}');
+        }),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(events, isEmpty);
+
+      useSecondVersion = true;
+      tester.binding.reassembleApplication();
+      await tester.pumpAndSettle();
+
+      expect(events, isEmpty,
+          reason: 'lazy effect must stay dormant after hot reload');
+
+      effect.run();
+      await tester.pumpAndSettle();
+
+      expect(events, ['v2:0']);
+    });
+
+    testWidgets('useEffect hot reload updates debug callback', (tester) async {
+      final firstOps = <DebugNodeOperationType>[];
+      final secondOps = <DebugNodeOperationType>[];
+      late Effect effect;
+      var useSecondDebug = false;
+
+      void firstDebug(
+          DebugNodeOperationType type, ReactiveNode node, Link? link) {
+        firstOps.add(type);
+      }
+
+      void secondDebug(
+          DebugNodeOperationType type, ReactiveNode node, Link? link) {
+        secondOps.add(type);
+      }
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          effect = useEffect.lazy(
+            () {},
+            debug: useSecondDebug
+                ? JoltDebugOption.fn(secondDebug)
+                : JoltDebugOption.fn(firstDebug),
+          );
+          return () => const Text('Test');
+        }),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(JoltDebug.getDebug(effect as Object), same(firstDebug));
+
+      useSecondDebug = true;
+      tester.binding.reassembleApplication();
+      await tester.pumpAndSettle();
+
+      expect(JoltDebug.getDebug(effect as Object), same(secondDebug));
+
+      firstOps.clear();
+      secondOps.clear();
+
+      effect.run();
+      await tester.pumpAndSettle();
+
+      expect(firstOps, isEmpty);
+      expect(secondOps, contains(DebugNodeOperationType.effect));
+    });
+
     testWidgets('useFlutterEffect runs effect at frame end', (tester) async {
       int effectCount = 0;
 
@@ -417,6 +539,131 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(effectCount, 1); // Runs when manually triggered
+    });
+
+    testWidgets('useFlutterEffect hot reload updates effect callback',
+        (tester) async {
+      final events = <String>[];
+      late Signal<int> signal;
+      var useSecondVersion = false;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          signal = useSignal(0);
+          if (useSecondVersion) {
+            useFlutterEffect(() {
+              events.add('v2:${signal.value}');
+            });
+          } else {
+            useFlutterEffect(() {
+              events.add('v1:${signal.value}');
+            });
+          }
+          return () => Text('Value: ${signal.value}');
+        }),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(events, ['v1:0']);
+
+      useSecondVersion = true;
+      tester.binding.reassembleApplication();
+      await tester.pumpAndSettle();
+
+      expect(events, ['v1:0'],
+          reason:
+              'hot reload must not eagerly dispose/recreate the flutter effect');
+
+      signal.value = 1;
+      await tester.pumpAndSettle();
+
+      expect(events, ['v1:0', 'v2:1']);
+    });
+
+    testWidgets(
+        'useFlutterEffect.lazy hot reload updates callback without eager run',
+        (tester) async {
+      final events = <String>[];
+      late FlutterEffect effect;
+      late Signal<int> signal;
+      var useSecondVersion = false;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          signal = useSignal(0);
+          effect = useSecondVersion
+              ? useFlutterEffect.lazy(() {
+                  events.add('v2:${signal.value}');
+                })
+              : useFlutterEffect.lazy(() {
+                  events.add('v1:${signal.value}');
+                });
+          return () => Text('Value: ${signal.value}');
+        }),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(events, isEmpty);
+
+      useSecondVersion = true;
+      tester.binding.reassembleApplication();
+      await tester.pumpAndSettle();
+
+      expect(events, isEmpty,
+          reason: 'lazy flutter effect must stay dormant after hot reload');
+
+      effect.run();
+      await tester.pumpAndSettle();
+
+      expect(events, ['v2:0']);
+    });
+
+    testWidgets('useFlutterEffect hot reload updates debug callback',
+        (tester) async {
+      final firstOps = <DebugNodeOperationType>[];
+      final secondOps = <DebugNodeOperationType>[];
+      late FlutterEffect effect;
+      var useSecondDebug = false;
+
+      void firstDebug(
+          DebugNodeOperationType type, ReactiveNode node, Link? link) {
+        firstOps.add(type);
+      }
+
+      void secondDebug(
+          DebugNodeOperationType type, ReactiveNode node, Link? link) {
+        secondOps.add(type);
+      }
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          effect = useFlutterEffect.lazy(
+            () {},
+            debug: useSecondDebug
+                ? JoltDebugOption.fn(secondDebug)
+                : JoltDebugOption.fn(firstDebug),
+          );
+          return () => const Text('Test');
+        }),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(JoltDebug.getDebug(effect as Object), same(firstDebug));
+
+      useSecondDebug = true;
+      tester.binding.reassembleApplication();
+      await tester.pumpAndSettle();
+
+      expect(JoltDebug.getDebug(effect as Object), same(secondDebug));
+
+      firstOps.clear();
+      secondOps.clear();
+
+      effect.run();
+      await tester.pumpAndSettle();
+
+      expect(firstOps, isEmpty);
+      expect(secondOps, contains(DebugNodeOperationType.effect));
     });
 
     testWidgets('useFlutterEffect batches multiple triggers in same frame',
@@ -519,6 +766,186 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(watchCount, lessThanOrEqualTo(1));
+    });
+
+    testWidgets('useWatcher hot reload updates sources and callback',
+        (tester) async {
+      final events = <String>[];
+      late Signal<int> firstSignal;
+      late Signal<int> secondSignal;
+      var useSecondVersion = false;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          firstSignal = useSignal(0);
+          secondSignal = useSignal(100);
+          if (useSecondVersion) {
+            useWatcher(
+              () => secondSignal.value,
+              (newValue, oldValue) => events.add('v2:$newValue'),
+            );
+          } else {
+            useWatcher(
+              () => firstSignal.value,
+              (newValue, oldValue) => events.add('v1:$newValue'),
+            );
+          }
+          return () => Text(
+              'Selected: ${useSecondVersion ? secondSignal.value : firstSignal.value}');
+        }),
+      ));
+      await tester.pumpAndSettle();
+
+      useSecondVersion = true;
+      tester.binding.reassembleApplication();
+      await tester.pump();
+
+      expect(events, isEmpty);
+
+      firstSignal.value = 1;
+      await tester.pumpAndSettle();
+      expect(events, isEmpty);
+
+      secondSignal.value = 101;
+      await tester.pumpAndSettle();
+      expect(events, ['v2:101']);
+    });
+
+    testWidgets(
+        'useWatcher hot reload recreates watcher when immediately changes',
+        (tester) async {
+      final events = <String>[];
+      late Signal<int> signal;
+      var immediately = false;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          signal = useSignal(5);
+          useWatcher(
+            () => signal.value,
+            (newValue, oldValue) => events.add('$newValue:$oldValue'),
+            immediately: immediately,
+          );
+          return () => Text('Value: ${signal.value}');
+        }),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(events, isEmpty);
+
+      immediately = true;
+      tester.binding.reassembleApplication();
+      await tester.pump();
+
+      expect(events, ['5:null']);
+    });
+
+    testWidgets(
+        'useWatcher hot reload updates debug without recreating watcher',
+        (tester) async {
+      final events = <String>[];
+      late Signal<int> signal;
+      var debugVersion = 1;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          signal = useSignal(0);
+          useWatcher(
+            () => signal.value,
+            (newValue, oldValue) => events.add('$newValue:$oldValue'),
+            immediately: true,
+            debug: debugVersion == 1
+                ? JoltDebugOption.fn((_, __, ___) {})
+                : JoltDebugOption.fn((_, __, ___) {}),
+          );
+          return () => Text('Value: ${signal.value}');
+        }),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(events, ['0:null']);
+
+      debugVersion = 2;
+      tester.binding.reassembleApplication();
+      await tester.pump();
+
+      expect(events, ['0:null'],
+          reason:
+              'debug callback swap must not recreate an immediately watcher');
+
+      signal.value = 1;
+      await tester.pumpAndSettle();
+
+      expect(events, ['0:null', '1:0']);
+    });
+
+    testWidgets(
+        'useWatcher hot reload rebinds dependencies even when function identities stay the same',
+        (tester) async {
+      final events = <String>[];
+      late Signal<int> firstSignal;
+      late Signal<int> secondSignal;
+      var useSecondSignal = false;
+
+      int readSource() =>
+          useSecondSignal ? secondSignal.value : firstSignal.value;
+
+      void onChange(int newValue, int? oldValue) {
+        events.add('$newValue:$oldValue');
+      }
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          firstSignal = useSignal(0);
+          secondSignal = useSignal(100);
+          useWatcher(readSource, onChange);
+          return () => Text(
+              'Selected: ${useSecondSignal ? secondSignal.value : firstSignal.value}');
+        }),
+      ));
+      await tester.pumpAndSettle();
+
+      useSecondSignal = true;
+      tester.binding.reassembleApplication();
+      await tester.pump();
+
+      firstSignal.value = 1;
+      await tester.pumpAndSettle();
+      expect(events, isEmpty);
+
+      secondSignal.value = 101;
+      await tester.pumpAndSettle();
+      expect(events, ['101:100']);
+    });
+
+    testWidgets(
+        'useWatcher hot reload keeps watcher stable when config is unchanged',
+        (tester) async {
+      final events = <String>[];
+      late Signal<int> signal;
+
+      int readSource() => signal.value;
+
+      void onChange(int newValue, int? oldValue) {
+        events.add('$newValue:$oldValue');
+      }
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          signal = useSignal(0);
+          useWatcher(readSource, onChange);
+          return () => Text('Value: ${signal.value}');
+        }),
+      ));
+      await tester.pumpAndSettle();
+
+      tester.binding.reassembleApplication();
+      await tester.pump();
+
+      signal.value = 1;
+      await tester.pumpAndSettle();
+
+      expect(events, ['1:0']);
     });
 
     testWidgets('useJoltEffectScope creates effect scope', (tester) async {

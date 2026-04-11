@@ -121,18 +121,16 @@ abstract class _TimerBaseHook extends SetupHook<TimerHook>
     cancel();
   }
 
-  // coverage:ignore-start
   @override
   void reassemble(covariant _TimerBaseHook newHook) {
     if (newHook.duration != duration) {
       duration = newHook.duration;
       if (timer != null) {
-        cancel();
+        pause();
         start();
       }
     }
   }
-  // coverage:ignore-end
 }
 
 /// One-shot timer: fires [callback] once after [duration].
@@ -152,13 +150,11 @@ class _TimerHook extends _TimerBaseHook {
     timer = Timer(duration, _onTimer);
   }
 
-  // coverage:ignore-start
   @override
   reassemble(covariant _TimerHook newHook) {
     callback = newHook.callback;
     super.reassemble(newHook);
   }
-  // coverage:ignore-end
 }
 
 /// Periodic timer: invokes [callback] every [duration] with the current [Timer].
@@ -177,11 +173,9 @@ class _TimerPeriodicHook extends _TimerBaseHook {
     timer = Timer.periodic(duration, _onTick);
   }
 
-  // coverage:ignore-start
   @override
   reassemble(covariant _TimerPeriodicHook newHook) {
     callback = newHook.callback;
     super.reassemble(newHook);
   }
-  // coverage:ignore-end
 }

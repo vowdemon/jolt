@@ -23,7 +23,6 @@ class _SingleTickerProviderHook extends SetupHook<TickerProvider>
 
   @override
   Ticker createTicker(TickerCallback onTick) {
-    // coverage:ignore-start
     assert(() {
       if (_ticker == null) {
         return true;
@@ -42,7 +41,6 @@ class _SingleTickerProviderHook extends SetupHook<TickerProvider>
         ),
       ]);
     }());
-    // coverage:ignore-end
     _ticker = Ticker(
       onTick,
       debugLabel: kDebugMode ? 'created by ${describeIdentity(this)}' : null,
@@ -54,7 +52,6 @@ class _SingleTickerProviderHook extends SetupHook<TickerProvider>
 
   @override
   void unmount() {
-    // coverage:ignore-start
     assert(() {
       if (_ticker == null || !_ticker!.isActive) {
         return true;
@@ -74,18 +71,15 @@ class _SingleTickerProviderHook extends SetupHook<TickerProvider>
         _ticker!.describeForError('The offending ticker was'),
       ]);
     }());
-    // coverage:ignore-end
     _tickerModeNotifier?.removeListener(_updateTicker);
     _tickerModeNotifier = null;
   }
 
-  // coverage:ignore-start
   @override
   void activate() {
     _updateTickerModeNotifier();
     _updateTicker();
   }
-  // coverage:ignore-end
 
   void _updateTickerModeNotifier() {
     final notifier = TickerMode.getValuesNotifier(context);
@@ -146,14 +140,12 @@ class _TickerProviderHook extends SetupHook<_TickerProviderHook>
 
   ValueListenable<TickerModeData>? _tickerModeNotifier;
 
-  // coverage:ignore-start
   @override
   void activate() {
     // We may have a new TickerMode ancestor, get its Notifier.
     _updateTickerModeNotifier();
     _updateTickers();
   }
-  // coverage:ignore-end
 
   void _updateTickers() {
     if (_tickers != null) {
@@ -179,7 +171,6 @@ class _TickerProviderHook extends SetupHook<_TickerProviderHook>
 
   @override
   void unmount() {
-    // coverage:ignore-start
     assert(() {
       if (_tickers != null) {
         for (final Ticker ticker in _tickers!) {
@@ -203,7 +194,6 @@ class _TickerProviderHook extends SetupHook<_TickerProviderHook>
       }
       return true;
     }());
-    // coverage:ignore-end
     _tickerModeNotifier?.removeListener(_updateTickers);
     _tickerModeNotifier = null;
   }

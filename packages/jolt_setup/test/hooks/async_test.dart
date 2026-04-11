@@ -1109,5 +1109,66 @@ void main() {
 
       controller.close();
     });
+
+    testWidgets('hot reload updates callbacks without duplicating listeners',
+        (tester) async {
+      final controller = StreamController<int>.broadcast();
+      final firstValues = <int>[];
+      final secondValues = <int>[];
+      var useSecondCallback = false;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          useStreamSubscription(
+            controller.stream,
+            useSecondCallback ? secondValues.add : firstValues.add,
+          );
+          return () => Text('Second callback: $useSecondCallback');
+        }),
+      ));
+      await tester.pumpAndSettle();
+
+      useSecondCallback = true;
+      tester.binding.reassembleApplication();
+      await tester.pump();
+
+      controller.add(1);
+      await tester.pumpAndSettle();
+
+      expect(firstValues, isEmpty);
+      expect(secondValues, [1]);
+
+      await controller.close();
+    });
+
+    testWidgets('hot reload switches streams and detaches old subscription',
+        (tester) async {
+      final firstController = StreamController<int>.broadcast();
+      final secondController = StreamController<int>.broadcast();
+      final values = <int>[];
+      var currentController = firstController;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          useStreamSubscription(currentController.stream, values.add);
+          return () =>
+              Text('Using second stream: ${identical(currentController, secondController)}');
+        }),
+      ));
+      await tester.pumpAndSettle();
+
+      currentController = secondController;
+      tester.binding.reassembleApplication();
+      await tester.pump();
+
+      firstController.add(1);
+      secondController.add(2);
+      await tester.pumpAndSettle();
+
+      expect(values, [2]);
+
+      await firstController.close();
+      await secondController.close();
+    });
   });
 }

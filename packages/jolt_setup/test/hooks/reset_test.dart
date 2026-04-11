@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jolt_flutter/core.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
 import 'package:jolt_setup/hooks.dart';
 import 'package:jolt_setup/jolt_setup.dart';
@@ -172,6 +173,38 @@ void main() {
 
       expect(setupCount, 2);
     });
+
+    testWidgets('hot reload updates listened listenables', (tester) async {
+      final notifierA = ValueNotifier(0);
+      final notifierB = ValueNotifier(0);
+      var useSecondNotifier = false;
+      int setupCount = 0;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          setupCount++;
+          useReset.listen(() => [useSecondNotifier ? notifierB : notifierA]);
+          return () => Text('Setup: $setupCount');
+        }),
+      ));
+
+      await tester.pumpAndSettle();
+      expect(setupCount, 1);
+
+      useSecondNotifier = true;
+      tester.binding.reassembleApplication();
+      await tester.pump();
+
+      expect(setupCount, 2);
+
+      notifierA.value = 1;
+      await tester.pumpAndSettle();
+      expect(setupCount, 2);
+
+      notifierB.value = 1;
+      await tester.pumpAndSettle();
+      expect(setupCount, 3);
+    });
   });
 
   group('useReset.watch', () {
@@ -299,6 +332,74 @@ void main() {
 
       expect(setupCount, 2);
       expect(find.text('Setup: 2, S1: 1, S2: 20, S3: 3'), findsOneWidget);
+    });
+
+    testWidgets('hot reload updates watched signals', (tester) async {
+      final signalA = Signal(0);
+      final signalB = Signal(0);
+      var useSecondSignal = false;
+      int setupCount = 0;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          setupCount++;
+          useReset.watch(() => [useSecondSignal ? signalB : signalA]);
+          return () => Text('Setup: $setupCount');
+        }),
+      ));
+
+      await tester.pumpAndSettle();
+      expect(setupCount, 1);
+
+      useSecondSignal = true;
+      tester.binding.reassembleApplication();
+      await tester.pump();
+
+      expect(setupCount, 2);
+
+      signalA.value = 1;
+      await tester.pumpAndSettle();
+      expect(setupCount, 2);
+
+      signalB.value = 1;
+      await tester.pumpAndSettle();
+      expect(setupCount, 3);
+    });
+
+    testWidgets(
+        'hot reload rebinds watched signals even when function identity stays the same',
+        (tester) async {
+      final signalA = Signal(0);
+      final signalB = Signal(0);
+      var useSecondSignal = false;
+      int setupCount = 0;
+
+      Iterable<Readable> readSignals() => [useSecondSignal ? signalB : signalA];
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          setupCount++;
+          useReset.watch(readSignals);
+          return () => Text('Setup: $setupCount');
+        }),
+      ));
+
+      await tester.pumpAndSettle();
+      expect(setupCount, 1);
+
+      useSecondSignal = true;
+      tester.binding.reassembleApplication();
+      await tester.pump();
+
+      expect(setupCount, 2);
+
+      signalA.value = 1;
+      await tester.pumpAndSettle();
+      expect(setupCount, 2);
+
+      signalB.value = 1;
+      await tester.pumpAndSettle();
+      expect(setupCount, 3);
     });
   });
 
@@ -450,7 +551,8 @@ void main() {
         home: SetupBuilder(setup: (context) {
           setupCount++;
 
-          useReset.select(() => '${signal1.value}-${signal2.value}-${signal3.value}');
+          useReset.select(
+              () => '${signal1.value}-${signal2.value}-${signal3.value}');
 
           return () => Text(
               'Setup: $setupCount, S1: ${signal1.value}, S2: ${signal2.value}, S3: ${signal3.value}');
@@ -468,6 +570,97 @@ void main() {
 
       expect(setupCount, 2);
       expect(find.text('Setup: 2, S1: 1, S2: 20, S3: 3'), findsOneWidget);
+    });
+
+    testWidgets('hot reload updates selected dependencies', (tester) async {
+      final signalA = Signal(0);
+      final signalB = Signal(0);
+      var useSecondSignal = false;
+      int setupCount = 0;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          setupCount++;
+          useReset
+              .select(() => useSecondSignal ? signalB.value : signalA.value);
+          return () => Text('Setup: $setupCount');
+        }),
+      ));
+
+      await tester.pumpAndSettle();
+      expect(setupCount, 1);
+
+      useSecondSignal = true;
+      tester.binding.reassembleApplication();
+      await tester.pump();
+
+      expect(setupCount, 2);
+
+      signalA.value = 1;
+      await tester.pumpAndSettle();
+      expect(setupCount, 2);
+
+      signalB.value = 1;
+      await tester.pumpAndSettle();
+      expect(setupCount, 3);
+    });
+
+    testWidgets(
+        'hot reload rebinds selected dependencies even when function identity stays the same',
+        (tester) async {
+      final signalA = Signal(0);
+      final signalB = Signal(0);
+      var useSecondSignal = false;
+      int setupCount = 0;
+
+      int selectValue() => useSecondSignal ? signalB.value : signalA.value;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          setupCount++;
+          useReset.select(selectValue);
+          return () => Text('Setup: $setupCount');
+        }),
+      ));
+
+      await tester.pumpAndSettle();
+      expect(setupCount, 1);
+
+      useSecondSignal = true;
+      tester.binding.reassembleApplication();
+      await tester.pump();
+
+      expect(setupCount, 2);
+
+      signalA.value = 1;
+      await tester.pumpAndSettle();
+      expect(setupCount, 2);
+
+      signalB.value = 1;
+      await tester.pumpAndSettle();
+      expect(setupCount, 3);
+    });
+
+    testWidgets('resets when nullable selected value changes from null',
+        (tester) async {
+      final signal = Signal<int?>(null);
+      int setupCount = 0;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          setupCount++;
+          useReset.select(() => signal.value);
+          return () => Text('Setup: $setupCount');
+        }),
+      ));
+
+      await tester.pumpAndSettle();
+      expect(setupCount, 1);
+
+      signal.value = 1;
+      await tester.pumpAndSettle();
+
+      expect(setupCount, 2);
     });
   });
 

@@ -43,5 +43,54 @@ void main() {
       // Verify initial rendering
       expect(find.textContaining('State:'), findsOneWidget);
     });
+
+    testWidgets('updates value and callback on app lifecycle changes',
+        (tester) async {
+      final seenStates = <AppLifecycleState>[];
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          useAppLifecycleState(
+            onChange: seenStates.add,
+          );
+
+          return () => const Text('Test');
+        }),
+      ));
+      await tester.pumpAndSettle();
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await tester.pump();
+
+      expect(seenStates, equals([AppLifecycleState.paused]));
+    });
+
+    testWidgets('hot reload updates onChange callback', (tester) async {
+      final firstCallbackStates = <AppLifecycleState>[];
+      final secondCallbackStates = <AppLifecycleState>[];
+      var useSecondCallback = false;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          useAppLifecycleState(
+            onChange: useSecondCallback
+                ? secondCallbackStates.add
+                : firstCallbackStates.add,
+          );
+          return () => const Text('Test');
+        }),
+      ));
+      await tester.pumpAndSettle();
+
+      useSecondCallback = true;
+      tester.binding.reassembleApplication();
+      await tester.pump();
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+
+      expect(firstCallbackStates, isEmpty);
+      expect(secondCallbackStates, equals([AppLifecycleState.resumed]));
+    });
   });
 }

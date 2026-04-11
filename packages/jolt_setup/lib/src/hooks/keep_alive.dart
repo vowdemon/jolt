@@ -151,14 +151,12 @@ class _AutomaticKeepAliveClientHook extends SetupHook<void> {
     _isActive = false;
   }
 
-  // coverage:ignore-start
   @override
   @protected
   void activate() {
     _isActive = true;
     updateKeepAlive();
   }
-  // coverage:ignore-end
 
   @override
   @protected

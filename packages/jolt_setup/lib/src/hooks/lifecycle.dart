@@ -36,13 +36,11 @@ class _AppLifecycleObserver extends SetupHook<Signal<AppLifecycleState?>>
     WidgetsBinding.instance.removeObserver(this);
   }
 
-  // coverage:ignore-start
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     this.state.value = state;
     onChange?.call(state);
   }
-  // coverage:ignore-end
 
   @override
   Signal<AppLifecycleState?> build() {
@@ -50,10 +48,8 @@ class _AppLifecycleObserver extends SetupHook<Signal<AppLifecycleState?>>
         initialState ?? WidgetsBinding.instance.lifecycleState);
   }
 
-  // coverage:ignore-start
   @override
   void reassemble(covariant _AppLifecycleObserver newHook) {
     onChange = newHook.onChange;
   }
-  // coverage:ignore-end
 }

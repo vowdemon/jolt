@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
 import 'package:jolt_setup/jolt_setup.dart';
+import '../shared/helper.dart';
 
 void main() {
   group('SetupMixin Basic Functionality', () {
@@ -155,21 +156,65 @@ void main() {
     });
 
     testWidgets('onActivated lifecycle', (tester) async {
-      bool activated = false;
+      var activatedCount = 0;
+      final key = GlobalKey();
+      var placeInFirstSlot = true;
 
-      final testWidget = _TestStatefulWidget(setup: (context, props) {
-        onActivated(() => activated = true);
-        return () => const Text('Test');
-      });
+      Widget buildHost() => buildReparentableHost(
+            key: key,
+            placeInFirstSlot: placeInFirstSlot,
+            buildTarget: (key) => _TestStatefulWidget(
+              key: key,
+              setup: (context, props) {
+                onActivated(() => activatedCount++);
+                return () => const Text('Test');
+              },
+            ),
+          );
 
-      await tester.pumpWidget(MaterialApp(
-        home: testWidget,
-      ));
+      await tester.pumpWidget(buildHost());
       await tester.pumpAndSettle();
-      // Note: activate() is protected in StatefulWidget, so we can only verify
-      // that the callback is registered. The actual activation happens during
-      // widget lifecycle management by Flutter framework.
-      expect(activated, isFalse);
+      expect(activatedCount, 0);
+
+      placeInFirstSlot = false;
+      await tester.pumpWidget(buildHost());
+      await tester.pumpAndSettle();
+
+      expect(activatedCount, 1);
+    });
+
+    testWidgets('onActivated lifecycle by widget reparent',
+        (tester) async {
+      int activatedCount = 0;
+      int deactivatedCount = 0;
+      final key = GlobalKey();
+      var placeInFirstSlot = true;
+
+      Widget buildHost() => buildReparentableHost(
+            key: key,
+            placeInFirstSlot: placeInFirstSlot,
+            buildTarget: (key) => _TestStatefulWidget(
+              key: key,
+              setup: (context, props) {
+                onActivated(() => activatedCount++);
+                onDeactivated(() => deactivatedCount++);
+                return () => const Text('Test');
+              },
+            ),
+          );
+
+      await tester.pumpWidget(buildHost());
+      await tester.pumpAndSettle();
+
+      expect(activatedCount, 0);
+      expect(deactivatedCount, 0);
+
+      placeInFirstSlot = false;
+      await tester.pumpWidget(buildHost());
+      await tester.pumpAndSettle();
+
+      expect(activatedCount, 1);
+      expect(deactivatedCount, 1);
     });
 
     testWidgets('onDeactivated lifecycle', (tester) async {
@@ -196,24 +241,35 @@ void main() {
         (tester) async {
       int activatedCount = 0;
       int deactivatedCount = 0;
+      final key = GlobalKey();
+      var placeInFirstSlot = true;
 
-      final testWidget = _TestStatefulWidget(setup: (context, props) {
-        onActivated(() => activatedCount++);
-        onDeactivated(() => deactivatedCount++);
-        return () => const Text('Test');
-      });
+      Widget buildHost() => buildReparentableHost(
+            key: key,
+            placeInFirstSlot: placeInFirstSlot,
+            buildTarget: (key) => _TestStatefulWidget(
+              key: key,
+              setup: (context, props) {
+                onActivated(() => activatedCount++);
+                onDeactivated(() => deactivatedCount++);
+                return () => const Text('Test');
+              },
+            ),
+          );
 
-      await tester.pumpWidget(MaterialApp(
-        home: testWidget,
-      ));
+      await tester.pumpWidget(buildHost());
       await tester.pumpAndSettle();
       expect(activatedCount, 0);
       expect(deactivatedCount, 0);
 
-      // Deactivation happens when widget is removed from tree
-      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
-      await tester.pumpAndSettle();
-      expect(deactivatedCount, 1);
+      for (final nextPosition in [false, true]) {
+        placeInFirstSlot = nextPosition;
+        await tester.pumpWidget(buildHost());
+        await tester.pumpAndSettle();
+      }
+
+      expect(activatedCount, 2);
+      expect(deactivatedCount, 2);
     });
 
     testWidgets('useContext retrieves correctly', (tester) async {
@@ -297,6 +353,33 @@ void main() {
       expect(unmounted, [3, 2, 1]);
     });
 
+    testWidgets('resetSetup re-runs setup when called directly', (tester) async {
+      final key = GlobalKey<_TestStatefulWidgetState>();
+      int setupCount = 0;
+
+      await tester.pumpWidget(MaterialApp(
+        home: _TestStatefulWidget(
+          key: key,
+          setup: (context, props) {
+            setupCount++;
+            return () => Text('Setup count: $setupCount');
+          },
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      key.currentState!.resetSetup();
+
+      expect(setupCount, 1,
+          reason: 'resetSetup should schedule work instead of running eagerly');
+
+      tester.binding.scheduleFrame();
+      await tester.pumpAndSettle();
+
+      expect(setupCount, 2);
+      expect(find.text('Setup count: 2'), findsOneWidget);
+    });
+
     testWidgets('context.props provides access to widget', (tester) async {
       await tester.pumpWidget(const MaterialApp(
         home: _ContextPropsStatefulWidget(message: 'Hello', value: 42),
@@ -313,6 +396,7 @@ void main() {
       expect(find.text('Message: World'), findsOneWidget);
       expect(find.text('Value: 100'), findsOneWidget);
     });
+
   });
 }
 
@@ -321,7 +405,7 @@ class _TestStatefulWidget extends StatefulWidget {
   final WidgetFunction<_TestStatefulWidget> Function(
       BuildContext, _TestStatefulWidget) setup;
 
-  const _TestStatefulWidget({required this.setup});
+  const _TestStatefulWidget({super.key, required this.setup});
 
   @override
   State<_TestStatefulWidget> createState() => _TestStatefulWidgetState();

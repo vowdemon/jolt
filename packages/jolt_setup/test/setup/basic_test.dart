@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
 import 'package:jolt_setup/jolt_setup.dart';
+import '../shared/helper.dart';
 
 void main() {
   group('SetupWidget Basic Functionality', () {
@@ -155,90 +156,94 @@ void main() {
     });
 
     testWidgets('onActivated lifecycle', (tester) async {
-      bool activated = false;
+      var activatedCount = 0;
+      final key = GlobalKey();
+      var placeInFirstSlot = true;
 
-      final testWidget = SetupBuilder(setup: (context) {
-        onActivated(() => activated = true);
-        return () => const Text('Test');
-      });
+      Widget buildHost() => buildReparentableHost(
+            key: key,
+            placeInFirstSlot: placeInFirstSlot,
+            buildTarget: (key) => SetupBuilder(
+              key: key,
+              setup: (context) {
+                onActivated(() => activatedCount++);
+                return () => const Text('Test');
+              },
+            ),
+          );
 
-      await tester.pumpWidget(MaterialApp(
-        home: testWidget,
-      ));
+      await tester.pumpWidget(buildHost());
       await tester.pumpAndSettle();
-      expect(activated, isFalse);
+      expect(activatedCount, 0);
 
-      // Get the element and manually call activate to verify the callback works
-      final element = tester.element(find.text('Test'));
-      if (element is SetupWidgetElement) {
-        element.activate();
-        expect(activated, isTrue);
-      }
+      placeInFirstSlot = false;
+      await tester.pumpWidget(buildHost());
+      await tester.pumpAndSettle();
+
+      expect(activatedCount, 1);
     });
 
     testWidgets('onDeactivated lifecycle', (tester) async {
-      bool deactivated = false;
+      var deactivatedCount = 0;
+      final key = GlobalKey();
+      var placeInFirstSlot = true;
 
-      final testWidget = SetupBuilder(setup: (context) {
-        onDeactivated(() => deactivated = true);
-        return () => const Text('Test');
-      });
+      Widget buildHost() => buildReparentableHost(
+            key: key,
+            placeInFirstSlot: placeInFirstSlot,
+            buildTarget: (key) => SetupBuilder(
+              key: key,
+              setup: (context) {
+                onDeactivated(() => deactivatedCount++);
+                return () => const Text('Test');
+              },
+            ),
+          );
 
-      await tester.pumpWidget(MaterialApp(
-        home: testWidget,
-      ));
+      await tester.pumpWidget(buildHost());
       await tester.pumpAndSettle();
-      expect(deactivated, isFalse);
+      expect(deactivatedCount, 0);
 
-      // Get the element and manually call deactivate to verify the callback works
-      final element = tester.element(find.text('Test'));
-      if (element is SetupWidgetElement) {
-        element.deactivate();
-        expect(deactivated, isTrue);
-      }
+      placeInFirstSlot = false;
+      await tester.pumpWidget(buildHost());
+      await tester.pumpAndSettle();
+
+      expect(deactivatedCount, 1);
     });
 
     testWidgets('onActivated and onDeactivated lifecycle together',
         (tester) async {
       int activatedCount = 0;
       int deactivatedCount = 0;
+      final key = GlobalKey();
+      var placeInFirstSlot = true;
 
-      final testWidget = SetupBuilder(setup: (context) {
-        onActivated(() => activatedCount++);
-        onDeactivated(() => deactivatedCount++);
-        return () => const Text('Test');
-      });
+      Widget buildHost() => buildReparentableHost(
+            key: key,
+            placeInFirstSlot: placeInFirstSlot,
+            buildTarget: (key) => SetupBuilder(
+              key: key,
+              setup: (context) {
+                onActivated(() => activatedCount++);
+                onDeactivated(() => deactivatedCount++);
+                return () => const Text('Test');
+              },
+            ),
+          );
 
-      await tester.pumpWidget(MaterialApp(
-        home: testWidget,
-      ));
+      await tester.pumpWidget(buildHost());
       await tester.pumpAndSettle();
       expect(activatedCount, 0);
       expect(deactivatedCount, 0);
 
-      // Get the element and manually call lifecycle methods
-      final element = tester.element(find.text('Test'));
-      if (element is SetupWidgetElement) {
-        // Test deactivate
-        element.deactivate();
-        expect(activatedCount, 0);
-        expect(deactivatedCount, 1);
-
-        // Test activate
-        element.activate();
-        expect(activatedCount, 1);
-        expect(deactivatedCount, 1);
-
-        // Test deactivate again
-        element.deactivate();
-        expect(activatedCount, 1);
-        expect(deactivatedCount, 2);
-
-        // Test activate again
-        element.activate();
-        expect(activatedCount, 2);
-        expect(deactivatedCount, 2);
+      for (final nextPosition in [false, true, false, true]) {
+        placeInFirstSlot = nextPosition;
+        await tester.pumpWidget(buildHost());
+        await tester.pumpAndSettle();
       }
+
+      expect(activatedCount, 4);
+      expect(deactivatedCount, 4);
     });
 
     testWidgets('useContext retrieves correctly', (tester) async {
@@ -321,6 +326,36 @@ void main() {
       await tester.pumpAndSettle();
       expect(unmounted, [3, 2, 1]);
     });
+
+    testWidgets('resetSetup schedules a single reset for the current frame',
+        (tester) async {
+      int setupCount = 0;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          setupCount++;
+          return () => Text('Setup count: $setupCount');
+        }),
+      ));
+      await tester.pumpAndSettle();
+
+      final element =
+          tester.element(find.byType(SetupBuilder)) as SetupWidgetElement;
+
+      element.resetSetup();
+      element.resetSetup();
+
+      expect(setupCount, 1,
+          reason: 'resetSetup should not run synchronously');
+
+      tester.binding.scheduleFrame();
+      await tester.pumpAndSettle();
+
+      expect(setupCount, 2,
+          reason: 'multiple reset requests in one frame should coalesce');
+      expect(find.text('Setup count: 2'), findsOneWidget);
+    });
+
   });
 }
 

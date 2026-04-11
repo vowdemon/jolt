@@ -382,9 +382,13 @@ class _UseEffectHook extends SetupHook<EffectImpl> {
   late bool lazy;
   late JoltDebugOption? debug;
 
+  void _runEffect() {
+    effect();
+  }
+
   @override
   EffectImpl build() {
-    return EffectImpl(effect, lazy: lazy, debug: debug);
+    return EffectImpl(_runEffect, lazy: lazy, debug: debug);
   }
 
   @override
@@ -392,7 +396,6 @@ class _UseEffectHook extends SetupHook<EffectImpl> {
     state.dispose();
   }
 
-  // coverage:ignore-start
   @override
   void reassemble(covariant _UseEffectHook newHook) {
     if (debug != newHook.debug) {
@@ -404,7 +407,6 @@ class _UseEffectHook extends SetupHook<EffectImpl> {
     lazy = newHook.lazy;
     effect = newHook.effect;
   }
-  // coverage:ignore-end
 }
 
 /// Helper class for creating effect hooks in SetupWidget.
@@ -496,9 +498,13 @@ class _UseFlutterEffectHook extends SetupHook<FlutterEffectImpl> {
   late bool lazy;
   late JoltDebugOption? debug;
 
+  void _runEffect() {
+    effect();
+  }
+
   @override
   FlutterEffectImpl build() {
-    return FlutterEffectImpl(effect, lazy: lazy, debug: debug);
+    return FlutterEffectImpl(_runEffect, lazy: lazy, debug: debug);
   }
 
   @override
@@ -506,9 +512,8 @@ class _UseFlutterEffectHook extends SetupHook<FlutterEffectImpl> {
     state.dispose();
   }
 
-  // coverage:ignore-start
   @override
-  void reassemble(covariant _UseEffectHook newHook) {
+  void reassemble(covariant _UseFlutterEffectHook newHook) {
     if (debug != newHook.debug) {
       debug = newHook.debug;
       if (newHook.debug?.onDebug != null) {
@@ -518,7 +523,6 @@ class _UseFlutterEffectHook extends SetupHook<FlutterEffectImpl> {
     lazy = newHook.lazy;
     effect = newHook.effect;
   }
-  // coverage:ignore-end
 }
 
 /// Helper class for creating Flutter effect hooks in SetupWidget.
@@ -628,36 +632,39 @@ class _UseWatcherHook<T> extends SetupHook<WatcherImpl<T>> {
     state.dispose();
   }
 
-  // coverage:ignore-start
   @override
   void reassemble(covariant _UseWatcherHook<T> newHook) {
-    if (newHook.immediately != immediately) {
-      state.dispose();
-      immediately = newHook.immediately;
-      sourcesFn = newHook.sourcesFn;
-      fn = newHook.fn;
-      when = newHook.when;
-      rawState = build();
-      return;
-    }
+    final shouldRecreate = newHook.immediately != immediately;
+    final wasPaused = state.isPaused;
 
     if (debug != newHook.debug) {
+      debug = newHook.debug;
       if (newHook.debug?.onDebug != null) {
         JoltDebug.setDebug(state, newHook.debug!.onDebug!);
       }
     }
 
-    if (sourcesFn == newHook.sourcesFn &&
-        fn == newHook.fn &&
-        when == newHook.when) {
+    sourcesFn = newHook.sourcesFn;
+    fn = newHook.fn;
+    when = newHook.when;
+    immediately = newHook.immediately;
+
+    if (shouldRecreate) {
+      state.dispose();
+      rawState = build();
       return;
     }
 
-    state.sourcesFn = newHook.sourcesFn;
-    state.fn = newHook.fn;
-    state.when = newHook.when;
+    state.sourcesFn = sourcesFn;
+    state.fn = fn;
+    state.when = when;
+    state.prevSources = untracked(state.sourcesFn);
+
+    if (!wasPaused) {
+      state.pause();
+      state.resume();
+    }
   }
-  // coverage:ignore-end
 }
 
 /// Helper class for creating watcher hooks in SetupWidget.
@@ -847,7 +854,6 @@ class _UseUntilHook<T> extends SetupHook<Until<T>> {
     state.cancel();
   }
 
-  // coverage:ignore-start
   @override
   void reassemble(covariant _UseUntilHook<T> newHook) {
     state.cancel();
@@ -856,7 +862,6 @@ class _UseUntilHook<T> extends SetupHook<Until<T>> {
     detach = newHook.detach;
     rawState = build();
   }
-  // coverage:ignore-end
 }
 
 class _UseUntilWhenHook<T> extends SetupHook<Until<T>> {
@@ -874,7 +879,6 @@ class _UseUntilWhenHook<T> extends SetupHook<Until<T>> {
     state.cancel();
   }
 
-  // coverage:ignore-start
   @override
   void reassemble(covariant _UseUntilWhenHook<T> newHook) {
     state.cancel();
@@ -883,7 +887,6 @@ class _UseUntilWhenHook<T> extends SetupHook<Until<T>> {
     detach = newHook.detach;
     rawState = build();
   }
-  // coverage:ignore-end
 }
 
 class _UseUntilChangedHook<T> extends SetupHook<Until<T>> {
@@ -900,7 +903,6 @@ class _UseUntilChangedHook<T> extends SetupHook<Until<T>> {
     state.cancel();
   }
 
-  // coverage:ignore-start
   @override
   void reassemble(covariant _UseUntilChangedHook<T> newHook) {
     state.cancel();
@@ -908,7 +910,6 @@ class _UseUntilChangedHook<T> extends SetupHook<Until<T>> {
     detach = newHook.detach;
     rawState = build();
   }
-  // coverage:ignore-end
 }
 
 /// Helper class for creating Until hooks in SetupWidget.

@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:jolt_flutter/core.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
 import 'package:jolt_setup/hooks.dart';
+import 'package:meta/meta.dart';
 
 import 'package:shared_interfaces/shared_interfaces.dart';
 
@@ -69,7 +70,6 @@ class JoltSetupContext<T extends Widget> extends EffectScopeImpl {
   /// The list of hooks registered for this widget.
   final List<SetupHook> _hooks = [];
 
-  // coverage:ignore-start
   /// Temporary list used during hot reload to build the new hook sequence.
   late final List<SetupHook> _newHooks = [];
 
@@ -85,9 +85,7 @@ class JoltSetupContext<T extends Widget> extends EffectScopeImpl {
 
   /// Whether the widget is currently in hot reload mode.
   late bool _isReassembling = false;
-  // coverage:ignore-end
 
-  // coverage:ignore-start
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
@@ -195,7 +193,6 @@ class JoltSetupContext<T extends Widget> extends EffectScopeImpl {
       return true;
     }());
   }
-  // coverage:ignore-end
 
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
@@ -233,7 +230,6 @@ class JoltSetupContext<T extends Widget> extends EffectScopeImpl {
     }
   }
 
-  // coverage:ignore-start
   /// Notifies all hooks that the widget has been activated.
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
@@ -243,7 +239,6 @@ class JoltSetupContext<T extends Widget> extends EffectScopeImpl {
       hook.activate();
     }
   }
-  // coverage:ignore-end
 
   /// Notifies all hooks that the widget has been deactivated.
   @pragma('vm:prefer-inline')

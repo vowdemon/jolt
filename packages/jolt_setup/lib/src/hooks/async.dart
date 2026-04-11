@@ -505,7 +505,6 @@ class _UseStreamSubscriptionHook<T> extends SetupHook<StreamSubscription<T>> {
     state.cancel();
   }
 
-  // coverage:ignore-start
   @override
   void reassemble(covariant _UseStreamSubscriptionHook<T> newHook) {
     final needRecreate =
@@ -516,12 +515,10 @@ class _UseStreamSubscriptionHook<T> extends SetupHook<StreamSubscription<T>> {
     onError = newHook.onError;
     onDone = newHook.onDone;
     cancelOnError = newHook.cancelOnError;
-    rawState = build();
 
     if (needRecreate) {
       state.cancel();
       rawState = build();
     }
   }
-  // coverage:ignore-end
 }

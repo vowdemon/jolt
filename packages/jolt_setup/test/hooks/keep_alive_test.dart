@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
 import 'package:jolt_setup/hooks.dart';
 import 'package:jolt_setup/jolt_setup.dart';
+import '../shared/helper.dart';
 
 void main() {
   group('useKeepAlive', () {
@@ -282,6 +283,41 @@ void main() {
       expect(disposeCount, greaterThan(0),
           reason:
               'Widget should be disposed when useAutomaticKeepAlive.call(false)');
+    });
+
+    testWidgets('re-dispatches keep alive when reactivated', (tester) async {
+      final key = GlobalKey();
+      var keepAliveNotifications = 0;
+      var placeInFirstSlot = true;
+
+      Widget buildHost() => buildReparentableHost(
+            key: key,
+            placeInFirstSlot: placeInFirstSlot,
+            buildTarget: (key) => SetupBuilder(
+              key: key,
+              setup: (context) {
+                useAutomaticKeepAlive(true);
+                return () => const SizedBox();
+              },
+            ),
+            wrapHome: (child) => NotificationListener<KeepAliveNotification>(
+              onNotification: (notification) {
+                keepAliveNotifications++;
+                return true;
+              },
+              child: child,
+            ),
+          );
+
+      await tester.pumpWidget(buildHost());
+      await tester.pumpAndSettle();
+      expect(keepAliveNotifications, 1);
+
+      placeInFirstSlot = false;
+      await tester.pumpWidget(buildHost());
+      await tester.pumpAndSettle();
+
+      expect(keepAliveNotifications, 2);
     });
   });
 }

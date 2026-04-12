@@ -1,3 +1,10 @@
+## 3.2.1
+
+ - **FIX**(jolt): allow nullable JoltDebugFn in setDebug method. ([d0915d08](https://github.com/vowdemon/jolt/commit/d0915d08f7e1e7faac1bd63518228a79c28ce31b))
+ - **FIX**(jolt_setup): refine hook reassemble semantics and add lifecycle tests. ([d182ea72](https://github.com/vowdemon/jolt/commit/d182ea728c17621fe5aaf11d629fd8d3d587f680))
+ - **FEAT**(jolt_setup): enhance useInherited hook with debug option. ([8c1e7d99](https://github.com/vowdemon/jolt/commit/8c1e7d997234f8c75e339281259f48a385be1822))
+ - **DOCS**(jolt_setup): clarify signal lifecycle and counter hooks. ([7449a36f](https://github.com/vowdemon/jolt/commit/7449a36fec8aee4a86aea3f19550bc86b21d83e5))
+
 ## 3.2.0
 
  - **FEAT**(setup): useReset hook for reset-setup. ([50111813](https://github.com/vowdemon/jolt/commit/501118130ff55f2a7f7f1a3c83b0cb8fe3136270))

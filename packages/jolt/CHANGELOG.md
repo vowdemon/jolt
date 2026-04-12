@@ -1,3 +1,7 @@
+## 3.2.1
+
+ - **FIX**(jolt): allow nullable JoltDebugFn in setDebug method. ([d0915d08](https://github.com/vowdemon/jolt/commit/d0915d08f7e1e7faac1bd63518228a79c28ce31b))
+
 ## 3.2.0
 
  - **FEAT**: devtools. ([a243e172](https://github.com/vowdemon/jolt/commit/a243e172061babc7031267eb5e4696c9064d778c))

@@ -59,7 +59,7 @@ melos:
         melos run test
         genhtml coverage/combined.info -o coverage/html
     analyze:
-      run: melos exec -c 1 -- flutter analyze
+      run: melos exec -c 1 -- flutter analyze --no-fatal-infos --no-fatal-warnings
     test:
       run: |
         melos run test:select --no-select

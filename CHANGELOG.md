@@ -3,6 +3,37 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-04-12
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`jolt` - `v3.2.1`](#jolt---v321)
+ - [`jolt_setup` - `v3.2.1`](#jolt_setup---v321)
+
+---
+
+#### `jolt` - `v3.2.1`
+
+ - **FIX**(jolt): allow nullable JoltDebugFn in setDebug method. ([d0915d08](https://github.com/vowdemon/jolt/commit/d0915d08f7e1e7faac1bd63518228a79c28ce31b))
+
+#### `jolt_setup` - `v3.2.1`
+
+ - 321
+
+ - **FIX**(jolt): allow nullable JoltDebugFn in setDebug method. ([d0915d08](https://github.com/vowdemon/jolt/commit/d0915d08f7e1e7faac1bd63518228a79c28ce31b))
+ - **FIX**(jolt_setup): refine hook reassemble semantics and add lifecycle tests. ([d182ea72](https://github.com/vowdemon/jolt/commit/d182ea728c17621fe5aaf11d629fd8d3d587f680))
+ - **FEAT**(jolt_setup): enhance useInherited hook with debug option. ([8c1e7d99](https://github.com/vowdemon/jolt/commit/8c1e7d997234f8c75e339281259f48a385be1822))
+ - **DOCS**(jolt_setup): clarify signal lifecycle and counter hooks. ([7449a36f](https://github.com/vowdemon/jolt/commit/7449a36fec8aee4a86aea3f19550bc86b21d83e5))
+
+
 ## 2026-04-07
 
 ### Changes

@@ -321,6 +321,11 @@ Watcher implements the `EffectNode` interface and has lifecycle management capab
 - **`dispose()`**: Dispose Watcher, clean up all dependencies and cleanup functions
 - **`isDisposed`**: Check if Watcher is disposed
 
+Like `Effect`, `Watcher` is an active side-effect node rather than a passive value node. Disposing a watcher:
+- unsubscribes it from watched sources
+- prevents future callback executions
+- runs cleanup callbacks registered with `onEffectCleanup()` or `watcher.onCleanUp()`
+
 ```dart
 final count = Signal(0);
 

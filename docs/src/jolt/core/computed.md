@@ -200,7 +200,11 @@ Computed implements the `ReadonlyNode` interface and has lifecycle management ca
 - **`dispose()`**: Release resources (similar to Signal)
 - **`isDisposed`**: Check if disposed (similar to Signal)
 
-Computed values that are no longer used should call `dispose()` to release resources.
+`Computed.dispose()` plays the same role as `Signal.dispose()`: it eagerly detaches the computed node from its cached dependency graph, marks it as unusable, and prevents stale graph links from staying alive longer than necessary.
+
+Computed values that are no longer used should call `dispose()` to release resources. If a computed value simply becomes unreachable, GC can eventually reclaim it, but `dispose()` gives you deterministic teardown of the reactive graph.
+
+This is different from `Effect` and `Watcher`: disposing a computed value does not run side-effect cleanup callbacks, because `Computed` is still a reactive value node rather than an active side-effect node.
 
 ## Writable Computed Values
 

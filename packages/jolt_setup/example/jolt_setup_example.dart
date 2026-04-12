@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jolt_flutter/jolt_flutter.dart';
 import 'package:jolt_setup/hooks.dart';
 import 'package:jolt_setup/jolt_setup.dart';
 
@@ -17,15 +18,11 @@ class MainApp extends StatelessWidget {
       setup: (context) {
         final brightness = useSignal(Brightness.light);
 
-        final counter = useSignal(0);
+        final counter = useCounterHook(0);
 
-        final doubleCount = useComputed(() => counter.value * 2);
+        final doubleCount = useComputed(() => counter.get() * 2);
 
         final lastCounter = useSignal(0);
-
-        int increment() => counter.value++;
-
-        int decrement() => counter.value--;
 
         useWatcher(() => doubleCount.value, (_, oldValue) {
           lastCounter.value = oldValue!;
@@ -51,7 +48,7 @@ class MainApp extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       spacing: 8,
                       children: [
-                        Text('counter: ${counter.value}'),
+                        Text('counter: ${counter.get()}'),
                         Text('doubleCount: ${doubleCount.value}'),
                         Text('lastDoubleCounter: ${lastCounter.value}'),
                       ],
@@ -74,12 +71,12 @@ class MainApp extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     FloatingActionButton(
-                      onPressed: increment,
+                      onPressed: counter.increment,
                       child: const Icon(Icons.add),
                     ),
                     const SizedBox(height: 8),
                     FloatingActionButton(
-                      onPressed: decrement,
+                      onPressed: counter.decrement,
                       child: const Icon(Icons.remove),
                     ),
                   ],
@@ -90,3 +87,43 @@ class MainApp extends StatelessWidget {
     );
   }
 }
+
+@defineHook
+CounterHook useCounterHook([int initialValue = 0]) =>
+    CounterHook(initialValue: initialValue);
+
+class CounterHook extends SetupHook<Signal<int>> {
+  final int initialValue;
+
+  CounterHook({required this.initialValue});
+
+  void increment() => state.value++;
+  void decrement() => state.value--;
+  void reset() => state.value = initialValue;
+  int get() => state.value;
+  void set(int value) => state.value = value;
+
+  @override
+  Signal<int> build() => Signal(initialValue);
+
+  @override
+  void unmount() => state.dispose();
+}
+
+@defineHook
+final useCounterHookWithoutClass = ([int initialValue = 0]) {
+  final counter = useSignal(0);
+  void increment() => counter.value++;
+  void decrement() => counter.value--;
+  void reset() => counter.value = initialValue;
+  int get() => counter.value;
+  void set(int value) => counter.value = value;
+  return (
+    counter: counter,
+    increment: increment,
+    decrement: decrement,
+    reset: reset,
+    get: get,
+    set: set,
+  );
+};

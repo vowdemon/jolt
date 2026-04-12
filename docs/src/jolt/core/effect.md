@@ -174,6 +174,11 @@ Effect implements the `EffectNode` interface and has lifecycle management capabi
 - **`dispose()`**: Dispose Effect, clean up all dependencies and cleanup functions
 - **`isDisposed`**: Check if Effect is disposed
 
+Unlike `Signal` and `Computed`, `Effect` is an active side-effect node. Disposing it does more than detach reactive graph links:
+- it unsubscribes the effect from its dependencies
+- it prevents any future re-runs
+- it executes cleanup callbacks registered with `onEffectCleanup()` or `effect.onCleanUp()`
+
 ```dart
 final count = Signal(0);
 

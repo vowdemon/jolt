@@ -436,21 +436,24 @@ class _CounterWidgetState extends State<CounterWidget>
 
 Setup Widget 为所有 Jolt 响应式原语提供 hooks：
 
-> **💡 关于使用 Hooks**
->
-> 对于像 `Signal` 和 `Computed` 这样的响应式对象，如果它们会在 widget unmount 时被垃圾回收（例如，setup 函数中的局部变量），你可以直接创建它们而不使用 hooks。Hooks 的主要目的是确保在 widget unmount 或热重载期间正确清理和保持状态。
->
-> ```dart
-> setup(context, props) {
->   // 使用 hooks - 由 hook 管理生命周期
->   final count = useSignal(0);
->   
->   // 不使用 hooks - 也可以，在 widget unmount 后会被 GC
->   final temp = Signal(0);
->   
->   return () => Text('Count: ${count.value}');
-> }
-> ```
+#### `Signal(...)` 与 `useSignal(...)`
+
+它们都可以在 `setup()` 中使用，但解决的是不同的生命周期问题：
+
+| API | 它做什么 | 生命周期行为 |
+|------|----------|--------------|
+| `Signal(...)` / `Computed(...)` | 直接创建一个响应式节点 | 生命周期由你自己负责。节点在 unmount 后如果变得不可达，GC 最终可能回收它，但这里没有显式的 `dispose()` 边界，而且热重载会重新创建实例。 |
+| `useSignal(...)` / `useComputed(...)` | 通过 Setup hook 创建节点 | 绑定到 `SetupWidget` / `SetupMixin` 的 element 生命周期。hook 会在 unmount 或 hook 被替换时显式调用 `dispose()`，并在匹配的热重载中保持引用稳定。 |
+
+实际效果上，`useSignal(value)` 就是由 hook 管理生命周期的：
+
+```dart
+final count = useAutoDispose(() => Signal(value));
+```
+
+即使 widget 局部对象最终可能被 GC 回收，显式 `dispose()` 仍然有价值。它提供的是 widget 离树时的确定性 teardown，而不是等待 GC，同时这也是 hook 管理的 signal 对热重载更友好的原因。
+
+对于属于 widget 的状态，默认优先使用 `useSignal`。只有在你明确想手动控制生命周期时，才直接使用 `Signal(...)`。
 
 ### 响应式状态 Hooks
 
@@ -522,63 +525,70 @@ Setup Widget 为所有 Jolt 响应式原语提供 hooks：
 ```dart
 import 'package:jolt_setup/jolt_setup.dart';
 
-// 组合式 hook - 直接组合现有 hooks
-T useMyCustomHook<T>(T initialValue) {
-  final signal = useSignal(initialValue);
-  
-  useEffect(() {
-    print('Value changed: ${signal.value}');
-  });
-  
-  return signal.value;
-}
+@defineHook
+final useCounterHookWithoutClass = ([int initialValue = 0]) {
+  final counter = useSignal(0);
+  void increment() => counter.value++;
+  void decrement() => counter.value--;
+  void reset() => counter.value = initialValue;
+  int get() => counter.value;
+  void set(int value) => counter.value = value;
+  return (
+    counter: counter,
+    increment: increment,
+    decrement: decrement,
+    reset: reset,
+    get: get,
+    set: set,
+  );
+};
 
 // 在 setup 中使用
-class MyWidget extends SetupWidget {
+class CounterExample extends SetupWidget<CounterExample> {
   @override
-  setup(context) {
-    final value = useMyCustomHook(0);
-    
-    return () => Text('Value: $value');
+  setup(context, props) {
+    final counter = useCounterHookWithoutClass(10);
+
+    return () => Text('Count: ${counter.get()}');
   }
 }
 ```
 
 **2. 基于类的 Hook：**
 
-对于更复杂的 hooks，继承 `SetupHook` 类并使用 `use()` 方法：
+对于更复杂的 hooks，继承 `SetupHook`：
 
 ```dart
 import 'package:jolt_setup/jolt_setup.dart';
 
-class MyCustomHook<T> extends SetupHook<T> {
-  final T initialValue;
-  
-  MyCustomHook(this.initialValue);
-  
+@defineHook
+CounterHook useCounterHook([int initialValue = 0]) =>
+    CounterHook(initialValue: initialValue);
+
+class CounterHook extends SetupHook<Signal<int>> {
+  final int initialValue;
+
+  CounterHook({required this.initialValue});
+
+  void increment() => state.value++;
+  void decrement() => state.value--;
+  void reset() => state.value = initialValue;
+  int get() => state.value;
+  void set(int value) => state.value = value;
+
   @override
-  T call() {
-    final signal = useSignal(initialValue);
-    
-    useEffect(() {
-      print('Value changed: ${signal.value}');
-    });
-    
-    onUnmounted(() {
-      print('Hook cleanup');
-    });
-    
-    return signal.value;
-  }
+  Signal<int> build() => Signal(initialValue);
+
+  @override
+  void unmount() => state.dispose();
 }
 
-// 使用 'use' 方法
-class MyWidget extends SetupWidget {
+class CounterHookExample extends SetupWidget<CounterHookExample> {
   @override
-  setup(context) {
-    final value = use(MyCustomHook(0));
-    
-    return () => Text('Value: $value');
+  setup(context, props) {
+    final counter = useCounterHook(10);
+
+    return () => Text('Count: ${counter.get()}');
   }
 }
 ```
@@ -589,13 +599,11 @@ class MyWidget extends SetupWidget {
 
 ```dart
 @defineHook
-T useMyCustomHook<T>(T initialValue) {
-  // Lint 将确保此 hook 的调用（useSignal 等）
-  // 只能在 setup() 或另一个 hook 内部进行
-  final signal = useSignal(initialValue);
-  return signal.value;
-}
+CounterHook useCounterHook([int initialValue = 0]) =>
+    CounterHook(initialValue: initialValue);
 ```
+
+在这种模式下，hook 对象本身暴露 `increment()`、`reset()` 这类方法，而内部的 `Signal<int>` 存在于 `state` 中。
 
 **Hook 规则：**
 
@@ -712,7 +720,7 @@ setup(context, props) {
 
 ## 自动资源清理
 
-所有 hooks 在 Widget 卸载时自动清理其资源，确保正确清理并防止内存泄漏：
+所有通过 hook 创建的资源都会在 Widget 卸载时自动清理，确保正确清理并防止内存泄漏。手动创建的 `Signal`、`Computed`、`Effect`、`Watcher` 仍然需要你自己负责生命周期：
 
 ```dart
 setup: (context) {
@@ -755,36 +763,85 @@ setup(context, props) {
 ### 计数器示例
 
 ```dart
+@defineHook
+CounterHook useCounterHook([int initialValue = 0]) =>
+    CounterHook(initialValue: initialValue);
+
+class CounterHook extends SetupHook<Signal<int>> {
+  final int initialValue;
+
+  CounterHook({required this.initialValue});
+
+  void increment() => state.value++;
+  void decrement() => state.value--;
+  void reset() => state.value = initialValue;
+  int get() => state.value;
+  void set(int value) => state.value = value;
+
+  @override
+  Signal<int> build() => Signal(initialValue);
+
+  @override
+  void unmount() => state.dispose();
+}
+
+@defineHook
+final useCounterHookWithoutClass = ([int initialValue = 0]) {
+  final counter = useSignal(0);
+  void increment() => counter.value++;
+  void decrement() => counter.value--;
+  void reset() => counter.value = initialValue;
+  int get() => counter.value;
+  void set(int value) => counter.value = value;
+  return (
+    counter: counter,
+    increment: increment,
+    decrement: decrement,
+    reset: reset,
+    get: get,
+    set: set,
+  );
+};
+
 class CounterWidget extends SetupWidget<CounterWidget> {
   const CounterWidget({super.key});
 
   @override
   setup(context, props) {
-    final count = useSignal(0);
-
-    onMounted(() {
-      print('Counter widget mounted');
-    });
-
-    onUnmounted(() {
-      print('Counter widget unmounted');
-    });
+    final counter = useCounterHook(0);
+    final counter2 = useCounterHookWithoutClass(0);
 
     return () => Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text('Count: ${count.value}'),
+        Text('counter: ${counter.get()}'),
+        Text('counter2: ${counter2.get()}'),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             ElevatedButton(
-              onPressed: () => count.value--,
-              child: Text('-'),
+              onPressed: counter.decrement,
+              child: const Text('counter1 -'),
             ),
-            SizedBox(width: 16),
+            const SizedBox(width: 16),
             ElevatedButton(
-              onPressed: () => count.value++,
-              child: Text('+'),
+              onPressed: counter.increment,
+              child: const Text('counter1+'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: counter2.decrement,
+              child: const Text('counter2 -'),
+            ),
+            const SizedBox(width: 16),
+            ElevatedButton(
+              onPressed: counter2.increment,
+              child: const Text('counter2 +'),
             ),
           ],
         ),
@@ -844,7 +901,7 @@ class LoginForm extends SetupWidget<LoginForm> {
 
 2. **Hook 同步调用**：Hooks 必须在 `setup` 函数中同步调用，不能在异步函数或回调中调用。
 
-3. **自动清理**：所有通过 Hooks 创建的资源会在 Widget 卸载时自动清理。
+3. **自动清理**：通过 Hooks 创建的资源会在 Widget 卸载时自动清理。手动创建的 `Signal` / `Computed` / `Effect` / `Watcher` 仍然需要你自己负责。
 
 4. **响应式更新**：在返回的构建函数中访问响应式值时，Widget 会自动在依赖变化时重建。
 

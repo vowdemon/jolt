@@ -174,6 +174,11 @@ Effect 实现了 `EffectNode` 接口，具有生命周期管理能力：
 - **`dispose()`**：销毁 Effect，清理所有依赖和清理函数
 - **`isDisposed`**：检查 Effect 是否已销毁
 
+和 `Signal`、`Computed` 不同，`Effect` 是一个主动执行的副作用节点。销毁它不只是断开依赖图连接，还会：
+- 取消对依赖的订阅
+- 阻止后续再次运行
+- 执行通过 `onEffectCleanup()` 或 `effect.onCleanUp()` 注册的清理回调
+
 ```dart
 final count = Signal(0);
 

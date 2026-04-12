@@ -278,12 +278,16 @@ final count = Signal(0);
 count.dispose();
 ```
 
+`Signal.dispose()` 的主要作用，是为响应式依赖图提供一个显式、立即生效的生命周期边界。`Signal` 通常并不直接持有外部资源，但它可能仍然和订阅者、`Computed`、`Effect` 等节点存在依赖连接。调用 `dispose()` 会立即断开这些响应式连接、把该信号标记为不可再用，并避免依赖图比预期存活更久。
+
 释放后的信号不能再使用：
 
 ```dart
 count.dispose();
 // count.value = 10; // 运行时错误：Signal is disposed
 ```
+
+如果一个 `Signal` 只是变得不可达，Dart 的 GC 最终也可能回收它；但 `dispose()` 提供的是确定性的 teardown，而不是等待 GC 的时机。这一点和 `Effect`、`Watcher` 不同：销毁 `Signal` **不会** 执行副作用清理回调，因为 `Signal` 是状态节点，不是主动执行的副作用节点。
 
 ### isDisposed
 

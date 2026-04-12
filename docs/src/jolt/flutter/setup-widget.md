@@ -429,21 +429,24 @@ SetupWidget, SetupMixin, and standard Flutter widget patterns solve different co
 
 Setup Widget provides hooks for all Jolt reactive primitives:
 
-> **💡 About Using Hooks**
->
-> For reactive objects like `Signal` and `Computed`, if they will be garbage collected when the widget unmounts (e.g., local variables in the setup function), you can create them directly without using hooks. The main purpose of Hooks is to ensure proper cleanup and state preservation during widget unmount or hot reload.
->
-> ```dart
-> setup(context, props) {
->   // Using hooks - hook-managed lifecycle
->   final count = useSignal(0);
->   
->   // Not using hooks - Also fine, will be GC'd after widget unmount
->   final temp = Signal(0);
->   
->   return () => Text('Count: ${count.value}');
-> }
-> ```
+#### `Signal(...)` vs `useSignal(...)`
+
+Both can be used inside `setup()`, but they solve different lifecycle problems:
+
+| API | What it does | Lifecycle behavior |
+|------|-------------|--------------------|
+| `Signal(...)` / `Computed(...)` | Directly creates a reactive node | You own the lifecycle. If the node becomes unreachable after unmount, GC can eventually reclaim it, but there is no explicit `dispose()` boundary and hot reload recreates a new instance. |
+| `useSignal(...)` / `useComputed(...)` | Creates the node through a Setup hook | Bound to the `SetupWidget` / `SetupMixin` element lifecycle. The hook explicitly disposes the node on unmount or hook replacement, and preserves a stable reference across matching hot reloads. |
+
+In practice, `useSignal(value)` is the hook-managed version of:
+
+```dart
+final count = useAutoDispose(() => Signal(value));
+```
+
+That explicit disposal still matters even if the widget-local object could eventually be garbage collected. It gives deterministic teardown when the widget leaves the tree, instead of waiting for GC, and it is what makes hook-owned signals hot-reload friendly.
+
+Use `useSignal` by default for widget-owned state. Reach for `Signal(...)` directly only when you intentionally want manual lifecycle control.
 
 ### Reactive State Hooks
 
@@ -515,63 +518,70 @@ Combine existing hooks into a reusable function:
 ```dart
 import 'package:jolt_setup/jolt_setup.dart';
 
-// Composition hook - directly compose existing hooks
-T useMyCustomHook<T>(T initialValue) {
-  final signal = useSignal(initialValue);
-  
-  useEffect(() {
-    print('Value changed: ${signal.value}');
-  });
-  
-  return signal.value;
-}
+@defineHook
+final useCounterHookWithoutClass = ([int initialValue = 0]) {
+  final counter = useSignal(0);
+  void increment() => counter.value++;
+  void decrement() => counter.value--;
+  void reset() => counter.value = initialValue;
+  int get() => counter.value;
+  void set(int value) => counter.value = value;
+  return (
+    counter: counter,
+    increment: increment,
+    decrement: decrement,
+    reset: reset,
+    get: get,
+    set: set,
+  );
+};
 
 // Usage in setup
-class MyWidget extends SetupWidget {
+class CounterExample extends SetupWidget<CounterExample> {
   @override
-  setup(context) {
-    final value = useMyCustomHook(0);
-    
-    return () => Text('Value: $value');
+  setup(context, props) {
+    final counter = useCounterHookWithoutClass(10);
+
+    return () => Text('Count: ${counter.get()}');
   }
 }
 ```
 
 **2. Class-based Hooks:**
 
-For more complex hooks, extend the `SetupHook` class and use the `use()` method:
+For more complex hooks, extend `SetupHook`:
 
 ```dart
 import 'package:jolt_setup/jolt_setup.dart';
 
-class MyCustomHook<T> extends SetupHook<T> {
-  final T initialValue;
-  
-  MyCustomHook(this.initialValue);
-  
+@defineHook
+CounterHook useCounterHook([int initialValue = 0]) =>
+    CounterHook(initialValue: initialValue);
+
+class CounterHook extends SetupHook<Signal<int>> {
+  final int initialValue;
+
+  CounterHook({required this.initialValue});
+
+  void increment() => state.value++;
+  void decrement() => state.value--;
+  void reset() => state.value = initialValue;
+  int get() => state.value;
+  void set(int value) => state.value = value;
+
   @override
-  T call() {
-    final signal = useSignal(initialValue);
-    
-    useEffect(() {
-      print('Value changed: ${signal.value}');
-    });
-    
-    onUnmounted(() {
-      print('Hook cleanup');
-    });
-    
-    return signal.value;
-  }
+  Signal<int> build() => Signal(initialValue);
+
+  @override
+  void unmount() => state.dispose();
 }
 
-// Usage with 'use' method
-class MyWidget extends SetupWidget {
+class CounterHookExample extends SetupWidget<CounterHookExample> {
   @override
-  setup(context) {
-    final value = use(MyCustomHook(0));
-    
-    return () => Text('Value: $value');
+  setup(context, props) {
+    final counter = useCounterHook(10);
+
+    return () => Text('Count: ${counter.get()}');
   }
 }
 ```
@@ -582,13 +592,11 @@ The `@defineHook` annotation is used to indicate that a function is a hook for l
 
 ```dart
 @defineHook
-T useMyCustomHook<T>(T initialValue) {
-  // Lint will ensure this hook's calls (useSignal, etc.) 
-  // are only made within setup() or inside another hook
-  final signal = useSignal(initialValue);
-  return signal.value;
-}
+CounterHook useCounterHook([int initialValue = 0]) =>
+    CounterHook(initialValue: initialValue);
 ```
+
+In this pattern, the hook object exposes methods such as `increment()` and `reset()`, while the internal `Signal<int>` lives in `state`.
 
 **Hook Rules:**
 
@@ -705,7 +713,7 @@ setup(context, props) {
 
 ## Automatic Resource Cleanup
 
-All hooks automatically clean up their resources when Widgets are unmounted, ensuring proper cleanup and preventing memory leaks:
+All hook-created resources are automatically cleaned up when Widgets are unmounted, ensuring proper cleanup and preventing memory leaks. Manually created `Signal`, `Computed`, `Effect`, or `Watcher` instances are still your responsibility:
 
 ```dart
 setup: (context) {
@@ -748,36 +756,85 @@ setup(context, props) {
 ### Counter Example
 
 ```dart
+@defineHook
+CounterHook useCounterHook([int initialValue = 0]) =>
+    CounterHook(initialValue: initialValue);
+
+class CounterHook extends SetupHook<Signal<int>> {
+  final int initialValue;
+
+  CounterHook({required this.initialValue});
+
+  void increment() => state.value++;
+  void decrement() => state.value--;
+  void reset() => state.value = initialValue;
+  int get() => state.value;
+  void set(int value) => state.value = value;
+
+  @override
+  Signal<int> build() => Signal(initialValue);
+
+  @override
+  void unmount() => state.dispose();
+}
+
+@defineHook
+final useCounterHookWithoutClass = ([int initialValue = 0]) {
+  final counter = useSignal(0);
+  void increment() => counter.value++;
+  void decrement() => counter.value--;
+  void reset() => counter.value = initialValue;
+  int get() => counter.value;
+  void set(int value) => counter.value = value;
+  return (
+    counter: counter,
+    increment: increment,
+    decrement: decrement,
+    reset: reset,
+    get: get,
+    set: set,
+  );
+};
+
 class CounterWidget extends SetupWidget<CounterWidget> {
   const CounterWidget({super.key});
 
   @override
   setup(context, props) {
-    final count = useSignal(0);
-
-    onMounted(() {
-      print('Counter widget mounted');
-    });
-
-    onUnmounted(() {
-      print('Counter widget unmounted');
-    });
+    final counter = useCounterHook(0);
+    final counter2 = useCounterHookWithoutClass(0);
 
     return () => Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text('Count: ${count.value}'),
+        Text('counter: ${counter.get()}'),
+        Text('counter2: ${counter2.get()}'),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             ElevatedButton(
-              onPressed: () => count.value--,
-              child: Text('-'),
+              onPressed: counter.decrement,
+              child: const Text('counter1 -'),
             ),
-            SizedBox(width: 16),
+            const SizedBox(width: 16),
             ElevatedButton(
-              onPressed: () => count.value++,
-              child: Text('+'),
+              onPressed: counter.increment,
+              child: const Text('counter1+'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: counter2.decrement,
+              child: const Text('counter2 -'),
+            ),
+            const SizedBox(width: 16),
+            ElevatedButton(
+              onPressed: counter2.increment,
+              child: const Text('counter2 +'),
             ),
           ],
         ),
@@ -837,7 +894,7 @@ class LoginForm extends SetupWidget<LoginForm> {
 
 2. **Hook synchronous calls**: Hooks must be called synchronously within the `setup` function, and cannot be called in async functions or callbacks.
 
-3. **Automatic cleanup**: All resources created through Hooks are automatically cleaned up when Widgets are unmounted.
+3. **Automatic cleanup**: Resources created through Hooks are automatically cleaned up when Widgets are unmounted. Manually created `Signal` / `Computed` / `Effect` / `Watcher` instances are still your responsibility.
 
 4. **Reactive updates**: When accessing reactive values in the returned build function, Widgets automatically rebuild when dependencies change.
 

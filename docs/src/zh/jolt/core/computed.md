@@ -200,7 +200,11 @@ Computed 实现了 `ReadonlyNode` 接口，具有生命周期管理能力：
 - **`dispose()`**：释放资源（与 Signal 类似）
 - **`isDisposed`**：检查是否已释放（与 Signal 类似）
 
-不再使用的 Computed 应该调用 `dispose()` 释放资源。
+`Computed.dispose()` 的作用和 `Signal.dispose()` 类似：它会显式地把该计算节点从缓存的依赖图中断开，标记为不可再用，并避免旧的依赖连接在内存里停留更久。
+
+不再使用的 Computed 应该调用 `dispose()` 释放资源。如果一个 `Computed` 只是变得不可达，GC 最终也可能回收它；但 `dispose()` 提供的是对响应式依赖图的确定性清理。
+
+这和 `Effect`、`Watcher` 不同：销毁 `Computed` 不会执行副作用清理回调，因为 `Computed` 仍然是值节点，而不是主动运行的副作用节点。
 
 ## 可写计算值
 

@@ -321,6 +321,11 @@ Watcher 实现了 `EffectNode` 接口，具有生命周期管理能力：
 - **`dispose()`**：销毁 Watcher，清理所有依赖和清理函数
 - **`isDisposed`**：检查 Watcher 是否已销毁
 
+和 `Effect` 一样，`Watcher` 也是主动执行的副作用节点，而不是被动的值节点。销毁 `Watcher` 会：
+- 取消它对观察源的订阅
+- 阻止后续回调继续执行
+- 执行通过 `onEffectCleanup()` 或 `watcher.onCleanUp()` 注册的清理回调
+
 ```dart
 final count = Signal(0);
 

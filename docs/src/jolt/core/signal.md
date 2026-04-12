@@ -278,12 +278,16 @@ final count = Signal(0);
 count.dispose();
 ```
 
+`Signal.dispose()` is mainly an eager lifecycle boundary for the reactive graph. A `Signal` usually does not own external resources by itself, but it can still be linked to subscribers, computed values, and effects. Calling `dispose()` explicitly breaks those reactive links immediately, marks the signal as unusable, and avoids keeping the graph alive longer than intended.
+
 Disposed signals can no longer be used:
 
 ```dart
 count.dispose();
 // count.value = 10; // Runtime error: Signal is disposed
 ```
+
+If a signal simply becomes unreachable, Dart's garbage collector can eventually reclaim it. `dispose()` is still useful when you want deterministic teardown instead of waiting for GC. This is different from `Effect` and `Watcher`: disposing a signal does **not** run side-effect cleanup callbacks, because a signal is state, not an active side effect.
 
 ### isDisposed
 

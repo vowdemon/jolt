@@ -666,18 +666,33 @@ T useMemoized<T>(T Function() creator, [void Function(T state)? disposer]) {
 /// }
 /// ```
 class _UseInheritedHook<T> extends SetupHook<Computed<T>> {
-  _UseInheritedHook(this.getter);
+  _UseInheritedHook(this.getter, {this.debug});
 
   late final Computed<T> _computed;
-  final T Function(BuildContext) getter;
+  late T Function(BuildContext) getter;
+  late JoltDebugOption? debug;
+
+  T _getter() {
+    return getter(context);
+  }
 
   @override
   Computed<T> build() {
-    return _computed = Computed(() => getter(context));
+    return _computed = Computed(_getter, debug: debug);
   }
 
   @override
   void didChangeDependencies() {
+    _computed.notify();
+  }
+
+  @override
+  void reassemble(covariant _UseInheritedHook<T> newHook) {
+    if (debug != newHook.debug) {
+      debug = newHook.debug;
+      JoltDebug.setDebug(_computed, newHook.debug?.onDebug);
+    }
+    getter = newHook.getter;
     _computed.notify();
   }
 }
@@ -697,8 +712,9 @@ class _UseInheritedHook<T> extends SetupHook<Computed<T>> {
 ///
 /// Returns a computed signal that stays in sync with the inherited widget.
 @defineHook
-Computed<T> useInherited<T>(T Function(BuildContext) getter) {
-  return useHook(_UseInheritedHook<T>(getter));
+Computed<T> useInherited<T>(T Function(BuildContext) getter,
+    {JoltDebugOption? debug}) {
+  return useHook(_UseInheritedHook<T>(getter, debug: debug));
 }
 
 /// {@template jolt_reset_hook_creator}

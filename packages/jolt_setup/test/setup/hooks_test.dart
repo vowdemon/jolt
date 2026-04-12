@@ -1687,5 +1687,57 @@ void main() {
       expect(find.text('Color: ${Colors.red}'), findsOneWidget);
       expect(find.text('Color: ${Colors.blue}'), findsNothing);
     });
+
+    testWidgets('useInherited hot reload removes debug callback',
+        (tester) async {
+      final debugOps = <DebugNodeOperationType>[];
+      late Computed<ThemeData> theme;
+      var enableDebug = true;
+
+      void debugFn(DebugNodeOperationType type, ReactiveNode node, Link? link) {
+        debugOps.add(type);
+      }
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(primaryColor: Colors.blue),
+          home: SetupBuilder(setup: (context) {
+            theme = useInherited(
+              Theme.of,
+              debug: enableDebug ? JoltDebugOption.fn(debugFn) : null,
+            );
+            return () => Text('Color: ${theme().primaryColor}');
+          }),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(JoltDebug.getDebug(theme as Object), same(debugFn));
+
+      enableDebug = false;
+      tester.binding.reassembleApplication();
+      await tester.pump();
+
+      expect(JoltDebug.getDebug(theme as Object), isNull);
+
+      debugOps.clear();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(primaryColor: Colors.red),
+          home: SetupBuilder(setup: (context) {
+            theme = useInherited(
+              Theme.of,
+              debug: enableDebug ? JoltDebugOption.fn(debugFn) : null,
+            );
+            return () => Text('Color: ${theme().primaryColor}');
+          }),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Color: ${Colors.red}'), findsOneWidget);
+      expect(debugOps, isEmpty);
+    });
   });
 }

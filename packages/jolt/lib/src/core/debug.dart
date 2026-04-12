@@ -119,7 +119,7 @@ abstract final class JoltDebug {
   @pragma("vm:prefer-inline")
   @pragma("wasm:prefer-inline")
   @pragma("dart2js:prefer-inline")
-  static void setDebug(Object target, JoltDebugFn fn) {
+  static void setDebug(Object target, JoltDebugFn? fn) {
     joltDebugFns[target] = fn;
   }
 

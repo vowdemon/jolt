@@ -1,3 +1,7 @@
+## 3.2.2
+
+ - **DOCS**(jolt_setup): clarify custom hook patterns and hook lifecycle. ([4e274083](https://github.com/vowdemon/jolt/commit/4e274083edf2441cc966a52adfe3763e72864599))
+
 ## 3.2.1
 
  - **FIX**(jolt): allow nullable JoltDebugFn in setDebug method. ([d0915d08](https://github.com/vowdemon/jolt/commit/d0915d08f7e1e7faac1bd63518228a79c28ce31b))

@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-04-15
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`jolt_setup` - `v3.2.2`](#jolt_setup---v322)
+
+---
+
+#### `jolt_setup` - `v3.2.2`
+
+ - **DOCS**(jolt_setup): clarify custom hook patterns and hook lifecycle. ([4e274083](https://github.com/vowdemon/jolt/commit/4e274083edf2441cc966a52adfe3763e72864599))
+
+
 ## 2026-04-12
 
 ### Changes

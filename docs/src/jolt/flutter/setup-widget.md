@@ -509,17 +509,42 @@ Use `useSignal` by default for widget-owned state. Reach for `Signal(...)` direc
 
 ### Creating Custom Hooks
 
-There are two ways to create custom hooks:
+There are four common ways to create custom hooks:
 
-**1. Composition Hooks (Function-based):**
+```dart
+class Counter {
+  Counter({required this.initialValue}) : raw = Signal(initialValue);
 
-Combine existing hooks into a reusable function:
+  final int initialValue;
+  final Signal<int> raw;
+
+  void increment() => raw.value++;
+  void decrement() => raw.value--;
+  void reset() => raw.value = initialValue;
+  int get() => raw.value;
+  void set(int value) => raw.value = value;
+  void dispose() => raw.dispose();
+}
+
+typedef CounterCompositionHook = ({
+  Signal<int> counter,
+  void Function() increment,
+  void Function() decrement,
+  void Function() reset,
+  int Function() get,
+  void Function(int value) set,
+});
+```
+
+**1. Composition Hook**
+
+Build a reusable hook directly from other hooks:
 
 ```dart
 import 'package:jolt_setup/jolt_setup.dart';
 
 @defineHook
-final useCounterHookWithoutClass = ([int initialValue = 0]) {
+CounterCompositionHook useCounterHookWithoutClass([int initialValue = 0]) {
   final counter = useSignal(0);
   void increment() => counter.value++;
   void decrement() => counter.value--;
@@ -534,7 +559,7 @@ final useCounterHookWithoutClass = ([int initialValue = 0]) {
     get: get,
     set: set,
   );
-};
+}
 
 // Usage in setup
 class CounterExample extends SetupWidget<CounterExample> {
@@ -547,42 +572,79 @@ class CounterExample extends SetupWidget<CounterExample> {
 }
 ```
 
-**2. Class-based Hooks:**
+**2. Composition Hook Generated from Existing Logic**
 
-For more complex hooks, extend `SetupHook`:
+If you already have a reusable state object, you can wrap it with a composition hook and let setup manage disposal:
 
 ```dart
 import 'package:jolt_setup/jolt_setup.dart';
 
 @defineHook
-CounterHook useCounterHook([int initialValue = 0]) =>
-    CounterHook(initialValue: initialValue);
+Counter useCounterHookWithoutClass2([int initialValue = 0]) {
+  final counter = useMemoized(
+    () => Counter(initialValue: initialValue),
+    (counter) => counter.dispose(),
+  );
 
-class CounterHook extends SetupHook<Signal<int>> {
+  return counter;
+}
+```
+
+**3. Class-based Hook**
+
+For more complex hooks, extend `SetupHook` directly:
+
+```dart
+import 'package:jolt_setup/jolt_setup.dart';
+
+@defineHook
+CounterHook useCounterHookClass([int initialValue = 0]) =>
+    useHook(CounterHook(initialValue: initialValue));
+
+class CounterHook extends SetupHook<CounterHook> {
   final int initialValue;
 
   CounterHook({required this.initialValue});
 
-  void increment() => state.value++;
-  void decrement() => state.value--;
-  void reset() => state.value = initialValue;
-  int get() => state.value;
-  void set(int value) => state.value = value;
+  late Signal<int> raw;
+  void increment() => raw.value++;
+  void decrement() => raw.value--;
+  void reset() => raw.value = initialValue;
+  int get() => raw.value;
+  void set(int value) => raw.value = value;
 
   @override
-  Signal<int> build() => Signal(initialValue);
+  CounterHook build() {
+    raw = Signal(initialValue);
+    return this;
+  }
+
+  @override
+  void unmount() => raw.dispose();
+}
+```
+
+**4. Class-based Hook Generated from an Existing Class**
+
+If you already have a reusable class, you can keep that class as the state and wrap it with a hook:
+
+```dart
+import 'package:jolt_setup/jolt_setup.dart';
+
+@defineHook
+Counter useCounterHookClass2([int initialValue = 0]) =>
+    useHook(CounterHook2(initialValue: initialValue));
+
+class CounterHook2 extends SetupHook<Counter> {
+  final int initialValue;
+
+  CounterHook2({required this.initialValue});
+
+  @override
+  Counter build() => Counter(initialValue: initialValue);
 
   @override
   void unmount() => state.dispose();
-}
-
-class CounterHookExample extends SetupWidget<CounterHookExample> {
-  @override
-  setup(context, props) {
-    final counter = useCounterHook(10);
-
-    return () => Text('Count: ${counter.get()}');
-  }
 }
 ```
 
@@ -592,11 +654,68 @@ The `@defineHook` annotation is used to indicate that a function is a hook for l
 
 ```dart
 @defineHook
-CounterHook useCounterHook([int initialValue = 0]) =>
-    CounterHook(initialValue: initialValue);
+CounterHook useCounterHookClass([int initialValue = 0]) =>
+    useHook(CounterHook(initialValue: initialValue));
 ```
 
-In this pattern, the hook object exposes methods such as `increment()` and `reset()`, while the internal `Signal<int>` lives in `state`.
+Add `@defineHook` to custom hook entry points so lint rules can recognize them as hooks.
+
+**What `useHook` does**
+
+`useHook(...)` is the primitive API that registers a `SetupHook` instance into the current setup context.
+
+- It lets setup cache and reuse the hook across rebuilds
+- It connects the hook to the setup lifecycle, including mount, unmount, and hot reload reassemble
+- It returns the hook's `state`
+
+In practice, most custom class-based hooks are just a thin entry function around `useHook(...)`.
+
+```dart
+@defineHook
+CounterHook useCounterHookClass([int initialValue = 0]) =>
+    useHook(CounterHook(initialValue: initialValue));
+```
+
+**What `build()` and `state` mean in class-based hooks**
+
+In a `SetupHook<T>`:
+
+- `useHook(...)` calls `build()` when the hook is first created
+- `build()` creates the hook's `state`
+- setup keeps that `state` alive and reuses it until unmount
+
+That means there are two common shapes:
+
+```dart
+class CounterHook extends SetupHook<CounterHook> {
+  late Signal<int> raw;
+
+  @override
+  CounterHook build() {
+    raw = Signal(0);
+    return this;
+  }
+}
+```
+
+Here, `state` is the hook object itself.
+
+```dart
+class CounterHook2 extends SetupHook<Counter> {
+  @override
+  Counter build() => Counter(initialValue: 0);
+}
+```
+
+Here, `state` is the separate `Counter` object returned by `build()`.
+
+So `build()` is the creation step, and `state` is the value created by `build()` and then kept alive by setup.
+
+**Guidelines:**
+- Use composition hooks when you are mostly composing existing hooks
+- Use `useMemoized(..., disposer)` when you already have reusable state logic and only need setup-managed ownership
+- Use class-based hooks when the hook itself needs explicit lifecycle structure
+- Use an existing class as hook state when your domain logic is already modeled as a reusable object
 
 **Hook Rules:**
 
@@ -756,30 +875,31 @@ setup(context, props) {
 ### Counter Example
 
 ```dart
-@defineHook
-CounterHook useCounterHook([int initialValue = 0]) =>
-    CounterHook(initialValue: initialValue);
+class Counter {
+  Counter({required this.initialValue}) : raw = Signal(initialValue);
 
-class CounterHook extends SetupHook<Signal<int>> {
   final int initialValue;
+  final Signal<int> raw;
 
-  CounterHook({required this.initialValue});
-
-  void increment() => state.value++;
-  void decrement() => state.value--;
-  void reset() => state.value = initialValue;
-  int get() => state.value;
-  void set(int value) => state.value = value;
-
-  @override
-  Signal<int> build() => Signal(initialValue);
-
-  @override
-  void unmount() => state.dispose();
+  void increment() => raw.value++;
+  void decrement() => raw.value--;
+  void reset() => raw.value = initialValue;
+  int get() => raw.value;
+  void set(int value) => raw.value = value;
+  void dispose() => raw.dispose();
 }
 
+typedef CounterCompositionHook = ({
+  Signal<int> counter,
+  void Function() increment,
+  void Function() decrement,
+  void Function() reset,
+  int Function() get,
+  void Function(int value) set,
+});
+
 @defineHook
-final useCounterHookWithoutClass = ([int initialValue = 0]) {
+CounterCompositionHook useCounterHookWithoutClass([int initialValue = 0]) {
   final counter = useSignal(0);
   void increment() => counter.value++;
   void decrement() => counter.value--;
@@ -794,32 +914,93 @@ final useCounterHookWithoutClass = ([int initialValue = 0]) {
     get: get,
     set: set,
   );
-};
+}
+
+@defineHook
+Counter useCounterHookWithoutClass2([int initialValue = 0]) {
+  final counter = useMemoized(
+    () => Counter(initialValue: initialValue),
+    (counter) => counter.dispose(),
+  );
+
+  return counter;
+}
+
+@defineHook
+CounterHook useCounterHookClass([int initialValue = 0]) =>
+    useHook(CounterHook(initialValue: initialValue));
+
+class CounterHook extends SetupHook<CounterHook> {
+  final int initialValue;
+
+  CounterHook({required this.initialValue});
+
+  late Signal<int> raw;
+  void increment() => raw.value++;
+  void decrement() => raw.value--;
+  void reset() => raw.value = initialValue;
+  int get() => raw.value;
+  void set(int value) => raw.value = value;
+
+  @override
+  CounterHook build() {
+    raw = Signal(initialValue);
+    return this;
+  }
+
+  @override
+  void unmount() => raw.dispose();
+}
+
+@defineHook
+Counter useCounterHookClass2([int initialValue = 0]) =>
+    useHook(CounterHook2(initialValue: initialValue));
+
+class CounterHook2 extends SetupHook<Counter> {
+  final int initialValue;
+
+  CounterHook2({required this.initialValue});
+
+  @override
+  Counter build() => Counter(initialValue: initialValue);
+
+  @override
+  void unmount() => state.dispose();
+}
 
 class CounterWidget extends SetupWidget<CounterWidget> {
   const CounterWidget({super.key});
 
   @override
   setup(context, props) {
-    final counter = useCounterHook(0);
-    final counter2 = useCounterHookWithoutClass(0);
+    final composedCounter = useCounterHookWithoutClass(0);
+    final extractedComposedCounter = useCounterHookWithoutClass2(10);
+    final classCounter = useCounterHookClass(20);
+    final extractedClassCounter = useCounterHookClass2(30);
 
     return () => Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text('counter: ${counter.get()}'),
-        Text('counter2: ${counter2.get()}'),
+        Text('Composition hook: ${composedCounter.get()}'),
+        Text(
+          'Composition hook from extracted logic: '
+          '${extractedComposedCounter.get()}',
+        ),
+        Text('Class hook: ${classCounter.get()}'),
+        Text(
+          'Class hook from extracted class: ${extractedClassCounter.get()}',
+        ),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             ElevatedButton(
-              onPressed: counter.decrement,
-              child: const Text('counter1 -'),
+              onPressed: composedCounter.decrement,
+              child: const Text('Composition -'),
             ),
             const SizedBox(width: 16),
             ElevatedButton(
-              onPressed: counter.increment,
-              child: const Text('counter1+'),
+              onPressed: composedCounter.increment,
+              child: const Text('Composition +'),
             ),
           ],
         ),
@@ -828,13 +1009,43 @@ class CounterWidget extends SetupWidget<CounterWidget> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             ElevatedButton(
-              onPressed: counter2.decrement,
-              child: const Text('counter2 -'),
+              onPressed: extractedComposedCounter.decrement,
+              child: const Text('Extracted composition -'),
             ),
             const SizedBox(width: 16),
             ElevatedButton(
-              onPressed: counter2.increment,
-              child: const Text('counter2 +'),
+              onPressed: extractedComposedCounter.increment,
+              child: const Text('Extracted composition +'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: classCounter.decrement,
+              child: const Text('Class -'),
+            ),
+            const SizedBox(width: 16),
+            ElevatedButton(
+              onPressed: classCounter.increment,
+              child: const Text('Class +'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: extractedClassCounter.decrement,
+              child: const Text('Extracted class -'),
+            ),
+            const SizedBox(width: 16),
+            ElevatedButton(
+              onPressed: extractedClassCounter.increment,
+              child: const Text('Extracted class +'),
             ),
           ],
         ),

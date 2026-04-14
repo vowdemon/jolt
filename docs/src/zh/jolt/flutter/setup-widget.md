@@ -518,15 +518,42 @@ final count = useAutoDispose(() => Signal(value));
 
 有两种方式创建自定义 hook：
 
-**1. 组合式 Hook（基于函数）：**
+一共有四种常见写法：
 
-将现有 hooks 组合成可复用函数：
+```dart
+class Counter {
+  Counter({required this.initialValue}) : raw = Signal(initialValue);
+
+  final int initialValue;
+  final Signal<int> raw;
+
+  void increment() => raw.value++;
+  void decrement() => raw.value--;
+  void reset() => raw.value = initialValue;
+  int get() => raw.value;
+  void set(int value) => raw.value = value;
+  void dispose() => raw.dispose();
+}
+
+typedef CounterCompositionHook = ({
+  Signal<int> counter,
+  void Function() increment,
+  void Function() decrement,
+  void Function() reset,
+  int Function() get,
+  void Function(int value) set,
+});
+```
+
+**1. 组合式 Hook：**
+
+直接由现有 hooks 组合出一个可复用 hook：
 
 ```dart
 import 'package:jolt_setup/jolt_setup.dart';
 
 @defineHook
-final useCounterHookWithoutClass = ([int initialValue = 0]) {
+CounterCompositionHook useCounterHookWithoutClass([int initialValue = 0]) {
   final counter = useSignal(0);
   void increment() => counter.value++;
   void decrement() => counter.value--;
@@ -541,7 +568,7 @@ final useCounterHookWithoutClass = ([int initialValue = 0]) {
     get: get,
     set: set,
   );
-};
+}
 
 // 在 setup 中使用
 class CounterExample extends SetupWidget<CounterExample> {
@@ -554,42 +581,79 @@ class CounterExample extends SetupWidget<CounterExample> {
 }
 ```
 
-**2. 基于类的 Hook：**
+**2. 基于已有逻辑生成组合式 Hook：**
 
-对于更复杂的 hooks，继承 `SetupHook`：
+如果你已经有一个可复用的状态对象，可以用组合式 hook 包起来，并把 dispose 交给 setup 管理：
 
 ```dart
 import 'package:jolt_setup/jolt_setup.dart';
 
 @defineHook
-CounterHook useCounterHook([int initialValue = 0]) =>
-    CounterHook(initialValue: initialValue);
+Counter useCounterHookWithoutClass2([int initialValue = 0]) {
+  final counter = useMemoized(
+    () => Counter(initialValue: initialValue),
+    (counter) => counter.dispose(),
+  );
 
-class CounterHook extends SetupHook<Signal<int>> {
+  return counter;
+}
+```
+
+**3. 基于类的 Hook：**
+
+如果 hook 本身需要更明确的生命周期结构，可以直接继承 `SetupHook`：
+
+```dart
+import 'package:jolt_setup/jolt_setup.dart';
+
+@defineHook
+CounterHook useCounterHookClass([int initialValue = 0]) =>
+    useHook(CounterHook(initialValue: initialValue));
+
+class CounterHook extends SetupHook<CounterHook> {
   final int initialValue;
 
   CounterHook({required this.initialValue});
 
-  void increment() => state.value++;
-  void decrement() => state.value--;
-  void reset() => state.value = initialValue;
-  int get() => state.value;
-  void set(int value) => state.value = value;
+  late Signal<int> raw;
+  void increment() => raw.value++;
+  void decrement() => raw.value--;
+  void reset() => raw.value = initialValue;
+  int get() => raw.value;
+  void set(int value) => raw.value = value;
 
   @override
-  Signal<int> build() => Signal(initialValue);
+  CounterHook build() {
+    raw = Signal(initialValue);
+    return this;
+  }
+
+  @override
+  void unmount() => raw.dispose();
+}
+```
+
+**4. 基于已有类生成类 Hook：**
+
+如果你已经有一个可复用类，也可以让 hook 直接把它作为 state 返回：
+
+```dart
+import 'package:jolt_setup/jolt_setup.dart';
+
+@defineHook
+Counter useCounterHookClass2([int initialValue = 0]) =>
+    useHook(CounterHook2(initialValue: initialValue));
+
+class CounterHook2 extends SetupHook<Counter> {
+  final int initialValue;
+
+  CounterHook2({required this.initialValue});
+
+  @override
+  Counter build() => Counter(initialValue: initialValue);
 
   @override
   void unmount() => state.dispose();
-}
-
-class CounterHookExample extends SetupWidget<CounterHookExample> {
-  @override
-  setup(context, props) {
-    final counter = useCounterHook(10);
-
-    return () => Text('Count: ${counter.get()}');
-  }
 }
 ```
 
@@ -599,11 +663,68 @@ class CounterHookExample extends SetupWidget<CounterHookExample> {
 
 ```dart
 @defineHook
-CounterHook useCounterHook([int initialValue = 0]) =>
-    CounterHook(initialValue: initialValue);
+CounterHook useCounterHookClass([int initialValue = 0]) =>
+    useHook(CounterHook(initialValue: initialValue));
 ```
 
-在这种模式下，hook 对象本身暴露 `increment()`、`reset()` 这类方法，而内部的 `Signal<int>` 存在于 `state` 中。
+给自定义 hook 的入口加上 `@defineHook`，lint 才能把它识别为 hook。
+
+**`useHook` 是做什么的**
+
+`useHook(...)` 是最底层的注册 API，它负责把一个 `SetupHook` 实例接入当前 setup 上下文。
+
+- 让 setup 在多次 rebuild 之间缓存并复用这个 hook
+- 让这个 hook 接入 setup 生命周期，包括 mount、unmount 和热重载时的 reassemble
+- 返回这个 hook 的 `state`
+
+实际写法上，大多数基于类的自定义 hook，外层入口函数本质上都只是对 `useHook(...)` 的一层包装。
+
+```dart
+@defineHook
+CounterHook useCounterHookClass([int initialValue = 0]) =>
+    useHook(CounterHook(initialValue: initialValue));
+```
+
+**基于类的 Hook 里，`build()` 和 `state` 分别是什么**
+
+在 `SetupHook<T>` 中：
+
+- `useHook(...)` 会在 hook 第一次创建时调用 `build()`
+- `build()` 用来创建这个 hook 的 `state`
+- setup 会在后续生命周期中持续维持并复用这份 `state`，直到 unmount
+
+所以这里通常有两种形态：
+
+```dart
+class CounterHook extends SetupHook<CounterHook> {
+  late Signal<int> raw;
+
+  @override
+  CounterHook build() {
+    raw = Signal(0);
+    return this;
+  }
+}
+```
+
+这种情况下，`state` 就是 hook 对象本身。
+
+```dart
+class CounterHook2 extends SetupHook<Counter> {
+  @override
+  Counter build() => Counter(initialValue: 0);
+}
+```
+
+这种情况下，`state` 就是 `build()` 返回的那个独立 `Counter` 对象。
+
+可以把它理解成：`build()` 是创建阶段，而 `state` 就是 `build()` 创建出来并由 setup 持续维持的那份值。
+
+**建议：**
+- 主要是组合现有 hooks 时，优先使用组合式 Hook
+- 如果已经有可复用状态逻辑，只是想把所有权交给 setup 管理，可以优先考虑 `useMemoized(..., disposer)`
+- 如果 hook 本身需要明确的生命周期结构，就使用基于类的 Hook
+- 如果领域逻辑已经建模成一个可复用对象，也可以直接把这个对象作为 hook state
 
 **Hook 规则：**
 
@@ -763,30 +884,31 @@ setup(context, props) {
 ### 计数器示例
 
 ```dart
-@defineHook
-CounterHook useCounterHook([int initialValue = 0]) =>
-    CounterHook(initialValue: initialValue);
+class Counter {
+  Counter({required this.initialValue}) : raw = Signal(initialValue);
 
-class CounterHook extends SetupHook<Signal<int>> {
   final int initialValue;
+  final Signal<int> raw;
 
-  CounterHook({required this.initialValue});
-
-  void increment() => state.value++;
-  void decrement() => state.value--;
-  void reset() => state.value = initialValue;
-  int get() => state.value;
-  void set(int value) => state.value = value;
-
-  @override
-  Signal<int> build() => Signal(initialValue);
-
-  @override
-  void unmount() => state.dispose();
+  void increment() => raw.value++;
+  void decrement() => raw.value--;
+  void reset() => raw.value = initialValue;
+  int get() => raw.value;
+  void set(int value) => raw.value = value;
+  void dispose() => raw.dispose();
 }
 
+typedef CounterCompositionHook = ({
+  Signal<int> counter,
+  void Function() increment,
+  void Function() decrement,
+  void Function() reset,
+  int Function() get,
+  void Function(int value) set,
+});
+
 @defineHook
-final useCounterHookWithoutClass = ([int initialValue = 0]) {
+CounterCompositionHook useCounterHookWithoutClass([int initialValue = 0]) {
   final counter = useSignal(0);
   void increment() => counter.value++;
   void decrement() => counter.value--;
@@ -801,32 +923,93 @@ final useCounterHookWithoutClass = ([int initialValue = 0]) {
     get: get,
     set: set,
   );
-};
+}
+
+@defineHook
+Counter useCounterHookWithoutClass2([int initialValue = 0]) {
+  final counter = useMemoized(
+    () => Counter(initialValue: initialValue),
+    (counter) => counter.dispose(),
+  );
+
+  return counter;
+}
+
+@defineHook
+CounterHook useCounterHookClass([int initialValue = 0]) =>
+    useHook(CounterHook(initialValue: initialValue));
+
+class CounterHook extends SetupHook<CounterHook> {
+  final int initialValue;
+
+  CounterHook({required this.initialValue});
+
+  late Signal<int> raw;
+  void increment() => raw.value++;
+  void decrement() => raw.value--;
+  void reset() => raw.value = initialValue;
+  int get() => raw.value;
+  void set(int value) => raw.value = value;
+
+  @override
+  CounterHook build() {
+    raw = Signal(initialValue);
+    return this;
+  }
+
+  @override
+  void unmount() => raw.dispose();
+}
+
+@defineHook
+Counter useCounterHookClass2([int initialValue = 0]) =>
+    useHook(CounterHook2(initialValue: initialValue));
+
+class CounterHook2 extends SetupHook<Counter> {
+  final int initialValue;
+
+  CounterHook2({required this.initialValue});
+
+  @override
+  Counter build() => Counter(initialValue: initialValue);
+
+  @override
+  void unmount() => state.dispose();
+}
 
 class CounterWidget extends SetupWidget<CounterWidget> {
   const CounterWidget({super.key});
 
   @override
   setup(context, props) {
-    final counter = useCounterHook(0);
-    final counter2 = useCounterHookWithoutClass(0);
+    final composedCounter = useCounterHookWithoutClass(0);
+    final extractedComposedCounter = useCounterHookWithoutClass2(10);
+    final classCounter = useCounterHookClass(20);
+    final extractedClassCounter = useCounterHookClass2(30);
 
     return () => Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text('counter: ${counter.get()}'),
-        Text('counter2: ${counter2.get()}'),
+        Text('Composition hook: ${composedCounter.get()}'),
+        Text(
+          'Composition hook from extracted logic: '
+          '${extractedComposedCounter.get()}',
+        ),
+        Text('Class hook: ${classCounter.get()}'),
+        Text(
+          'Class hook from extracted class: ${extractedClassCounter.get()}',
+        ),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             ElevatedButton(
-              onPressed: counter.decrement,
-              child: const Text('counter1 -'),
+              onPressed: composedCounter.decrement,
+              child: const Text('Composition -'),
             ),
             const SizedBox(width: 16),
             ElevatedButton(
-              onPressed: counter.increment,
-              child: const Text('counter1+'),
+              onPressed: composedCounter.increment,
+              child: const Text('Composition +'),
             ),
           ],
         ),
@@ -835,13 +1018,43 @@ class CounterWidget extends SetupWidget<CounterWidget> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             ElevatedButton(
-              onPressed: counter2.decrement,
-              child: const Text('counter2 -'),
+              onPressed: extractedComposedCounter.decrement,
+              child: const Text('Extracted composition -'),
             ),
             const SizedBox(width: 16),
             ElevatedButton(
-              onPressed: counter2.increment,
-              child: const Text('counter2 +'),
+              onPressed: extractedComposedCounter.increment,
+              child: const Text('Extracted composition +'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: classCounter.decrement,
+              child: const Text('Class -'),
+            ),
+            const SizedBox(width: 16),
+            ElevatedButton(
+              onPressed: classCounter.increment,
+              child: const Text('Class +'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: extractedClassCounter.decrement,
+              child: const Text('Extracted class -'),
+            ),
+            const SizedBox(width: 16),
+            ElevatedButton(
+              onPressed: extractedClassCounter.increment,
+              child: const Text('Extracted class +'),
             ),
           ],
         ),

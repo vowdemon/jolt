@@ -600,7 +600,7 @@ class DisposableHook<T> extends SetupHook<T> {
 /// setup(context, props) {
 ///   final controller = useMemoized(
 ///     () => TextEditingController(text: 'Hello'),
-///     () => controller.dispose(),
+///     (state) => state.dispose(),
 ///   );
 ///
 ///   return () => TextField(controller: controller);

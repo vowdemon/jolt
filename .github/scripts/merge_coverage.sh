@@ -10,7 +10,9 @@ for pkg in packages/*/; do
 done
 
 # 删除 test 目录的 coverage
-sed -i '/SF:.*\/test\//d' coverage/combined.info
+tmpfile="$(mktemp coverage/combined.info.XXXXXX)"
+awk '!/^SF:test\/|^SF:.*\/test\//' coverage/combined.info > "$tmpfile"
+mv "$tmpfile" coverage/combined.info
 
 # 生成 summary（行覆盖率）
 awk '/DA:/{total++; if($0 ~ /,0$/) miss++;} END{print "Lines: " (total-miss)/total*100 "%"}' coverage/combined.info

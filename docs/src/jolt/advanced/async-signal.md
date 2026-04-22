@@ -95,31 +95,6 @@ final stream = Stream.periodic(Duration(seconds: 1), (i) => i);
 final dataSignal = AsyncSignal.fromStream(stream);
 ```
 
-### Using Extension Methods
-
-Jolt provides extension methods for more convenient async signal creation:
-
-From Future:
-
-```dart
-Future<String> fetchData() async {
-  await Future.delayed(Duration(seconds: 1));
-  return 'Data';
-}
-
-final signal = fetchData().toAsyncSignal();
-```
-
-From Stream:
-
-```dart
-Stream<int> getDataStream() {
-  return Stream.periodic(Duration(seconds: 1), (i) => i);
-}
-
-final signal = getDataStream().toStreamSignal();
-```
-
 ### Using AsyncSource
 
 You can create using a custom `AsyncSource`:

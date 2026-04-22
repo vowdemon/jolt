@@ -95,31 +95,6 @@ final stream = Stream.periodic(Duration(seconds: 1), (i) => i);
 final dataSignal = AsyncSignal.fromStream(stream);
 ```
 
-### 使用扩展方法创建
-
-Jolt 提供了扩展方法，可以更方便地创建异步信号：
-
-从 Future 创建：
-
-```dart
-Future<String> fetchData() async {
-  await Future.delayed(Duration(seconds: 1));
-  return 'Data';
-}
-
-final signal = fetchData().toAsyncSignal();
-```
-
-从 Stream 创建：
-
-```dart
-Stream<int> getDataStream() {
-  return Stream.periodic(Duration(seconds: 1), (i) => i);
-}
-
-final signal = getDataStream().toStreamSignal();
-```
-
 ### 使用 AsyncSource 创建
 
 可以使用自定义的 `AsyncSource` 创建：

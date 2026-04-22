@@ -2,6 +2,7 @@ import "dart:async";
 
 import "package:jolt/core.dart";
 import "package:jolt/src/jolt/signal.dart";
+import "package:meta/meta.dart";
 import "package:shared_interfaces/shared_interfaces.dart";
 
 /// Represents the state of an asynchronous operation.
@@ -320,28 +321,74 @@ class AsyncSignalImpl<T> extends SignalImpl<AsyncState<T>>
   @override
   T? get data => value.data;
 
-  Disposer? _sourceDisposer;
+  @override
+  bool get isLoading => value.isLoading;
 
+  @override
+  bool get isSuccess => value.isSuccess;
+
+  @override
+  bool get isError => value.isError;
+
+  @override
+  Object? get error => value.error;
+
+  @override
+  StackTrace? get stackTrace => value.stackTrace;
+
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
+  @override
+  R? map<R>({
+    R Function()? loading,
+    R Function(T)? success,
+    R Function(Object?, StackTrace?)? error,
+  }) =>
+      value.map(
+        loading: loading,
+        success: success,
+        error: error,
+      );
+
+  Disposer? _sourceDisposer;
+  Object? _objId;
+
+  @override
   Future<void> fetch(AsyncSource<T> source) async {
+    if (isDisposed) return;
+    final objId = Object();
+    _objId = objId;
+
     _sourceDisposer?.call();
-    _sourceDisposer = null;
+    _sourceDisposer = source.dispose;
 
     void emit(AsyncState<T> state) {
-      if (!isDisposed) value = state;
-    }
-
-    final future = source.subscribe(emit);
-    _sourceDisposer = source.dispose;
-    final currentDisposer = source.dispose;
-
-    try {
-      await future;
-    } finally {
-      if (_sourceDisposer == currentDisposer) {
-        _sourceDisposer = null;
-        currentDisposer();
+      if (_objId == objId) {
+        value = state;
       }
     }
+
+    try {
+      await source.subscribe(emit);
+    } finally {
+      if (_objId == objId) {
+        _objId = null;
+        final disposer = _sourceDisposer;
+        _sourceDisposer = null;
+        disposer?.call();
+      }
+    }
+  }
+
+  @override
+  @mustCallSuper
+  @protected
+  void onDispose() {
+    super.onDispose();
+    _objId = null;
+    _sourceDisposer?.call();
+    _sourceDisposer = null;
   }
 }
 
@@ -426,4 +473,37 @@ abstract interface class AsyncSignal<T> implements Signal<AsyncState<T>> {
   /// final data = signal.data; // null if loading or error
   /// ```
   T? get data;
+
+  /// Whether the current state represents a loading operation.
+  bool get isLoading;
+
+  /// Whether the current state represents a successful operation with data.
+  bool get isSuccess;
+
+  /// Whether the current state represents an error.
+  bool get isError;
+
+  /// The error from the current async state, if any.
+  Object? get error;
+
+  /// The stack trace from the current async error state, if any.
+  StackTrace? get stackTrace;
+
+  /// Maps the current async state to a value based on its state variant.
+  R? map<R>({
+    R Function()? loading,
+    R Function(T)? success,
+    R Function(Object?, StackTrace?)? error,
+  });
+
+  /// Replaces the current async source and subscribes to the new one.
+  ///
+  /// This can be used to reload or switch the underlying async operation
+  /// while keeping the same signal instance.
+  ///
+  /// Example:
+  /// ```dart
+  /// await signal.fetch(FutureSource(fetchData()));
+  /// ```
+  Future<void> fetch(AsyncSource<T> source);
 }

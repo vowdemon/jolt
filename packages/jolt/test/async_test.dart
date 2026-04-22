@@ -1,7 +1,39 @@
+import "dart:async";
+
 import "package:jolt/extension.dart";
 import "package:jolt/jolt.dart";
 import "package:test/test.dart";
 import "utils.dart";
+
+class ManualAsyncSource<T> extends AsyncSource<T> {
+  final Completer<void> _completer = Completer<void>();
+  void Function(AsyncState<T> state)? _emit;
+  bool _disposed = false;
+
+  @override
+  Future<void> subscribe(void Function(AsyncState<T> state) emit) async {
+    _emit = emit;
+    await _completer.future;
+  }
+
+  void emit(AsyncState<T> state) {
+    _emit?.call(state);
+  }
+
+  void complete() {
+    if (!_completer.isCompleted) {
+      _completer.complete();
+    }
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    complete();
+  }
+
+  bool get isDisposed => _disposed;
+}
 
 void main() {
   group("AsyncState", () {
@@ -155,6 +187,62 @@ void main() {
       asyncSignal.dispose();
       expect(asyncSignal.isDisposed, isTrue);
     });
+
+    test("should fetch a new source from the public AsyncSignal API",
+        () async {
+      final asyncSignal = AsyncSignal<int>(
+        initialValue: const AsyncSuccess(1),
+      );
+
+      await asyncSignal.fetch(FutureSource(Future.value(2)));
+
+      expect(asyncSignal.value, isA<AsyncSuccess<int>>());
+      expect(asyncSignal.data, equals(2));
+    });
+
+    test("should expose AsyncState convenience members on AsyncSignal", () {
+      final error = Exception("Test error");
+      final stackTrace = StackTrace.current;
+      final asyncSignal = AsyncSignal<int>(
+        initialValue: AsyncError(error, stackTrace),
+      );
+
+      expect(asyncSignal.isLoading, isFalse);
+      expect(asyncSignal.isSuccess, isFalse);
+      expect(asyncSignal.isError, isTrue);
+      expect(asyncSignal.data, isNull);
+      expect(asyncSignal.error, same(error));
+      expect(asyncSignal.stackTrace, same(stackTrace));
+      expect(
+        asyncSignal.map(
+          loading: () => "loading",
+          success: (data) => "success: $data",
+          error: (error, stackTrace) => "error: $error",
+        ),
+        equals("error: Exception: Test error"),
+      );
+    });
+
+    test("should ignore stale emissions from previous fetch", () async {
+      final firstSource = ManualAsyncSource<int>();
+      final secondSource = ManualAsyncSource<int>();
+      final asyncSignal = AsyncSignal<int>();
+
+      final firstFetch = asyncSignal.fetch(firstSource);
+      firstSource.emit(const AsyncSuccess(1));
+      expect(asyncSignal.data, equals(1));
+
+      final secondFetch = asyncSignal.fetch(secondSource);
+      secondSource.emit(const AsyncSuccess(2));
+      expect(asyncSignal.data, equals(2));
+
+      firstSource.emit(const AsyncSuccess(99));
+      expect(asyncSignal.data, equals(2));
+
+      firstSource.complete();
+      secondSource.complete();
+      await Future.wait([firstFetch, secondFetch]);
+    });
   });
 
   group("FutureSignal", () {
@@ -247,9 +335,7 @@ void main() {
 
       streamSignal.dispose();
 
-
       await Future.delayed(const Duration(milliseconds: 100));
-
 
       expect(streamSignal.data, isA<int>());
       expect(streamSignal.value, isA<AsyncSuccess<int>>());
@@ -267,6 +353,18 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 1));
 
       asyncSignal.dispose();
+      expect(source.isDisposed, isTrue);
+    });
+
+    test("should dispose active source when AsyncSignal is disposed",
+        () async {
+      final source = ManualAsyncSource<String>();
+      final asyncSignal = AsyncSignal<String>(source: source);
+
+      await Future.delayed(const Duration(milliseconds: 1));
+
+      asyncSignal.dispose();
+
       expect(source.isDisposed, isTrue);
     });
   });

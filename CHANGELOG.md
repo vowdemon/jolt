@@ -3,6 +3,43 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-04-23
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`jolt` - `v3.2.2`](#jolt---v322)
+ - [`jolt_setup` - `v3.2.3`](#jolt_setup---v323)
+ - [`jolt_flutter` - `v3.1.1`](#jolt_flutter---v311)
+ - [`jolt_hooks` - `v3.1.1`](#jolt_hooks---v311)
+ - [`jolt_surge` - `v3.1.1`](#jolt_surge---v311)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `jolt_flutter` - `v3.1.1`
+ - `jolt_hooks` - `v3.1.1`
+ - `jolt_surge` - `v3.1.1`
+
+---
+
+#### `jolt` - `v3.2.2`
+
+ - **FIX**(jolt): expose AsyncSignal fetch and state helpers ([#11](https://github.com/vowdemon/jolt/issues/11)). ([38f29a09](https://github.com/vowdemon/jolt/commit/38f29a09412415b0c5e194cba9aa0dc3ca1bba5c))
+
+#### `jolt_setup` - `v3.2.3`
+
+ - **FIX**(jolt_setup): fix useMemoized doc comment example ([#9](https://github.com/vowdemon/jolt/issues/9)). ([a98a8be3](https://github.com/vowdemon/jolt/commit/a98a8be32247c370a77243018c22754d51c22ff1))
+
+
 ## 2026-04-15
 
 ### Changes

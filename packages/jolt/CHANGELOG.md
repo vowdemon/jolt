@@ -1,3 +1,7 @@
+## 3.2.2
+
+ - **FIX**(jolt): expose AsyncSignal fetch and state helpers ([#11](https://github.com/vowdemon/jolt/issues/11)). ([38f29a09](https://github.com/vowdemon/jolt/commit/38f29a09412415b0c5e194cba9aa0dc3ca1bba5c))
+
 ## 3.2.1
 
  - **FIX**(jolt): allow nullable JoltDebugFn in setDebug method. ([d0915d08](https://github.com/vowdemon/jolt/commit/d0915d08f7e1e7faac1bd63518228a79c28ce31b))

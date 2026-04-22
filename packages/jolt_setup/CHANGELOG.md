@@ -1,3 +1,7 @@
+## 3.2.3
+
+ - **FIX**(jolt_setup): fix useMemoized doc comment example ([#9](https://github.com/vowdemon/jolt/issues/9)). ([a98a8be3](https://github.com/vowdemon/jolt/commit/a98a8be32247c370a77243018c22754d51c22ff1))
+
 ## 3.2.2
 
  - **DOCS**(jolt_setup): clarify custom hook patterns and hook lifecycle. ([4e274083](https://github.com/vowdemon/jolt/commit/4e274083edf2441cc966a52adfe3763e72864599))

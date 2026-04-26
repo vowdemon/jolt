@@ -16,6 +16,9 @@ workspace:
   - packages/jolt_devtools_extension
   - packages/jolt_hooks/example
   - packages/jolt_surge/example
+  - examples/counter
+  - examples/todo_list
+  - examples/shopping_cart
 
 dev_dependencies:
   melos: ^7.3.0

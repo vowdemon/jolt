@@ -913,17 +913,18 @@ void purgeDeps(ReactiveNode sub) {
 T trigger<T>(T Function() fn) {
   final sub = _DummyEffectNode(flags: ReactiveFlags.watching);
   final prevSub = setActiveSub(sub);
+
   try {
     return fn();
   } finally {
     activeSub = prevSub;
+    sub.flags = ReactiveFlags.none;
     var link = sub.deps;
     while (link != null) {
       final dep = link.dep;
       link = unlink(link, sub);
       final subs = dep.subs;
       if (subs != null) {
-        sub.flags = ReactiveFlags.none;
         propagate(subs);
         shallowPropagate(subs);
       }

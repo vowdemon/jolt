@@ -110,9 +110,18 @@ bool updateNode(ReactiveNode node) {
   final result = switch (node) {
     ComputedReactiveNode() => updateComputed(node),
     SignalReactiveNode() => updateSignal(node),
+    EffectScopeReactiveNode() => _updateEffectScope(node),
     _ => updateCustom(node),
   };
   return result;
+}
+
+@pragma("vm:prefer-inline")
+@pragma("wasm:prefer-inline")
+@pragma("dart2js:prefer-inline")
+bool _updateEffectScope(EffectScopeReactiveNode node) {
+  node.flags = ReactiveFlags.mutable;
+  return true;
 }
 
 /// Enqueues an [EffectReactiveNode] chain for execution.
@@ -725,14 +734,9 @@ T getSignal<T>(SignalReactiveNode<T> signal) {
       }
     }
   }
-  var sub = activeSub;
-  while (sub != null) {
-    if (sub.flags & (ReactiveFlags.mutable | ReactiveFlags.watching) != 0) {
-      link(signal, sub, cycle);
-
-      break;
-    }
-    sub = sub.subs?.sub;
+  final sub = activeSub;
+  if (sub != null) {
+    link(signal, sub, cycle);
   }
 
   assert(() {

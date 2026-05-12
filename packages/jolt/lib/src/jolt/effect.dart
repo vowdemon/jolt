@@ -96,7 +96,7 @@ class EffectScopeImpl extends EffectScopeReactiveNode
   ///   });
   /// ```
   EffectScopeImpl({bool? detach, JoltDebugOption? debug})
-      : super(flags: ReactiveFlags.none) {
+      : super(flags: ReactiveFlags.mutable) {
     assert(() {
       JoltDebug.create(this, debug);
       return true;
@@ -507,7 +507,10 @@ class WatcherImpl<T> extends EffectReactiveNode
   /// ```
   /// {@endtemplate}
   WatcherImpl(this.sourcesFn, this.fn,
-      {bool immediately = false, this.when, bool? detach, JoltDebugOption? debug})
+      {bool immediately = false,
+      this.when,
+      bool? detach,
+      JoltDebugOption? debug})
       : super(flags: ReactiveFlags.watching) {
     assert(() {
       JoltDebug.create(this, debug);

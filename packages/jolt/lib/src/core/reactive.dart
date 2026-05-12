@@ -514,7 +514,7 @@ void defaultRunEffect(EffectReactiveNode e, void Function() fn) {
       e.flags &= ~ReactiveFlags.recursedCheck;
       purgeDeps(e);
     }
-  } else {
+  } else if (e.flags != ReactiveFlags.none) {
     e.flags = ReactiveFlags.watching;
   }
 }

@@ -286,11 +286,7 @@ void link(ReactiveNode dep, ReactiveNode sub, int version) {
 Link? unlink(Link link, [ReactiveNode? sub]) {
   sub ??= link.sub;
 
-  final dep = link.dep;
-  final prevDep = link.prevDep;
-  final nextDep = link.nextDep;
-  final nextSub = link.nextSub;
-  final prevSub = link.prevSub;
+  final Link(:dep, :prevDep, :nextDep, :nextSub, :prevSub) = link;
   if (nextDep != null) {
     nextDep.prevDep = prevDep;
   } else {
@@ -426,8 +422,8 @@ bool checkDirty(Link theLink, ReactiveNode sub) {
       dirty = true;
     } else if (flags & (ReactiveFlags.mutable | ReactiveFlags.dirty) ==
         (ReactiveFlags.mutable | ReactiveFlags.dirty)) {
+      final subs = dep.subs!;
       if (updateNode(dep)) {
-        final subs = dep.subs!;
         if (subs.nextSub != null) {
           shallowPropagate(subs);
         }
@@ -435,9 +431,7 @@ bool checkDirty(Link theLink, ReactiveNode sub) {
       }
     } else if (flags & (ReactiveFlags.mutable | ReactiveFlags.pending) ==
         (ReactiveFlags.mutable | ReactiveFlags.pending)) {
-      if (link.nextSub != null || link.prevSub != null) {
-        stack = Stack(value: link, prev: stack);
-      }
+      stack = Stack(value: link, prev: stack);
       link = dep.deps;
       sub = dep;
       ++checkDepth;
@@ -453,18 +447,13 @@ bool checkDirty(Link theLink, ReactiveNode sub) {
     }
 
     while (checkDepth-- != 0) {
-      final firstSub = sub.subs!;
-      final hasMultipleSubs = firstSub.nextSub != null;
-      if (hasMultipleSubs) {
-        link = stack!.value;
-        stack = stack.prev;
-      } else {
-        link = firstSub;
-      }
+      link = stack!.value;
+      stack = stack.prev;
       if (dirty) {
+        final subs = sub.subs!;
         if (updateNode(sub)) {
-          if (hasMultipleSubs) {
-            shallowPropagate(firstSub);
+          if (subs.nextSub != null) {
+            shallowPropagate(subs);
           }
           sub = link!.sub;
           continue;
@@ -481,7 +470,7 @@ bool checkDirty(Link theLink, ReactiveNode sub) {
       }
     }
 
-    return dirty;
+    return dirty && sub.flags != ReactiveFlags.none;
   } while (true);
 }
 

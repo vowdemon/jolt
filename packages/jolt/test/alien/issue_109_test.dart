@@ -17,7 +17,7 @@ void main() {
       dispose = effect(() {
         b();
       });
-      s(true);
+      s(true, true);
     });
 
     group('#109 edge', () {
@@ -251,7 +251,10 @@ void main() {
       test('#109 variant - dep.subs undefined at line 190', () {
         final s = signal(0);
         late void Function() dispose;
-        final a = computed(() => (s(), 0)); // value never changes
+        final a = computed(() {
+          s();
+          return 0;
+        }); // value never changes
         final a2 = computed(() {
           if (s() != 0) {
             dispose();

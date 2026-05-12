@@ -323,7 +323,7 @@ Link? unlink(Link link, [ReactiveNode? sub]) {
 /// Example:
 /// ```dart
 /// final signalNode = CustomSignalNode<int>(0);
-/// propagate(signalNode.subs!);
+/// propagate(signalNode.subs!, false);
 /// ```
 void propagate(Link theLink, bool innerWrite) {
   Link? link = theLink;

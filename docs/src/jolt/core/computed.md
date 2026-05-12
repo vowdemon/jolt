@@ -171,8 +171,8 @@ This is particularly useful when implementing custom logic that needs to compare
 
 If you need to manually tell subscribers that it has updated, you can use the `notify()` method. The `notify()` method accepts an optional `force` parameter:
 
-- **`notify(false)` or `notify()`** (soft update): Only notifies subscribers if the computed value actually changed during recomputation. This is the default behavior.
-- **`notify(true)`** (force update): Always notifies subscribers, even if the value hasn't changed.
+- **`notify()` or `notify(true)`** (force update): Always notifies subscribers, even if the value hasn't changed. This is the default behavior.
+- **`notify(false)`** (soft update): Only notifies subscribers if the computed value actually changed during recomputation.
 
 ```dart
 final count = Signal(0);

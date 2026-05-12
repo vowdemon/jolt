@@ -157,7 +157,7 @@ class ComputedImpl<T> extends ComputedReactiveNode<T>
   ///
   /// Parameters:
   /// - [force]: If `true`, forces notification even if the value hasn't changed
-  ///   (soft update when `false`, force update when `true`). Defaults to `false`.
+  ///   (soft update when `false`, force update when `true`). Defaults to `true`.
   ///
   /// When `force` is `false` (soft update), subscribers are only notified if
   /// the computed value actually changed. When `force` is `true` (force update),
@@ -166,14 +166,14 @@ class ComputedImpl<T> extends ComputedReactiveNode<T>
   /// Example:
   /// ```dart
   /// final computed = Computed(() => expensiveCalculation());
-  /// computed.notify(); // Soft update: only notifies if value changed
-  /// computed.notify(true); // Force update: always notifies subscribers
+  /// computed.notify(); // Force update: always notifies subscribers
+  /// computed.notify(false); // Soft update: only notifies if value changed
   /// ```
   @pragma("vm:prefer-inline")
   @pragma("wasm:prefer-inline")
   @pragma("dart2js:prefer-inline")
   @override
-  void notify([bool force = false]) {
+  void notify([bool force = true]) {
     notifyComputed(this, force);
   }
 

@@ -1015,8 +1015,7 @@ abstract interface class Notifiable {
   ///
   /// Parameters:
   /// - [force]: If `true`, forces notification even if the value hasn't changed.
-  ///   The default value depends on the implementation (e.g., `false` for
-  ///   [Computed], `true` for [Signal]).
+  ///   Defaults to `true`; pass `false` explicitly for a soft update.
   ///
   /// Example:
   /// ```dart
@@ -1025,10 +1024,10 @@ abstract interface class Notifiable {
   /// list.notify(); // Force subscribers to update
   ///
   /// final computed = Computed(() => expensiveCalculation());
-  /// computed.notify(); // Soft update: only notifies if value changed
-  /// computed.notify(true); // Force update: always notifies subscribers
+  /// computed.notify(); // Force update: always notifies subscribers
+  /// computed.notify(false); // Soft update: only notifies if value changed
   /// ```
-  void notify([bool force]);
+  void notify([bool force = true]);
 }
 
 /// Interface for writable reactive values.

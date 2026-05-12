@@ -171,8 +171,8 @@ computed.value; // previousValue 是 0（之前的待处理值）
 
 如果需要手动告诉依赖它的订阅者它更新了，可以使用 `notify()` 方法。`notify()` 方法接受一个可选的 `force` 参数：
 
-- **`notify(false)` 或 `notify()`**（软更新）：只有在计算值在重新计算期间实际改变时才通知订阅者。这是默认行为。
-- **`notify(true)`**（强制更新）：即使值没有改变，也会通知订阅者。
+- **`notify()` 或 `notify(true)`**（强制更新）：即使值没有改变，也会通知订阅者。这是默认行为。
+- **`notify(false)`**（软更新）：只有在计算值在重新计算期间实际改变时才通知订阅者。
 
 ```dart
 final count = Signal(0);

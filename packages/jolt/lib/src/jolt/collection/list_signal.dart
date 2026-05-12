@@ -148,27 +148,27 @@ mixin ListSignalMixin<E>
     final oldValue = peek[index];
     peek[index] = value;
     if (oldValue != value) {
-      notify(true);
+      notify();
     }
   }
 
   @override
   void add(E value) {
     peek.add(value);
-    notify(true);
+    notify();
   }
 
   @override
   void addAll(Iterable<E> iterable) {
     peek.addAll(iterable);
-    notify(true);
+    notify();
   }
 
   @override
   void clear() {
     if (peek.isNotEmpty) {
       peek.clear();
-      notify(true);
+      notify();
     }
   }
 
@@ -184,20 +184,20 @@ mixin ListSignalMixin<E>
       peek[i] = value;
     }
     if (needNotify) {
-      notify(true);
+      notify();
     }
   }
 
   @override
   void insert(int index, E element) {
     peek.insert(index, element);
-    notify(true);
+    notify();
   }
 
   @override
   void insertAll(int index, Iterable<E> iterable) {
     peek.insertAll(index, iterable);
-    notify(true);
+    notify();
   }
 
   @override
@@ -252,7 +252,7 @@ mixin ListSignalMixin<E>
 
     peek.replaceRange(start, end, replacements);
 
-    if (needNotify) notify(true);
+    if (needNotify) notify();
   }
 
   @override
@@ -283,7 +283,7 @@ mixin ListSignalMixin<E>
 
     peek.setAll(index, iterable);
 
-    if (needNotify) notify(true);
+    if (needNotify) notify();
   }
 
   @override
@@ -309,14 +309,14 @@ mixin ListSignalMixin<E>
 
     peek.setRange(start, end, iterable, skipCount);
 
-    if (changed) notify(true);
+    if (changed) notify();
   }
 
   @override
   void shuffle([Random? random]) {
     if (peek.isNotEmpty) {
       peek.shuffle(random);
-      notify(true);
+      notify();
     }
   }
 
@@ -324,7 +324,7 @@ mixin ListSignalMixin<E>
   void sort([int Function(E a, E b)? compare]) {
     if (peek.isNotEmpty) {
       peek.sort(compare);
-      notify(true);
+      notify();
     }
   }
 
@@ -333,7 +333,7 @@ mixin ListSignalMixin<E>
     final oldValue = peek.first;
     if (oldValue != val) {
       peek.first = val;
-      notify(true);
+      notify();
     }
   }
 
@@ -342,7 +342,7 @@ mixin ListSignalMixin<E>
     final oldValue = peek.last;
     if (oldValue != val) {
       peek.last = val;
-      notify(true);
+      notify();
     }
   }
 
@@ -350,7 +350,7 @@ mixin ListSignalMixin<E>
   set length(int value) {
     if (peek.length != value) {
       peek.length = value;
-      notify(true);
+      notify();
     }
   }
 
@@ -361,7 +361,7 @@ mixin ListSignalMixin<E>
     final originLength = peek.length;
     final result = fn();
     if (originLength != peek.length) {
-      notify(true);
+      notify();
     }
     return result;
   }

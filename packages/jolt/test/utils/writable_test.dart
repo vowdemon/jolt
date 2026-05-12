@@ -240,7 +240,7 @@ void main() {
 
       expect(values, equals([10]));
 
-      readonly.notify(true);
+      readonly.notify();
       expect(
           values, equals([10, 10])); // Notified even though value didn't change
     });

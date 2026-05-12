@@ -283,8 +283,10 @@ class EffectImpl extends EffectReactiveNode
     if (!lazy) {
       final prevSub = setActiveSub(this);
       try {
+        ++runDepth;
         _effectFn();
       } finally {
+        --runDepth;
         setActiveSub(prevSub);
         flags &= ~ReactiveFlags.recursedCheck;
       }

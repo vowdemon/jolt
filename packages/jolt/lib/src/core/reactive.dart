@@ -21,6 +21,8 @@ part "system.dart";
 /// ```
 int cycle = 0;
 
+int runDepth = 0;
+
 /// Current nesting depth of [`startBatch`]/[`endBatch`] calls.
 ///
 /// Example:
@@ -371,6 +373,8 @@ bool updateComputed<T>(ComputedReactiveNode<T> computed) {
   final prevSub = setActiveSub(computed);
 
   try {
+    ++cycle;
+    ++runDepth;
     final oldValue = computed.pendingValue;
     final newValue = computed.getter();
     final equals = computed.equals == null
@@ -387,6 +391,7 @@ bool updateComputed<T>(ComputedReactiveNode<T> computed) {
     }());
     return true;
   } finally {
+    --runDepth;
     activeSub = prevSub;
     computed.flags &= ~ReactiveFlags.recursedCheck;
     purgeDeps(computed);
@@ -509,7 +514,6 @@ void defaultRunEffect(EffectReactiveNode e, void Function() fn) {
   final flags = e.flags;
   if (flags & (ReactiveFlags.dirty) != 0 ||
       (flags & (ReactiveFlags.pending) != 0 && checkDirty(e.deps!, e))) {
-    ++cycle;
     e
       ..depsTail = null
       ..flags = ReactiveFlags.watching | ReactiveFlags.recursedCheck;
@@ -517,8 +521,11 @@ void defaultRunEffect(EffectReactiveNode e, void Function() fn) {
     // only effect and watcher;
     final prevSub = setActiveSub(e);
     try {
+      ++cycle;
+      ++runDepth;
       fn();
     } finally {
+      --runDepth;
       activeSub = prevSub;
       e.flags &= ~ReactiveFlags.recursedCheck;
       purgeDeps(e);
@@ -605,8 +612,10 @@ T getComputed<T>(ComputedReactiveNode<T> computed) {
     computed.flags = ReactiveFlags.mutable | ReactiveFlags.recursedCheck;
     final prevSub = setActiveSub(computed);
     try {
+      ++runDepth;
       computed.pendingValue = computed.getter();
     } finally {
+      --runDepth;
       activeSub = prevSub;
       computed.flags &= ~ReactiveFlags.recursedCheck;
     }
@@ -693,7 +702,7 @@ T setSignal<T>(SignalReactiveNode<T> signal, T newValue) {
 
     final subs = signal.subs;
     if (subs != null) {
-      propagate(subs);
+      propagate(subs, runDepth > 0);
       if (batchDepth == 0) {
         flushEffects();
       }
@@ -771,7 +780,7 @@ void notifySignal<T>(SignalReactiveNode signal) {
 
   final subs = signal.subs;
   if (subs != null) {
-    propagate(subs);
+    propagate(subs, runDepth > 0);
     shallowPropagate(subs);
     if (batchDepth == 0) {
       flushEffects();
@@ -813,7 +822,7 @@ void notifyCustom<T>(ReactiveNode node) {
 
   final subs = node.subs;
   if (subs != null) {
-    propagate(subs);
+    propagate(subs, runDepth > 0);
     if (batchDepth == 0) {
       flushEffects();
     }
@@ -929,7 +938,7 @@ T trigger<T>(T Function() fn) {
       link = unlink(link, sub);
       final subs = dep.subs;
       if (subs != null) {
-        propagate(subs);
+        propagate(subs, runDepth > 0);
         shallowPropagate(subs);
       }
     }

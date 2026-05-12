@@ -325,7 +325,7 @@ Link? unlink(Link link, [ReactiveNode? sub]) {
 /// final signalNode = CustomSignalNode<int>(0);
 /// propagate(signalNode.subs!);
 /// ```
-void propagate(Link theLink) {
+void propagate(Link theLink, bool innerWrite) {
   Link? link = theLink;
   var next = link.nextSub;
   Stack<Link?>? stack;
@@ -344,6 +344,9 @@ void propagate(Link theLink) {
                 ReactiveFlags.pending) ==
         0) {
       sub.flags = flags | ReactiveFlags.pending;
+      if (innerWrite) {
+        sub.flags |= ReactiveFlags.recursed;
+      }
     } else if (flags & (ReactiveFlags.recursedCheck | ReactiveFlags.recursed) ==
         0) {
       flags = ReactiveFlags.none;
@@ -352,6 +355,7 @@ void propagate(Link theLink) {
     } else if (flags & (ReactiveFlags.dirty | ReactiveFlags.pending) == 0 &&
         isValidLink(link, sub)) {
       sub.flags = flags | (ReactiveFlags.recursed | ReactiveFlags.pending);
+
       flags &= ReactiveFlags.mutable;
     } else {
       flags = ReactiveFlags.none;

@@ -454,10 +454,10 @@ bool checkDirty(Link theLink, ReactiveNode sub) {
       link = stack!.value;
       stack = stack.prev;
       if (dirty) {
-        final subs = sub.subs!;
+        final subs = sub.subs;
         if (updateNode(sub)) {
-          if (subs.nextSub != null) {
-            shallowPropagate(subs);
+          if (subs?.nextSub != null) {
+            shallowPropagate(subs!);
           }
           sub = link!.sub;
           continue;

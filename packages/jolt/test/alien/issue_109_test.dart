@@ -261,7 +261,11 @@ void main() {
           }
           return s();
         }); // disposes mid-update, value changes
-        final b = computed(() => (a(), a2(), 0)); // reads a before a2
+        final b = computed(() {
+          a();
+          a2();
+          return 0;
+        }); // reads a before a2
         dispose = effect(() {
           b();
         });

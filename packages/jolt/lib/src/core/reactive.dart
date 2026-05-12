@@ -2,6 +2,12 @@ import "package:jolt/src/core/debug.dart";
 import "package:meta/meta.dart";
 import "package:shared_interfaces/shared_interfaces.dart";
 
+/// Ported from and adapted from:
+/// https://github.com/stackblitz/alien-signals
+///
+/// This file has been modified to fit Jolt's Dart APIs, runtime behavior, and
+/// project conventions.
+
 part "system.dart";
 
 /// Monotonically increasing counter used to stamp dependency links during

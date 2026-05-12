@@ -10,6 +10,7 @@ resolution: workspace
 
 environment:
   sdk: ">=3.6.0 <4.0.0"
+  flutter: ">=3.32.0"
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -30,7 +31,7 @@ dependencies:
   jolt_flutter: ^3.1.1
   jolt_setup: ^3.2.3
   provider: ^6.1.5+1
-  vm_service: ^15.0.2
+  vm_service: ^15.0.0
 
 dev_dependencies:
   flutter_test:

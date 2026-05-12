@@ -47,6 +47,9 @@ class ReactiveNode {
 
   /// Reactive flags for this node.
   int flags;
+
+  /// Whether this node has been disposed.
+  bool get isDisposed => false;
 }
 
 /// Link between reactive nodes in the dependency graph.
@@ -175,12 +178,6 @@ abstract final class ReactiveFlags {
 
   /// Node is pending update.
   static const pending = 1 << 5;
-
-  /// Node has been disposed.
-  ///
-  /// When set, update and propagation are skipped for this node.
-  /// [none] is the special initial state; [disposed] is set when the node is disposed.
-  static const disposed = 1 << 6;
 }
 
 /// Abstract reactive system for managing dependency tracking.
@@ -289,11 +286,7 @@ void link(ReactiveNode dep, ReactiveNode sub, int version) {
 Link? unlink(Link link, [ReactiveNode? sub]) {
   sub ??= link.sub;
 
-  final dep = link.dep;
-  final prevDep = link.prevDep;
-  final nextDep = link.nextDep;
-  final nextSub = link.nextSub;
-  final prevSub = link.prevSub;
+  final Link(:dep, :prevDep, :nextDep, :nextSub, :prevSub) = link;
   if (nextDep != null) {
     nextDep.prevDep = prevDep;
   } else {
@@ -330,9 +323,9 @@ Link? unlink(Link link, [ReactiveNode? sub]) {
 /// Example:
 /// ```dart
 /// final signalNode = CustomSignalNode<int>(0);
-/// propagate(signalNode.subs!);
+/// propagate(signalNode.subs!, false);
 /// ```
-void propagate(Link theLink) {
+void propagate(Link theLink, bool innerWrite) {
   Link? link = theLink;
   var next = link.nextSub;
   Stack<Link?>? stack;
@@ -351,6 +344,9 @@ void propagate(Link theLink) {
                 ReactiveFlags.pending) ==
         0) {
       sub.flags = flags | ReactiveFlags.pending;
+      if (innerWrite) {
+        sub.flags |= ReactiveFlags.recursed;
+      }
     } else if (flags & (ReactiveFlags.recursedCheck | ReactiveFlags.recursed) ==
         0) {
       flags = ReactiveFlags.none;
@@ -359,6 +355,7 @@ void propagate(Link theLink) {
     } else if (flags & (ReactiveFlags.dirty | ReactiveFlags.pending) == 0 &&
         isValidLink(link, sub)) {
       sub.flags = flags | (ReactiveFlags.recursed | ReactiveFlags.pending);
+
       flags &= ReactiveFlags.mutable;
     } else {
       flags = ReactiveFlags.none;
@@ -429,8 +426,8 @@ bool checkDirty(Link theLink, ReactiveNode sub) {
       dirty = true;
     } else if (flags & (ReactiveFlags.mutable | ReactiveFlags.dirty) ==
         (ReactiveFlags.mutable | ReactiveFlags.dirty)) {
+      final subs = dep.subs!;
       if (updateNode(dep)) {
-        final subs = dep.subs!;
         if (subs.nextSub != null) {
           shallowPropagate(subs);
         }
@@ -438,9 +435,7 @@ bool checkDirty(Link theLink, ReactiveNode sub) {
       }
     } else if (flags & (ReactiveFlags.mutable | ReactiveFlags.pending) ==
         (ReactiveFlags.mutable | ReactiveFlags.pending)) {
-      if (link.nextSub != null || link.prevSub != null) {
-        stack = Stack(value: link, prev: stack);
-      }
+      stack = Stack(value: link, prev: stack);
       link = dep.deps;
       sub = dep;
       ++checkDepth;
@@ -456,18 +451,13 @@ bool checkDirty(Link theLink, ReactiveNode sub) {
     }
 
     while (checkDepth-- != 0) {
-      final firstSub = sub.subs!;
-      final hasMultipleSubs = firstSub.nextSub != null;
-      if (hasMultipleSubs) {
-        link = stack!.value;
-        stack = stack.prev;
-      } else {
-        link = firstSub;
-      }
+      link = stack!.value;
+      stack = stack.prev;
       if (dirty) {
+        final subs = sub.subs;
         if (updateNode(sub)) {
-          if (hasMultipleSubs) {
-            shallowPropagate(firstSub);
+          if (subs?.nextSub != null) {
+            shallowPropagate(subs!);
           }
           sub = link!.sub;
           continue;
@@ -484,7 +474,7 @@ bool checkDirty(Link theLink, ReactiveNode sub) {
       }
     }
 
-    return dirty;
+    return dirty && sub.flags != ReactiveFlags.none;
   } while (true);
 }
 

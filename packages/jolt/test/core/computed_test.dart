@@ -1212,11 +1212,11 @@ void main() {
       expect(computed.value, equals(5));
 
       // Force update (force=true) - should notify even if value unchanged
-      computed.notify(true);
+      computed.notify();
       expect(effectCount, equals(2)); // Effect triggered
 
       // Force update again
-      computed.notify(true);
+      computed.notify();
       expect(effectCount, equals(3)); // Effect triggered again
     });
 
@@ -1300,7 +1300,7 @@ void main() {
       expect(computeCount, equals(3)); // Recomputed but value unchanged
 
       // Force update - should notify even if equals returns true
-      computed.notify(true);
+      computed.notify();
       expect(effectCount, equals(2)); // Effect triggered
       expect(computeCount, equals(4)); // Recomputed
     });

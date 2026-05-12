@@ -2,6 +2,12 @@ import "package:jolt/src/core/debug.dart";
 import "package:meta/meta.dart";
 import "package:shared_interfaces/shared_interfaces.dart";
 
+/// Ported from and adapted from:
+/// https://github.com/stackblitz/alien-signals
+///
+/// This file has been modified to fit Jolt's Dart APIs, runtime behavior, and
+/// project conventions.
+
 part "system.dart";
 
 /// Monotonically increasing counter used to stamp dependency links during
@@ -14,6 +20,8 @@ part "system.dart";
 /// assert(cycle >= startCycle);
 /// ```
 int cycle = 0;
+
+int runDepth = 0;
 
 /// Current nesting depth of [`startBatch`]/[`endBatch`] calls.
 ///
@@ -104,9 +112,18 @@ bool updateNode(ReactiveNode node) {
   final result = switch (node) {
     ComputedReactiveNode() => updateComputed(node),
     SignalReactiveNode() => updateSignal(node),
+    EffectScopeReactiveNode() => _updateEffectScope(node),
     _ => updateCustom(node),
   };
   return result;
+}
+
+@pragma("vm:prefer-inline")
+@pragma("wasm:prefer-inline")
+@pragma("dart2js:prefer-inline")
+bool _updateEffectScope(EffectScopeReactiveNode node) {
+  node.flags = ReactiveFlags.mutable;
+  return true;
 }
 
 /// Enqueues an [EffectReactiveNode] chain for execution.
@@ -348,15 +365,16 @@ int getBatchDepth() => batchDepth;
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
 bool updateComputed<T>(ComputedReactiveNode<T> computed) {
-  if (computed.flags & ReactiveFlags.disposed != 0) return false;
+  if (computed.isDisposed) return false;
 
-  ++cycle;
   computed
     ..depsTail = null
     ..flags = ReactiveFlags.mutable | ReactiveFlags.recursedCheck;
   final prevSub = setActiveSub(computed);
 
   try {
+    ++cycle;
+    ++runDepth;
     final oldValue = computed.pendingValue;
     final newValue = computed.getter();
     final equals = computed.equals == null
@@ -373,6 +391,7 @@ bool updateComputed<T>(ComputedReactiveNode<T> computed) {
     }());
     return true;
   } finally {
+    --runDepth;
     activeSub = prevSub;
     computed.flags &= ~ReactiveFlags.recursedCheck;
     purgeDeps(computed);
@@ -397,7 +416,7 @@ bool updateComputed<T>(ComputedReactiveNode<T> computed) {
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
 bool updateSignal<T>(SignalReactiveNode<T> signal) {
-  if (signal.flags & ReactiveFlags.disposed != 0) return false;
+  if (signal.isDisposed) return false;
 
   signal.flags &= ReactiveFlags.mutable;
 
@@ -430,7 +449,7 @@ bool updateSignal<T>(SignalReactiveNode<T> signal) {
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
 bool updateCustom<T>(ReactiveNode node) {
-  if (node.flags & ReactiveFlags.disposed != 0) return false;
+  if (node.isDisposed) return false;
 
   node.flags = ReactiveFlags.mutable;
 
@@ -490,12 +509,11 @@ bool _removePending(ReactiveNode e, int flags) {
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
 void defaultRunEffect(EffectReactiveNode e, void Function() fn) {
-  if (e.flags & ReactiveFlags.disposed != 0) return;
+  if (e.isDisposed) return;
 
   final flags = e.flags;
   if (flags & (ReactiveFlags.dirty) != 0 ||
       (flags & (ReactiveFlags.pending) != 0 && checkDirty(e.deps!, e))) {
-    ++cycle;
     e
       ..depsTail = null
       ..flags = ReactiveFlags.watching | ReactiveFlags.recursedCheck;
@@ -503,13 +521,16 @@ void defaultRunEffect(EffectReactiveNode e, void Function() fn) {
     // only effect and watcher;
     final prevSub = setActiveSub(e);
     try {
+      ++cycle;
+      ++runDepth;
       fn();
     } finally {
+      --runDepth;
       activeSub = prevSub;
       e.flags &= ~ReactiveFlags.recursedCheck;
       purgeDeps(e);
     }
-  } else {
+  } else if (e.flags != ReactiveFlags.none) {
     e.flags = ReactiveFlags.watching;
   }
 }
@@ -572,9 +593,10 @@ void flushEffects() {
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
 T getComputed<T>(ComputedReactiveNode<T> computed) {
-  if ((computed.flags & ReactiveFlags.disposed) != 0) {
+  if (computed.isDisposed) {
     return computed.pendingValue as T;
   }
+
   final flags = computed.flags;
   if (flags & ReactiveFlags.dirty != 0 ||
       (flags & ReactiveFlags.pending != 0 &&
@@ -590,8 +612,10 @@ T getComputed<T>(ComputedReactiveNode<T> computed) {
     computed.flags = ReactiveFlags.mutable | ReactiveFlags.recursedCheck;
     final prevSub = setActiveSub(computed);
     try {
+      ++runDepth;
       computed.pendingValue = computed.getter();
     } finally {
+      --runDepth;
       activeSub = prevSub;
       computed.flags &= ~ReactiveFlags.recursedCheck;
     }
@@ -632,7 +656,7 @@ T getComputed<T>(ComputedReactiveNode<T> computed) {
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
 void notifyComputed<T>(ComputedReactiveNode<T> computed, [bool force = false]) {
-  if (computed.flags & ReactiveFlags.disposed != 0) return;
+  if (computed.isDisposed) return;
 
   final updated = updateComputed(computed);
 
@@ -671,14 +695,14 @@ void notifyComputed<T>(ComputedReactiveNode<T> computed, [bool force = false]) {
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
 T setSignal<T>(SignalReactiveNode<T> signal, T newValue) {
-  if (signal.flags & ReactiveFlags.disposed != 0) return newValue;
+  if (signal.isDisposed) return newValue;
 
   if (signal.pendingValue != (signal.pendingValue = newValue)) {
     signal.flags = ReactiveFlags.mutable | ReactiveFlags.dirty;
 
     final subs = signal.subs;
     if (subs != null) {
-      propagate(subs);
+      propagate(subs, runDepth > 0);
       if (batchDepth == 0) {
         flushEffects();
       }
@@ -707,6 +731,10 @@ T setSignal<T>(SignalReactiveNode<T> signal, T newValue) {
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
 T getSignal<T>(SignalReactiveNode<T> signal) {
+  if (signal.isDisposed) {
+    return signal.cachedValue as T;
+  }
+
   if (signal.flags & (ReactiveFlags.dirty) != 0) {
     if (updateSignal<T>(signal)) {
       final subs = signal.subs;
@@ -715,14 +743,9 @@ T getSignal<T>(SignalReactiveNode<T> signal) {
       }
     }
   }
-  var sub = activeSub;
-  while (sub != null) {
-    if (sub.flags & (ReactiveFlags.mutable | ReactiveFlags.watching) != 0) {
-      link(signal, sub, cycle);
-
-      break;
-    }
-    sub = sub.subs?.sub;
+  final sub = activeSub;
+  if (sub != null) {
+    link(signal, sub, cycle);
   }
 
   assert(() {
@@ -748,7 +771,8 @@ T getSignal<T>(SignalReactiveNode<T> signal) {
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
 void notifySignal<T>(SignalReactiveNode signal) {
-  if (signal.flags & ReactiveFlags.disposed != 0) return;
+  if (signal.isDisposed) return;
+
   // Mark as changed even if the underlying reference didn't change (e.g. in-place mutations).
   signal.flags = ReactiveFlags.mutable | ReactiveFlags.dirty;
 
@@ -756,7 +780,7 @@ void notifySignal<T>(SignalReactiveNode signal) {
 
   final subs = signal.subs;
   if (subs != null) {
-    propagate(subs);
+    propagate(subs, runDepth > 0);
     shallowPropagate(subs);
     if (batchDepth == 0) {
       flushEffects();
@@ -792,13 +816,13 @@ void notifySignal<T>(SignalReactiveNode signal) {
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
 void notifyCustom<T>(ReactiveNode node) {
-  if (node.flags & ReactiveFlags.disposed != 0) return;
+  if (node.isDisposed) return;
 
   node.flags = ReactiveFlags.mutable | ReactiveFlags.dirty;
 
   final subs = node.subs;
   if (subs != null) {
-    propagate(subs);
+    propagate(subs, runDepth > 0);
     if (batchDepth == 0) {
       flushEffects();
     }
@@ -814,6 +838,8 @@ void notifyCustom<T>(ReactiveNode node) {
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
 void getCustom(ReactiveNode node) {
+  if (node.isDisposed) return;
+
   var sub = activeSub;
   while (sub != null) {
     if (sub.flags & (ReactiveFlags.mutable | ReactiveFlags.watching) != 0) {
@@ -830,7 +856,7 @@ void getCustom(ReactiveNode node) {
   }());
 }
 
-/// Disposes a reactive node: marks it [ReactiveFlags.disposed], detaches
+/// Disposes a reactive node: marks it inactive, detaches
 /// dependencies/subscribers. The node no longer participates in updates or propagation.
 ///
 /// Parameters:
@@ -849,7 +875,7 @@ void disposeNode(ReactiveNode e) {
 
   e
     ..depsTail = null
-    ..flags = ReactiveFlags.disposed;
+    ..flags = ReactiveFlags.none;
   purgeDeps(e);
   final sub = e.subs;
   if (sub != null) {
@@ -900,18 +926,19 @@ void purgeDeps(ReactiveNode sub) {
 T trigger<T>(T Function() fn) {
   final sub = _DummyEffectNode(flags: ReactiveFlags.watching);
   final prevSub = setActiveSub(sub);
+
   try {
     return fn();
   } finally {
     activeSub = prevSub;
+    sub.flags = ReactiveFlags.none;
     var link = sub.deps;
     while (link != null) {
       final dep = link.dep;
       link = unlink(link, sub);
       final subs = dep.subs;
       if (subs != null) {
-        sub.flags = ReactiveFlags.none;
-        propagate(subs);
+        propagate(subs, runDepth > 0);
         shallowPropagate(subs);
       }
     }
@@ -988,8 +1015,7 @@ abstract interface class Notifiable {
   ///
   /// Parameters:
   /// - [force]: If `true`, forces notification even if the value hasn't changed.
-  ///   The default value depends on the implementation (e.g., `false` for
-  ///   [Computed], `true` for [Signal]).
+  ///   Defaults to `true`; pass `false` explicitly for a soft update.
   ///
   /// Example:
   /// ```dart
@@ -998,10 +1024,10 @@ abstract interface class Notifiable {
   /// list.notify(); // Force subscribers to update
   ///
   /// final computed = Computed(() => expensiveCalculation());
-  /// computed.notify(); // Soft update: only notifies if value changed
-  /// computed.notify(true); // Force update: always notifies subscribers
+  /// computed.notify(); // Force update: always notifies subscribers
+  /// computed.notify(false); // Soft update: only notifies if value changed
   /// ```
-  void notify([bool force]);
+  void notify([bool force = true]);
 }
 
 /// Interface for writable reactive values.

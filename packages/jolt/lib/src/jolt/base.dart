@@ -89,7 +89,7 @@ abstract interface class DisposableNode implements Disposable {
 
 /// Mixin providing base disposal functionality for reactive nodes.
 ///
-/// Sets [ReactiveFlags.disposed] so the node is no longer reactive.
+/// Marks the node as disposed so it is no longer reactive.
 /// Implements common disposal logic and calls [onDispose] for custom cleanup.
 ///
 /// Example:
@@ -103,17 +103,17 @@ abstract interface class DisposableNode implements Disposable {
 /// ```
 mixin DisposableNodeMixin
     implements DisposableNode, ChainedDisposable, ReactiveNode {
+  bool _isDisposed = false;
+
   /// Whether this node has been disposed.
   @override
-  bool get isDisposed => flags == ReactiveFlags.disposed;
+  bool get isDisposed => _isDisposed;
 
   @override
   @mustCallSuper
   void dispose() {
     if (isDisposed) return;
-    flags = ReactiveFlags.disposed;
-    // allow unawaited futures
-    // ignore: discarded_futures
+    _isDisposed = true;
     onDispose();
 
     JFinalizer.disposeObject(this);

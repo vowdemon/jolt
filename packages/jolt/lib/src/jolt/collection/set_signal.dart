@@ -48,7 +48,7 @@ mixin SetSignalMixin<E>
   bool remove(Object? element) {
     final result = peek.remove(element);
     if (result) {
-      notify(true);
+      notify();
     }
     return result;
   }
@@ -237,7 +237,7 @@ mixin SetSignalMixin<E>
   bool add(E element) {
     final result = peek.add(element);
     if (result) {
-      notify(true);
+      notify();
     }
     return result;
   }
@@ -298,7 +298,7 @@ mixin SetSignalMixin<E>
     final originLength = peek.length;
     final result = fn();
     if (originLength != peek.length) {
-      notify(true);
+      notify();
     }
     return result;
   }

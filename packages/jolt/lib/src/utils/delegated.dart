@@ -105,17 +105,20 @@ class DelegatedReadonlySignal<T> implements ReadonlySignal<T> {
 
   final DelegatedRefCountHelper<ReadonlySignal<T>> delegated;
   Disposer? _releaseDisposer;
+  late final T _disposedValue;
 
   @override
-  T get peek => delegated.source.peek;
+  T get peek => _isDisposed ? _disposedValue : delegated.source.peek;
 
   @override
   T get value {
+    if (_isDisposed) return _disposedValue;
     return delegated.source.value;
   }
 
   @override
   void notify([bool force = false]) {
+    if (_isDisposed) return;
     delegated.source.notify(force);
   }
 
@@ -124,6 +127,7 @@ class DelegatedReadonlySignal<T> implements ReadonlySignal<T> {
   @override
   void dispose() {
     if (_isDisposed) return;
+    _disposedValue = delegated.source.peek;
     _isDisposed = true;
 
     delegated.release();
@@ -164,22 +168,26 @@ class DelegatedSignal<T> implements Signal<T> {
 
   final DelegatedRefCountHelper<Signal<T>> delegated;
   Disposer? _releaseDisposer;
+  late final T _disposedValue;
 
   @override
   set value(T value) {
+    if (_isDisposed) return;
     delegated.source.value = value;
   }
 
   @override
-  T get peek => delegated.source.peek;
+  T get peek => _isDisposed ? _disposedValue : delegated.source.peek;
 
   @override
   T get value {
+    if (_isDisposed) return _disposedValue;
     return delegated.source.value;
   }
 
   @override
   void notify([bool force = false]) {
+    if (_isDisposed) return;
     delegated.source.notify(force);
   }
 
@@ -188,6 +196,7 @@ class DelegatedSignal<T> implements Signal<T> {
   @override
   void dispose() {
     if (_isDisposed) return;
+    _disposedValue = delegated.source.peek;
     _isDisposed = true;
 
     delegated.release();

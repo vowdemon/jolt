@@ -553,12 +553,7 @@ abstract final class JoltDevTools {
   }
 
   static bool _isDisposed(ReactiveNode node) {
-    try {
-      // Check if node has isDisposed property (duck typing)
-      return (node as dynamic).isDisposed == true;
-    } catch (e) {
-      return false;
-    }
+    return node.isDisposed;
   }
 
   static dynamic _getNodeValue(ReactiveNode node) {

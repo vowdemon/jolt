@@ -3,8 +3,6 @@ description: Lint tool for the Jolt reactive state management ecosystem, providi
 
 repository: https://github.com/vowdemon/jolt
 
-resolution: workspace
-
 version: 3.0.3
 
 topics:
@@ -14,7 +12,7 @@ topics:
   - lint
 
 environment:
-  sdk: ">=3.10.0 <4.0.0"
+  sdk: ">=3.9.2 <4.0.0"
 
 dependencies:
   analysis_server_plugin: ^0.3.3
@@ -23,6 +21,6 @@ dependencies:
 
 dev_dependencies:
   lints: ^5.0.0
-  test: ^1.24.0
+  test: ^1.0.0
   analyzer_testing: ^0.1.0
   test_reflective_loader: ^0.2.3

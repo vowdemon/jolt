@@ -19,7 +19,7 @@ class _SingleTickerProviderHook extends SetupHook<TickerProvider>
   _SingleTickerProviderHook();
 
   Ticker? _ticker;
-  ValueListenable<TickerModeData>? _tickerModeNotifier;
+  ValueListenable<bool>? _tickerModeNotifier;
 
   @override
   Ticker createTicker(TickerCallback onTick) {
@@ -82,7 +82,7 @@ class _SingleTickerProviderHook extends SetupHook<TickerProvider>
   }
 
   void _updateTickerModeNotifier() {
-    final notifier = TickerMode.getValuesNotifier(context);
+    final notifier = TickerMode.getNotifier(context);
     if (notifier == _tickerModeNotifier) return;
 
     _tickerModeNotifier?.removeListener(_updateTicker);
@@ -91,9 +91,7 @@ class _SingleTickerProviderHook extends SetupHook<TickerProvider>
   }
 
   void _updateTicker() {
-    final values = _tickerModeNotifier?.value ?? TickerModeData.fallback;
-    _ticker?.muted = !values.enabled;
-    _ticker?.forceFrames = values.forceFrames;
+    _ticker?.muted = !(_tickerModeNotifier?.value ?? true);
   }
 
   @override
@@ -125,9 +123,7 @@ class _TickerProviderHook extends SetupHook<_TickerProviderHook>
       onTick,
       this,
       debugLabel: kDebugMode ? 'created by ${describeIdentity(this)}' : null,
-    )
-      ..muted = !_tickerModeNotifier!.value.enabled
-      ..forceFrames = _tickerModeNotifier!.value.forceFrames;
+    )..muted = !_tickerModeNotifier!.value;
     _tickers!.add(result);
     return result;
   }
@@ -138,7 +134,7 @@ class _TickerProviderHook extends SetupHook<_TickerProviderHook>
     _tickers!.remove(ticker);
   }
 
-  ValueListenable<TickerModeData>? _tickerModeNotifier;
+  ValueListenable<bool>? _tickerModeNotifier;
 
   @override
   void activate() {
@@ -149,18 +145,15 @@ class _TickerProviderHook extends SetupHook<_TickerProviderHook>
 
   void _updateTickers() {
     if (_tickers != null) {
-      final values = _tickerModeNotifier?.value ?? TickerModeData.fallback;
-      final bool muted = !values.enabled;
+      final bool muted = !_tickerModeNotifier!.value;
       for (final Ticker ticker in _tickers!) {
         ticker.muted = muted;
-        ticker.forceFrames = values.forceFrames;
       }
     }
   }
 
   void _updateTickerModeNotifier() {
-    final ValueListenable<TickerModeData> newNotifier =
-        TickerMode.getValuesNotifier(context);
+    final ValueListenable<bool> newNotifier = TickerMode.getNotifier(context);
     if (newNotifier == _tickerModeNotifier) {
       return;
     }

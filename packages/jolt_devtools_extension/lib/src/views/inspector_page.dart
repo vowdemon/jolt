@@ -53,6 +53,7 @@ class _JoltInspectorPageState extends State<JoltInspectorPage> {
               },
               tooltip: 'Search Syntax Help',
             ),
+            GlobalFilterButton(controller: _controller),
             JoltBuilder(builder: (context) {
               return IconButton(
                 icon: const Icon(Icons.refresh),
@@ -97,6 +98,122 @@ class _JoltInspectorPageState extends State<JoltInspectorPage> {
           ),
         ],
       ],
+    );
+  }
+}
+
+class GlobalFilterButton extends StatelessWidget {
+  const GlobalFilterButton({
+    super.key,
+    required this.controller,
+  });
+
+  final JoltInspectorController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return JoltBuilder(builder: (context) {
+      return IconButton(
+        icon: Icon(
+          controller.$globalFilterEnabled.value
+              ? Icons.filter_alt
+              : Icons.filter_alt_off,
+        ),
+        onPressed: () {
+          showDialog(
+            context: context,
+            builder: (context) => GlobalFilterDialog(controller: controller),
+          );
+        },
+        tooltip: 'Global Filter',
+      );
+    });
+  }
+}
+
+class GlobalFilterDialog extends StatefulWidget {
+  const GlobalFilterDialog({
+    super.key,
+    required this.controller,
+  });
+
+  final JoltInspectorController controller;
+
+  @override
+  State<GlobalFilterDialog> createState() => _GlobalFilterDialogState();
+}
+
+class _GlobalFilterDialogState extends State<GlobalFilterDialog> {
+  late final TextEditingController _textController;
+
+  @override
+  void initState() {
+    super.initState();
+    _textController = TextEditingController(
+      text: widget.controller.$globalFilterQuery.value,
+    );
+  }
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: JoltBuilder(builder: (context) {
+            final enabled = widget.controller.$globalFilterEnabled.value;
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      'Global Filter',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      iconSize: 16,
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Enable Global Filter'),
+                  value: enabled,
+                  onChanged: (value) {
+                    setState(() {
+                      widget.controller.setGlobalFilterEnabled(value);
+                    });
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _textController,
+                  enabled: enabled,
+                  decoration: const InputDecoration(
+                    labelText: 'Global Filter',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  onChanged: widget.controller.setGlobalFilterQuery,
+                ),
+              ],
+            );
+          }),
+        ),
+      ),
     );
   }
 }

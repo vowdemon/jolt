@@ -15,9 +15,12 @@ class SelectionReason {
   static const String search = 'search';
 }
 
+const defaultGlobalFilterQuery =
+    '-debug:SetupProps -debug:SetupRenderer -debug:SetupContext -debug:JoltBuilder';
+
 /// Controller that manages the state of the Jolt Inspector.
 class JoltInspectorController {
-  final joltService = JoltService(serviceManager);
+  late final JoltService joltService;
   StreamSubscription? _updateSubscription;
   VoidCallback? _connectionListener;
   VoidCallback? _isolateListener;
@@ -25,6 +28,8 @@ class JoltInspectorController {
   final $isConnected = Signal(false);
   final $isLoading = Signal(false);
   final $searchQuery = Signal('');
+  final $globalFilterEnabled = Signal(true);
+  final $globalFilterQuery = Signal(defaultGlobalFilterQuery);
   final $selectedNodeId = Signal<int?>(null);
   final $selectedDetachedNode = Signal<JoltNode?>(null);
   final $nodes = MapSignal(<int, JoltNode>{});
@@ -34,16 +39,23 @@ class JoltInspectorController {
 
   QueryExpression? _parsedQuery;
   String _parsedQuerySource = '';
+  QueryExpression? _parsedGlobalFilter;
+  String _parsedGlobalFilterSource = '';
 
   Timer? _refreshTimer;
   Timer? _searchThrottleTimer;
   Timer? _clockTimer;
 
-  JoltInspectorController() {
-    _checkConnection();
+  JoltInspectorController({bool initializeConnection = true}) {
+    if (initializeConnection) {
+      joltService = JoltService(serviceManager);
+      _checkConnection();
+    }
   }
 
   List<JoltNode> get filteredNodes => _buildFilteredNodes();
+
+  int get globalFilteredNodeCount => _buildGlobalFilteredNodes().length;
 
   List<FilterAutocompleteSuggestion> filterAutocompleteSuggestions(
     String input,
@@ -325,6 +337,15 @@ class JoltInspectorController {
     });
   }
 
+  void setGlobalFilterEnabled(bool value) {
+    $globalFilterEnabled.value = value;
+  }
+
+  void setGlobalFilterQuery(String value) {
+    $globalFilterQuery.value = value;
+    _parseGlobalFilter();
+  }
+
   void closeNodeDetails() {
     $selectedDetachedNode.value = null;
     $selectedNodeId.value = null;
@@ -343,12 +364,30 @@ class JoltInspectorController {
 
   List<JoltNode> _buildFilteredNodes() {
     _parseQuery();
+    final globalFiltered = _buildGlobalFilteredNodes();
     final now = DateTime.now();
-    final filtered = $nodes.values.where((node) {
+    final filtered = globalFiltered.where((node) {
       if (!_matchesQuery(node, now)) return false;
       return true;
     }).toList();
 
+    _sortNodes(filtered);
+    return filtered;
+  }
+
+  List<JoltNode> _buildGlobalFilteredNodes() {
+    _parseGlobalFilter();
+    final now = DateTime.now();
+    final filtered = $nodes.values.where((node) {
+      if (!_matchesGlobalFilter(node, now)) return false;
+      return true;
+    }).toList();
+
+    _sortNodes(filtered);
+    return filtered;
+  }
+
+  void _sortNodes(List<JoltNode> filtered) {
     filtered.sort((a, b) {
       final comparison = a.label.toLowerCase().compareTo(b.label.toLowerCase());
       if (comparison != 0) {
@@ -356,7 +395,6 @@ class JoltInspectorController {
       }
       return a.id.compareTo(b.id);
     });
-    return filtered;
   }
 
   void _parseQuery() {
@@ -367,11 +405,29 @@ class JoltInspectorController {
     _parsedQuery = _buildQueryExpression($searchQuery.value);
   }
 
+  void _parseGlobalFilter() {
+    if (_parsedGlobalFilterSource == $globalFilterQuery.value) {
+      return;
+    }
+    _parsedGlobalFilterSource = $globalFilterQuery.value;
+    _parsedGlobalFilter = _buildQueryExpression($globalFilterQuery.value);
+  }
+
   bool _matchesQuery(JoltNode node, DateTime now) {
     if (_parsedQuery == null) {
       return true;
     }
     return _parsedQuery!.evaluate(node, now);
+  }
+
+  bool _matchesGlobalFilter(JoltNode node, DateTime now) {
+    if (!$globalFilterEnabled.value) {
+      return true;
+    }
+    if (_parsedGlobalFilter == null) {
+      return true;
+    }
+    return _parsedGlobalFilter!.evaluate(node, now);
   }
 
   QueryExpression? _buildQueryExpression(String raw) {

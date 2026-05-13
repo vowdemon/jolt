@@ -42,6 +42,13 @@ class _NodesListPanelState extends State<NodesListPanel>
         useTextEditingController(text: controller.$searchQuery.value);
     final autocompleteOpen = useSignal(false);
     final highlightedSuggestionIndex = useSignal(0);
+    useWatcher(
+      () => [
+        controller.$globalFilterEnabled.value,
+        controller.$globalFilterQuery.value,
+      ],
+      (_, __) => setState(() {}),
+    );
 
     int caretOffset() {
       final offset = searchController.selection.baseOffset;
@@ -279,7 +286,7 @@ class _NodesListPanelState extends State<NodesListPanel>
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'Matched ${filteredNodes.length} / ${controller.$nodes.length} nodes',
+                'Matched ${filteredNodes.length} / ${controller.globalFilteredNodeCount} nodes',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ),

@@ -322,13 +322,13 @@ void onDeactivated(void Function() callback) {
 /// ```
 @defineHook
 BuildContext useContext() {
-  final currentContext = JoltSetupContext.current?.context;
+  final currentContext = SetupContext.current?.context;
   assert(currentContext != null, 'SetupWidgetElement is not exists');
 
   return currentContext!;
 }
 
-/// Gets the current JoltSetupContext.
+/// Gets the current SetupContext.
 ///
 /// This provides access to the underlying setup context, which manages hooks
 /// and reactive effects for the widget. This is primarily used for advanced
@@ -347,8 +347,8 @@ BuildContext useContext() {
 /// }
 /// ```
 @defineHook
-JoltSetupContext useSetupContext() {
-  final currentContext = JoltSetupContext.current;
+SetupContext useSetupContext() {
+  final currentContext = SetupContext.current;
   assert(currentContext != null, 'SetupWidgetElement is not exists');
 
   return currentContext!;
@@ -388,7 +388,7 @@ JoltSetupContext useSetupContext() {
 /// final counter = useHook(CounterHook());
 /// ```
 @defineHook
-T useHook<T>(SetupHook<T> hook) => JoltSetupContext.current!._useHook(hook);
+T useHook<T>(SetupHook<T> hook) => SetupContext.current!._useHook(hook);
 
 /// Base class for all setup hooks.
 ///
@@ -438,8 +438,8 @@ T useHook<T>(SetupHook<T> hook) => JoltSetupContext.current!._useHook(hook);
 /// ```
 abstract class SetupHook<T> {
   SetupHook()
-      : assert(JoltSetupContext.current != null, 'Setup context is not exists'),
-        _context = JoltSetupContext.current!.context;
+      : assert(SetupContext.current != null, 'Setup context is not exists'),
+        _context = SetupContext.current!.context;
 
   late final BuildContext _context;
 
@@ -765,7 +765,7 @@ final class JoltResetHookCreator {
   @defineHook
   @experimental
   void Function() call() {
-    final currentContext = JoltSetupContext.current;
+    final currentContext = SetupContext.current;
     assert(currentContext != null, 'SetupWidgetElement is not exists');
 
     return currentContext!._resetSetupFn;
@@ -794,7 +794,7 @@ final class JoltResetHookCreator {
   @defineHook
   @experimental
   void listen(Iterable<Listenable> Function() watcher) {
-    final currentContext = JoltSetupContext.current;
+    final currentContext = SetupContext.current;
     assert(currentContext != null, 'SetupWidgetElement is not exists');
 
     useHook(_ResetSetupOnListenableHook(
@@ -827,7 +827,7 @@ final class JoltResetHookCreator {
   @defineHook
   @experimental
   void watch(Iterable<Readable> Function() watchFn) {
-    final currentContext = JoltSetupContext.current;
+    final currentContext = SetupContext.current;
     assert(currentContext != null, 'SetupWidgetElement is not exists');
 
     final resetSetup = currentContext!._resetSetupFn;
@@ -858,7 +858,7 @@ final class JoltResetHookCreator {
   @defineHook
   @experimental
   void select<T>(T Function() selector) {
-    final currentContext = JoltSetupContext.current;
+    final currentContext = SetupContext.current;
     assert(currentContext != null, 'SetupWidgetElement is not exists');
 
     final resetSetup = currentContext!._resetSetupFn;

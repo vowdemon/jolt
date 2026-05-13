@@ -504,7 +504,7 @@ final count = useAutoDispose(() => Signal(value));
 | Hook | 描述 |
 |------|------|
 | `useContext()` | 获取 BuildContext |
-| `useSetupContext()` | 获取 JoltSetupContext |
+| `useSetupContext()` | 获取 SetupContext |
 | `useEffectScope()` | 创建 effect scope |
 | `useJoltStream(value)` | 从响应式值创建流 |
 | `useUntil(source, predicate)` | 等待响应式值满足条件 |

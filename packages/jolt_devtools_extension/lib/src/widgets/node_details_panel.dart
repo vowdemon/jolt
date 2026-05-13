@@ -63,6 +63,27 @@ class _NodeDetailsPanelState extends State<NodeDetailsPanel>
               Row(
                 spacing: 12,
                 children: [
+                  JoltBuilder(builder: (context) {
+                    final canNavigateBack = controller.$canNavigateBack.value;
+                    return IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: canNavigateBack
+                          ? controller.navigateSelectionBack
+                          : null,
+                      tooltip: 'Back',
+                    );
+                  }),
+                  JoltBuilder(builder: (context) {
+                    final canNavigateForward =
+                        controller.$canNavigateForward.value;
+                    return IconButton(
+                      icon: const Icon(Icons.arrow_forward),
+                      onPressed: canNavigateForward
+                          ? controller.navigateSelectionForward
+                          : null,
+                      tooltip: 'Forward',
+                    );
+                  }),
                   IconButton(
                     icon: const Icon(Icons.close),
                     onPressed: controller.closeNodeDetails,

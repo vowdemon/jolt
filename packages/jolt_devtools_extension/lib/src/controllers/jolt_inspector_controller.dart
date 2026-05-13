@@ -17,6 +17,7 @@ class SelectionReason {
 
 const defaultGlobalFilterQuery =
     '-debug:SetupProps -debug:SetupRenderer -debug:SetupContext -debug:JoltBuilder';
+const maxSelectionHistoryLength = 50;
 
 /// Controller that manages the state of the Jolt Inspector.
 class JoltInspectorController {
@@ -24,6 +25,7 @@ class JoltInspectorController {
   StreamSubscription? _updateSubscription;
   VoidCallback? _connectionListener;
   VoidCallback? _isolateListener;
+  final bool _initializeConnection;
 
   final $isConnected = Signal(false);
   final $isLoading = Signal(false);
@@ -32,6 +34,8 @@ class JoltInspectorController {
   final $globalFilterQuery = Signal(defaultGlobalFilterQuery);
   final $selectedNodeId = Signal<int?>(null);
   final $selectedDetachedNode = Signal<JoltNode?>(null);
+  final $canNavigateBack = Signal(false);
+  final $canNavigateForward = Signal(false);
   final $nodes = MapSignal(<int, JoltNode>{});
   late final $selectedNode = Computed(
       () => $selectedDetachedNode.value ?? $nodes[$selectedNodeId.value]);
@@ -45,8 +49,11 @@ class JoltInspectorController {
   Timer? _refreshTimer;
   Timer? _searchThrottleTimer;
   Timer? _clockTimer;
+  final List<int> _selectionHistory = [];
+  int _selectionHistoryIndex = -1;
 
-  JoltInspectorController({bool initializeConnection = true}) {
+  JoltInspectorController({bool initializeConnection = true})
+      : _initializeConnection = initializeConnection {
     if (initializeConnection) {
       joltService = JoltService(serviceManager);
       _checkConnection();
@@ -304,20 +311,80 @@ class JoltInspectorController {
     int nodeId, {
     String? reason,
   }) async {
+    _pushSelectionHistory(nodeId);
+    return _selectNodeFromHistory(nodeId);
+  }
+
+  Future<bool> navigateSelectionBack() async {
+    if (!canNavigateBack) {
+      return false;
+    }
+    _selectionHistoryIndex -= 1;
+    _updateSelectionNavigationState();
+    return _selectNodeFromHistory(_selectionHistory[_selectionHistoryIndex]);
+  }
+
+  Future<bool> navigateSelectionForward() async {
+    if (!canNavigateForward) {
+      return false;
+    }
+    _selectionHistoryIndex += 1;
+    _updateSelectionNavigationState();
+    return _selectNodeFromHistory(_selectionHistory[_selectionHistoryIndex]);
+  }
+
+  bool get canNavigateBack => _selectionHistoryIndex > 0;
+
+  bool get canNavigateForward =>
+      _selectionHistoryIndex >= 0 &&
+      _selectionHistoryIndex < _selectionHistory.length - 1;
+
+  int get selectionHistoryLength => _selectionHistory.length;
+
+  List<int> get selectionHistory => List.unmodifiable(_selectionHistory);
+
+  Future<bool> _selectNodeFromHistory(int nodeId) async {
     $selectedDetachedNode.value = null;
     $selectedNodeId.value = nodeId;
 
     final node = $nodes[nodeId];
     if (node == null) {
+      $selectedDetachedNode.value = JoltNode.unavailable(nodeId);
       return false;
     }
 
-    if (node.creationStack.value == null) {
+    if (_initializeConnection && node.creationStack.value == null) {
       final creationStack = await joltService.getCreationStack(nodeId);
       node.creationStack.value = creationStack;
     }
 
     return true;
+  }
+
+  void _pushSelectionHistory(int nodeId) {
+    if (_selectionHistoryIndex >= 0 &&
+        _selectionHistory[_selectionHistoryIndex] == nodeId) {
+      return;
+    }
+
+    if (_selectionHistoryIndex < _selectionHistory.length - 1) {
+      _selectionHistory.removeRange(
+        _selectionHistoryIndex + 1,
+        _selectionHistory.length,
+      );
+    }
+
+    _selectionHistory.add(nodeId);
+    if (_selectionHistory.length > maxSelectionHistoryLength) {
+      _selectionHistory.removeAt(0);
+    }
+    _selectionHistoryIndex = _selectionHistory.length - 1;
+    _updateSelectionNavigationState();
+  }
+
+  void _updateSelectionNavigationState() {
+    $canNavigateBack.value = canNavigateBack;
+    $canNavigateForward.value = canNavigateForward;
   }
 
   void setFilter(String value) {

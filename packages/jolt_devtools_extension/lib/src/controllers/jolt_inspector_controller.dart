@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:devtools_extensions/devtools_extensions.dart';
 import 'package:flutter/material.dart';
+import 'package:jolt_devtools_extension/src/models/filter_autocomplete.dart';
 import 'package:jolt_devtools_extension/src/models/jolt_node.dart';
 import 'package:jolt_devtools_extension/src/service/jolt_service.dart';
+import 'package:jolt_devtools_extension/src/utils/filter_autocomplete.dart';
 import 'package:jolt_devtools_extension/src/utils/query_parser.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
 
@@ -42,6 +44,17 @@ class JoltInspectorController {
   }
 
   List<JoltNode> get filteredNodes => _buildFilteredNodes();
+
+  List<FilterAutocompleteSuggestion> filterAutocompleteSuggestions(
+    String input,
+    int caretOffset,
+  ) {
+    return buildFilterAutocompleteSuggestions(
+      input: input,
+      caretOffset: caretOffset,
+      nodes: $nodes.values,
+    );
+  }
 
   void _checkConnection() {
     // Check if we have a VM service connection

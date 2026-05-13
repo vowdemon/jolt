@@ -38,6 +38,8 @@ dependencies:
     path: ../../jolt
   jolt_flutter:
     path: ../../jolt_flutter
+  jolt_setup:
+    path: ../../jolt_setup
 
 dev_dependencies:
   flutter_test:

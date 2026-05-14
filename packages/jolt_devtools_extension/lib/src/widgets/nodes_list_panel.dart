@@ -158,7 +158,8 @@ class _NodesListPanelState extends State<NodesListPanel>
       if (controller.$isLoading.value) {
         return const Center(child: CircularProgressIndicator());
       }
-      final filteredNodes = controller.filteredNodes;
+      final filteredResult = controller.filteredNodesResult;
+      final filteredNodes = filteredResult.nodes;
       final List<FilterAutocompleteSuggestion> suggestions =
           autocompleteOpen.value
               ? currentSuggestions()
@@ -286,7 +287,7 @@ class _NodesListPanelState extends State<NodesListPanel>
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'Matched ${filteredNodes.length} / ${controller.globalFilteredNodeCount} nodes',
+                'Matched ${filteredNodes.length} / ${filteredResult.globalCount} nodes',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ),

@@ -76,12 +76,8 @@ class _WatchListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return JoltBuilder(builder: (context) {
       controller.$now.value;
-      node.value.value;
-      node.valueType.value;
       node.count.value;
       node.updatedAt.value;
-      node.dependencies.value;
-      node.subscribers.value;
 
       return ListTile(
         dense: true,

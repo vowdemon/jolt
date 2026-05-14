@@ -371,6 +371,19 @@ void main() {
       );
     });
 
+    test('preserves negation when suggesting relation snippets', () {
+      final suggestions = buildFilterAutocompleteSuggestions(
+        input: '-dep:',
+        caretOffset: 5,
+        nodes: const [],
+      );
+
+      final idSuggestion =
+          suggestions.firstWhere((s) => s.label == '-dep:{id:}');
+      expect(idSuggestion.applyTo('-dep:'), '-dep:{id:}');
+      expect(idSuggestion.caretOffsetAfterApply(), '-dep:{id:'.length);
+    });
+
     test('suggests inner relation fields before closing brace', () {
       final suggestions = buildFilterAutocompleteSuggestions(
         input: 'dep:{}',
@@ -424,6 +437,19 @@ void main() {
       expect(
         nextSuggestions.map((s) => s.label),
         containsAll(['Signal', 'Computed', 'Effect']),
+      );
+    });
+
+    test('inner relation numeric fields suggest comparison operators', () {
+      final suggestions = buildFilterAutocompleteSuggestions(
+        input: 'sub:{count}',
+        caretOffset: 'sub:{count'.length,
+        nodes: _nodes,
+      );
+
+      expect(
+        suggestions.map((s) => s.label),
+        containsAll([':', '=', '>', '>=', '<', '<=']),
       );
     });
 

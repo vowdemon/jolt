@@ -2,16 +2,39 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jolt_devtools_extension/src/models/filter_autocomplete.dart';
+import 'package:jolt_devtools_extension/src/models/jolt_node.dart';
+import 'package:jolt_devtools_extension/src/utils/filter_autocomplete.dart';
+
+final _nodes = [
+  JoltNode(
+    id: 1,
+    type: 'Signal',
+    label: 'counter',
+    debugType: 'store',
+    isDisposed: false,
+    flags: 0,
+    valueType: 'int',
+  ),
+  JoltNode(
+    id: 2,
+    type: 'Computed',
+    label: 'total',
+    debugType: 'JoltBuilder',
+    isDisposed: false,
+    flags: 0,
+    valueType: 'double',
+  ),
+];
 
 void main() {
   testWidgets('方向键移动候选高亮，Enter 确认候选且保持焦点', (tester) async {
-    await _pumpAutocompleteHarness(tester);
+    await _pumpAutocompleteHarness(tester, initialText: 'de');
 
     await tester.tap(find.byType(TextField));
     await tester.pump();
 
-    expect(find.text('type'), findsOneWidget);
     expect(find.text('debug'), findsOneWidget);
+    expect(find.text('dep'), findsOneWidget);
 
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.pump();
@@ -19,13 +42,13 @@ void main() {
     await tester.pump();
 
     expect(find.byType(TextField), findsOneWidget);
-    expect(_fieldText(tester), 'debug');
+    expect(_fieldText(tester), 'dep');
     expect(_fieldHasFocus(tester), isTrue);
     expect(find.text(':'), findsOneWidget);
   });
 
   testWidgets('Tab 只向下循环候选，不上屏也不失焦', (tester) async {
-    await _pumpAutocompleteHarness(tester);
+    await _pumpAutocompleteHarness(tester, initialText: 'de');
 
     await tester.tap(find.byType(TextField));
     await tester.pump();
@@ -33,20 +56,20 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.pump();
 
-    expect(_fieldText(tester), 't');
+    expect(_fieldText(tester), 'de');
     expect(_fieldHasFocus(tester), isTrue);
-    expect(_selectedSuggestionText(tester), 'debug');
+    expect(_selectedSuggestionText(tester), 'dep');
 
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.pump();
 
-    expect(_fieldText(tester), 't');
+    expect(_fieldText(tester), 'de');
     expect(_fieldHasFocus(tester), isTrue);
-    expect(_selectedSuggestionText(tester), 'type');
+    expect(_selectedSuggestionText(tester), 'deps');
   });
 
   testWidgets('Shift+Tab 只向上循环候选，不上屏也不失焦', (tester) async {
-    await _pumpAutocompleteHarness(tester);
+    await _pumpAutocompleteHarness(tester, initialText: 'de');
 
     await tester.tap(find.byType(TextField));
     await tester.pump();
@@ -56,13 +79,13 @@ void main() {
     await tester.sendKeyUpEvent(LogicalKeyboardKey.shift);
     await tester.pump();
 
-    expect(_fieldText(tester), 't');
+    expect(_fieldText(tester), 'de');
     expect(_fieldHasFocus(tester), isTrue);
-    expect(_selectedSuggestionText(tester), 'debug');
+    expect(_selectedSuggestionText(tester), 'deps');
   });
 
   testWidgets('Enter 确认候选后不让过滤框失焦', (tester) async {
-    await _pumpAutocompleteHarness(tester);
+    await _pumpAutocompleteHarness(tester, initialText: 'ty');
 
     await tester.tap(find.byType(TextField));
     await tester.pump();
@@ -76,7 +99,7 @@ void main() {
   });
 
   testWidgets('值候选上屏后追加空格并继续提示字段', (tester) async {
-    await _pumpAutocompleteHarness(tester);
+    await _pumpAutocompleteHarness(tester, initialText: 'ty');
 
     await tester.tap(find.byType(TextField));
     await tester.pump();
@@ -88,18 +111,21 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pump();
 
-    expect(_fieldText(tester), 'type:Signal ');
+    expect(_fieldText(tester), 'type:Computed ');
     expect(_fieldHasFocus(tester), isTrue);
     expect(find.text('type'), findsOneWidget);
     expect(find.text('debug'), findsOneWidget);
   });
 }
 
-Future<void> _pumpAutocompleteHarness(WidgetTester tester) async {
+Future<void> _pumpAutocompleteHarness(
+  WidgetTester tester, {
+  required String initialText,
+}) async {
   await tester.pumpWidget(
-    const MaterialApp(
+    MaterialApp(
       home: Scaffold(
-        body: _AutocompleteHarness(),
+        body: _AutocompleteHarness(initialText: initialText),
       ),
     ),
   );
@@ -123,14 +149,16 @@ String _selectedSuggestionText(WidgetTester tester) {
 }
 
 class _AutocompleteHarness extends StatefulWidget {
-  const _AutocompleteHarness();
+  const _AutocompleteHarness({required this.initialText});
+
+  final String initialText;
 
   @override
   State<_AutocompleteHarness> createState() => _AutocompleteHarnessState();
 }
 
 class _AutocompleteHarnessState extends State<_AutocompleteHarness> {
-  final _controller = TextEditingController(text: 't');
+  late final _controller = TextEditingController(text: widget.initialText);
   final _focusNode = FocusNode();
   var _open = true;
   var _highlightedIndex = 0;
@@ -206,68 +234,13 @@ class _AutocompleteHarnessState extends State<_AutocompleteHarness> {
   }
 
   List<FilterAutocompleteSuggestion> _currentSuggestions() {
-    final text = _controller.text;
-    if (text == 't') {
-      return const [
-        FilterAutocompleteSuggestion(
-          label: 'type',
-          insertText: 'type',
-          kind: FilterAutocompleteSuggestionKind.field,
-          replacementStart: 0,
-          replacementEnd: 1,
-        ),
-        FilterAutocompleteSuggestion(
-          label: 'debug',
-          insertText: 'debug',
-          kind: FilterAutocompleteSuggestionKind.field,
-          replacementStart: 0,
-          replacementEnd: 1,
-        ),
-      ];
-    }
-    if (text == 'type' || text == 'debug') {
-      return const [
-        FilterAutocompleteSuggestion(
-          label: ':',
-          insertText: ':',
-          kind: FilterAutocompleteSuggestionKind.operator,
-          replacementStart: 4,
-          replacementEnd: 4,
-        ),
-      ];
-    }
-    if (text == 'type:') {
-      return const [
-        FilterAutocompleteSuggestion(
-          label: 'Signal',
-          insertText: 'Signal',
-          kind: FilterAutocompleteSuggestionKind.value,
-          replacementStart: 5,
-          replacementEnd: 5,
-          appendSpace: true,
-        ),
-      ];
-    }
-    if (text.endsWith(' ')) {
-      final start = text.length;
-      return [
-        FilterAutocompleteSuggestion(
-          label: 'type',
-          insertText: 'type',
-          kind: FilterAutocompleteSuggestionKind.field,
-          replacementStart: start,
-          replacementEnd: start,
-        ),
-        FilterAutocompleteSuggestion(
-          label: 'debug',
-          insertText: 'debug',
-          kind: FilterAutocompleteSuggestionKind.field,
-          replacementStart: start,
-          replacementEnd: start,
-        ),
-      ];
-    }
-    return const [];
+    return buildFilterAutocompleteSuggestions(
+      input: _controller.text,
+      caretOffset: _controller.selection.baseOffset < 0
+          ? _controller.text.length
+          : _controller.selection.baseOffset,
+      nodes: _nodes,
+    );
   }
 
   @override

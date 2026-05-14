@@ -68,6 +68,7 @@ List<FilterAutocompleteSuggestion> buildFilterAutocompleteSuggestions({
   if (key == 'dep' || key == 'sub') {
     return _relationSuggestions(
       key: key,
+      isNegated: isNegated,
       valuePrefix: valuePrefix,
       replacementStart: context.start,
       replacementEnd: context.end,
@@ -282,18 +283,21 @@ List<FilterAutocompleteSuggestion> _valueSuggestions({
 
 List<FilterAutocompleteSuggestion> _relationSuggestions({
   required String key,
+  required bool isNegated,
   required String valuePrefix,
   required int replacementStart,
   required int replacementEnd,
 }) {
+  final tokenPrefix = isNegated ? '-$key' : key;
   final snippets = [
-    '$key:{id:}',
-    '$key:{type:}',
-    '$key:{debug:}',
+    '$tokenPrefix:{id:}',
+    '$tokenPrefix:{type:}',
+    '$tokenPrefix:{debug:}',
   ];
+  final matchStart = tokenPrefix.length + 1;
   return snippets.where((snippet) {
     return valuePrefix.isEmpty ||
-        _matchesCandidate(snippet.substring(key.length + 1), valuePrefix);
+        _matchesCandidate(snippet.substring(matchStart), valuePrefix);
   }).map((snippet) {
     return FilterAutocompleteSuggestion(
       label: snippet,

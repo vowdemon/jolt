@@ -108,6 +108,7 @@ void main() {
 
   testWidgets('watch toggle hides and shows the left panel', (tester) async {
     final controller = JoltInspectorController(initializeConnection: false);
+    addTearDown(controller.dispose);
 
     await tester.pumpWidget(
       InheritedProvider<JoltInspectorController>.value(

@@ -38,7 +38,7 @@ class SearchSyntaxDialog extends StatelessWidget {
                       'Plain text matches label, type, debug type, or ID. All matching is case-insensitive.',
                       [
                         '• Empty search shows all nodes.',
-                        '• Unknown fields are syntax errors.',
+                        '• Unknown fields fall back to plain text matching.',
                         '• Quoted strings are not supported in V1.',
                       ],
                       [
@@ -139,7 +139,7 @@ class SearchSyntaxDialog extends StatelessWidget {
                       [
                         '• AND is the default.',
                         '• AND has higher priority than OR.',
-                        '• Syntax errors keep the last valid result while you edit.',
+                        '• Incomplete conditions are ignored while you edit.',
                       ],
                       [
                         'type:Signal has:value              # Signal with value',

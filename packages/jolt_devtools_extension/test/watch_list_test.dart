@@ -67,6 +67,21 @@ void main() {
     expect(controller.watchedNodes.single.label, 'Unavailable node #99');
     expect(controller.watchedNodes.single.isDisposed, isTrue);
   });
+
+  test('watch selection uses cached disposed node snapshot', () async {
+    final controller = JoltInspectorController(initializeConnection: false);
+    addTearDown(controller.dispose);
+
+    final snapshot = _node(id: 1, label: 'counter').detachedDisposedSnapshot();
+    controller.$selectedDetachedNode.value = snapshot;
+    controller.addNodeToWatch(1);
+
+    final found = await controller.selectNode(1);
+
+    expect(found, isFalse);
+    expect(controller.$selectedNode.value!.label, 'counter');
+    expect(controller.$selectedNode.value!.isDisposed, isTrue);
+  });
 }
 
 JoltNode _node({

@@ -20,6 +20,16 @@ const defaultGlobalFilterQuery =
     '-debug:SetupProps -debug:SetupRenderer -debug:SetupContext -debug:JoltBuilder';
 const maxSelectionHistoryLength = 50;
 
+class FilteredNodesResult {
+  const FilteredNodesResult({
+    required this.nodes,
+    required this.globalCount,
+  });
+
+  final List<JoltNode> nodes;
+  final int globalCount;
+}
+
 /// Controller that manages the state of the Jolt Inspector.
 class JoltInspectorController {
   late final JoltService joltService;
@@ -64,9 +74,11 @@ class JoltInspectorController {
     }
   }
 
-  List<JoltNode> get filteredNodes => _buildFilteredNodes();
+  List<JoltNode> get filteredNodes => filteredNodesResult.nodes;
 
-  int get globalFilteredNodeCount => _buildGlobalFilteredNodes().length;
+  int get globalFilteredNodeCount => filteredNodesResult.globalCount;
+
+  FilteredNodesResult get filteredNodesResult => _buildFilteredNodesResult();
 
   List<JoltNode> get watchedNodes => $watchedNodeIds
       .map((nodeId) =>
@@ -394,7 +406,8 @@ class JoltInspectorController {
 
     final node = $nodes[nodeId];
     if (node == null) {
-      $selectedDetachedNode.value = JoltNode.unavailable(nodeId);
+      $selectedDetachedNode.value =
+          _watchedDetachedNodes[nodeId] ?? JoltNode.unavailable(nodeId);
       return false;
     }
 
@@ -474,9 +487,9 @@ class JoltInspectorController {
     return value.toString();
   }
 
-  List<JoltNode> _buildFilteredNodes() {
+  FilteredNodesResult _buildFilteredNodesResult() {
     _parseQuery();
-    final globalFiltered = _buildGlobalFilteredNodes();
+    final globalFiltered = _buildGlobalFilteredNodes(sort: false);
     final now = DateTime.now();
     final filtered = globalFiltered.where((node) {
       if (!_matchesQuery(node, now)) return false;
@@ -484,10 +497,13 @@ class JoltInspectorController {
     }).toList();
 
     _sortNodes(filtered);
-    return filtered;
+    return FilteredNodesResult(
+      nodes: filtered,
+      globalCount: globalFiltered.length,
+    );
   }
 
-  List<JoltNode> _buildGlobalFilteredNodes() {
+  List<JoltNode> _buildGlobalFilteredNodes({bool sort = true}) {
     _parseGlobalFilter();
     final now = DateTime.now();
     final filtered = $nodes.values.where((node) {
@@ -495,7 +511,9 @@ class JoltInspectorController {
       return true;
     }).toList();
 
-    _sortNodes(filtered);
+    if (sort) {
+      _sortNodes(filtered);
+    }
     return filtered;
   }
 
@@ -679,6 +697,17 @@ class JoltInspectorController {
     return actual == target;
   }
 
+  bool _matchesNodeNumericField(JoltNode node, String field, String value) {
+    final actual = switch (field) {
+      'id' => node.id,
+      'deps' => node.dependencies.length,
+      'subs' => node.subscribers.length,
+      'count' => node.count.value,
+      _ => null,
+    };
+    return actual != null && _matchesNumeric(actual, value);
+  }
+
   bool _matchesHas(JoltNode node, String value) {
     switch (value.toLowerCase()) {
       case 'label':
@@ -772,19 +801,12 @@ class JoltInspectorController {
         final field = numericMatch.group(1)!.toLowerCase();
         final op = numericMatch.group(2)!;
         final valueStr = numericMatch.group(3)!;
-        if (field == 'id') {
-          final targetId = int.tryParse(valueStr);
-          if (targetId == null) return false;
-          if (op == '=') {
-            return deps.contains(targetId);
-          }
-          // For other operators, check if any dependency matches
-          return deps.any((depId) {
-            final depNode = $nodes[depId];
-            return depNode != null &&
-                _matchesNumeric(depNode.id, '$op$valueStr');
-          });
-        }
+        return deps.any((depId) {
+          final depNode = $nodes[depId];
+          final numericValue = op == '=' ? valueStr : '$op$valueStr';
+          return depNode != null &&
+              _matchesNodeNumericField(depNode, field, numericValue);
+        });
       }
       return false;
     }
@@ -827,19 +849,12 @@ class JoltInspectorController {
         final field = numericMatch.group(1)!.toLowerCase();
         final op = numericMatch.group(2)!;
         final valueStr = numericMatch.group(3)!;
-        if (field == 'id') {
-          final targetId = int.tryParse(valueStr);
-          if (targetId == null) return false;
-          if (op == '=') {
-            return subs.contains(targetId);
-          }
-          // For other operators, check if any subscriber matches
-          return subs.any((subId) {
-            final subNode = $nodes[subId];
-            return subNode != null &&
-                _matchesNumeric(subNode.id, '$op$valueStr');
-          });
-        }
+        return subs.any((subId) {
+          final subNode = $nodes[subId];
+          final numericValue = op == '=' ? valueStr : '$op$valueStr';
+          return subNode != null &&
+              _matchesNodeNumericField(subNode, field, numericValue);
+        });
       }
       return false;
     }

@@ -408,7 +408,19 @@ class _NodeTileState extends State<_NodeTile> with SetupMixin<_NodeTile> {
             ),
             trailing: Wrap(
               spacing: 4,
-              children: [],
+              children: [
+                JoltBuilder(builder: (context) {
+                  controller.$watchedNodeIds.value;
+                  final watched = controller.isNodeWatched(widget.node.id);
+                  return IconButton(
+                    icon:
+                        Icon(watched ? Icons.visibility_off : Icons.visibility),
+                    iconSize: 16,
+                    tooltip: watched ? 'Remove from Watch' : 'Add to Watch',
+                    onPressed: () => controller.toggleNodeWatch(widget.node.id),
+                  );
+                }),
+              ],
             ),
             onTap: () => controller.selectNode(
               widget.node.id,

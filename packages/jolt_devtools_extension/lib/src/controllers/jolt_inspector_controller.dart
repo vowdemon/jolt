@@ -13,6 +13,7 @@ class SelectionReason {
   static const String listClick = 'list_click';
   static const String depJump = 'dep_jump';
   static const String search = 'search';
+  static const String watch = 'watch';
 }
 
 const defaultGlobalFilterQuery =
@@ -36,6 +37,8 @@ class JoltInspectorController {
   final $selectedDetachedNode = Signal<JoltNode?>(null);
   final $canNavigateBack = Signal(false);
   final $canNavigateForward = Signal(false);
+  final $watchPanelExpanded = Signal(true);
+  final $watchedNodeIds = ListSignal<int>([]);
   final $nodes = MapSignal(<int, JoltNode>{});
   late final $selectedNode = Computed(
       () => $selectedDetachedNode.value ?? $nodes[$selectedNodeId.value]);
@@ -51,6 +54,7 @@ class JoltInspectorController {
   Timer? _clockTimer;
   final List<int> _selectionHistory = [];
   int _selectionHistoryIndex = -1;
+  final Map<int, JoltNode> _watchedDetachedNodes = {};
 
   JoltInspectorController({bool initializeConnection = true})
       : _initializeConnection = initializeConnection {
@@ -63,6 +67,13 @@ class JoltInspectorController {
   List<JoltNode> get filteredNodes => _buildFilteredNodes();
 
   int get globalFilteredNodeCount => _buildGlobalFilteredNodes().length;
+
+  List<JoltNode> get watchedNodes => $watchedNodeIds
+      .map((nodeId) =>
+          $nodes[nodeId] ??
+          _watchedDetachedNodes[nodeId] ??
+          JoltNode.unavailable(nodeId))
+      .toList();
 
   List<FilterAutocompleteSuggestion> filterAutocompleteSuggestions(
     String input,
@@ -201,6 +212,10 @@ class JoltInspectorController {
 
             // Remove the node itself
             $nodes.remove(disposedNodeId);
+            if ($watchedNodeIds.contains(disposedNodeId)) {
+              _watchedDetachedNodes[disposedNodeId] =
+                  disposedNode.detachedDisposedSnapshot();
+            }
 
             joltService.markValueInspectorUnavailable(
               disposedNodeId,
@@ -313,6 +328,36 @@ class JoltInspectorController {
   }) async {
     _pushSelectionHistory(nodeId);
     return _selectNodeFromHistory(nodeId);
+  }
+
+  void addNodeToWatch(int nodeId) {
+    if ($watchedNodeIds.contains(nodeId)) {
+      return;
+    }
+    final node = $nodes[nodeId] ?? $selectedDetachedNode.value;
+    if (node != null && node.id == nodeId && node.isDisposed) {
+      _watchedDetachedNodes[nodeId] = node;
+    }
+    $watchedNodeIds.add(nodeId);
+  }
+
+  void toggleNodeWatch(int nodeId) {
+    if (isNodeWatched(nodeId)) {
+      removeNodeFromWatch(nodeId);
+      return;
+    }
+    addNodeToWatch(nodeId);
+  }
+
+  void removeNodeFromWatch(int nodeId) {
+    $watchedNodeIds.remove(nodeId);
+    _watchedDetachedNodes.remove(nodeId);
+  }
+
+  bool isNodeWatched(int nodeId) => $watchedNodeIds.contains(nodeId);
+
+  void toggleWatchPanel() {
+    $watchPanelExpanded.value = !$watchPanelExpanded.value;
   }
 
   Future<bool> navigateSelectionBack() async {

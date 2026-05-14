@@ -119,13 +119,13 @@ abstract class SetupWidget<T extends SetupWidget<T>> extends Widget {
 /// The [Element] that manages the lifecycle of a [SetupWidget].
 ///
 /// This element orchestrates the complete lifecycle of setup-based widgets,
-/// leveraging [JoltSetupContext] for hook management while implementing
+/// leveraging [SetupContext] for hook management while implementing
 /// Element-specific build triggering mechanisms.
 ///
 /// ## Responsibilities
 ///
 /// - **Setup Execution**: Runs the widget's [setup] function once during first build
-/// - **Hook Management**: Delegates hook lifecycle to [JoltSetupContext]
+/// - **Hook Management**: Delegates hook lifecycle to [SetupContext]
 /// - **Build Triggering**: Uses [markNeedsBuild] for efficient rebuilds
 /// - **Hot Reload**: Preserves hook state across code changes
 /// - **Props Tracking**: Uses [Props] for reactive property tracking
@@ -169,7 +169,7 @@ class SetupWidgetElement<T extends SetupWidget<T>> extends ComponentElement {
   late final _propsNode = _PropsImpl<T>(this);
 
   /// The setup context that manages hooks and reactive state.
-  late final JoltSetupContext<T> setupContext = JoltSetupContext(
+  late final SetupContext<T> setupContext = SetupContext(
     this,
     _propsNode,
     resetSetupFn: _doResetSetup,

@@ -29,6 +29,7 @@ devtools_options.yaml
 .fvmrc
 
 *_prompt.md
+.docs/
 
 # Miscellaneous
 *.class

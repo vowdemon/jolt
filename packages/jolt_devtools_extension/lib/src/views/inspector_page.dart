@@ -4,6 +4,7 @@ import 'package:jolt_devtools_extension/src/widgets/disconnected_view.dart';
 import 'package:jolt_devtools_extension/src/widgets/nodes_list_panel.dart';
 import 'package:jolt_devtools_extension/src/widgets/node_details_panel.dart';
 import 'package:jolt_devtools_extension/src/widgets/search_syntax_dialog.dart';
+import 'package:jolt_devtools_extension/src/widgets/watch_list_panel.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
 import 'package:provider/provider.dart';
 
@@ -20,7 +21,11 @@ class _JoltInspectorPageState extends State<JoltInspectorPage> {
   static const double _detailsWidthMin = 200;
   static const double _detailsWidthMax = 600;
   static const double _detailsWidthDefault = 350;
+  static const double _watchWidthMin = 180;
+  static const double _watchWidthMax = 520;
+  static const double _watchWidthDefault = 280;
   double _detailsWidth = _detailsWidthDefault;
+  double _watchWidth = _watchWidthDefault;
 
   @override
   void initState() {
@@ -43,6 +48,7 @@ class _JoltInspectorPageState extends State<JoltInspectorPage> {
         appBar: AppBar(
           title: const Text('Jolt Inspector'),
           actions: [
+            WatchPanelToggleButton(controller: _controller),
             IconButton(
               icon: const Icon(Icons.help_outline),
               onPressed: () {
@@ -53,6 +59,7 @@ class _JoltInspectorPageState extends State<JoltInspectorPage> {
               },
               tooltip: 'Search Syntax Help',
             ),
+            GlobalFilterButton(controller: _controller),
             JoltBuilder(builder: (context) {
               return IconButton(
                 icon: const Icon(Icons.refresh),
@@ -77,6 +84,17 @@ class _JoltInspectorPageState extends State<JoltInspectorPage> {
   Widget _buildMainView() {
     return Row(
       children: [
+        if (_controller.$watchPanelExpanded.value) ...[
+          WatchListPanel(width: _watchWidth),
+          _ResizableDetailsDivider(
+            onDrag: (dx) {
+              setState(() {
+                _watchWidth =
+                    (_watchWidth + dx).clamp(_watchWidthMin, _watchWidthMax);
+              });
+            },
+          ),
+        ],
         Expanded(
           child: NodesListPanel(),
         ),
@@ -97,6 +115,143 @@ class _JoltInspectorPageState extends State<JoltInspectorPage> {
           ),
         ],
       ],
+    );
+  }
+}
+
+class GlobalFilterButton extends StatelessWidget {
+  const GlobalFilterButton({
+    super.key,
+    required this.controller,
+  });
+
+  final JoltInspectorController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return JoltBuilder(builder: (context) {
+      return IconButton(
+        icon: Icon(
+          controller.$globalFilterEnabled.value
+              ? Icons.filter_alt
+              : Icons.filter_alt_off,
+        ),
+        onPressed: () {
+          showDialog(
+            context: context,
+            builder: (context) => GlobalFilterDialog(controller: controller),
+          );
+        },
+        tooltip: 'Global Filter',
+      );
+    });
+  }
+}
+
+class WatchPanelToggleButton extends StatelessWidget {
+  const WatchPanelToggleButton({
+    super.key,
+    required this.controller,
+  });
+
+  final JoltInspectorController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return JoltBuilder(builder: (context) {
+      final expanded = controller.$watchPanelExpanded.value;
+      return IconButton(
+        icon: Icon(expanded ? Icons.visibility : Icons.visibility_off),
+        onPressed: controller.toggleWatchPanel,
+        tooltip: expanded ? 'Hide Watch' : 'Show Watch',
+      );
+    });
+  }
+}
+
+class GlobalFilterDialog extends StatefulWidget {
+  const GlobalFilterDialog({
+    super.key,
+    required this.controller,
+  });
+
+  final JoltInspectorController controller;
+
+  @override
+  State<GlobalFilterDialog> createState() => _GlobalFilterDialogState();
+}
+
+class _GlobalFilterDialogState extends State<GlobalFilterDialog> {
+  late final TextEditingController _textController;
+
+  @override
+  void initState() {
+    super.initState();
+    _textController = TextEditingController(
+      text: widget.controller.$globalFilterQuery.value,
+    );
+  }
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: JoltBuilder(builder: (context) {
+            final enabled = widget.controller.$globalFilterEnabled.value;
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      'Global Filter',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      iconSize: 16,
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Enable Global Filter'),
+                  value: enabled,
+                  onChanged: (value) {
+                    setState(() {
+                      widget.controller.setGlobalFilterEnabled(value);
+                    });
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _textController,
+                  enabled: enabled,
+                  decoration: const InputDecoration(
+                    labelText: 'Global Filter',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  onChanged: widget.controller.setGlobalFilterQuery,
+                ),
+              ],
+            );
+          }),
+        ),
+      ),
     );
   }
 }

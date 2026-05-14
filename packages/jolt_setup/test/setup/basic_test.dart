@@ -262,7 +262,7 @@ void main() {
     });
 
     testWidgets('useSetupContext retrieves correctly', (tester) async {
-      JoltSetupContext? captured;
+      SetupContext? captured;
 
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
@@ -273,7 +273,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(captured, isNotNull);
-      expect(captured, isA<JoltSetupContext>());
+      expect(captured, isA<SetupContext>());
     });
 
     testWidgets('useProps reactive update', (tester) async {
@@ -345,8 +345,7 @@ void main() {
       element.resetSetup();
       element.resetSetup();
 
-      expect(setupCount, 1,
-          reason: 'resetSetup should not run synchronously');
+      expect(setupCount, 1, reason: 'resetSetup should not run synchronously');
 
       tester.binding.scheduleFrame();
       await tester.pumpAndSettle();
@@ -355,7 +354,6 @@ void main() {
           reason: 'multiple reset requests in one frame should coalesce');
       expect(find.text('Setup count: 2'), findsOneWidget);
     });
-
   });
 }
 

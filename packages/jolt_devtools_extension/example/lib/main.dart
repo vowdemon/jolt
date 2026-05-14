@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:jolt_flutter/core.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
+import 'package:jolt_setup/jolt_setup.dart';
 
 void main() {
   JoltDebug.init();
@@ -20,7 +21,11 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0E7490)),
         useMaterial3: true,
       ),
-      home: const SampleDashboardPage(),
+      home: SetupBuilder(
+        setup: (context) {
+          return () => const SampleDashboardPage();
+        },
+      ),
     );
   }
 }
@@ -292,8 +297,7 @@ class _SampleDashboardPageState extends State<SampleDashboardPage> {
   }
 
   void _advanceCoreObjects() {
-    bigIntValue.value =
-        bigIntValue.value + BigInt.parse('111111111111111111');
+    bigIntValue.value = bigIntValue.value + BigInt.parse('111111111111111111');
     dateTimeValue.value = dateTimeValue.value.add(
       const Duration(days: 1, minutes: 5),
     );
@@ -457,7 +461,8 @@ class _SampleDashboardPageState extends State<SampleDashboardPage> {
               _SampleTile(
                 label: 'signal.largeList1000',
                 child: _ValueText(
-                  () => 'length=${largeListSignal.value.length}, '
+                  () =>
+                      'length=${largeListSignal.value.length}, '
                       'first=${largeListSignal.value.first}, '
                       'last=${largeListSignal.value.last}',
                 ),

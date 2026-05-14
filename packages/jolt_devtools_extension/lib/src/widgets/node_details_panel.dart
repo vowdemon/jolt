@@ -45,28 +45,69 @@ class _NodeDetailsPanelState extends State<NodeDetailsPanel>
       return Column(children: [
         // Header
         Container(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(12.0),
           color: Colors.grey.shade900,
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              NodeIcon(type: widget.node.type),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  widget.node.label,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
               Row(
-                spacing: 12,
+                spacing: 8,
                 children: [
+                  JoltBuilder(builder: (context) {
+                    final canNavigateBack = controller.$canNavigateBack.value;
+                    return IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: canNavigateBack
+                          ? controller.navigateSelectionBack
+                          : null,
+                      tooltip: 'Back',
+                    );
+                  }),
+                  JoltBuilder(builder: (context) {
+                    final canNavigateForward =
+                        controller.$canNavigateForward.value;
+                    return IconButton(
+                      icon: const Icon(Icons.arrow_forward),
+                      onPressed: canNavigateForward
+                          ? controller.navigateSelectionForward
+                          : null,
+                      tooltip: 'Forward',
+                    );
+                  }),
+                  const Spacer(),
+                  JoltBuilder(builder: (context) {
+                    controller.$watchedNodeIds.value;
+                    final watched = controller.isNodeWatched(widget.node.id);
+                    return IconButton(
+                      icon: Icon(
+                          watched ? Icons.visibility_off : Icons.visibility),
+                      onPressed: () =>
+                          controller.toggleNodeWatch(widget.node.id),
+                      tooltip: watched ? 'Remove from Watch' : 'Add to Watch',
+                    );
+                  }),
                   IconButton(
                     icon: const Icon(Icons.close),
                     onPressed: controller.closeNodeDetails,
                     tooltip: 'Close',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  NodeIcon(type: widget.node.type),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      widget.node.label,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
                   ),
                 ],
               ),

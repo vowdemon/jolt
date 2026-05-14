@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:devtools_extensions/devtools_extensions.dart';
 import 'package:flutter/material.dart';
+import 'package:jolt_devtools_extension/src/models/filter_autocomplete.dart';
 import 'package:jolt_devtools_extension/src/models/jolt_node.dart';
 import 'package:jolt_devtools_extension/src/service/jolt_service.dart';
+import 'package:jolt_devtools_extension/src/utils/filter_autocomplete.dart';
 import 'package:jolt_devtools_extension/src/utils/query_parser.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
 
@@ -11,20 +13,42 @@ class SelectionReason {
   static const String listClick = 'list_click';
   static const String depJump = 'dep_jump';
   static const String search = 'search';
+  static const String watch = 'watch';
+}
+
+const defaultGlobalFilterQuery =
+    '-debug:SetupProps -debug:SetupRenderer -debug:SetupContext -debug:JoltBuilder';
+const maxSelectionHistoryLength = 50;
+
+class FilteredNodesResult {
+  const FilteredNodesResult({
+    required this.nodes,
+    required this.globalCount,
+  });
+
+  final List<JoltNode> nodes;
+  final int globalCount;
 }
 
 /// Controller that manages the state of the Jolt Inspector.
 class JoltInspectorController {
-  final joltService = JoltService(serviceManager);
+  late final JoltService joltService;
   StreamSubscription? _updateSubscription;
   VoidCallback? _connectionListener;
   VoidCallback? _isolateListener;
+  final bool _initializeConnection;
 
   final $isConnected = Signal(false);
   final $isLoading = Signal(false);
   final $searchQuery = Signal('');
+  final $globalFilterEnabled = Signal(true);
+  final $globalFilterQuery = Signal(defaultGlobalFilterQuery);
   final $selectedNodeId = Signal<int?>(null);
   final $selectedDetachedNode = Signal<JoltNode?>(null);
+  final $canNavigateBack = Signal(false);
+  final $canNavigateForward = Signal(false);
+  final $watchPanelExpanded = Signal(true);
+  final $watchedNodeIds = ListSignal<int>([]);
   final $nodes = MapSignal(<int, JoltNode>{});
   late final $selectedNode = Computed(
       () => $selectedDetachedNode.value ?? $nodes[$selectedNodeId.value]);
@@ -32,16 +56,47 @@ class JoltInspectorController {
 
   QueryExpression? _parsedQuery;
   String _parsedQuerySource = '';
+  QueryExpression? _parsedGlobalFilter;
+  String _parsedGlobalFilterSource = '';
 
   Timer? _refreshTimer;
   Timer? _searchThrottleTimer;
   Timer? _clockTimer;
+  final List<int> _selectionHistory = [];
+  int _selectionHistoryIndex = -1;
+  final Map<int, JoltNode> _watchedDetachedNodes = {};
 
-  JoltInspectorController() {
-    _checkConnection();
+  JoltInspectorController({bool initializeConnection = true})
+      : _initializeConnection = initializeConnection {
+    if (initializeConnection) {
+      joltService = JoltService(serviceManager);
+      _checkConnection();
+    }
   }
 
-  List<JoltNode> get filteredNodes => _buildFilteredNodes();
+  List<JoltNode> get filteredNodes => filteredNodesResult.nodes;
+
+  int get globalFilteredNodeCount => filteredNodesResult.globalCount;
+
+  FilteredNodesResult get filteredNodesResult => _buildFilteredNodesResult();
+
+  List<JoltNode> get watchedNodes => $watchedNodeIds
+      .map((nodeId) =>
+          $nodes[nodeId] ??
+          _watchedDetachedNodes[nodeId] ??
+          JoltNode.unavailable(nodeId))
+      .toList();
+
+  List<FilterAutocompleteSuggestion> filterAutocompleteSuggestions(
+    String input,
+    int caretOffset,
+  ) {
+    return buildFilterAutocompleteSuggestions(
+      input: input,
+      caretOffset: caretOffset,
+      nodes: $nodes.values,
+    );
+  }
 
   void _checkConnection() {
     // Check if we have a VM service connection
@@ -169,6 +224,10 @@ class JoltInspectorController {
 
             // Remove the node itself
             $nodes.remove(disposedNodeId);
+            if ($watchedNodeIds.contains(disposedNodeId)) {
+              _watchedDetachedNodes[disposedNodeId] =
+                  disposedNode.detachedDisposedSnapshot();
+            }
 
             joltService.markValueInspectorUnavailable(
               disposedNodeId,
@@ -279,20 +338,111 @@ class JoltInspectorController {
     int nodeId, {
     String? reason,
   }) async {
+    _pushSelectionHistory(nodeId);
+    return _selectNodeFromHistory(nodeId);
+  }
+
+  void addNodeToWatch(int nodeId) {
+    if ($watchedNodeIds.contains(nodeId)) {
+      return;
+    }
+    final node = $nodes[nodeId] ?? $selectedDetachedNode.value;
+    if (node != null && node.id == nodeId && node.isDisposed) {
+      _watchedDetachedNodes[nodeId] = node;
+    }
+    $watchedNodeIds.add(nodeId);
+  }
+
+  void toggleNodeWatch(int nodeId) {
+    if (isNodeWatched(nodeId)) {
+      removeNodeFromWatch(nodeId);
+      return;
+    }
+    addNodeToWatch(nodeId);
+  }
+
+  void removeNodeFromWatch(int nodeId) {
+    $watchedNodeIds.remove(nodeId);
+    _watchedDetachedNodes.remove(nodeId);
+  }
+
+  bool isNodeWatched(int nodeId) => $watchedNodeIds.contains(nodeId);
+
+  void toggleWatchPanel() {
+    $watchPanelExpanded.value = !$watchPanelExpanded.value;
+  }
+
+  Future<bool> navigateSelectionBack() async {
+    if (!canNavigateBack) {
+      return false;
+    }
+    _selectionHistoryIndex -= 1;
+    _updateSelectionNavigationState();
+    return _selectNodeFromHistory(_selectionHistory[_selectionHistoryIndex]);
+  }
+
+  Future<bool> navigateSelectionForward() async {
+    if (!canNavigateForward) {
+      return false;
+    }
+    _selectionHistoryIndex += 1;
+    _updateSelectionNavigationState();
+    return _selectNodeFromHistory(_selectionHistory[_selectionHistoryIndex]);
+  }
+
+  bool get canNavigateBack => _selectionHistoryIndex > 0;
+
+  bool get canNavigateForward =>
+      _selectionHistoryIndex >= 0 &&
+      _selectionHistoryIndex < _selectionHistory.length - 1;
+
+  int get selectionHistoryLength => _selectionHistory.length;
+
+  List<int> get selectionHistory => List.unmodifiable(_selectionHistory);
+
+  Future<bool> _selectNodeFromHistory(int nodeId) async {
     $selectedDetachedNode.value = null;
     $selectedNodeId.value = nodeId;
 
     final node = $nodes[nodeId];
     if (node == null) {
+      $selectedDetachedNode.value =
+          _watchedDetachedNodes[nodeId] ?? JoltNode.unavailable(nodeId);
       return false;
     }
 
-    if (node.creationStack.value == null) {
+    if (_initializeConnection && node.creationStack.value == null) {
       final creationStack = await joltService.getCreationStack(nodeId);
       node.creationStack.value = creationStack;
     }
 
     return true;
+  }
+
+  void _pushSelectionHistory(int nodeId) {
+    if (_selectionHistoryIndex >= 0 &&
+        _selectionHistory[_selectionHistoryIndex] == nodeId) {
+      return;
+    }
+
+    if (_selectionHistoryIndex < _selectionHistory.length - 1) {
+      _selectionHistory.removeRange(
+        _selectionHistoryIndex + 1,
+        _selectionHistory.length,
+      );
+    }
+
+    _selectionHistory.add(nodeId);
+    if (_selectionHistory.length > maxSelectionHistoryLength) {
+      _selectionHistory.removeAt(0);
+    }
+    _selectionHistoryIndex = _selectionHistory.length - 1;
+    _updateSelectionNavigationState();
+  }
+
+  void _updateSelectionNavigationState() {
+    $canNavigateBack.value = canNavigateBack;
+    $canNavigateForward.value = canNavigateForward;
   }
 
   void setFilter(String value) {
@@ -312,6 +462,15 @@ class JoltInspectorController {
     });
   }
 
+  void setGlobalFilterEnabled(bool value) {
+    $globalFilterEnabled.value = value;
+  }
+
+  void setGlobalFilterQuery(String value) {
+    $globalFilterQuery.value = value;
+    _parseGlobalFilter();
+  }
+
   void closeNodeDetails() {
     $selectedDetachedNode.value = null;
     $selectedNodeId.value = null;
@@ -328,14 +487,37 @@ class JoltInspectorController {
     return value.toString();
   }
 
-  List<JoltNode> _buildFilteredNodes() {
+  FilteredNodesResult _buildFilteredNodesResult() {
     _parseQuery();
+    final globalFiltered = _buildGlobalFilteredNodes(sort: false);
     final now = DateTime.now();
-    final filtered = $nodes.values.where((node) {
+    final filtered = globalFiltered.where((node) {
       if (!_matchesQuery(node, now)) return false;
       return true;
     }).toList();
 
+    _sortNodes(filtered);
+    return FilteredNodesResult(
+      nodes: filtered,
+      globalCount: globalFiltered.length,
+    );
+  }
+
+  List<JoltNode> _buildGlobalFilteredNodes({bool sort = true}) {
+    _parseGlobalFilter();
+    final now = DateTime.now();
+    final filtered = $nodes.values.where((node) {
+      if (!_matchesGlobalFilter(node, now)) return false;
+      return true;
+    }).toList();
+
+    if (sort) {
+      _sortNodes(filtered);
+    }
+    return filtered;
+  }
+
+  void _sortNodes(List<JoltNode> filtered) {
     filtered.sort((a, b) {
       final comparison = a.label.toLowerCase().compareTo(b.label.toLowerCase());
       if (comparison != 0) {
@@ -343,7 +525,6 @@ class JoltInspectorController {
       }
       return a.id.compareTo(b.id);
     });
-    return filtered;
   }
 
   void _parseQuery() {
@@ -354,11 +535,29 @@ class JoltInspectorController {
     _parsedQuery = _buildQueryExpression($searchQuery.value);
   }
 
+  void _parseGlobalFilter() {
+    if (_parsedGlobalFilterSource == $globalFilterQuery.value) {
+      return;
+    }
+    _parsedGlobalFilterSource = $globalFilterQuery.value;
+    _parsedGlobalFilter = _buildQueryExpression($globalFilterQuery.value);
+  }
+
   bool _matchesQuery(JoltNode node, DateTime now) {
     if (_parsedQuery == null) {
       return true;
     }
     return _parsedQuery!.evaluate(node, now);
+  }
+
+  bool _matchesGlobalFilter(JoltNode node, DateTime now) {
+    if (!$globalFilterEnabled.value) {
+      return true;
+    }
+    if (_parsedGlobalFilter == null) {
+      return true;
+    }
+    return _parsedGlobalFilter!.evaluate(node, now);
   }
 
   QueryExpression? _buildQueryExpression(String raw) {
@@ -498,6 +697,17 @@ class JoltInspectorController {
     return actual == target;
   }
 
+  bool _matchesNodeNumericField(JoltNode node, String field, String value) {
+    final actual = switch (field) {
+      'id' => node.id,
+      'deps' => node.dependencies.length,
+      'subs' => node.subscribers.length,
+      'count' => node.count.value,
+      _ => null,
+    };
+    return actual != null && _matchesNumeric(actual, value);
+  }
+
   bool _matchesHas(JoltNode node, String value) {
     switch (value.toLowerCase()) {
       case 'label':
@@ -591,19 +801,12 @@ class JoltInspectorController {
         final field = numericMatch.group(1)!.toLowerCase();
         final op = numericMatch.group(2)!;
         final valueStr = numericMatch.group(3)!;
-        if (field == 'id') {
-          final targetId = int.tryParse(valueStr);
-          if (targetId == null) return false;
-          if (op == '=') {
-            return deps.contains(targetId);
-          }
-          // For other operators, check if any dependency matches
-          return deps.any((depId) {
-            final depNode = $nodes[depId];
-            return depNode != null &&
-                _matchesNumeric(depNode.id, '$op$valueStr');
-          });
-        }
+        return deps.any((depId) {
+          final depNode = $nodes[depId];
+          final numericValue = op == '=' ? valueStr : '$op$valueStr';
+          return depNode != null &&
+              _matchesNodeNumericField(depNode, field, numericValue);
+        });
       }
       return false;
     }
@@ -646,19 +849,12 @@ class JoltInspectorController {
         final field = numericMatch.group(1)!.toLowerCase();
         final op = numericMatch.group(2)!;
         final valueStr = numericMatch.group(3)!;
-        if (field == 'id') {
-          final targetId = int.tryParse(valueStr);
-          if (targetId == null) return false;
-          if (op == '=') {
-            return subs.contains(targetId);
-          }
-          // For other operators, check if any subscriber matches
-          return subs.any((subId) {
-            final subNode = $nodes[subId];
-            return subNode != null &&
-                _matchesNumeric(subNode.id, '$op$valueStr');
-          });
-        }
+        return subs.any((subId) {
+          final subNode = $nodes[subId];
+          final numericValue = op == '=' ? valueStr : '$op$valueStr';
+          return subNode != null &&
+              _matchesNodeNumericField(subNode, field, numericValue);
+        });
       }
       return false;
     }

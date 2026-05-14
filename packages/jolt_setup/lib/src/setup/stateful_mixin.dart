@@ -55,8 +55,8 @@ part of 'framework.dart';
 ///
 /// The mixin automatically handles:
 /// - Setup function runs on first build (after [initState], before first [build])
-/// - Props updates trigger [JoltSetupContext.notifyUpdate]
-/// - Dependencies changes trigger [JoltSetupContext.notifyDependenciesChanged]
+/// - Props updates trigger [SetupContext.notifyUpdate]
+/// - Dependencies changes trigger [SetupContext.notifyDependenciesChanged]
 /// - Cleanup on [dispose]
 ///
 /// ## When to Use
@@ -72,7 +72,7 @@ part of 'framework.dart';
 /// - Element's lifecycle is sufficient
 mixin SetupMixin<T extends StatefulWidget> on State<T> {
   late final Props<T> _propsNode = _PropsImpl<T>(context);
-  late final JoltSetupContext<T> setupContext = JoltSetupContext<T>(
+  late final SetupContext<T> setupContext = SetupContext<T>(
     context,
     _propsNode,
     resetSetupFn: _doResetSetup,

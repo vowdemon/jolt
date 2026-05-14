@@ -106,6 +106,18 @@ class JoltNode {
       count: count.value,
     );
   }
+
+  factory JoltNode.unavailable(int id) {
+    return JoltNode(
+      id: id,
+      type: 'Unknown',
+      label: 'Unavailable node #$id',
+      debugType: 'Unavailable',
+      isDisposed: true,
+      flags: 0,
+      valueType: 'Unknown',
+    );
+  }
 }
 
 /// Represents a real-time node update.

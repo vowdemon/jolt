@@ -496,7 +496,7 @@ Use `useSignal` by default for widget-owned state. Reach for `Signal(...)` direc
 | Hook | Description |
 |------|-------------|
 | `useContext()` | Get BuildContext |
-| `useSetupContext()` | Get JoltSetupContext |
+| `useSetupContext()` | Get SetupContext |
 | `useEffectScope()` | Create an effect scope |
 | `useJoltStream(value)` | Create a stream from reactive value |
 | `useUntil(source, predicate)` | Wait for a reactive value to satisfy a condition |

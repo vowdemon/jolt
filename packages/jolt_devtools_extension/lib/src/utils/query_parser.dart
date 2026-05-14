@@ -224,6 +224,9 @@ class QueryParser {
                 case 'subs':
                   actual = node.subscribers.length;
                   break;
+                case 'count':
+                  actual = node.count.value;
+                  break;
                 default:
                   return false;
               }

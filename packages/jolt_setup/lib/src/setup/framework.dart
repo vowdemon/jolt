@@ -20,7 +20,7 @@ part 'stateful_mixin.dart';
 ///
 /// ## Design
 ///
-/// [JoltSetupContext] is intentionally decoupled from both [Element] and [State],
+/// [SetupContext] is intentionally decoupled from both [Element] and [State],
 /// making it reusable across different widget implementations:
 /// - [SetupWidgetElement] uses it for [SetupWidget]
 /// - [SetupMixin] uses it for [StatefulWidget]
@@ -43,14 +43,13 @@ part 'stateful_mixin.dart';
 /// 1. Matching hooks preserve their state and receive [SetupHook.reassemble]
 /// 2. Mismatched hooks are unmounted and replaced with new instances
 /// 3. New hooks receive [SetupHook.mount] after setup completes
-class JoltSetupContext<T extends Widget> extends EffectScopeImpl {
-  JoltSetupContext(
+class SetupContext<T extends Widget> extends EffectScopeImpl {
+  SetupContext(
     this.context,
     this.propsNode, {
     required void Function() resetSetupFn,
   })  : _resetSetupFn = resetSetupFn,
-        super(
-            detach: true, debug: JoltDebugOption.type('JoltSetupContext<$T>'));
+        super(detach: true, debug: JoltDebugOption.type('SetupContext<$T>'));
 
   final BuildContext context;
   final Props<T> propsNode;
@@ -312,12 +311,12 @@ class JoltSetupContext<T extends Widget> extends EffectScopeImpl {
 
   /* -------------------------------- Static -------------------------------- */
 
-  static JoltSetupContext? current;
+  static SetupContext? current;
 
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
-  static JoltSetupContext? setActiveContext([JoltSetupContext? context]) {
+  static SetupContext? setActiveContext([SetupContext? context]) {
     final prev = current;
     current = context;
     return prev;

@@ -183,8 +183,7 @@ void main() {
       expect(activatedCount, 1);
     });
 
-    testWidgets('onActivated lifecycle by widget reparent',
-        (tester) async {
+    testWidgets('onActivated lifecycle by widget reparent', (tester) async {
       int activatedCount = 0;
       int deactivatedCount = 0;
       final key = GlobalKey();
@@ -288,7 +287,7 @@ void main() {
     });
 
     testWidgets('useSetupContext retrieves correctly', (tester) async {
-      JoltSetupContext? captured;
+      SetupContext? captured;
 
       await tester.pumpWidget(MaterialApp(
         home: _TestStatefulWidget(setup: (context, props) {
@@ -299,7 +298,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(captured, isNotNull);
-      expect(captured, isA<JoltSetupContext>());
+      expect(captured, isA<SetupContext>());
     });
 
     testWidgets('useProps reactive update', (tester) async {
@@ -353,7 +352,8 @@ void main() {
       expect(unmounted, [3, 2, 1]);
     });
 
-    testWidgets('resetSetup re-runs setup when called directly', (tester) async {
+    testWidgets('resetSetup re-runs setup when called directly',
+        (tester) async {
       final key = GlobalKey<_TestStatefulWidgetState>();
       int setupCount = 0;
 
@@ -396,7 +396,6 @@ void main() {
       expect(find.text('Message: World'), findsOneWidget);
       expect(find.text('Value: 100'), findsOneWidget);
     });
-
   });
 }
 

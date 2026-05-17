@@ -4,7 +4,7 @@ import 'package:jolt/jolt.dart';
 import 'package:shared_interfaces/shared_interfaces.dart';
 
 class _FlutterEffectNode extends EffectNode {
-  _FlutterEffectNode(super.fn, {super.lazy, super.detach});
+  _FlutterEffectNode(super.fn, {super.lazy, super.detach, super.debug});
 
   bool _isScheduled = false;
 
@@ -80,7 +80,9 @@ class FlutterEffectImpl extends EffectImpl implements FlutterEffect {
   /// {@endtemplate}
   FlutterEffectImpl(super.fn,
       {bool lazy = false, bool detach = false, JoltDebugOption? debug})
-      : super.custom(node: _FlutterEffectNode(fn, lazy: lazy, detach: detach));
+      : super.custom(
+            node: _FlutterEffectNode(fn,
+                lazy: lazy, detach: detach, debug: debug));
 
   /// {@template flutter_effect_impl.lazy}
   /// Creates a new Flutter effect that does not run automatically upon creation.

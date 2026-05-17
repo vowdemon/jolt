@@ -159,14 +159,15 @@ void useListenableSync<T, C extends Listenable>(Writable<T> node, C listenable,
     late final VoidCallback disposer;
 
     if (setter != null) {
-      bool skip = false;
-      final watcher = Watcher(() => node.value, (value, __) {
+      bool skip = true;
+      final effect = Effect(() {
+        final value = node.value;
         if (skip) {
           skip = false;
           return;
         }
         setter(value);
-      }, when: IMutableCollection.skipNode(node));
+      });
 
       listener = () {
         skip = true;
@@ -178,7 +179,7 @@ void useListenableSync<T, C extends Listenable>(Writable<T> node, C listenable,
         }
       };
       disposer = () {
-        watcher.dispose();
+        effect.dispose();
         listenable.removeListener(listener);
       };
     } else {

@@ -45,32 +45,9 @@ abstract interface class Readable<T> {
 abstract interface class Notifiable {
   /// Triggers a change notification without modifying the value.
   ///
-  /// Notifies all subscribers that they should re-evaluate. The behavior
-  /// depends on the [force] parameter and the specific implementation:
-  ///
-  /// - When [force] is `true` (force update), subscribers are notified
-  ///   regardless of whether the value changed.
-  /// - When [force] is `false` (soft update), subscribers are only notified
-  ///   if the value actually changed during recomputation.
-  ///
   /// This is useful for scenarios like in-place mutations where the value
   /// reference doesn't change but the content does.
-  ///
-  /// Parameters:
-  /// - [force]: If `true`, forces notification even if the value hasn't changed.
-  ///   Defaults to `true`; pass `false` explicitly for a soft update.
-  ///
-  /// Example:
-  /// ```dart
-  /// final list = ListSignal([1, 2, 3]);
-  /// list.value.add(4); // Mutation doesn't auto-notify
-  /// list.notify(); // Force subscribers to update
-  ///
-  /// final computed = Computed(() => expensiveCalculation());
-  /// computed.notify(); // Force update: always notifies subscribers
-  /// computed.notify(false); // Soft update: only notifies if value changed
-  /// ```
-  void notify([bool force = true]);
+  void notify();
 }
 
 /// Interface for writable reactive values.
@@ -115,10 +92,6 @@ abstract interface class DisposableNode implements Disposable {
   @mustCallSuper
   @override
   void dispose();
-}
-
-abstract class CustomReactiveNode<T> implements ReactiveNode {
-  bool update();
 }
 
 typedef EqualFn = bool Function(dynamic value, dynamic previous);

@@ -60,11 +60,7 @@ class WatcherImpl<T> implements Watcher<T> {
       this.when,
       bool detach = false,
       JoltDebugOption? debug}) {
-    raw = EffectNode(_effectFn, lazy: true, detach: detach);
-    // assert(() {
-    //   JoltDebug.create(this, debug);
-    //   return true;
-    // }());
+    raw = EffectNode(_effectFn, lazy: true, detach: detach, debug: debug);
 
     previosValues = currentValues = raw.track(sourcesFn);
     if (immediately) {
@@ -219,6 +215,10 @@ class WatcherImpl<T> implements Watcher<T> {
       try {
         fn(currentValues, previosValues);
       } finally {
+        assert(() {
+          JoltDebug.effect(raw);
+          return true;
+        }());
         Watcher.activeWatcher = prevWatcher;
       }
     });

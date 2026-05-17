@@ -39,12 +39,8 @@ class SignalImpl<T> implements Signal<T> {
   /// final counter = Signal(0);
   /// ```
   /// {@endtemplate}
-  SignalImpl(T? value, {JoltDebugOption? debug}) : raw = SignalNode(value) {
-    assert(() {
-      JoltDebug.create(raw, debug);
-      return true;
-    }());
-  }
+  SignalImpl(T? value, {JoltDebugOption? debug})
+      : raw = SignalNode(value, debug: debug);
 
   /// Returns the current value without establishing a reactive dependency.
   ///
@@ -112,7 +108,7 @@ class SignalImpl<T> implements Signal<T> {
   @pragma("wasm:prefer-inline")
   @pragma("dart2js:prefer-inline")
   @override
-  void notify([bool force = true]) => raw.notify();
+  void notify() => raw.notify();
 
   /// Disposes the signal and cleans up resources.
   ///

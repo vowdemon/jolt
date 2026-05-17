@@ -34,35 +34,6 @@ ReactiveNode? activeSub;
 @internal
 EffectScopeNode? activeScope;
 
-/// Updates either a [ComputedNode] or [SignalNode] and returns
-/// whether its cached value changed.
-///
-/// Parameters:
-/// - [node]: Reactive node to bring up to date
-///
-/// Example:
-/// ```dart
-/// final signalNode = CustomSignalNode<int>(0);
-/// final changed = updateNode(signalNode);
-/// if (changed && signalNode.subs != null) {
-///   shallowPropagate(signalNode.subs!);
-/// }
-/// ```
-@override
-@pragma("vm:prefer-inline")
-@pragma("wasm:prefer-inline")
-@pragma("dart2js:prefer-inline")
-bool updateNode(ReactiveNode node) {
-  final result = switch (node) {
-    ComputedNode() => node.update(),
-    SignalNode() => node.update(),
-    EffectScopeNode() => node.update(),
-    CustomReactiveNode() => node.update(),
-    _ => throw UnsupportedError("Unsupported node type: ${node.runtimeType}")
-  };
-  return result;
-}
-
 @pragma("vm:prefer-inline")
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")

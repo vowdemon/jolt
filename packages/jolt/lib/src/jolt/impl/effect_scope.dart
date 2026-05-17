@@ -50,12 +50,7 @@ class EffectScopeImpl implements EffectScope {
   ///   });
   /// ```
   EffectScopeImpl({bool detach = false, JoltDebugOption? debug})
-      : raw = EffectScopeNode(detach: detach) {
-    // assert(() {
-    //   JoltDebug.create(this, debug);
-    //   return true;
-    // }());
-  }
+      : raw = EffectScopeNode(detach: detach, debug: debug);
 
   /// Runs a function within this scope's context.
   ///

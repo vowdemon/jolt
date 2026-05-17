@@ -3,8 +3,6 @@ import "dart:convert";
 import "dart:developer" as developer;
 
 import "package:jolt/core.dart";
-import "package:jolt/jolt.dart";
-import "package:jolt/src/core/system.dart";
 import "package:meta/meta.dart";
 
 /// Types of operations that can be debugged in the reactive system.
@@ -39,8 +37,6 @@ enum DebugNodeOperationType {
 /// Parameters:
 /// - [type]: The type of operation that occurred
 /// - [node]: The reactive node involved in the operation
-/// - [link]: Optional link information, provided when the operation
-///   is related to dependency linking/unlinking
 typedef JoltDebugFn = void Function(
     DebugNodeOperationType type, ReactiveNode node);
 
@@ -342,6 +338,13 @@ abstract final class JoltDevTools {
     );
   }
 
+  @visibleForTesting
+  static List<Map<String, dynamic>> collectNodesForTesting() => _collectNodes();
+
+  @visibleForTesting
+  static Stream<Map<String, dynamic>> get updatesForTesting =>
+      _updateController.stream;
+
   /// Notifies DevTools about a node update.
   @internal
   static void notifyUpdate(int nodeId, String operation, dynamic value,
@@ -356,10 +359,27 @@ abstract final class JoltDevTools {
     });
   }
 
+  @internal
+  static void notifyLinkUpdate(
+      String operation, ReactiveNode? dep, ReactiveNode? sub) {
+    if (!_enabled || dep == null || sub == null) return;
+
+    final depId = debugInfo[dep]?.id;
+    final subId = debugInfo[sub]?.id;
+    if (depId == null || subId == null) return;
+
+    _updateController.add({
+      'operation': operation,
+      'depId': depId,
+      'subId': subId,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    });
+  }
+
   // Handle node lifecycle events
   static void handleNodeLifecycle(
       DebugNodeOperationType type, ReactiveNode node,
-      {String? debugLabel, String? debugType, Link? link}) {
+      {String? debugLabel, String? debugType}) {
     if (!_enabled) return;
     if (type == DebugNodeOperationType.create) {
       final int nodeId = nextNodeId++;
@@ -491,18 +511,22 @@ abstract final class JoltDevTools {
   }
 
   static String _getNodeType(ReactiveNode node) {
-    if (node is Writable) return 'Signal';
-    if (node is Readable) return 'Computed';
-    if (node is Watcher) return 'Watcher';
-    if (node is Effect) return 'Effect';
-    if (node is EffectScope) return 'EffectScope';
+    if (node is SignalNode) return 'Signal';
+    if (node is ComputedNode) return 'Computed';
     if (node is EffectNode) return 'Effect';
+    if (node is EffectScopeNode) return 'EffectScope';
     return 'Unknown';
   }
 
   static bool _isDisposed(ReactiveNode node) {
-    // return node.isDisposed;
-    return false;
+    return switch (node) {
+      SignalNode() => node.isDisposed,
+      ComputedNode() => node.isDisposed,
+      EffectNode() => node.isDisposed,
+      EffectScopeNode() => node.isDisposed,
+      BaseEffectNode() => node.flags == ReactiveFlags.none,
+      _ => node.flags == ReactiveFlags.none,
+    };
   }
 
   static dynamic _getNodeValue(ReactiveNode node) {
@@ -573,27 +597,10 @@ abstract final class JoltDevTools {
     final node = debugNodes[nodeId]?.target;
     if (node == null) return;
 
-    if (node is! EffectNode) {
+    if (node is EffectNode) {
+      node.run();
+    } else {
       developer.log('Node $nodeId is not an Effect');
-    }
-
-    switch (node) {
-      case Effect effect:
-        effect.run();
-        break;
-      case Watcher watcher:
-        watcher.trigger();
-        break;
-      default:
-        try {
-          (node as dynamic).trigger();
-        } catch (_) {
-          try {
-            (node as dynamic).run();
-          } catch (_) {
-            developer.log('Error triggering effect: $node');
-          }
-        }
     }
   }
 

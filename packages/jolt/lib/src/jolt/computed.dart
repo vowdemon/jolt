@@ -29,6 +29,9 @@ abstract interface class Computed<T>
     EqualFn? equals,
     JoltDebugOption? debug,
   }) = ComputedImpl.withPrevious;
+
+  /// Recomputes this value and notifies subscribers only if the value changed.
+  void notifySoft();
 }
 
 /// Interface for writable computed reactive values.

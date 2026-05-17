@@ -42,12 +42,7 @@ class ComputedImpl<T> implements Computed<T> {
     T Function() getter, {
     bool Function(T current, T? previous)? equals,
     JoltDebugOption? debug,
-  }) : raw = ComputedNode(getter, equals: equals) {
-    // assert(() {
-    //   JoltDebug.create(this, debug);
-    //   return true;
-    // }());
-  }
+  }) : raw = ComputedNode(getter, equals: equals, debug: debug);
 
   /// {@template jolt_computed_impl_with_previous}
   /// Creates a computed value with a getter that receives the previous value.
@@ -119,25 +114,17 @@ class ComputedImpl<T> implements Computed<T> {
   /// This is typically called automatically by the reactive system when
   /// dependencies change, but can be called manually for custom scenarios.
   ///
-  /// Parameters:
-  /// - [force]: If `true`, forces notification even if the value hasn't changed
-  ///   (soft update when `false`, force update when `true`). Defaults to `true`.
-  ///
-  /// When `force` is `false` (soft update), subscribers are only notified if
-  /// the computed value actually changed. When `force` is `true` (force update),
-  /// subscribers are notified regardless of whether the value changed.
-  ///
-  /// Example:
-  /// ```dart
-  /// final computed = Computed(() => expensiveCalculation());
-  /// computed.notify(); // Force update: always notifies subscribers
-  /// computed.notify(false); // Soft update: only notifies if value changed
-  /// ```
   @pragma("vm:prefer-inline")
   @pragma("wasm:prefer-inline")
   @pragma("dart2js:prefer-inline")
   @override
-  void notify([bool force = true]) => raw.notify(force);
+  void notify() => raw.notify();
+
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
+  @override
+  void notifySoft() => raw.notifySoft();
 
   /// Disposes the computed value and cleans up resources.
   ///

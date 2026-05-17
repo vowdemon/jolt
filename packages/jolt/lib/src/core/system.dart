@@ -1,4 +1,5 @@
 import 'package:jolt/core.dart';
+import 'package:jolt/src/core/debug.dart';
 
 /// Base class for all reactive nodes in the dependency graph.
 ///
@@ -49,6 +50,8 @@ abstract class ReactiveNode {
   int flags;
 
   void unwatched();
+
+  bool update();
 }
 
 /// Link between reactive nodes in the dependency graph.
@@ -283,6 +286,10 @@ void link(ReactiveNode dep, ReactiveNode sub, int version) {
   } else {
     dep.subs = newLink;
   }
+  assert(() {
+    JoltDevTools.notifyLinkUpdate('link', dep, sub);
+    return true;
+  }());
 }
 
 /// Unlinks a dependency from a subscriber.
@@ -305,6 +312,10 @@ Link? unlink(Link link, [ReactiveNode? sub]) {
   sub ??= link.sub;
 
   final dep = link.dep;
+  assert(() {
+    JoltDevTools.notifyLinkUpdate('unlink', dep, sub);
+    return true;
+  }());
   final Link(:prevDep, :nextDep, :nextSub, :prevSub) = link;
   if (nextDep != null) {
     nextDep.prevDep = prevDep;
@@ -465,7 +476,7 @@ bool checkDirty(Link theLink, ReactiveNode sub) {
     } else if (flags & (ReactiveFlags.mutable | ReactiveFlags.dirty) ==
         (ReactiveFlags.mutable | ReactiveFlags.dirty)) {
       final subs = dep.subs!;
-      if (updateNode(dep)) {
+      if (dep.update()) {
         if (subs.nextSub != null) {
           shallowPropagate(subs);
         }
@@ -495,7 +506,7 @@ bool checkDirty(Link theLink, ReactiveNode sub) {
       stack = stack.prev;
       if (dirty) {
         final subs = sub.subs;
-        if (updateNode(sub)) {
+        if (sub.update()) {
           assert(subs != null);
           if (subs!.nextSub != null) {
             shallowPropagate(subs);

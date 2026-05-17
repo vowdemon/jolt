@@ -64,12 +64,7 @@ class EffectImpl implements Effect {
   /// {@endtemplate}
   EffectImpl(this.fn,
       {bool lazy = false, bool detach = false, JoltDebugOption? debug})
-      : raw = EffectNode(fn, lazy: lazy, detach: detach) {
-    // assert(() {
-    //   JoltDebug.create(this, debug);
-    //   return true;
-    // }());
-  }
+      : raw = EffectNode(fn, lazy: lazy, detach: detach, debug: debug);
 
   EffectImpl.custom(this.fn, {required EffectNode node}) : raw = node;
 

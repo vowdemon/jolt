@@ -5,9 +5,14 @@ import 'package:jolt/src/core/system.dart';
 import 'package:shared_interfaces/shared_interfaces.dart' show Disposer;
 
 class SignalNode<T> extends ReactiveNode {
-  SignalNode(this.value)
+  SignalNode(this.value, {JoltDebugOption? debug})
       : pendingValue = value,
-        super(flags: ReactiveFlags.mutable);
+        super(flags: ReactiveFlags.mutable) {
+    assert(() {
+      JoltDebug.create(this, debug);
+      return true;
+    }());
+  }
 
   T? value;
   T? pendingValue;
@@ -15,23 +20,34 @@ class SignalNode<T> extends ReactiveNode {
   T peek() => pendingValue as T;
 
   T get() {
-    if (flags & (ReactiveFlags.dirty) != 0) {
-      if (update()) {
-        if (subs != null) {
-          shallowPropagate(subs!);
+    if (!isDisposed) {
+      assert(() {
+        JoltDebug.get(this);
+        return true;
+      }());
+      if (flags & (ReactiveFlags.dirty) != 0) {
+        if (update()) {
+          if (subs != null) {
+            shallowPropagate(subs!);
+          }
         }
       }
-    }
-    final sub = activeSub;
-    if (sub != null) {
-      link(this, sub, cycle);
-    }
+      final sub = activeSub;
+      if (sub != null) {
+        link(this, sub, cycle);
+      }
 
-    return value as T;
+      return value as T;
+    }
+    return pendingValue as T;
   }
 
   T set(T value) {
-    if (pendingValue != (pendingValue = value)) {
+    if (!isDisposed && pendingValue != (pendingValue = value)) {
+      assert(() {
+        JoltDebug.set(this);
+        return true;
+      }());
       flags = ReactiveFlags.mutable | ReactiveFlags.dirty;
 
       if (subs != null) {
@@ -40,10 +56,14 @@ class SignalNode<T> extends ReactiveNode {
           flushEffects();
         }
       }
+    } else if (isDisposed) {
+      this.value = value;
+      pendingValue = value;
     }
     return value;
   }
 
+  @override
   bool update() {
     flags &= ReactiveFlags.mutable;
 
@@ -52,15 +72,21 @@ class SignalNode<T> extends ReactiveNode {
   }
 
   void notify() {
-    flags = ReactiveFlags.mutable | ReactiveFlags.dirty;
+    if (!isDisposed) {
+      assert(() {
+        JoltDebug.notify(this);
+        return true;
+      }());
+      flags = ReactiveFlags.mutable | ReactiveFlags.dirty;
 
-    value = null;
+      value = null;
 
-    if (subs != null) {
-      propagate(subs!, runDepth > 0);
-      shallowPropagate(subs!);
-      if (batchDepth == 0) {
-        flushEffects();
+      if (subs != null) {
+        propagate(subs!, runDepth > 0);
+        shallowPropagate(subs!);
+        if (batchDepth == 0) {
+          flushEffects();
+        }
       }
     }
   }
@@ -75,6 +101,10 @@ class SignalNode<T> extends ReactiveNode {
     if (sub != null) {
       unlink(sub);
     }
+    assert(() {
+      JoltDebug.dispose(this);
+      return true;
+    }());
   }
 
   bool get isDisposed => flags == ReactiveFlags.none;
@@ -84,7 +114,13 @@ class SignalNode<T> extends ReactiveNode {
 }
 
 class ComputedNode<T> extends ReactiveNode {
-  ComputedNode(this.getter, {this.equals}) : super(flags: ReactiveFlags.none);
+  ComputedNode(this.getter, {this.equals, JoltDebugOption? debug})
+      : super(flags: ReactiveFlags.none) {
+    assert(() {
+      JoltDebug.create(this, debug);
+      return true;
+    }());
+  }
 
   final T Function() getter;
   final bool Function(T current, T? previous)? equals;
@@ -97,36 +133,47 @@ class ComputedNode<T> extends ReactiveNode {
   T peek() => untracked(get);
 
   T get() {
-    if (flags & ReactiveFlags.dirty != 0 ||
-        (flags & ReactiveFlags.pending != 0 &&
-            (checkDirty(deps!, this) ||
-                () {
-                  flags = flags & ~ReactiveFlags.pending;
-                  return false;
-                }()))) {
-      if (update()) {
-        if (subs != null) {
-          shallowPropagate(subs!);
+    if (!isDisposed) {
+      assert(() {
+        JoltDebug.get(this);
+        return true;
+      }());
+      if (flags & ReactiveFlags.dirty != 0 ||
+          (flags & ReactiveFlags.pending != 0 &&
+              (checkDirty(deps!, this) ||
+                  () {
+                    flags = flags & ~ReactiveFlags.pending;
+                    return false;
+                  }()))) {
+        if (update()) {
+          if (subs != null) {
+            shallowPropagate(subs!);
+          }
+        }
+      } else if (flags == ReactiveFlags.none) {
+        flags = ReactiveFlags.mutable | ReactiveFlags.recursedCheck;
+        final prevSub = setActiveSub(this);
+        try {
+          value = getter();
+          assert(() {
+            JoltDebug.set(this);
+            return true;
+          }());
+        } finally {
+          activeSub = prevSub;
+          flags &= ~ReactiveFlags.recursedCheck;
         }
       }
-    } else if (flags == ReactiveFlags.none) {
-      flags = ReactiveFlags.mutable | ReactiveFlags.recursedCheck;
-      final prevSub = setActiveSub(this);
-      try {
-        value = getter();
-      } finally {
-        activeSub = prevSub;
-        flags &= ~ReactiveFlags.recursedCheck;
+      final sub = activeSub;
+      if (sub != null) {
+        link(this, sub, cycle);
       }
-    }
-    final sub = activeSub;
-    if (sub != null) {
-      link(this, sub, cycle);
     }
 
     return value as T;
   }
 
+  @override
   bool update() {
     if (flags & ReactiveFlags.hasChildEffect != 0) {
       var link = depsTail;
@@ -155,6 +202,12 @@ class ComputedNode<T> extends ReactiveNode {
       };
 
       value = newValue;
+      if (isNotEqual) {
+        assert(() {
+          JoltDebug.set(this);
+          return true;
+        }());
+      }
 
       return isNotEqual;
     } finally {
@@ -164,21 +217,49 @@ class ComputedNode<T> extends ReactiveNode {
     }
   }
 
-  void notify([bool force = true]) {
-    final updated = update();
+  void notify() {
+    if (!isDisposed) {
+      assert(() {
+        JoltDebug.notify(this);
+        return true;
+      }());
+      update();
 
-    if (!force && !updated) return;
+      var subs = this.subs;
 
-    var subs = this.subs;
+      while (subs != null) {
+        subs.sub?.flags |= ReactiveFlags.pending;
+        shallowPropagate(subs);
+        subs = subs.nextSub;
+      }
 
-    while (subs != null) {
-      subs.sub?.flags |= ReactiveFlags.pending;
-      shallowPropagate(subs);
-      subs = subs.nextSub;
+      if (this.subs != null && batchDepth == 0) {
+        flushEffects();
+      }
     }
+  }
 
-    if (this.subs != null && batchDepth == 0) {
-      flushEffects();
+  void notifySoft() {
+    if (!isDisposed) {
+      assert(() {
+        JoltDebug.notify(this);
+        return true;
+      }());
+      final updated = update();
+
+      if (!updated) return;
+
+      var subs = this.subs;
+
+      while (subs != null) {
+        subs.sub?.flags |= ReactiveFlags.pending;
+        shallowPropagate(subs);
+        subs = subs.nextSub;
+      }
+
+      if (this.subs != null && batchDepth == 0) {
+        flushEffects();
+      }
     }
   }
 
@@ -194,6 +275,10 @@ class ComputedNode<T> extends ReactiveNode {
     if (sub != null) {
       unlink(sub);
     }
+    assert(() {
+      JoltDebug.dispose(this);
+      return true;
+    }());
   }
 
   @override
@@ -239,11 +324,20 @@ abstract class BaseEffectNode extends ReactiveNode with CleanableNode {
       unlink(sub);
     }
     cleanup();
+    assert(() {
+      JoltDebug.dispose(this);
+      return true;
+    }());
   }
 }
 
 class EffectScopeNode extends BaseEffectNode {
-  EffectScopeNode({bool detach = false}) : super(flags: ReactiveFlags.mutable) {
+  EffectScopeNode({bool detach = false, JoltDebugOption? debug})
+      : super(flags: ReactiveFlags.mutable) {
+    assert(() {
+      JoltDebug.create(this, debug);
+      return true;
+    }());
     if (!detach) {
       _retainedEffects.add(this);
     }
@@ -269,6 +363,7 @@ class EffectScopeNode extends BaseEffectNode {
 
   bool get isDisposed => flags == ReactiveFlags.none;
 
+  @override
   bool update() {
     flags = ReactiveFlags.mutable;
     return true;
@@ -281,8 +376,13 @@ class EffectScopeNode extends BaseEffectNode {
 }
 
 class EffectNode extends BaseEffectNode {
-  EffectNode(this.fn, {bool lazy = false, bool detach = false})
+  EffectNode(this.fn,
+      {bool lazy = false, bool detach = false, JoltDebugOption? debug})
       : super(flags: ReactiveFlags.watching | ReactiveFlags.recursedCheck) {
+    assert(() {
+      JoltDebug.create(this, debug);
+      return true;
+    }());
     if (!detach) {
       _retainedEffects.add(this);
     }
@@ -343,6 +443,10 @@ class EffectNode extends BaseEffectNode {
         fn();
       } finally {
         --runDepth;
+        assert(() {
+          JoltDebug.effect(this);
+          return true;
+        }());
         activeSub = prevSub;
         this.flags &= ~ReactiveFlags.recursedCheck;
         purgeDeps(this);
@@ -405,4 +509,7 @@ class EffectNode extends BaseEffectNode {
   void unwatched() {
     dispose();
   }
+
+  @override
+  bool update() => false;
 }

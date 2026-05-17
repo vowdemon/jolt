@@ -35,7 +35,7 @@ abstract interface class Until<T> implements Future<T> {
   /// - [predicate]: Returns `true` when the condition is met
   /// - [detach]: If true, the underlying effect is not bound to the current
   ///   scope and will not be disposed when the scope is disposed
-  factory Until(ReadableNode<T> source, bool Function(T value) predicate,
+  factory Until(Readable<T> source, bool Function(T value) predicate,
       {bool? detach}) = UntilImpl<T>;
 
   /// Creates an [Until] that waits for [source] to equal [value].
@@ -48,7 +48,7 @@ abstract interface class Until<T> implements Future<T> {
   /// final status = Signal('loading');
   /// await Until.when(status, 'ready'); // Waits until status is 'ready'
   /// ```
-  factory Until.when(ReadableNode<T> source, T value, {bool? detach}) =>
+  factory Until.when(Readable<T> source, T value, {bool? detach}) =>
       Until<T>(source, (v) => v == value, detach: detach);
 
   /// Creates an [Until] that waits for [source] to change from its current value.
@@ -63,7 +63,7 @@ abstract interface class Until<T> implements Future<T> {
   /// status.value = 'loading';
   /// final next = await Until.changed(status); // Waits for status != 'loading'
   /// ```
-  factory Until.changed(ReadableNode<T> source, {bool? detach}) {
+  factory Until.changed(Readable<T> source, {bool? detach}) {
     final current = source.value;
     return Until<T>(source, (v) => v != current, detach: detach);
   }
@@ -96,7 +96,7 @@ class UntilImpl<T> implements Until<T> {
   Effect? _effect;
   bool _cancelled = false;
 
-  UntilImpl(ReadableNode<T> source, bool Function(T value) predicate,
+  UntilImpl(Readable<T> source, bool Function(T value) predicate,
       {bool? detach}) {
     if (predicate(source.value)) {
       _completer = Completer<T>()..complete(source.value);
@@ -106,7 +106,8 @@ class UntilImpl<T> implements Until<T> {
         if (_completer.isCompleted) return;
         if (predicate(source.value)) _completer.complete(source.value);
       }, detach: detach ?? true, debug: JoltDebugOption.type('Until<$T>'));
-      trackWithEffect(() => source.value, _effect!);
+      (_effect as EffectImpl).track(() => source.value);
+
       _completer.future.whenComplete(_effect!.dispose);
     }
   }
@@ -150,7 +151,7 @@ class UntilImpl<T> implements Until<T> {
 }
 
 /// Extension methods for reactive values.
-extension JoltUtilsUntilExtension<T> on ReadableNode<T> {
+extension JoltUtilsUntilExtension<T> on Readable<T> {
   /// Waits until the value satisfies a condition.
   ///
   /// Returns an [Until] that implements [Future] and can be awaited. The

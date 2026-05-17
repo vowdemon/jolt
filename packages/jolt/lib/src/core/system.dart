@@ -1,4 +1,4 @@
-part of "./reactive.dart";
+import 'package:jolt/core.dart';
 
 /// Base class for all reactive nodes in the dependency graph.
 ///
@@ -11,7 +11,7 @@ part of "./reactive.dart";
 /// final node = ReactiveNode(flags: ReactiveFlags.mutable);
 /// node.flags |= ReactiveFlags.dirty;
 /// ```
-class ReactiveNode {
+abstract class ReactiveNode {
   /// Creates a reactive node with the given configuration.
   ///
   /// Parameters:
@@ -48,8 +48,7 @@ class ReactiveNode {
   /// Reactive flags for this node.
   int flags;
 
-  /// Whether this node has been disposed.
-  bool get isDisposed => false;
+  void unwatched();
 }
 
 /// Link between reactive nodes in the dependency graph.
@@ -178,6 +177,13 @@ abstract final class ReactiveFlags {
 
   /// Node is pending update.
   static const pending = 1 << 5;
+
+  /// Node owns at least one child effect or effect scope.
+  ///
+  /// This bit is used by the Jolt layer to preserve nested effect cleanup
+  /// ordering. Core propagation checks mask specific bits, so this flag can
+  /// travel alongside the core flags without changing propagation decisions.
+  static const hasChildEffect = 1 << 6;
 }
 
 /// Abstract reactive system for managing dependency tracking.
@@ -260,11 +266,6 @@ void link(ReactiveNode dep, ReactiveNode sub, int version) {
   } else {
     dep.subs = newLink;
   }
-
-  assert(() {
-    JoltDebug.linked(dep, newLink);
-    return true;
-  }());
 }
 
 /// Unlinks a dependency from a subscriber.
@@ -305,13 +306,9 @@ Link? unlink(Link link, [ReactiveNode? sub]) {
   if (prevSub != null) {
     prevSub.nextSub = nextSub;
   } else if ((dep.subs = nextSub) == null) {
-    unwatched(dep);
+    dep.unwatched();
   }
 
-  assert(() {
-    JoltDebug.unlinked(dep, link);
-    return true;
-  }());
   return nextDep;
 }
 
@@ -327,12 +324,11 @@ Link? unlink(Link link, [ReactiveNode? sub]) {
 /// ```
 void propagate(Link theLink, bool innerWrite) {
   Link? link = theLink;
+
   var next = link.nextSub;
   Stack<Link?>? stack;
 
   top:
-  // allow do-while loop
-  // ignore: literal_only_boolean_expressions
   do {
     final sub = link!.sub;
     var flags = sub.flags;
@@ -362,7 +358,7 @@ void propagate(Link theLink, bool innerWrite) {
     }
 
     if (flags & (ReactiveFlags.watching) != 0) {
-      notifyEffect(sub);
+      (sub as EffectNode).notifyEffect();
     }
 
     if (flags & (ReactiveFlags.mutable) != 0) {
@@ -411,7 +407,7 @@ void propagate(Link theLink, bool innerWrite) {
 
 bool checkDirty(Link theLink, ReactiveNode sub) {
   Link? link = theLink;
-  Stack<Link?>? stack;
+  Stack<Link>? stack;
   var checkDepth = 0;
   var dirty = false;
 
@@ -456,17 +452,18 @@ bool checkDirty(Link theLink, ReactiveNode sub) {
       if (dirty) {
         final subs = sub.subs;
         if (updateNode(sub)) {
-          if (subs?.nextSub != null) {
-            shallowPropagate(subs!);
+          assert(subs != null);
+          if (subs!.nextSub != null) {
+            shallowPropagate(subs);
           }
-          sub = link!.sub;
+          sub = link.sub;
           continue;
         }
         dirty = false;
       } else {
         sub.flags &= ~ReactiveFlags.pending;
       }
-      sub = link!.sub;
+      sub = link.sub;
       final nextDep = link.nextDep;
       if (nextDep != null) {
         link = nextDep;
@@ -498,7 +495,7 @@ void shallowPropagate(Link theLink) {
       sub.flags = flags | (ReactiveFlags.dirty);
       if (flags & (ReactiveFlags.watching | ReactiveFlags.recursedCheck) ==
           ReactiveFlags.watching) {
-        notifyEffect(sub);
+        (sub as EffectNode).notifyEffect();
       }
     }
   } while ((link = link.nextSub) != null);

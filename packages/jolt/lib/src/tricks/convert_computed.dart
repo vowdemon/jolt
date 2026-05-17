@@ -23,7 +23,7 @@ import "package:jolt/jolt.dart";
 /// print(textCount.value); // "0"
 /// textCount.value = "42"; // Updates count to 42
 /// ```
-class ConvertComputedImpl<T, U> extends WritableComputedImpl<T>
+class _ConvertComputedImpl<T, U> extends WritableComputedImpl<T>
     implements ConvertComputed<T, U> {
   /// Creates a type-converting computed signal.
   ///
@@ -32,7 +32,7 @@ class ConvertComputedImpl<T, U> extends WritableComputedImpl<T>
   /// - [decode]: Function to convert from source type to target type
   /// - [encode]: Function to convert from target type to source type
   /// - [debug]: Optional debug options
-  ConvertComputedImpl(
+  _ConvertComputedImpl(
     this.source, {
     required this.decode,
     required this.encode,
@@ -90,10 +90,10 @@ abstract interface class ConvertComputed<T, U> implements WritableComputed<T> {
   /// );
   /// ```
   factory ConvertComputed(
-    WritableNode<U> source, {
+    Writable<U> source, {
     required T Function(U value) decode,
     required U Function(T value) encode,
     EqualFn? equals,
     JoltDebugOption? debug,
-  }) = ConvertComputedImpl<T, U>;
+  }) = _ConvertComputedImpl<T, U>;
 }

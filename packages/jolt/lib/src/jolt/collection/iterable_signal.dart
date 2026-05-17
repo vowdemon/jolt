@@ -2,7 +2,6 @@ import "dart:collection";
 
 import "package:jolt/core.dart";
 
-import "package:jolt/src/jolt/base.dart";
 import "package:jolt/src/jolt/computed.dart";
 
 /// A mixin that provides reactive iterable functionality.

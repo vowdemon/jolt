@@ -1,5 +1,5 @@
+import 'package:jolt/core.dart';
 import 'package:jolt/jolt.dart';
-import 'package:jolt/src/utils/finalizer.dart';
 import 'package:shared_interfaces/shared_interfaces.dart';
 
 /// Helper class for managing reference-counted shared resources.
@@ -96,14 +96,14 @@ class DelegatedRefCountHelper<T> {
 /// final delegated = DelegatedReadonlySignal(helper);
 /// print(delegated.value); // Accesses shared source
 /// ```
-class DelegatedReadonlySignal<T> implements ReadonlySignal<T> {
+class DelegatedReadonlySignal<T> implements Readonly<T>, DisposableNode {
   DelegatedReadonlySignal(this.delegated) {
     delegated.acquire();
     _releaseDisposer =
         JFinalizer.attachToJoltAttachments(this, delegated.release);
   }
 
-  final DelegatedRefCountHelper<ReadonlySignal<T>> delegated;
+  final DelegatedRefCountHelper<Readonly<T>> delegated;
   Disposer? _releaseDisposer;
   late final T _disposedValue;
 
@@ -114,12 +114,6 @@ class DelegatedReadonlySignal<T> implements ReadonlySignal<T> {
   T get value {
     if (_isDisposed) return _disposedValue;
     return delegated.source.value;
-  }
-
-  @override
-  void notify([bool force = true]) {
-    if (_isDisposed) return;
-    delegated.source.notify(force);
   }
 
   bool _isDisposed = false;

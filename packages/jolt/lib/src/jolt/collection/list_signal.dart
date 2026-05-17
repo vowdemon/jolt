@@ -3,7 +3,6 @@ import "dart:math" show Random;
 
 import "package:jolt/core.dart";
 
-import "package:jolt/src/jolt/base.dart";
 import "package:jolt/src/jolt/signal.dart";
 
 /// A mixin that provides reactive list functionality.

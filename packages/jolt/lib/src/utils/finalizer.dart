@@ -1,4 +1,4 @@
-import 'package:jolt/src/jolt/base.dart';
+import 'package:jolt/core.dart';
 import 'package:meta/meta.dart';
 import 'package:shared_interfaces/shared_interfaces.dart';
 
@@ -58,12 +58,10 @@ abstract final class JFinalizer {
   /// ```
   static Disposer attachToJoltAttachments(Object target, Disposer disposer) {
     assert(() {
-      if (target is ReadableNode) {
-        return !target.isDisposed;
+      if (target is ReactiveNode) {
+        return target.flags != ReactiveFlags.dirty || target is ComputedNode;
       }
-      if (target is EffectNode) {
-        return !target.isDisposed;
-      }
+
       return true;
     }(), "Jolt value is disposed");
 

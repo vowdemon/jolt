@@ -2,7 +2,6 @@ import "dart:async";
 
 import "package:jolt/core.dart";
 import "package:jolt/jolt.dart";
-import "package:jolt/src/jolt/signal.dart";
 
 /// Mixin providing write queue and throttling for persistent signals.
 ///
@@ -163,7 +162,7 @@ class _WriteTask<T> {
 ///
 /// **Note:** Write operations require initialization. Lazy signals
 /// auto-initialize on first access.
-class SyncPersistSignalImpl<T> extends SignalImpl<T>
+class _SyncPersistSignalImpl<T> extends SignalImpl<T>
     with _PersistWriteMixin<T>
     implements PersistSignal<T> {
   /// Creates a synchronous persistent signal.
@@ -182,7 +181,7 @@ class SyncPersistSignalImpl<T> extends SignalImpl<T>
   ///   write: (value) => prefs.setString('theme', value),
   /// );
   /// ```
-  SyncPersistSignalImpl({
+  _SyncPersistSignalImpl({
     required this.read,
     required this.write,
     bool lazy = false,
@@ -194,7 +193,7 @@ class SyncPersistSignalImpl<T> extends SignalImpl<T>
     }
   }
 
-  SyncPersistSignalImpl.lazy({
+  _SyncPersistSignalImpl.lazy({
     required this.read,
     required this.write,
     this.throttle,
@@ -280,7 +279,7 @@ class SyncPersistSignalImpl<T> extends SignalImpl<T>
 ///
 /// **Note:** Write operations require initialization. Use [ensure] or
 /// [getEnsured] before writing, or check [isInitialized].
-class AsyncPersistSignalImpl<T> extends SignalImpl<T>
+class _AsyncPersistSignalImpl<T> extends SignalImpl<T>
     with _PersistWriteMixin<T>
     implements PersistSignal<T> {
   /// Creates an asynchronous persistent signal.
@@ -301,7 +300,7 @@ class AsyncPersistSignalImpl<T> extends SignalImpl<T>
   ///   initialValue: () => 'light',  // Show while loading
   /// );
   /// ```
-  AsyncPersistSignalImpl({
+  _AsyncPersistSignalImpl({
     required this.read,
     required this.write,
     this.initialValue,
@@ -314,7 +313,7 @@ class AsyncPersistSignalImpl<T> extends SignalImpl<T>
     }
   }
 
-  AsyncPersistSignalImpl.lazy({
+  _AsyncPersistSignalImpl.lazy({
     required this.read,
     required this.write,
     this.initialValue,
@@ -496,7 +495,7 @@ abstract interface class PersistSignal<T> implements Signal<T> {
     bool lazy,
     Duration? throttle,
     JoltDebugOption? debug,
-  }) = SyncPersistSignalImpl<T>;
+  }) = _SyncPersistSignalImpl<T>;
 
   /// Creates a lazy synchronous persistent signal.
   ///
@@ -518,7 +517,7 @@ abstract interface class PersistSignal<T> implements Signal<T> {
     required FutureOr<void> Function(T value) write,
     Duration? throttle,
     JoltDebugOption? debug,
-  }) = SyncPersistSignalImpl<T>.lazy;
+  }) = _SyncPersistSignalImpl<T>.lazy;
 
   /// Creates an asynchronous persistent signal.
   ///
@@ -545,7 +544,7 @@ abstract interface class PersistSignal<T> implements Signal<T> {
     bool lazy,
     Duration? throttle,
     JoltDebugOption? debug,
-  }) = AsyncPersistSignalImpl<T>;
+  }) = _AsyncPersistSignalImpl<T>;
 
   /// Creates a lazy asynchronous persistent signal.
   ///
@@ -570,7 +569,7 @@ abstract interface class PersistSignal<T> implements Signal<T> {
     T Function()? initialValue,
     Duration? throttle,
     JoltDebugOption? debug,
-  }) = AsyncPersistSignalImpl<T>.lazy;
+  }) = _AsyncPersistSignalImpl<T>.lazy;
 
   /// Whether initialized from storage.
   bool get isInitialized;

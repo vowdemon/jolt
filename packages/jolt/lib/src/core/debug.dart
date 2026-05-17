@@ -4,6 +4,7 @@ import "dart:developer" as developer;
 
 import "package:jolt/core.dart";
 import "package:jolt/jolt.dart";
+import "package:jolt/src/core/system.dart";
 import "package:meta/meta.dart";
 
 /// Types of operations that can be debugged in the reactive system.
@@ -16,12 +17,6 @@ enum DebugNodeOperationType {
 
   /// Node was disposed.
   dispose,
-
-  /// Node was linked to a dependency.
-  linked,
-
-  /// Node was unlinked from a dependency.
-  unlinked,
 
   /// Node value was accessed (get operation).
   get,
@@ -47,7 +42,7 @@ enum DebugNodeOperationType {
 /// - [link]: Optional link information, provided when the operation
 ///   is related to dependency linking/unlinking
 typedef JoltDebugFn = void Function(
-    DebugNodeOperationType type, ReactiveNode node, Link? link);
+    DebugNodeOperationType type, ReactiveNode node);
 
 /// Debug options for reactive nodes.
 ///
@@ -165,7 +160,7 @@ abstract final class JoltDebug {
     // Call per-node debug function if provided
     if (option?.onDebug != null) {
       setDebug(target, option!.onDebug!);
-      option.onDebug!.call(DebugNodeOperationType.create, target, null);
+      option.onDebug!.call(DebugNodeOperationType.create, target);
     }
 
     // Call global hook if available (for DevTools)
@@ -181,34 +176,8 @@ abstract final class JoltDebug {
   @pragma("wasm:prefer-inline")
   @pragma("dart2js:prefer-inline")
   static void dispose(ReactiveNode target) {
-    getDebug(target)?.call(DebugNodeOperationType.dispose, target, null);
+    getDebug(target)?.call(DebugNodeOperationType.dispose, target);
     JoltDevTools.handleNodeLifecycle(DebugNodeOperationType.dispose, target);
-  }
-
-  /// Notifies the debug system that a reactive node was linked to a dependency.
-  ///
-  /// This method should be called when a dependency relationship is established
-  /// between [target] and another node via [link].
-  @pragma("vm:prefer-inline")
-  @pragma("wasm:prefer-inline")
-  @pragma("dart2js:prefer-inline")
-  static void linked(ReactiveNode target, Link link) {
-    getDebug(target)?.call(DebugNodeOperationType.linked, target, link);
-    JoltDevTools.handleNodeLifecycle(DebugNodeOperationType.linked, target,
-        link: link);
-  }
-
-  /// Notifies the debug system that a reactive node was unlinked from a dependency.
-  ///
-  /// This method should be called when a dependency relationship is removed
-  /// between [target] and another node via [link].
-  @pragma("vm:prefer-inline")
-  @pragma("wasm:prefer-inline")
-  @pragma("dart2js:prefer-inline")
-  static void unlinked(ReactiveNode target, Link link) {
-    getDebug(target)?.call(DebugNodeOperationType.unlinked, target, link);
-    JoltDevTools.handleNodeLifecycle(DebugNodeOperationType.unlinked, target,
-        link: link);
   }
 
   /// Notifies the debug system that a reactive node's value was accessed (get operation).
@@ -219,7 +188,7 @@ abstract final class JoltDebug {
   @pragma("dart2js:prefer-inline")
   static void get(ReactiveNode target) {
     assert(() {
-      getDebug(target)?.call(DebugNodeOperationType.get, target, null);
+      getDebug(target)?.call(DebugNodeOperationType.get, target);
       JoltDevTools.handleNodeLifecycle(DebugNodeOperationType.get, target);
       return true;
     }(), "");
@@ -232,7 +201,7 @@ abstract final class JoltDebug {
   @pragma("wasm:prefer-inline")
   @pragma("dart2js:prefer-inline")
   static void set(ReactiveNode target) {
-    getDebug(target)?.call(DebugNodeOperationType.set, target, null);
+    getDebug(target)?.call(DebugNodeOperationType.set, target);
     JoltDevTools.handleNodeLifecycle(DebugNodeOperationType.set, target);
   }
 
@@ -244,7 +213,7 @@ abstract final class JoltDebug {
   @pragma("wasm:prefer-inline")
   @pragma("dart2js:prefer-inline")
   static void notify(ReactiveNode target) {
-    getDebug(target)?.call(DebugNodeOperationType.notify, target, null);
+    getDebug(target)?.call(DebugNodeOperationType.notify, target);
     JoltDevTools.handleNodeLifecycle(DebugNodeOperationType.notify, target);
   }
 
@@ -255,7 +224,7 @@ abstract final class JoltDebug {
   @pragma("wasm:prefer-inline")
   @pragma("dart2js:prefer-inline")
   static void effect(ReactiveNode target) {
-    getDebug(target)?.call(DebugNodeOperationType.effect, target, null);
+    getDebug(target)?.call(DebugNodeOperationType.effect, target);
     JoltDevTools.handleNodeLifecycle(DebugNodeOperationType.effect, target);
   }
 }
@@ -449,16 +418,7 @@ abstract final class JoltDevTools {
       case DebugNodeOperationType.dispose:
         _notifyNodeDisposed(nodeId);
         break;
-      case DebugNodeOperationType.linked:
-        if (link != null) {
-          _notifyLinkUpdate(link, 'link');
-        }
-        break;
-      case DebugNodeOperationType.unlinked:
-        if (link != null) {
-          _notifyLinkUpdate(link, 'unlink');
-        }
-        break;
+
       default:
     }
   }
@@ -489,22 +449,6 @@ abstract final class JoltDevTools {
     _updateController.add({
       'operation': 'nodeDisposed',
       'nodeId': nodeId,
-      'timestamp': DateTime.now().millisecondsSinceEpoch,
-    });
-  }
-
-  static void _notifyLinkUpdate(Link link, String operation) {
-    // Get IDs for both nodes involved in the link
-    final depInfo = debugInfo[link.dep];
-    final subInfo = debugInfo[link.sub];
-
-    final depId = depInfo?.id;
-    final subId = subInfo?.id;
-
-    _updateController.add({
-      'operation': operation,
-      'depId': depId,
-      'subId': subId,
       'timestamp': DateTime.now().millisecondsSinceEpoch,
     });
   }
@@ -543,8 +487,8 @@ abstract final class JoltDevTools {
   }
 
   static String _getNodeType(ReactiveNode node) {
-    if (node is WritableNode) return 'Signal';
-    if (node is ReadableNode) return 'Computed';
+    if (node is Writable) return 'Signal';
+    if (node is Readable) return 'Computed';
     if (node is Watcher) return 'Watcher';
     if (node is Effect) return 'Effect';
     if (node is EffectScope) return 'EffectScope';
@@ -553,15 +497,16 @@ abstract final class JoltDevTools {
   }
 
   static bool _isDisposed(ReactiveNode node) {
-    return node.isDisposed;
+    // return node.isDisposed;
+    return false;
   }
 
   static dynamic _getNodeValue(ReactiveNode node) {
     try {
-      if (node is SignalReactiveNode) {
+      if (node is SignalNode) {
         return _serializeValue(node.pendingValue);
-      } else if (node is ComputedReactiveNode) {
-        return _serializeValue(node.pendingValue);
+      } else if (node is ComputedNode) {
+        return _serializeValue(node.value);
       }
       return null;
     } catch (e) {
@@ -571,10 +516,10 @@ abstract final class JoltDevTools {
 
   static String _getNodeValueType(ReactiveNode node) {
     try {
-      if (node is SignalReactiveNode) {
+      if (node is SignalNode) {
         return node.pendingValue.runtimeType.toString();
-      } else if (node is ComputedReactiveNode) {
-        return node.pendingValue.runtimeType.toString();
+      } else if (node is ComputedNode) {
+        return node.value.runtimeType.toString();
       }
       return 'Unknown';
     } catch (e) {
@@ -631,7 +576,7 @@ abstract final class JoltDevTools {
         effect.run();
         break;
       case Watcher watcher:
-        watcher.run();
+        watcher.trigger();
         break;
       default:
         try {
@@ -665,3 +610,5 @@ abstract final class JoltDevTools {
     return {'type': value.runtimeType.toString(), 'value': truncated};
   }
 }
+
+abstract class ReactiveObservable {}

@@ -46,13 +46,6 @@ extension JoltUtilsStreamExtension<T> on Readable<T> {
     bool? cancelOnError,
     bool immediately = false,
   }) {
-    assert(() {
-      if (this is ReadableNode) {
-        return !(this as ReadableNode).isDisposed;
-      }
-      return true;
-    }(), "$runtimeType is disposed");
-
     final controller = JoltStreamHelper.getOrCreateStreamController(this);
 
     if (immediately) {

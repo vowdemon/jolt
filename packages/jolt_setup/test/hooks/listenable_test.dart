@@ -380,7 +380,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Signal should not update after unmount
-      expect((signal! as SignalReactiveNode).pendingValue, 0);
+      expect((signal! as SignalNode).pendingValue, 0);
     });
 
     testWidgets('works with custom ChangeNotifier', (tester) async {

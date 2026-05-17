@@ -1,12 +1,9 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:jolt_flutter/core.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
 import 'package:jolt_setup/hooks.dart';
 import 'package:meta/meta.dart';
-
-import 'package:shared_interfaces/shared_interfaces.dart';
 
 part 'widget.dart';
 part 'hooks.dart';
@@ -286,7 +283,8 @@ class SetupContext<T extends Widget> extends EffectScopeImpl {
   }
 
   @override
-  void onDispose() {
+  void dispose() {
+    super.dispose();
     _hooks.clear();
 
     assert(() {
@@ -300,13 +298,6 @@ class SetupContext<T extends Widget> extends EffectScopeImpl {
     renderer?.dispose();
     renderer = null;
     _isResetSetupScheduled = false;
-
-    super.onDispose();
-  }
-
-  @internal
-  void cleanup() {
-    doCleanup();
   }
 
   /* -------------------------------- Static -------------------------------- */
@@ -370,19 +361,31 @@ class SetupContext<T extends Widget> extends EffectScopeImpl {
 /// - Implements [ReadonlySignal] for compatibility with Jolt's reactive system
 /// - Tracks dependencies automatically when accessed in reactive contexts
 /// - Disposed when the associated [BuildContext] is unmounted
-class _PropsImpl<T extends Widget> extends ReadonlySignalImpl<T>
-    implements Props<T> {
-  _PropsImpl(this._context)
-      : super(null, debug: JoltDebugOption.type("SetupProps<$T>"));
+class _PropsImpl<T extends Widget> extends ReactiveNode
+    implements Props<T>, Readonly<T>, CustomReactiveNode<T> {
+  _PropsImpl(this._context) : super(flags: ReactiveFlags.mutable);
 
   final BuildContext _context;
+
+  @override
+  bool get isDisposed => flags == ReactiveFlags.none;
 
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
   @override
   T get value {
-    getCustom(this);
+    if (isDisposed) return peek;
+    var sub = getActiveSub();
+    while (sub != null) {
+      if (sub.flags & (ReactiveFlags.mutable | ReactiveFlags.watching) != 0) {
+        link(this, sub, getCycle());
+
+        break;
+      }
+      sub = sub.subs?.sub;
+    }
+
     return _context.widget as T;
   }
 
@@ -393,17 +396,41 @@ class _PropsImpl<T extends Widget> extends ReadonlySignalImpl<T>
   T get peek => _context.widget as T;
 
   @override
-  bool get isDisposed => !_context.mounted;
-
-  @override
   T call() {
     return value;
   }
 
   @override
-  void onDispose() {
-    disposeNode(this);
+  void dispose() {
+    this
+      ..depsTail = null
+      ..flags = ReactiveFlags.none;
+
+    purgeDeps(this);
+    final sub = subs;
+    if (sub != null) {
+      unlink(sub);
+    }
   }
+
+  @override
+  void notify() {
+    flags = ReactiveFlags.mutable | ReactiveFlags.dirty;
+
+    if (subs != null) {
+      propagate(subs!, getRunDepth() > 0);
+      shallowPropagate(subs!);
+      if (getBatchDepth() == 0) {
+        flushEffects();
+      }
+    }
+  }
+
+  @override
+  bool update() => true;
+
+  @override
+  void unwatched() {}
 }
 
 /// A reactive interface for accessing widget properties in setup functions.
@@ -431,11 +458,13 @@ class _PropsImpl<T extends Widget> extends ReadonlySignalImpl<T>
 ///
 /// When the widget is updated with new properties, the [Props] node automatically
 /// notifies its subscribers, triggering recomputation of dependent reactive values.
-abstract class Props<T extends Widget> implements ReadableNode<T> {
+abstract class Props<T extends Widget> implements Readable<T>, DisposableNode {
   /// Returns the current widget instance.
   ///
   /// This method enables function-like syntax for accessing the widget.
   /// It's equivalent to accessing [ReadableNode.value], but provides a more
   /// convenient call-site API.
   T call();
+
+  void notify();
 }

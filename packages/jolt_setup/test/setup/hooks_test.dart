@@ -415,13 +415,11 @@ void main() {
       late Effect effect;
       var useSecondDebug = false;
 
-      void firstDebug(
-          DebugNodeOperationType type, ReactiveNode node, Link? link) {
+      void firstDebug(DebugNodeOperationType type, ReactiveNode node) {
         firstOps.add(type);
       }
 
-      void secondDebug(
-          DebugNodeOperationType type, ReactiveNode node, Link? link) {
+      void secondDebug(DebugNodeOperationType type, ReactiveNode node) {
         secondOps.add(type);
       }
 
@@ -625,13 +623,11 @@ void main() {
       late FlutterEffect effect;
       var useSecondDebug = false;
 
-      void firstDebug(
-          DebugNodeOperationType type, ReactiveNode node, Link? link) {
+      void firstDebug(DebugNodeOperationType type, ReactiveNode node) {
         firstOps.add(type);
       }
 
-      void secondDebug(
-          DebugNodeOperationType type, ReactiveNode node, Link? link) {
+      void secondDebug(DebugNodeOperationType type, ReactiveNode node) {
         secondOps.add(type);
       }
 
@@ -855,8 +851,8 @@ void main() {
             (newValue, oldValue) => events.add('$newValue:$oldValue'),
             immediately: true,
             debug: debugVersion == 1
-                ? JoltDebugOption.fn((_, __, ___) {})
-                : JoltDebugOption.fn((_, __, ___) {}),
+                ? JoltDebugOption.fn((_, __) {})
+                : JoltDebugOption.fn((_, __) {}),
           );
           return () => Text('Value: ${signal.value}');
         }),
@@ -1694,7 +1690,7 @@ void main() {
       late Computed<ThemeData> theme;
       var enableDebug = true;
 
-      void debugFn(DebugNodeOperationType type, ReactiveNode node, Link? link) {
+      void debugFn(DebugNodeOperationType type, ReactiveNode node) {
         debugOps.add(type);
       }
 

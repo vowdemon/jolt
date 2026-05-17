@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jolt_flutter/core.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
 import 'package:jolt_setup/jolt_setup.dart';
 import 'package:jolt_flutter/extension.dart';
@@ -348,7 +349,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(capturedPropsNode, isNotNull);
-      expect(capturedPropsNode, isA<ReadableNode<_TestPropsWidget>>());
+      expect(capturedPropsNode, isA<Readable<_TestPropsWidget>>());
     });
   });
 }

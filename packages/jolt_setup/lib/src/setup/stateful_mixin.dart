@@ -228,7 +228,7 @@ mixin SetupMixin<T extends StatefulWidget> on State<T> {
     setupContext.renderer = null;
 
     // 3. Clean up all EffectScope cleanup functions registered during setup
-    setupContext.cleanup();
+    setupContext.raw.cleanup();
 
     // 4. Clear all hooks
     setupContext._hooks.clear();
@@ -305,7 +305,7 @@ mixin SetupMixin<T extends StatefulWidget> on State<T> {
       return true;
     }());
 
-    return setupContext.run(() => trackWithEffect(
-        () => setupContext.setupBuilder!(), setupContext.renderer!));
+    return setupContext.run(() => (setupContext.renderer! as FlutterEffectImpl)
+        .track(() => setupContext.setupBuilder!()));
   }
 }

@@ -949,7 +949,7 @@ class _ResetSetupWatchHook extends SetupHook<FlutterEffect> {
 
   @override
   void mount() {
-    trackWithEffect(_watcher, state, false);
+    (state as FlutterEffectImpl).track(_watcher, false);
   }
 
   @override
@@ -961,7 +961,7 @@ class _ResetSetupWatchHook extends SetupHook<FlutterEffect> {
   void reassemble(covariant _ResetSetupWatchHook newHook) {
     watchFn = newHook.watchFn;
     resetSetup = newHook.resetSetup;
-    trackWithEffect(_watcher, state, true);
+    (state as FlutterEffectImpl).track(_watcher, true);
   }
 }
 
@@ -994,7 +994,7 @@ class _ResetSetupSelectHook<T> extends SetupHook<FlutterEffect> {
     _prevValue = selector();
     _hasPrevValue = true;
     // Track dependencies for reactive updates
-    trackWithEffect(_select, state, false);
+    (state as FlutterEffectImpl).track(_select, false);
   }
 
   @override
@@ -1008,6 +1008,6 @@ class _ResetSetupSelectHook<T> extends SetupHook<FlutterEffect> {
     resetSetup = newHook.resetSetup;
     _prevValue = untracked(selector);
     _hasPrevValue = true;
-    trackWithEffect(_select, state, true);
+    (state as FlutterEffectImpl).track(_select, true);
   }
 }

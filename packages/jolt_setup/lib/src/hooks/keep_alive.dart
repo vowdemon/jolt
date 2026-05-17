@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:jolt_flutter/core.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
 import 'package:jolt_setup/hooks.dart';
 import 'package:jolt_setup/jolt_setup.dart';
@@ -30,8 +31,8 @@ class _UseAutomaticKeepAliveCreator {
   /// ```
   @defineHook
   void call(bool wantKeepAlive) {
-    return useHook(_AutomaticKeepAliveClientHook(
-        wantKeepAlive: ReadonlySignal(wantKeepAlive)));
+    return useHook(
+        _AutomaticKeepAliveClientHook(wantKeepAlive: Readonly(wantKeepAlive)));
   }
 
   /// Controls whether the widget should be kept alive using a reactive value.
@@ -61,7 +62,7 @@ class _UseAutomaticKeepAliveCreator {
   /// }
   /// ```
   @defineHook
-  void value(ReadableNode<bool> wantKeepAlive) {
+  void value(Readable<bool> wantKeepAlive) {
     return useHook(_AutomaticKeepAliveClientHook(wantKeepAlive: wantKeepAlive));
   }
 }
@@ -91,10 +92,10 @@ class _UseAutomaticKeepAliveCreator {
 final useAutomaticKeepAlive = _UseAutomaticKeepAliveCreator._();
 
 class _AutomaticKeepAliveClientHook extends SetupHook<void> {
-  _AutomaticKeepAliveClientHook({required ReadableNode<bool> wantKeepAlive})
+  _AutomaticKeepAliveClientHook({required Readable<bool> wantKeepAlive})
       : _wantKeepAlive = wantKeepAlive;
 
-  final ReadableNode<bool> _wantKeepAlive;
+  final Readable<bool> _wantKeepAlive;
   FlutterEffect? _effect;
   KeepAliveHandle? _keepAliveHandle;
 

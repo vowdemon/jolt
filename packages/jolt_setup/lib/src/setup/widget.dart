@@ -296,7 +296,7 @@ class SetupWidgetElement<T extends SetupWidget<T>> extends ComponentElement {
     setupContext.renderer = null;
 
     // 3. Clean up all EffectScope cleanup functions registered during setup
-    setupContext.cleanup();
+    setupContext.raw.cleanup();
 
     // 4. Clear all hooks
     setupContext._hooks.clear();
@@ -339,8 +339,8 @@ class SetupWidgetElement<T extends SetupWidget<T>> extends ComponentElement {
       return true;
     }());
 
-    return setupContext.run(() => trackWithEffect(
-        () => setupContext.setupBuilder!(), setupContext.renderer!));
+    return setupContext.run(() => (setupContext.renderer! as FlutterEffectImpl)
+        .track(() => setupContext.setupBuilder!()));
   }
 }
 

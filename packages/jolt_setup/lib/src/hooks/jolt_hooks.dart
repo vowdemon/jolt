@@ -652,7 +652,8 @@ class _UseWatcherHook<T> extends SetupHook<WatcherImpl<T>> {
     state.sourcesFn = sourcesFn;
     state.fn = fn;
     state.when = when;
-    state.prevSources = untracked(state.sourcesFn);
+
+    state.previosValues = untracked(state.sourcesFn);
 
     if (!wasPaused) {
       state.pause();
@@ -794,7 +795,7 @@ final class JoltEffectScopeHookCreator {
   /// {@endtemplate}
   @defineHook
   EffectScope call({
-    bool? detach,
+    bool detach = false,
     JoltDebugOption? debug,
   }) {
     return useAutoDispose(() => EffectScope(detach: detach, debug: debug));
@@ -836,7 +837,7 @@ Stream<T> useJoltStream<T>(Readable<T> value) {
 class _UseUntilHook<T> extends SetupHook<Until<T>> {
   _UseUntilHook(this.source, this.predicate, {this.detach});
 
-  late ReadableNode<T> source;
+  late Readable<T> source;
   late bool Function(T value) predicate;
   late bool? detach;
 
@@ -861,7 +862,7 @@ class _UseUntilHook<T> extends SetupHook<Until<T>> {
 class _UseUntilWhenHook<T> extends SetupHook<Until<T>> {
   _UseUntilWhenHook(this.source, this.value, {this.detach});
 
-  late ReadableNode<T> source;
+  late Readable<T> source;
   late T value;
   late bool? detach;
 
@@ -886,7 +887,7 @@ class _UseUntilWhenHook<T> extends SetupHook<Until<T>> {
 class _UseUntilChangedHook<T> extends SetupHook<Until<T>> {
   _UseUntilChangedHook(this.source, {this.detach});
 
-  late ReadableNode<T> source;
+  late Readable<T> source;
   late bool? detach;
 
   @override
@@ -940,7 +941,7 @@ final class JoltUseUntilCreator {
   /// ```
   @defineHook
   Until<T> call<T>(
-    ReadableNode<T> source,
+    Readable<T> source,
     bool Function(T value) predicate, {
     bool? detach,
   }) {
@@ -962,7 +963,7 @@ final class JoltUseUntilCreator {
   /// ```
   @defineHook
   Until<T> when<T>(
-    ReadableNode<T> source,
+    Readable<T> source,
     T value, {
     bool? detach,
   }) {
@@ -983,7 +984,7 @@ final class JoltUseUntilCreator {
   /// ```
   @defineHook
   Until<T> changed<T>(
-    ReadableNode<T> source, {
+    Readable<T> source, {
     bool? detach,
   }) {
     return useHook(_UseUntilChangedHook<T>(source, detach: detach));

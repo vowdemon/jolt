@@ -188,9 +188,9 @@ class _AsyncSnapshotFutureSignalImpl<T> extends SignalImpl<AsyncSnapshot<T>>
   }
 
   @override
-  void onDispose() {
+  void dispose() {
     _unsubscribe();
-    super.onDispose();
+    super.dispose();
   }
 }
 
@@ -246,7 +246,7 @@ AsyncSnapshotStreamSignal<T> useStream<T>(Stream<T>? stream, {T? initialData}) {
 class _AsyncSnapshotStreamSignalImpl<T> extends SignalImpl<AsyncSnapshot<T>>
     with _AsyncSnapshotSignalMixin<T>
     implements AsyncSnapshotStreamSignal<T> {
-  _AsyncSnapshotStreamSignalImpl(this.stream, {T? initialData})
+  _AsyncSnapshotStreamSignalImpl(this.stream, {T? initialData, super.debug})
       : super(initialData == null
             ? AsyncSnapshot<T>.nothing()
             : AsyncSnapshot<T>.withData(ConnectionState.none, initialData)) {
@@ -300,9 +300,9 @@ class _AsyncSnapshotStreamSignalImpl<T> extends SignalImpl<AsyncSnapshot<T>>
   }
 
   @override
-  void onDispose() {
+  void dispose() {
     _unsubscribe();
-    super.onDispose();
+    super.dispose();
   }
 }
 
@@ -319,7 +319,7 @@ abstract interface class AsyncSnapshotStreamSignal<T>
 }
 
 // ignore: unused_element
-mixin _AsyncSnapshotSignalMixin<T> on SignalImpl<AsyncSnapshot<T>>
+mixin _AsyncSnapshotSignalMixin<T> on Signal<AsyncSnapshot<T>>
     implements AsyncSnapshot<T> {
   @override
   ConnectionState get connectionState => value.connectionState;

@@ -178,7 +178,8 @@ void main() {
 
     test('ValueListenable.toListenableSignal - dispose cleanup', () {
       final notifier = ValueNotifier(0);
-      final signal = notifier.toListenableSignal();
+      final signal =
+          notifier.toListenableSignal() as ValueListenableSignal<int>;
       int callCount = 0;
 
       final effect = Effect(() {
@@ -291,14 +292,19 @@ void main() {
     });
 
     test(
-        'ValueListenable.toListenableSignal - multiple signals from same notifier share delegated and refcount works correctly',
+        'ValueListenable.toListenableSignal - multiple signals from same notifier share instance until dispose',
         () async {
       final notifier = ValueNotifier(0);
 
-      final signal1 = notifier.toListenableSignal();
-      final signal2 = notifier.toListenableSignal();
-      final signal3 = notifier.toListenableSignal();
+      final signal1 =
+          notifier.toListenableSignal() as ValueListenableSignal<int>;
+      final signal2 =
+          notifier.toListenableSignal() as ValueListenableSignal<int>;
+      final signal3 =
+          notifier.toListenableSignal() as ValueListenableSignal<int>;
 
+      expect(identical(signal1, signal2), true);
+      expect(identical(signal1, signal3), true);
       expect(signal1.value, 0);
       expect(signal2.value, 0);
       expect(signal3.value, 0);
@@ -313,49 +319,41 @@ void main() {
       await Future.delayed(Duration(milliseconds: 10));
 
       expect(signal1.isDisposed, true);
-
-      notifier.value = 2;
-      expect(signal2.value, 2);
-      expect(signal3.value, 2);
-
-      expect(signal1.isDisposed, true);
-
-      signal2.dispose();
-      await Future.delayed(Duration(milliseconds: 10));
       expect(signal2.isDisposed, true);
-
-      notifier.value = 3;
-      expect(signal3.value, 3);
-      expect(signal3.isDisposed, false);
-
-      signal3.dispose();
-      await Future.delayed(Duration(milliseconds: 10));
       expect(signal3.isDisposed, true);
 
-      final signal4 = notifier.toListenableSignal();
+      notifier.value = 2;
+      expect(signal2.value, 1);
+      expect(signal3.value, 1);
+
+      final signal4 =
+          notifier.toListenableSignal() as ValueListenableSignal<int>;
       expect(signal4.isDisposed, false);
+      expect(signal4.value, 2);
+
+      notifier.value = 3;
       expect(signal4.value, 3);
 
-      notifier.value = 4;
-      expect(signal4.value, 4);
-
       expect(identical(signal1, signal4), false);
-      expect(identical(signal2, signal4), false);
-      expect(identical(signal3, signal4), false);
 
       signal4.dispose();
       notifier.dispose();
     });
 
     test(
-        'ValueListenable.toListenableSignal - dispose one signal should not dispose delegated when others still exist',
+        'ValueListenable.toListenableSignal - dispose shared signal ends binding',
         () async {
       final notifier = ValueNotifier(0);
 
-      final signal1 = notifier.toListenableSignal();
-      final signal2 = notifier.toListenableSignal();
-      final signal3 = notifier.toListenableSignal();
+      final signal1 =
+          notifier.toListenableSignal() as ValueListenableSignal<int>;
+      final signal2 =
+          notifier.toListenableSignal() as ValueListenableSignal<int>;
+      final signal3 =
+          notifier.toListenableSignal() as ValueListenableSignal<int>;
 
+      expect(identical(signal1, signal2), true);
+      expect(identical(signal1, signal3), true);
       expect(signal1.value, 0);
       expect(signal2.value, 0);
       expect(signal3.value, 0);
@@ -372,17 +370,11 @@ void main() {
       await Future.delayed(Duration(milliseconds: 10));
 
       notifier.value = 2;
-      expect(signal2.value, 2,
-          reason: 'signal2 should still work after signal1 is disposed');
-      expect(signal3.value, 2,
-          reason: 'signal3 should still work after signal1 is disposed');
+      expect(signal2.value, 1);
+      expect(signal3.value, 1);
+      expect(signal2.isDisposed, true);
+      expect(signal3.isDisposed, true);
 
-      notifier.value = 3;
-      expect(signal2.value, 3, reason: 'signal2 should still work');
-      expect(signal3.value, 3, reason: 'signal3 should still work');
-
-      signal2.dispose();
-      signal3.dispose();
       notifier.dispose();
     });
 
@@ -391,9 +383,12 @@ void main() {
         () async {
       final notifier = ValueNotifier(0);
 
-      final signal1 = notifier.toListenableSignal();
-      final signal2 = notifier.toListenableSignal();
+      final signal1 =
+          notifier.toListenableSignal() as ValueListenableSignal<int>;
+      final signal2 =
+          notifier.toListenableSignal() as ValueListenableSignal<int>;
 
+      expect(identical(signal1, signal2), true);
       expect(signal1.value, 0);
       expect(signal2.value, 0);
 
@@ -406,11 +401,9 @@ void main() {
       await Future.delayed(Duration(milliseconds: 10));
 
       notifier.value = 1;
-      expect(signal2.value, 1,
-          reason:
-              'signal2 should still work after signal1 is disposed multiple times');
+      expect(signal2.value, 0);
+      expect(signal2.isDisposed, true);
 
-      signal2.dispose();
       notifier.dispose();
     });
   });
@@ -804,10 +797,13 @@ void main() {
 
     test('multiple conversions dispose test', () {
       final n1 = ValueNotifier(0);
-      final rs1 = n1.toListenableSignal();
-      final rs2 = n1.toListenableSignal();
+      final rs1 = n1.toListenableSignal() as ValueListenableSignal<int>;
+      final rs2 = n1.toListenableSignal() as ValueListenableSignal<int>;
       final s1 = n1.toNotifierSignal();
       final s2 = n1.toNotifierSignal();
+
+      expect(identical(rs1, rs2), true);
+      expect(identical(s1, s2), true);
 
       // All should sync
       n1.value = 1;
@@ -820,32 +816,36 @@ void main() {
       // Dispose a read-only signal
       rs1.dispose();
 
-      // Others should still work
+      // The read-only bridge is shared, so both references are disposed.
       n1.value = 2;
       expect(n1.value, 2);
-      expect(rs2.value, 2);
+      expect(rs2.value, 1);
+      expect(rs2.isDisposed, true);
       expect(s1.value, 2);
       expect(s2.value, 2);
 
       // Dispose a writable signal
       s1.dispose();
 
-      // Others should still work
+      // The writable bridge is shared, so both references are disposed.
       n1.value = 3;
       expect(n1.value, 3);
-      expect(rs2.value, 3);
-      expect(s2.value, 3);
+      expect(s2.value, 2);
+      expect(s2.isDisposed, true);
 
-      // Test bidirectional sync of remaining signal
-      s2.value = 4;
+      // A later conversion creates a fresh shared bridge.
+      final s3 = n1.toNotifierSignal();
+      expect(identical(s1, s3), false);
+      expect(s3.value, 3);
+
+      // Test bidirectional sync of fresh signal
+      s3.value = 4;
       expect(n1.value, 4);
-      expect(rs2.value, 4);
-      expect(s2.value, 4);
+      expect(s3.value, 4);
 
       // Cleanup
       n1.dispose();
-      rs2.dispose();
-      s2.dispose();
+      s3.dispose();
     });
   });
 }

@@ -53,18 +53,12 @@ class JoltValueNotifier<T>
   /// Parameters:
   /// - [node]: The Jolt Writable value to wrap
   JoltValueNotifier(this.node) {
-    final watcher = Watcher(() => node.value, (value, __) {
+    final effect = Effect(() {
+      node.value;
       notifyListeners();
-    },
-        when: IMutableCollection.skipNode(node),
-        detach: true,
-        debug: const JoltDebugOption.type('JoltValueNotifier'));
+    }, detach: true, debug: const JoltDebugOption.type('JoltValueNotifier'));
 
-    final finalizerDisposer = JFinalizer.attachToJoltAttachments(node, dispose);
-    _disposer = () {
-      watcher.dispose();
-      finalizerDisposer();
-    };
+    _disposer = effect.dispose;
   }
 
   /// The wrapped Jolt Writable value.

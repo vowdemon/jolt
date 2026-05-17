@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:jolt/jolt.dart';
 import 'package:jolt_flutter/core.dart';

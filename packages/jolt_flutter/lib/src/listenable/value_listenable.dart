@@ -49,18 +49,12 @@ class JoltValueListenable<T>
   /// Parameters:
   /// - [node]: The Jolt Readable value to wrap
   JoltValueListenable(this.node) {
-    final watcher = Watcher(() => node.value, (value, __) {
+    final effect = Effect(() {
+      node.value;
       notifyListeners();
-    },
-        when: IMutableCollection.skipNode(node),
-        detach: true,
-        debug: const JoltDebugOption.type('JoltValueListenable'));
+    }, detach: true, debug: const JoltDebugOption.type('JoltValueListenable'));
 
-    final finalizerDisposer = JFinalizer.attachToJoltAttachments(node, dispose);
-    _disposer = () {
-      watcher.dispose();
-      finalizerDisposer();
-    };
+    _disposer = effect.dispose;
   }
 
   /// The wrapped Jolt Readable value.

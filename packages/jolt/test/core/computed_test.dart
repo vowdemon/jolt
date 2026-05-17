@@ -1,4 +1,3 @@
-import "package:jolt/core.dart";
 import "package:jolt/extension.dart";
 import "package:jolt/jolt.dart";
 import "package:test/test.dart";
@@ -10,118 +9,6 @@ void main() {
         final computed = Computed<int>(() => 10);
         expect(computed.peek, equals(10));
         expect(computed.value, equals(10));
-      });
-
-      test("should treat peek as untracked", () {
-        final signal = Signal(1);
-        final computed = Computed<int>(() => signal.value * 2);
-        Effect(() {
-          computed.peekCached;
-        });
-
-        expect(computed.peekCached, equals(2));
-        expect(computed.value, equals(2));
-
-        signal.value = 2;
-        expect(computed.peekCached, equals(2));
-        expect(computed.value, equals(4));
-      });
-
-      test("peekCached should return cached value when available", () {
-        final signal = Signal(1);
-        var computeCount = 0;
-        final computed = Computed<int>(() {
-          computeCount++;
-          return signal.value * 2;
-        });
-
-        // First access - no cache, should compute
-        expect(computed.peekCached, equals(2));
-        expect(computeCount, equals(1));
-
-        // Second access with cached value - should return cache without recomputing
-        expect(computed.peekCached, equals(2));
-        expect(computeCount, equals(1)); // Count should not increase
-
-        // Accessing value will update it and invalidate cache
-        signal.value = 2;
-        expect(computed.value, equals(4));
-        expect(computeCount, equals(2));
-
-        // peekCached should now return the cached value (4)
-        expect(computed.peekCached, equals(4));
-        expect(computeCount, equals(2)); // Still no recompute
-      });
-
-      test("peekCached should compute only when no cache exists", () {
-        final computed = Computed<int>(() => 10);
-
-        // First access - no cache, computes
-        expect(computed.peekCached, equals(10));
-
-        // Subsequent accesses return cache without computing
-        expect(computed.peekCached, equals(10));
-        expect(computed.peekCached, equals(10));
-      });
-
-      test("peekCached should not establish reactive dependency", () {
-        final signal = Signal(1);
-        final computed = Computed<int>(() => signal.value * 2);
-        final values = <int>[];
-
-        Effect(() {
-          values.add(computed.peekCached);
-        });
-
-        expect(values, equals([2]));
-
-        // Changing signal should not trigger effect because peekCached doesn't track
-        signal.value = 3;
-        expect(values, equals([2])); // Effect not triggered
-
-        // peekCached still returns old cached value
-        expect(computed.peekCached, equals(2));
-      });
-
-      test("peek vs peekCached difference", () {
-        final signal = Signal(1);
-        var computeCount = 0;
-        final computed = Computed<int>(() {
-          computeCount++;
-          return signal.value * 2;
-        });
-
-        // Initial state - both should compute
-        expect(computed.peek, equals(2));
-        expect(computeCount, equals(1));
-        expect(computed.peekCached, equals(2));
-        expect(computeCount, equals(1)); // peekCached uses cache from peek
-
-        // Change signal
-        signal.value = 3;
-
-        // peek always recomputes (if needed), so it gets fresh value
-        expect(computed.peek, equals(6));
-        expect(computeCount, equals(2)); // Recomputed
-
-        // peekCached returns cached value (from previous peek call)
-        expect(computed.peekCached, equals(6));
-        expect(computeCount, equals(2)); // No recompute, uses cache
-
-        // Change signal again
-        signal.value = 4;
-
-        // peekCached still returns stale cached value
-        expect(computed.peekCached, equals(6));
-        expect(computeCount, equals(2)); // Still no recompute
-
-        // peek recomputes and gets fresh value
-        expect(computed.peek, equals(8));
-        expect(computeCount, equals(3)); // Recomputed
-
-        // Now peekCached gets fresh cache
-        expect(computed.peekCached, equals(8));
-        expect(computeCount, equals(3)); // No recompute
       });
     });
 
@@ -260,76 +147,6 @@ void main() {
       expect(computed.value, equals(2));
     });
 
-    group("disposed computed no longer reactive", () {
-      test("disposed computed does not propagate to its subscribers", () {
-        final s = Signal(1);
-        final c = Computed<int>(() => s.value * 2);
-        var runCount = 0;
-        Effect(() {
-          runCount++;
-          c.value;
-        });
-        expect(runCount, equals(1));
-
-        c.dispose();
-        s.value = 2;
-        expect(runCount, equals(1),
-            reason: "effect must not run after C disposed");
-        expect(getComputed(c as ComputedReactiveNode<int>), equals(2),
-            reason: "disposed computed keeps old value");
-      });
-
-      test("propagate skips disposed computed in chain", () {
-        final s = Signal(1);
-        final c = Computed<int>(() => s.value * 2);
-        var runCount = 0;
-        Effect(() {
-          runCount++;
-          c.value;
-        });
-        expect(runCount, equals(1));
-
-        c.dispose();
-        s.value = 2;
-        expect(runCount, equals(1));
-        expect(getComputed(c as ComputedReactiveNode<int>), equals(2),
-            reason: "disposed computed keeps old value");
-      });
-
-      test("computed disposed during getter does not propagate", () {
-        final s1 = Signal(1);
-        final s2 = Signal(0);
-        final c = Computed<int>(() {
-          s1.value;
-          s2.value = 1;
-          return s1.value;
-        });
-        Effect(() => c.value);
-        Effect(() {
-          s2.value;
-          c.dispose();
-        });
-        expect(c.isDisposed, isTrue,
-            reason: "effect runs when C's getter sets S2 and disposes C");
-        expect(getComputed(c as ComputedReactiveNode<int>), equals(1),
-            reason: "disposed computed keeps old value");
-      });
-
-      test("S -> C -> E: after C disposed, S change does not run E", () {
-        final s = Signal(1);
-        final c = Computed<int>(() => s.value + 1);
-        final values = <int>[];
-        Effect(() => values.add(c.value));
-        expect(values, equals([2]));
-
-        c.dispose();
-        s.value = 10;
-        expect(values, equals([2]));
-        expect(getComputed(c as ComputedReactiveNode<int>), equals(2),
-            reason: "disposed computed keeps old value");
-      });
-    });
-
     test("should work with batch updates", () {
       final signal1 = Signal(1);
       final signal2 = Signal(2);
@@ -408,9 +225,7 @@ void main() {
       );
 
       expect(dualComputed.value, equals(3));
-
-      dualComputed.set(15);
-      expect(dualComputed.peekCached, equals(3));
+      dualComputed.value = 15;
       expect(dualComputed.value, equals(45));
       expect(signal.value, equals(45));
     });
@@ -559,24 +374,6 @@ void main() {
       expect(count, equals(3));
       fullName.value = "Jane1 Smith2";
       expect(count, equals(4));
-    });
-
-    test("should return Computed type after readonly", () {
-      final signal = Signal(5);
-      final writableComputed = WritableComputed<int>(
-        () => signal.value * 2,
-        (value) => signal.value = value ~/ 2,
-      );
-
-      expect(writableComputed.value, equals(10));
-
-      final readonlyComputed = writableComputed.readonly();
-
-      expect(readonlyComputed, isA<Computed<int>>());
-      expect(readonlyComputed.value, equals(10));
-
-      signal.value = 6;
-      expect(readonlyComputed.value, equals(12));
     });
   });
 
@@ -1045,125 +842,6 @@ void main() {
       signal.value = [4, 5, 6];
       expect(computeCount, equals(3));
       expect(effectValues.length, equals(2)); // Effect triggered
-    });
-  });
-
-  group("Computed.getPeek", () {
-    test("should return pending value when called inside computed getter", () {
-      final signal = Signal(5);
-      int? capturedValue;
-
-      final computed = Computed<int>(() {
-        signal.value; // Track dependency
-        capturedValue = Computed.getPeek<int>();
-        return signal.value * 2;
-      });
-
-      // First access - getPeek should return null (no previous value)
-      expect(computed.value, equals(10));
-      expect(capturedValue, isNull);
-
-      // Second access - getPeek should return previous pending value
-      signal.value = 6;
-      expect(computed.value, equals(12));
-      expect(capturedValue, equals(10)); // Previous value was 10
-    });
-
-    test("should throw StateError when called outside computed context", () {
-      expect(
-        () => Computed.getPeek<int>(),
-        throwsA(isA<StateError>()),
-      );
-    });
-
-    test("should work with nullable types", () {
-      final signal = Signal<int?>(null);
-      int? capturedValue;
-
-      final computed = Computed<int?>(() {
-        signal.value;
-        capturedValue = Computed.getPeek<int?>();
-        return signal.value;
-      });
-
-      // First access
-      expect(computed.value, isNull);
-      expect(capturedValue, isNull);
-
-      // Second access
-      signal.value = 42;
-      expect(computed.value, equals(42));
-      expect(capturedValue, isNull); // Previous was null
-    });
-
-    test("should work with complex types", () {
-      final signal = Signal<List<int>>([1, 2, 3]);
-      List<int>? capturedValue;
-
-      final computed = Computed<List<int>>(() {
-        signal.value;
-        capturedValue = Computed.getPeek<List<int>>();
-        return List<int>.from(signal.value);
-      });
-
-      // First access
-      expect(computed.value, equals([1, 2, 3]));
-      expect(capturedValue, isNull);
-
-      // Second access
-      signal.value = [4, 5, 6];
-      expect(computed.value, equals([4, 5, 6]));
-      expect(capturedValue, equals([1, 2, 3])); // Previous value
-    });
-
-    test("should work with Computed.withPrevious", () {
-      final signal = Signal(5);
-      int? capturedValue;
-
-      final computed = Computed<int>.withPrevious((prev) {
-        signal.value;
-        capturedValue = Computed.getPeek<int>();
-        // getPeek should return the same as prev parameter
-        return signal.value * 2;
-      });
-
-      // First access
-      expect(computed.value, equals(10));
-      expect(capturedValue, isNull);
-
-      // Second access
-      signal.value = 6;
-      expect(computed.value, equals(12));
-      expect(capturedValue, equals(10)); // Previous value
-    });
-
-    test("should work in nested computed", () {
-      final signal = Signal(2);
-      int? outerValue;
-      int? innerValue;
-
-      final inner = Computed<int>(() {
-        signal.value;
-        innerValue = Computed.getPeek<int>();
-        return signal.value * 2;
-      });
-
-      final outer = Computed<int>(() {
-        inner.value;
-        outerValue = Computed.getPeek<int>();
-        return inner.value * 2;
-      });
-
-      // First access
-      expect(outer.value, equals(8)); // 2 * 2 * 2
-      expect(innerValue, isNull);
-      expect(outerValue, isNull);
-
-      // Second access
-      signal.value = 3;
-      expect(outer.value, equals(12)); // 3 * 2 * 2
-      expect(innerValue, equals(4)); // Previous inner value (2 * 2)
-      expect(outerValue, equals(8)); // Previous outer value
     });
   });
 

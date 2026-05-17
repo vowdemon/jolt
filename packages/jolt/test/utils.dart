@@ -38,10 +38,6 @@ class DebugCounter {
         setCount++;
       case DebugNodeOperationType.get:
         getCount++;
-      case DebugNodeOperationType.linked:
-        linked++;
-      case DebugNodeOperationType.unlinked:
-        unlinked++;
       case DebugNodeOperationType.effect:
         effectCount++;
     }
@@ -52,7 +48,7 @@ class DebugCounter {
   String toString() =>
       "DebugCounter(createCount: $createCount, disposeCount: $disposeCount, notifyCount: $notifyCount, setCount: $setCount, getCount: $getCount, linkedCount: $linked, unlinkedCount: $unlinked, effectCount: $effectCount, count: $count)";
 
-  void onDebug(DebugNodeOperationType type, _, __) {
+  void onDebug(DebugNodeOperationType type, _) {
     increment(type);
   }
 }

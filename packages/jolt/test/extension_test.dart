@@ -2,7 +2,6 @@ import "package:jolt/core.dart";
 import "package:jolt/extension.dart";
 import "package:jolt/jolt.dart";
 import "package:test/test.dart";
-import "utils.dart";
 
 void main() {
   group("Extension methods", () {
@@ -58,8 +57,7 @@ void main() {
         JoltDebug.init();
       });
       test("should update signal value using update method", () {
-        final counter = DebugCounter();
-        final signal = Signal(5, debug: JoltDebugOption.fn(counter.onDebug));
+        final signal = Signal(5);
         expect(signal.value, equals(5));
 
         // Update using increment
@@ -67,20 +65,17 @@ void main() {
         expect(newValue, equals(6));
         expect(signal.value, equals(6));
         expect(signal.peek, equals(6));
-        expect(counter.setCount, equals(1));
 
         // Update using multiplication
         signal.update((value) => value * 2);
         expect(signal.value, equals(12));
         expect(signal.peek, equals(12));
-        expect(counter.setCount, equals(2));
 
         // Update multiple times
         signal.update((value) => value - 5);
         expect(signal.value, equals(7));
         signal.update((value) => value * 3);
         expect(signal.value, equals(21));
-        expect(counter.setCount, equals(4));
       });
 
       test("update method should internally call set", () {

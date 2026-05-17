@@ -94,7 +94,7 @@ void main() {
       });
 
       test("should work with effect nodes", () {
-        final effectNode = _TestEffectNode();
+        final effectNode = EffectNode(() {});
         var count = 0;
 
         JFinalizer.attachToJoltAttachments(effectNode, () {
@@ -111,23 +111,4 @@ void main() {
       });
     });
   });
-}
-
-class _TestEffectNode with DisposableNodeMixin implements EffectNode {
-  _TestEffectNode() : super();
-
-  @override
-  Link? deps;
-
-  @override
-  Link? depsTail;
-
-  @override
-  int flags = 0;
-
-  @override
-  Link? subs;
-
-  @override
-  Link? subsTail;
 }

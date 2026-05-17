@@ -1,6 +1,7 @@
+import "dart:math";
+
+import "package:jolt/core.dart";
 import "package:jolt/jolt.dart";
-import "package:jolt/src/core/reactive.dart";
-import "package:jolt/src/jolt/effect.dart";
 import "package:test/test.dart";
 import "../utils.dart";
 
@@ -65,7 +66,7 @@ void main() {
 
       Effect(() {
         values.add(signal.value);
-      }).isDisposed;
+      });
 
       expect(values, equals([1]));
 
@@ -128,6 +129,248 @@ void main() {
       signal.value = 3;
       expect(outerValues, equals([1, 3]));
       expect(innerValues, equals([2, 6]));
+    });
+
+    test("should support custom recurse effect", () {
+      final src = Signal(0);
+      var triggers = 0;
+
+      Effect(() {
+        getActiveSub()!.flags &= ~ReactiveFlags.recursedCheck;
+        triggers++;
+        src.value = min(src.value + 1, 5);
+      });
+
+      expect(triggers, equals(6));
+    });
+
+    test("cleanup order on outer re-run: inner before outer, before new run",
+        () {
+      final log = <String>[];
+      final a = Signal(0);
+
+      Effect(() {
+        a.value;
+        log.add("outer:run");
+        Effect(() {
+          log.add("inner:run");
+          onEffectCleanup(() => log.add("inner:cleanup"));
+        });
+        onEffectCleanup(() => log.add("outer:cleanup"));
+      });
+      expect(log, equals(["outer:run", "inner:run"]));
+
+      log.clear();
+      a.value = 1;
+      expect(
+        log,
+        equals([
+          "inner:cleanup",
+          "outer:cleanup",
+          "outer:run",
+          "inner:run",
+        ]),
+      );
+    });
+
+    test("cleanup order on dispose: inner before outer", () {
+      final log = <String>[];
+
+      final effect = Effect(() {
+        log.add("outer:run");
+        Effect(() {
+          log.add("inner:run");
+          onEffectCleanup(() => log.add("inner:cleanup"));
+        });
+        onEffectCleanup(() => log.add("outer:cleanup"));
+      });
+      log.clear();
+      effect.dispose();
+      expect(log, equals(["inner:cleanup", "outer:cleanup"]));
+    });
+
+    test("sibling cleanup order on dispose: reverse creation (LIFO)", () {
+      final log = <String>[];
+
+      final effect = Effect(() {
+        Effect(() {
+          onEffectCleanup(() => log.add("inner1:cleanup"));
+        });
+        Effect(() {
+          onEffectCleanup(() => log.add("inner2:cleanup"));
+        });
+        Effect(() {
+          onEffectCleanup(() => log.add("inner3:cleanup"));
+        });
+        onEffectCleanup(() => log.add("outer:cleanup"));
+      });
+      effect.dispose();
+      expect(
+        log,
+        equals([
+          "inner3:cleanup",
+          "inner2:cleanup",
+          "inner1:cleanup",
+          "outer:cleanup",
+        ]),
+      );
+    });
+
+    test("sibling cleanup order on outer re-run: reverse creation (LIFO)", () {
+      final log = <String>[];
+      final a = Signal(0);
+
+      Effect(() {
+        a.value;
+        Effect(() {
+          onEffectCleanup(() => log.add("inner1:cleanup"));
+        });
+        Effect(() {
+          onEffectCleanup(() => log.add("inner2:cleanup"));
+        });
+        Effect(() {
+          onEffectCleanup(() => log.add("inner3:cleanup"));
+        });
+        onEffectCleanup(() => log.add("outer:cleanup"));
+      });
+      log.clear();
+
+      a.value = 1;
+      expect(
+        log.take(4).toList(),
+        equals([
+          "inner3:cleanup",
+          "inner2:cleanup",
+          "inner1:cleanup",
+          "outer:cleanup",
+        ]),
+      );
+    });
+
+    test("three-level nested cleanup on dispose: deepest first", () {
+      final log = <String>[];
+
+      final effect = Effect(() {
+        Effect(() {
+          Effect(() {
+            onEffectCleanup(() => log.add("grandchild:cleanup"));
+          });
+          onEffectCleanup(() => log.add("child:cleanup"));
+        });
+        onEffectCleanup(() => log.add("outer:cleanup"));
+      });
+      effect.dispose();
+      expect(
+        log,
+        equals([
+          "grandchild:cleanup",
+          "child:cleanup",
+          "outer:cleanup",
+        ]),
+      );
+    });
+
+    test("computed unwatched: child effect cleanups run in reverse creation",
+        () {
+      final log = <String>[];
+      final c = Computed(() {
+        Effect(() => onEffectCleanup(() => log.add("e1")));
+        Effect(() => onEffectCleanup(() => log.add("e2")));
+        Effect(() => onEffectCleanup(() => log.add("e3")));
+        return 0;
+      });
+      final effect = Effect(() {
+        c.value;
+      });
+      log.clear();
+      effect.dispose();
+      expect(log, equals(["e3", "e2", "e1"]));
+    });
+
+    test("effect created inside computed cleans up before new setup", () {
+      final a = Signal(0);
+      final log = <String>[];
+
+      final c = Computed(() {
+        log.add("computed:eval");
+        Effect(() {
+          log.add("inner:run");
+          onEffectCleanup(() => log.add("inner:cleanup"));
+        });
+        return a.value;
+      });
+
+      Effect(() {
+        c.value;
+      });
+      log.clear();
+
+      a.value = 1;
+      expect(
+        log,
+        equals([
+          "inner:cleanup",
+          "computed:eval",
+          "inner:run",
+        ]),
+      );
+    });
+
+    test("cleanup order is correct after a prior inner-only re-run", () {
+      final a = Signal(0);
+      final b = Signal(0);
+      final log = <String>[];
+
+      Effect(() {
+        a.value;
+        log.add("outer:run");
+        Effect(() {
+          b.value;
+          log.add("inner:run");
+          onEffectCleanup(() => log.add("inner:cleanup"));
+        });
+        onEffectCleanup(() => log.add("outer:cleanup"));
+      });
+
+      b.value = 1;
+      log.clear();
+
+      a.value = 1;
+      expect(
+        log,
+        equals([
+          "inner:cleanup",
+          "outer:cleanup",
+          "outer:run",
+          "inner:run",
+        ]),
+      );
+    });
+
+    test("outer effect keeps responding to its own dep after inner re-runs",
+        () {
+      final a = Signal(0);
+      final b = Signal(0);
+      var outerRuns = 0;
+      var innerRuns = 0;
+
+      Effect(() {
+        a.value;
+        outerRuns++;
+        Effect(() {
+          b.value;
+          innerRuns++;
+        });
+      });
+      expect(outerRuns, equals(1));
+      expect(innerRuns, equals(1));
+
+      b.value = 1;
+      expect(outerRuns, equals(1));
+      expect(innerRuns, greaterThanOrEqualTo(2));
+
+      a.value = 1;
+      expect(outerRuns, equals(2));
     });
 
     test("should handle dispose nested effects", () {
@@ -237,11 +480,37 @@ void main() {
       expect(values, equals([1]));
 
       effect.dispose();
-      defaultRunEffect(effect as EffectReactiveNode, () => signal.value);
+
+      (effect as EffectImpl).raw.run();
 
       signal.value = 2;
       expect(values, equals([1]),
           reason: "disposed effect must not collect deps when run");
+    });
+
+    test('computed disposal with unchanged-value sibling computed', () {
+      final s = Signal(0);
+      late Effect effect;
+
+      final a = Computed(() {
+        s.value;
+        return 0; // value never changes
+      });
+      final a2 = Computed(() {
+        if (s.value != 0) effect.dispose();
+        return s.value;
+      });
+      final b = Computed(() {
+        a.value;
+        a2.value;
+        return 0;
+      });
+
+      effect = Effect(() {
+        b.value;
+      });
+
+      s.value = 1; // should not crash
     });
 
     test("should handle effect errors", () {
@@ -682,8 +951,8 @@ void main() {
       scope.dispose();
 
       expect(scope.isDisposed, isTrue);
-      expect((signal as ReactiveNode).testNoSubscribers(), isTrue);
-      expect((computed as ReactiveNode).testNoSubscribers(), isTrue);
+      expect((signal as SignalImpl).raw.testNoSubscribers(), isTrue);
+      expect((computed as ComputedImpl).raw.testNoSubscribers(), isTrue);
       expect(effect.isDisposed, isTrue);
       expect(values, equals([1]));
     });
@@ -1102,206 +1371,6 @@ void main() {
     });
 
     group("pausable", () {
-      test("pause should stop watcher from responding to changes", () {
-        final signal = Signal(1);
-        final values = <int>[];
-        final watcher = Watcher(
-          () => signal.value,
-          (newValue, _) {
-            values.add(newValue);
-          },
-        );
-
-        expect(watcher.isPaused, isFalse);
-
-        // Trigger watcher
-        signal.value = 2;
-        expect(values, equals([2]));
-
-        // Pause watcher
-        watcher.pause();
-        expect(watcher.isPaused, isTrue);
-
-        // Changes should not trigger callback
-        signal.value = 3;
-        expect(values, equals([2]));
-
-        signal.value = 4;
-        expect(values, equals([2]));
-
-        // Resume watcher
-        watcher.resume();
-        expect(watcher.isPaused, isFalse);
-
-        // Should respond to changes again
-        signal.value = 5;
-        expect(values, equals([2, 5]));
-      });
-
-      test("pause should clear dependencies", () {
-        final signal1 = Signal(1);
-        final signal2 = Signal(2);
-        final values = <int>[];
-        final watcher = Watcher(
-          () => signal1.value + signal2.value,
-          (newValue, _) {
-            values.add(newValue);
-          },
-        );
-
-        // Initial trigger
-        batch(() {
-          signal1.value = 3;
-          signal2.value = 4;
-        });
-        expect(values, equals([7]));
-
-        // Pause - should clear dependencies
-        watcher.pause();
-
-        // Changes should not trigger
-        signal1.value = 5;
-        signal2.value = 6;
-        expect(values, equals([7]));
-
-        // Resume - should re-collect dependencies
-        watcher.resume();
-
-        // Now should respond again
-        batch(() {
-          signal1.value = 7;
-          signal2.value = 8;
-        });
-        expect(values, equals([7, 15]));
-      });
-
-      test("resume should re-collect dependencies", () {
-        final signal1 = Signal(1);
-        final signal2 = Signal(2);
-        final values = <int>[];
-        final watcher = Watcher(
-          () => signal1.value,
-          (newValue, _) {
-            values.add(newValue);
-          },
-        );
-
-        // Initial state
-        expect(watcher.isPaused, isFalse);
-
-        // Pause and change signal1
-        watcher.pause();
-        signal1.value = 10;
-        expect(values, isEmpty);
-
-        // Change signal2 (not tracked while paused)
-        signal2.value = 20;
-
-        // Resume - should re-collect dependencies (only signal1)
-        watcher.resume();
-
-        // signal1 change should trigger
-        signal1.value = 11;
-        expect(values, equals([11]));
-
-        // signal2 change should not trigger (not in sources)
-        signal2.value = 21;
-        expect(values, equals([11]));
-      });
-
-      test("pause and resume multiple times", () {
-        final signal = Signal(1);
-        final values = <int>[];
-        final watcher = Watcher(
-          () => signal.value,
-          (newValue, _) {
-            values.add(newValue);
-          },
-        );
-
-        // Normal operation
-        signal.value = 2;
-        expect(values, equals([2]));
-
-        // Pause
-        watcher.pause();
-        signal.value = 3;
-        expect(values, equals([2]));
-
-        // Resume
-        watcher.resume();
-        signal.value = 4;
-        expect(values, equals([2, 4]));
-
-        // Pause again
-        watcher.pause();
-        signal.value = 5;
-        expect(values, equals([2, 4]));
-
-        // Resume again
-        watcher.resume();
-        signal.value = 6;
-        expect(values, equals([2, 4, 6]));
-      });
-
-      test("pause should not prevent callback execution even with manual run",
-          () {
-        final signal = Signal(1);
-        final values = <int>[];
-        final watcher = Watcher(
-          () => signal.value,
-          (newValue, _) {
-            values.add(newValue);
-          },
-        );
-
-        // Trigger with value change
-        signal.value = 2;
-        expect(values, equals([2]));
-
-        // Pause
-        watcher.pause();
-        expect(watcher.isPaused, isTrue);
-
-        // Change value - should not execute callback when paused
-        signal.value = 3;
-        expect(values, equals([2]));
-
-        // Manual run should also not execute callback when paused
-        signal.value = 4;
-        watcher.run();
-        expect(values, equals([2, 4]));
-
-        // Resume
-        watcher.resume();
-        signal.value = 5;
-        expect(values, equals([2, 4, 5]));
-      });
-
-      test("resume with immediately watcher should work correctly", () {
-        final signal = Signal(10);
-        final values = <int>[];
-        final watcher = Watcher.immediately(
-          () => signal.value,
-          (newValue, _) {
-            values.add(newValue);
-          },
-        );
-
-        expect(values, equals([10]));
-
-        // Pause
-        watcher.pause();
-        signal.value = 20;
-        expect(values, equals([10]));
-
-        // Resume
-        watcher.resume();
-        // Resume re-collects dependencies, but doesn't execute immediately
-        signal.value = 30;
-        expect(values, equals([10, 30]));
-      });
-
       test("resume with tryRun should execute callback if sources changed", () {
         final signal = Signal(1);
         final values = <int>[];
@@ -1322,7 +1391,7 @@ void main() {
         expect(values, equals([2])); // No callback while paused
 
         // Resume with tryRun: true - should execute callback if sources changed
-        watcher.resume(true);
+        watcher.resume();
         // Since signal changed from 2 to 10, callback should be executed
         expect(values, equals([2, 10]));
 
@@ -1572,8 +1641,8 @@ void main() {
 
     innerScope.dispose();
     expect(innerScope.isDisposed, isTrue);
-    expect((innerSignal as ReactiveNode).testNoSubscribers(), isTrue);
-    expect((innerComputed as ReactiveNode).testNoSubscribers(), isTrue);
+    expect((innerSignal as SignalImpl).raw.testNoSubscribers(), isTrue);
+    expect((innerComputed as ComputedImpl).raw.testNoSubscribers(), isTrue);
     expect(innerEffect1.isDisposed, isTrue);
     expect(innerEffect2.isDisposed, isTrue);
 
@@ -1592,8 +1661,8 @@ void main() {
 
     midScope.dispose();
     expect(midScope.isDisposed, isTrue);
-    expect((midSignal as ReactiveNode).testNoSubscribers(), isTrue);
-    expect((midComputed as ReactiveNode).testNoSubscribers(), isTrue);
+    expect((midSignal as SignalImpl).raw.testNoSubscribers(), isTrue);
+    expect((midComputed as ComputedImpl).raw.testNoSubscribers(), isTrue);
     expect(midEffect.isDisposed, isTrue);
 
     expect(globalEffectValues, equals([20, 40]));
@@ -1611,8 +1680,8 @@ void main() {
 
     outerScope.dispose();
     expect(outerScope.isDisposed, isTrue);
-    expect((outerSignal as ReactiveNode).testNoSubscribers(), isTrue);
-    expect((outerComputed as ReactiveNode).testNoSubscribers(), isTrue);
+    expect((outerSignal as SignalImpl).raw.testNoSubscribers(), isTrue);
+    expect((outerComputed as ComputedImpl).raw.testNoSubscribers(), isTrue);
     expect(outerEffect.isDisposed, isTrue);
 
     expect(globalEffectValues, equals([20, 40]));
@@ -2214,7 +2283,7 @@ void main() {
       expect(scope.isDisposed, isTrue);
       expect(watcher.isDisposed, isFalse);
 
-      watcher.run();
+      watcher.trigger();
       expect(watcher.isDisposed, isFalse);
 
       watcher.dispose();

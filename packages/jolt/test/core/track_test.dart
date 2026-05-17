@@ -1,4 +1,5 @@
 import "package:jolt/jolt.dart";
+import "package:jolt/src/jolt/impl/effect.dart";
 import "package:test/test.dart";
 import "../utils.dart";
 
@@ -296,9 +297,9 @@ void main() {
       final customEffect = Effect(() {}, lazy: true);
       final values = <int>[];
 
-      trackWithEffect(() {
+      (customEffect as EffectImpl).track(() {
         values.add(signal.value);
-      }, customEffect);
+      });
 
       expect(values, equals([1]));
 
@@ -309,7 +310,7 @@ void main() {
 
     test("should return function result", () {
       final customEffect = Effect(() {}, lazy: true);
-      final result = trackWithEffect(() => 42, customEffect);
+      final result = (customEffect as EffectImpl).track(() => 42);
       expect(result, equals(42));
     });
 
@@ -319,9 +320,9 @@ void main() {
       final customEffect = Effect(() {}, lazy: true);
       final values = <int>[];
 
-      trackWithEffect(() {
+      (customEffect as EffectImpl).track(() {
         values.add(signal1.value + signal2.value);
-      }, customEffect);
+      });
 
       expect(values, equals([3]));
     });
@@ -331,16 +332,16 @@ void main() {
       final customEffect = Effect(() {}, lazy: true);
       final values = <int>[];
 
-      trackWithEffect(() {
+      (customEffect as EffectImpl).track(() {
         values.add(signal.value);
-      }, customEffect);
+      });
 
       expect(values, equals([1]));
 
       // With purge=true, dependencies should be cleaned up
-      trackWithEffect(() {
+      (customEffect).track(() {
         values.add(signal.value);
-      }, customEffect);
+      });
 
       expect(values, equals([1, 1]));
     });
@@ -350,16 +351,16 @@ void main() {
       final customEffect = Effect(() {}, lazy: true);
       final values = <int>[];
 
-      trackWithEffect(() {
+      (customEffect as EffectImpl).track(() {
         values.add(signal.value);
-      }, customEffect, false);
+      }, false);
 
       expect(values, equals([1]));
 
       // With purge=false, dependencies should not be cleaned up
-      trackWithEffect(() {
+      (customEffect).track(() {
         values.add(signal.value);
-      }, customEffect, false);
+      }, false);
 
       expect(values, equals([1, 1]));
     });
@@ -370,9 +371,9 @@ void main() {
       final customEffect = Effect(() {}, lazy: true);
       final values = <int>[];
 
-      trackWithEffect(() {
+      (customEffect as EffectImpl).track(() {
         values.add(computed.value);
-      }, customEffect);
+      });
 
       expect(values, equals([4]));
     });
@@ -382,9 +383,9 @@ void main() {
       bool errorCaught = false;
 
       try {
-        trackWithEffect(() {
+        (customEffect as EffectImpl).track(() {
           throw Exception("Test error");
-        }, customEffect);
+        });
       } catch (e) {
         errorCaught = true;
         expect(e.toString(), contains("Test error"));
@@ -400,12 +401,12 @@ void main() {
       final customEffect2 = Effect(() {}, lazy: true);
       final values = <int>[];
 
-      trackWithEffect(() {
+      (customEffect1 as EffectImpl).track(() {
         values.add(signal1.value);
-        trackWithEffect(() {
+        (customEffect2 as EffectImpl).track(() {
           values.add(signal2.value);
-        }, customEffect2);
-      }, customEffect1);
+        });
+      });
 
       expect(values, equals([1, 2]));
     });
@@ -416,13 +417,13 @@ void main() {
       final innerEffect = Effect(() {}, lazy: true);
       final values = <int>[];
 
-      trackWithEffect(() {
+      (outerEffect as EffectImpl).track(() {
         values.add(signal.value);
-        trackWithEffect(() {
+        (innerEffect as EffectImpl).track(() {
           values.add(signal.value);
-        }, innerEffect);
+        });
         values.add(signal.value);
-      }, outerEffect);
+      });
 
       expect(values, equals([1, 1, 1]));
     });
@@ -444,7 +445,7 @@ void main() {
       expect(values, equals([1, 2]));
 
       // Access signal in notifyAll to trigger subscribers
-      notifyAll(() {
+      triggerTracked(() {
         final _ = signal.value;
       });
 
@@ -453,7 +454,7 @@ void main() {
     });
 
     test("should return function result", () {
-      final result = notifyAll(() => 42);
+      final result = triggerTracked(() => 42);
       expect(result, equals(42));
     });
 
@@ -481,7 +482,7 @@ void main() {
       expect(values2, equals([2, 20]));
 
       // notifyAll should trigger subscribers
-      notifyAll(() {
+      triggerTracked(() {
         signal1.value;
         signal2.value;
       });
@@ -507,7 +508,7 @@ void main() {
       expect(values, equals([4, 6]));
 
       // notifyAll should trigger subscribers
-      notifyAll(() {
+      triggerTracked(() {
         final _ = computed.value;
       });
 
@@ -532,7 +533,7 @@ void main() {
       expect(values, equals([3, 12]));
 
       // notifyAll should trigger subscribers even without value change
-      notifyAll(() {
+      triggerTracked(() {
         final _ = signal1.value;
       });
 
@@ -544,7 +545,7 @@ void main() {
       bool errorCaught = false;
 
       try {
-        notifyAll(() {
+        triggerTracked(() {
           throw Exception("Test error");
         });
       } catch (e) {
@@ -569,9 +570,9 @@ void main() {
         values2.add(signal2.value);
       });
 
-      notifyAll(() {
+      triggerTracked(() {
         signal1.value;
-        notifyAll(() {
+        triggerTracked(() {
           signal2.value;
         });
       });
@@ -594,7 +595,7 @@ void main() {
       batch(() {
         signal1.value = 10;
         signal2.value = 20;
-        notifyAll(() {
+        triggerTracked(() {
           signal1.value;
           signal2.value;
         });
@@ -626,7 +627,7 @@ void main() {
       expect(values1, equals([1, 3]));
       expect(values2, equals([2, 6]));
 
-      notifyAll(() {
+      triggerTracked(() {
         final _ = signal.value;
       });
 

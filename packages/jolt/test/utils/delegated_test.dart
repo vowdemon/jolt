@@ -1,7 +1,5 @@
 import "package:jolt/core.dart";
-import "package:jolt/extension.dart";
 import "package:jolt/jolt.dart";
-import "package:jolt/src/utils/delegated.dart";
 import "package:test/test.dart";
 
 void main() {
@@ -107,7 +105,7 @@ void main() {
   group("DelegatedReadonlySignal", () {
     test("should delegate value access", () {
       final source = Signal(42);
-      final helper = DelegatedRefCountHelper<ReadonlySignal<int>>(
+      final helper = DelegatedRefCountHelper<Readonly<int>>(
         source.readonly(),
       );
       final delegated = DelegatedReadonlySignal(helper);
@@ -117,27 +115,9 @@ void main() {
       expect(delegated.toString(), equals("42"));
     });
 
-    test("should delegate notify", () {
-      final source = Signal(42);
-      final values = <int>[];
-      final helper = DelegatedRefCountHelper<ReadonlySignal<int>>(
-        source.readonly(),
-      );
-      final delegated = DelegatedReadonlySignal(helper);
-
-      Effect(() {
-        values.add(delegated.value);
-      });
-
-      expect(values, equals([42]));
-
-      delegated.notify();
-      expect(values, equals([42, 42]));
-    });
-
     test("should increment ref count on creation", () {
       final source = Signal(42);
-      final helper = DelegatedRefCountHelper<ReadonlySignal<int>>(
+      final helper = DelegatedRefCountHelper<Readonly<int>>(
         source.readonly(),
       );
 
@@ -149,7 +129,7 @@ void main() {
 
     test("dispose should decrement ref count", () {
       final source = Signal(42);
-      final helper = DelegatedRefCountHelper<ReadonlySignal<int>>(
+      final helper = DelegatedRefCountHelper<Readonly<int>>(
         source.readonly(),
       );
       final delegated = DelegatedReadonlySignal(helper);
@@ -162,7 +142,7 @@ void main() {
 
     test("dispose should be idempotent", () {
       final source = Signal(42);
-      final helper = DelegatedRefCountHelper<ReadonlySignal<int>>(
+      final helper = DelegatedRefCountHelper<Readonly<int>>(
         source.readonly(),
       );
       final delegated = DelegatedReadonlySignal(helper);
@@ -234,7 +214,6 @@ void main() {
       final delegated = DelegatedSignal(helper);
 
       delegated.dispose();
-
 
       delegated.value = 100;
       expect(delegated.value, 42);

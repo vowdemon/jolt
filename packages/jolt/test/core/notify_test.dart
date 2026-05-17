@@ -2,46 +2,6 @@ import "package:jolt/core.dart";
 import "package:jolt/jolt.dart";
 import "package:test/test.dart";
 
-// Custom effect that implements EffectScheduler for testing
-class _TestScheduledEffect extends EffectReactiveNode
-    with DisposableNodeMixin
-    implements EffectScheduler, EffectNode {
-  _TestScheduledEffect({
-    required this.scheduleReturnValue,
-    required this.onSchedule,
-    required this.onRun,
-    required this.effectFn,
-  }) : super(flags: ReactiveFlags.watching | ReactiveFlags.recursedCheck);
-
-  final bool scheduleReturnValue;
-  final void Function()? onSchedule;
-  final void Function()? onRun;
-  final void Function() effectFn;
-
-  int scheduleCallCount = 0;
-  int runCallCount = 0;
-
-  @override
-  bool schedule() {
-    scheduleCallCount++;
-    onSchedule?.call();
-    return scheduleReturnValue;
-  }
-
-  @override
-  void runEffect() {
-    runCallCount++;
-    onRun?.call();
-    // effectFn is called within defaultRunEffect to establish dependency tracking
-    defaultRunEffect(this, effectFn);
-  }
-
-  @override
-  void onDispose() {
-    disposeNode(this);
-  }
-}
-
 void main() {
   group("Notify", () {
     test("signal notify", () {
@@ -221,127 +181,6 @@ void main() {
       expect(level3, equals(3));
     });
 
-    group("EffectScheduler", () {
-      test("should use custom scheduling when schedule() returns true", () {
-        final signal = Signal(0);
-        int runCount = 0;
-        int scheduleCount = 0;
-
-        final effect = _TestScheduledEffect(
-          scheduleReturnValue: true, // Custom scheduling handled
-          onSchedule: () {
-            scheduleCount++;
-          },
-          onRun: () {
-            runCount++;
-          },
-          effectFn: () {
-            // Access signal to establish dependency automatically
-            signal.value;
-          },
-        );
-
-        // Initial run to establish dependency - effect accesses signal during run
-        effect.flags |= ReactiveFlags.dirty;
-        effect.runEffect();
-        expect(runCount, equals(1));
-        expect(scheduleCount, equals(0));
-
-        // Change signal value - should trigger notifyEffect (setting value automatically notifies)
-        signal.value = 1;
-
-        // schedule() should be called and return true, so effect should NOT be queued
-        expect(scheduleCount, equals(1));
-        // Effect should not run automatically (custom scheduling handled)
-        expect(runCount, equals(1));
-
-        // Manually trigger the effect
-        effect.flags |= ReactiveFlags.dirty;
-        effect.runEffect();
-        expect(runCount, equals(2));
-
-        signal.dispose();
-        effect.dispose();
-      });
-
-      test("should use default scheduling when schedule() returns false", () {
-        final signal = Signal(0);
-        int runCount = 0;
-        int scheduleCount = 0;
-
-        final effect = _TestScheduledEffect(
-          scheduleReturnValue: false, // Use default scheduling
-          onSchedule: () {
-            scheduleCount++;
-          },
-          onRun: () {
-            runCount++;
-          },
-          effectFn: () {
-            // Access signal to establish dependency automatically
-            signal.value;
-          },
-        );
-
-        // Initial run to establish dependency - effect accesses signal during run
-        effect.flags |= ReactiveFlags.dirty;
-        effect.runEffect();
-        expect(runCount, equals(1));
-        expect(scheduleCount, equals(0));
-
-        // Change signal value - should trigger notifyEffect (setting value automatically notifies)
-        signal.value = 1;
-
-        // schedule() should be called and return false, so effect should be queued
-        expect(scheduleCount, equals(1));
-        // Effect should be queued and will run when flushed
-        flushEffects();
-        expect(runCount, equals(2));
-
-        signal.dispose();
-        effect.dispose();
-      });
-
-      test("should handle multiple scheduler calls", () {
-        final signal1 = Signal(0);
-        final signal2 = Signal(0);
-        int scheduleCount = 0;
-
-        final effect = _TestScheduledEffect(
-          scheduleReturnValue: true,
-          onSchedule: () {
-            scheduleCount++;
-          },
-          onRun: () {},
-          effectFn: () {
-            signal1.value;
-            signal2.value;
-          },
-        );
-
-        // Initial run to establish dependencies - effect accesses signals during run
-        effect.flags |= ReactiveFlags.dirty;
-        effect.runEffect();
-
-        // Change first signal - should trigger notifyEffect
-        signal1.value = 1;
-        expect(scheduleCount, equals(1));
-
-        // Clear pending flag that may have been set during first notification
-        // This ensures the second notification can trigger properly
-        effect.flags &= ~ReactiveFlags.pending;
-        effect.flags |= ReactiveFlags.watching;
-
-        // Change second signal - should trigger notifyEffect again
-        signal2.value = 2;
-        expect(scheduleCount, equals(2));
-
-        signal1.dispose();
-        signal2.dispose();
-        effect.dispose();
-      });
-    });
-
     group("_DummyEffectNode", () {
       test("should track dependencies in trigger function", () {
         final signal = Signal(0);
@@ -355,7 +194,7 @@ void main() {
         expect(effectCount, equals(1));
 
         // Use trigger to access signal
-        trigger(() {
+        triggerTracked(() {
           signal.value;
         });
 
@@ -381,7 +220,7 @@ void main() {
         expect(effectCount, equals(1));
 
         // Use trigger to access both signals
-        trigger(() {
+        triggerTracked(() {
           signal1.value;
           signal2.value;
         });
@@ -404,7 +243,7 @@ void main() {
         });
 
         // Use trigger - _DummyEffectNode should be created and disposed
-        trigger(() {
+        triggerTracked(() {
           signal.value;
         });
 
@@ -431,7 +270,7 @@ void main() {
         expect(effectCount, equals(1));
 
         // Use trigger to access computed
-        trigger(() {
+        triggerTracked(() {
           computed.value;
         });
 

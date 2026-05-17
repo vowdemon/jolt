@@ -86,7 +86,7 @@ void main() {
       expect(counter.createCount, equals(1));
       expect(counter.count, equals(1));
 
-      w.run();
+      w.trigger();
       expect(counter.effectCount, equals(1));
       expect(counter.count, equals(2));
 
@@ -154,7 +154,7 @@ void main() {
       expect(eCounter.effectCount, equals(2));
       expect(wCounter.effectCount, equals(1));
 
-      w.run();
+      w.trigger();
       expect(wCounter.effectCount, equals(2));
       e.run();
       expect(eCounter.effectCount, equals(3));

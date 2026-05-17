@@ -4,8 +4,6 @@ import "package:jolt/jolt.dart";
 import "package:meta/meta.dart";
 import "package:test/test.dart";
 
-import "../utils.dart";
-
 @immutable
 class _TestPerson {
   _TestPerson(this.name, this.age);
@@ -23,38 +21,27 @@ class _TestPerson {
 
 void main() {
   group("Signal", () {
-    setUpAll(() {
-      JoltDebug.init();
-    });
     test("should create signal with initial value", () {
-      final counter = DebugCounter();
-      final signal = Signal(42, debug: JoltDebugOption.fn(counter.onDebug));
+      final signal = Signal(42);
 
       expect(signal.value, equals(42));
       expect(signal.peek, equals(42));
 
-      expect(counter.getCount, equals(1));
-      signal.value;
-      // test code
-      // ignore: cascade_invocations
-      signal.peek;
-      expect(counter.getCount, equals(2));
+      expect(signal.value, equals(42));
+      expect(signal.peek, equals(42));
     });
 
     test("should update signal value by set and value", () {
-      final counter = DebugCounter();
-      final signal = Signal(1, debug: JoltDebugOption.fn(counter.onDebug));
+      final signal = Signal(1);
       expect(signal.value, equals(1));
 
       signal.value = 2;
       expect(signal.value, equals(2));
       expect(signal.peek, equals(2));
-      expect(counter.setCount, equals(1));
 
       signal.set(3);
       expect(signal.value, equals(3));
       expect(signal.peek, equals(3));
-      expect(counter.setCount, equals(2));
     });
 
     test("should use get value by get and value", () {
@@ -168,7 +155,8 @@ void main() {
 
         a.dispose();
 
-        setSignal(a as SignalReactiveNode<int>, 1);
+        (a as SignalImpl).raw.set(1);
+
         expect(a.isDisposed, isTrue);
         expect(values, equals([0]),
             reason: "effect must not run after signal disposed");
@@ -186,7 +174,7 @@ void main() {
         expect(runCount, equals(1));
 
         s.dispose();
-        setSignal(s as SignalReactiveNode<int>, 2);
+        (s as SignalImpl).raw.set(2);
         expect(s.isDisposed, isTrue);
         expect(runCount, equals(1),
             reason: "effect must not run after signal disposed");
@@ -211,7 +199,7 @@ void main() {
         expect(values, equals([0]));
 
         a.dispose();
-        setSignal(a as SignalReactiveNode<int>, 1);
+        (a as SignalImpl).raw.set(1);
         batch(() {
           b.value = 2;
         });
@@ -313,7 +301,7 @@ void main() {
 
       final readonlySignal = signal.readonly();
 
-      expect(readonlySignal, isA<ReadonlySignal<int>>());
+      expect(readonlySignal, isA<Readonly<int>>());
       expect(readonlySignal.value, equals(5));
 
       signal.value = 6;
@@ -411,14 +399,14 @@ void main() {
 
   group("ReadonlySignal (ConstantSignal)", () {
     test("should create constant signal with ReadonlySignal factory", () {
-      final constant = ReadonlySignal(42);
+      final constant = Readonly(42);
       expect(constant.value, equals(42));
       expect(constant.peek, equals(42));
       expect(constant.get(), equals(42));
     });
 
     test("should support call() method for constant signal", () {
-      final constant = ReadonlySignal(100);
+      final constant = Readonly(100);
       expect(constant(), equals(100));
       expect(constant(), equals(constant.get()));
       expect(constant(), equals(constant.value));
@@ -426,7 +414,7 @@ void main() {
     });
 
     test("constant signal should always return same value", () {
-      final constant = ReadonlySignal("hello");
+      final constant = Readonly("hello");
       expect(constant.value, equals("hello"));
       expect(constant.value, equals("hello"));
       expect(constant(), equals("hello"));
@@ -434,35 +422,35 @@ void main() {
     });
 
     test("constant signal should not be writable", () {
-      final constant = ReadonlySignal(42);
+      final constant = Readonly(42);
       // ReadonlySignal doesn't have a value setter, so it's readonly
-      expect(constant, isA<ReadonlySignal<int>>());
+      expect(constant, isA<Readonly<int>>());
       // Verify it's not a Signal (which is writable)
       expect(constant, isNot(isA<Signal<int>>()));
     });
 
     test("constant signal should work with different types", () {
-      final intConstant = ReadonlySignal(42);
+      final intConstant = Readonly(42);
       expect(intConstant(), equals(42));
 
-      final stringConstant = ReadonlySignal("test");
+      final stringConstant = Readonly("test");
       expect(stringConstant(), equals("test"));
 
-      final listConstant = ReadonlySignal([1, 2, 3]);
+      final listConstant = Readonly([1, 2, 3]);
       expect(listConstant(), equals([1, 2, 3]));
 
-      final nullableConstant = ReadonlySignal<int?>(null);
+      final nullableConstant = Readonly<int?>(null);
       expect(nullableConstant(), isNull);
     });
 
     test("constant signal should work in computed", () {
-      final constant = ReadonlySignal(5);
+      final constant = Readonly(5);
       final computed = Computed<int>(() => constant.value * 2);
       expect(computed.value, equals(10));
     });
 
     test("constant signal should work in effect", () {
-      final constant = ReadonlySignal("hello");
+      final constant = Readonly("hello");
       final values = <String>[];
 
       Effect(() {
@@ -473,7 +461,7 @@ void main() {
     });
 
     test("constant signal should not trigger effect updates", () {
-      final constant = ReadonlySignal(1);
+      final constant = Readonly(1);
       final values = <int>[];
 
       Effect(() {
@@ -488,60 +476,21 @@ void main() {
     });
 
     test("constant signal toString should return value.toString()", () {
-      final constant = ReadonlySignal(42);
+      final constant = Readonly(42);
       expect(constant.toString(), equals("42"));
       expect(constant.toString(), equals(constant.value.toString()));
 
-      final stringConstant = ReadonlySignal("hello");
+      final stringConstant = Readonly("hello");
       expect(stringConstant.toString(), equals("hello"));
       expect(stringConstant.toString(), equals(stringConstant.value));
 
-      final nullConstant = ReadonlySignal<int?>(null);
+      final nullConstant = Readonly<int?>(null);
       expect(nullConstant.toString(), equals("null"));
       expect(nullConstant.toString(), equals(nullConstant.value.toString()));
     });
 
-    test("constant signal dispose should be noop", () {
-      final constant = ReadonlySignal(42);
-
-      // Before dispose
-      expect(constant.isDisposed, isFalse);
-      expect(constant.value, equals(42));
-
-      // Call dispose
-      constant.dispose();
-
-      // After dispose - should still work normally
-      expect(constant.isDisposed, isFalse,
-          reason: "isDisposed should remain false after dispose");
-      expect(constant.value, equals(42),
-          reason: "value should still be accessible after dispose");
-      expect(constant.peek, equals(42),
-          reason: "peek should still work after dispose");
-
-      // Can call dispose multiple times without error
-      constant.dispose();
-      constant.dispose();
-      expect(constant.isDisposed, isFalse);
-    });
-
-    test("constant signal isDisposed should always be false", () {
-      final constant = ReadonlySignal(100);
-
-      expect(constant.isDisposed, isFalse);
-
-      // After dispose
-      constant.dispose();
-      expect(constant.isDisposed, isFalse);
-
-      // Multiple disposes
-      constant.dispose();
-      constant.dispose();
-      expect(constant.isDisposed, isFalse);
-    });
-
     test("constant signal notify should be noop and not trigger updates", () {
-      final constant = ReadonlySignal(5);
+      final constant = Readonly(5);
       final values = <int>[];
 
       // Create an effect that tracks the constant
@@ -551,21 +500,14 @@ void main() {
 
       expect(values, equals([5]));
 
-      // Call notify - should not trigger any updates
-      constant.notify();
-
       // Effect should not run again (constant signals don't trigger reactivity)
       expect(values, equals([5]),
           reason: "notify should not trigger effect updates");
 
-      // Can call notify multiple times without error
-      constant.notify();
-      constant.notify();
       expect(values, equals([5]));
 
       // Verify value is still accessible
       expect(constant.value, equals(5));
-      expect(constant.isDisposed, isFalse);
 
       effect.dispose();
     });

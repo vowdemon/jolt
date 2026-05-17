@@ -178,18 +178,7 @@ void main() {
       expect(states[1], isA<AsyncSuccess<int>>());
     });
 
-    test("should dispose properly", () {
-      final future = Future.value(42);
-      final asyncSignal = AsyncSignal.fromFuture(future);
-
-      expect(asyncSignal.isDisposed, isFalse);
-
-      asyncSignal.dispose();
-      expect(asyncSignal.isDisposed, isTrue);
-    });
-
-    test("should fetch a new source from the public AsyncSignal API",
-        () async {
+    test("should fetch a new source from the public AsyncSignal API", () async {
       final asyncSignal = AsyncSignal<int>(
         initialValue: const AsyncSuccess(1),
       );
@@ -356,8 +345,7 @@ void main() {
       expect(source.isDisposed, isTrue);
     });
 
-    test("should dispose active source when AsyncSignal is disposed",
-        () async {
+    test("should dispose active source when AsyncSignal is disposed", () async {
       final source = ManualAsyncSource<String>();
       final asyncSignal = AsyncSignal<String>(source: source);
 

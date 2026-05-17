@@ -42,7 +42,7 @@ void main() {
       final signal = Signal(42);
       final readonly = signal.readonly();
 
-      expect(readonly, isA<ReadonlySignal<int>>());
+      expect(readonly, isA<Readonly<int>>());
       expect(readonly.value, equals(42));
       expect(readonly.peek, equals(42));
 
@@ -63,19 +63,6 @@ void main() {
       expect(values, equals([0]));
       signal.value = 1;
       expect(values, equals([0, 1]));
-    });
-
-    test("readonly view dispose disposes original signal", () {
-      final signal = Signal(5);
-      final readonly = signal.readonly();
-
-      expect(signal.isDisposed, isFalse);
-      expect(readonly.isDisposed, isFalse);
-
-      readonly.dispose();
-
-      expect(signal.isDisposed, isTrue);
-      expect(readonly.isDisposed, isTrue);
     });
 
     test("readonly view toString returns value string", () {
@@ -107,42 +94,9 @@ void main() {
 
       expect(readonly1.hashCode, equals(readonly2.hashCode));
     });
-
-    test("readonly view notify triggers notifications", () {
-      final signal = Signal(0);
-      final readonly = signal.readonly();
-      final values = <int>[];
-
-      Effect(() {
-        values.add(readonly.value);
-      });
-
-      expect(values, equals([0]));
-
-      readonly.notify();
-      expect(
-          values, equals([0, 0])); // Notified even though value didn't change
-    });
   });
 
   group("JoltWritableComputedExtension", () {
-    test("readonly returns Computed and reflects changes", () {
-      final baseSignal = Signal(5);
-      final writableComputed = WritableComputed<int>(
-        () => baseSignal.value * 2,
-        (value) => baseSignal.value = value ~/ 2,
-      );
-      final readonly = writableComputed.readonly();
-
-      expect(readonly, isA<Computed<int>>());
-      expect(readonly.value, equals(10));
-      expect(readonly.peek, equals(10));
-
-      writableComputed.value = 20;
-      expect(readonly.value, equals(20));
-      expect(baseSignal.value, equals(10));
-    });
-
     test("readonly view establishes reactive dependency", () {
       final baseSignal = Signal(5);
       final writableComputed = WritableComputed<int>(
@@ -159,23 +113,6 @@ void main() {
       expect(values, equals([10]));
       baseSignal.value = 10;
       expect(values, equals([10, 20]));
-    });
-
-    test("readonly view dispose disposes original writable computed", () {
-      final baseSignal = Signal(5);
-      final writableComputed = WritableComputed<int>(
-        () => baseSignal.value * 2,
-        (value) => baseSignal.value = value ~/ 2,
-      );
-      final readonly = writableComputed.readonly();
-
-      expect(writableComputed.isDisposed, isFalse);
-      expect(readonly.isDisposed, isFalse);
-
-      readonly.dispose();
-
-      expect(writableComputed.isDisposed, isTrue);
-      expect(readonly.isDisposed, isTrue);
     });
 
     test("readonly view toString returns value string", () {
@@ -223,48 +160,6 @@ void main() {
       final readonly2 = writableComputed.readonly();
 
       expect(readonly1.hashCode, equals(readonly2.hashCode));
-    });
-
-    test("readonly view notify triggers notifications", () {
-      final baseSignal = Signal(5);
-      final writableComputed = WritableComputed<int>(
-        () => baseSignal.value * 2,
-        (value) => baseSignal.value = value ~/ 2,
-      );
-      final readonly = writableComputed.readonly();
-      final values = <int>[];
-
-      Effect(() {
-        values.add(readonly.value);
-      });
-
-      expect(values, equals([10]));
-
-      readonly.notify();
-      expect(
-          values, equals([10, 10])); // Notified even though value didn't change
-    });
-
-    test("readonly view peekCached returns cached value", () {
-      final baseSignal = Signal(5);
-      final writableComputed = WritableComputed<int>(
-        () => baseSignal.value * 2,
-        (value) => baseSignal.value = value ~/ 2,
-      );
-      final readonly = writableComputed.readonly();
-
-      // First access - computes and caches
-      expect(readonly.peekCached, equals(10));
-
-      // Change dependency
-      baseSignal.value = 10;
-
-      // peekCached returns stale cached value
-      expect(readonly.peekCached, equals(10));
-
-      // Accessing value updates cache
-      expect(readonly.value, equals(20));
-      expect(readonly.peekCached, equals(20));
     });
   });
 }

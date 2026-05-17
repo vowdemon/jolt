@@ -12,7 +12,7 @@ import 'package:jolt/jolt.dart';
 /// Type parameters:
 /// - [T]: The type of the reactive value
 /// - [S]: The specific reactive value type (extends [JReadonlyValue<T>])
-class JoltHook<T, S extends ReadableNode<T>> extends Hook<S> {
+class JoltHook<T, S extends Readable<T>> extends Hook<S> {
   /// Creates a Jolt hook with the given reactive value.
   ///
   /// Parameters:
@@ -31,13 +31,15 @@ class JoltHook<T, S extends ReadableNode<T>> extends Hook<S> {
 ///
 /// Manages the lifecycle of the wrapped reactive value, ensuring proper
 /// disposal when the hook is removed from the widget tree.
-class JoltHookState<T, S extends ReadableNode<T>>
+class JoltHookState<T, S extends Readable<T>>
     extends HookState<S, JoltHook<T, S>> {
   late final _instance = hook.jolt();
 
   @override
   void dispose() {
-    _instance.dispose();
+    if (_instance case Disposable disposable) {
+      disposable.dispose();
+    }
   }
 
   @override
@@ -61,13 +63,16 @@ class JoltHookState<T, S extends ReadableNode<T>>
 /// Type parameters:
 /// - [T]: The type parameter for the effect
 /// - [S]: The specific effect node type (extends [JEffect])
-class JoltEffectHook<S extends EffectNode> extends Hook<S> {
+class JoltEffectHook<S extends Object> extends Hook<S> {
   /// Creates a Jolt effect hook with the given effect node.
   ///
   /// Parameters:
   /// - [joltEffect]: The effect node to wrap
   /// - [keys]: Optional keys for hook memoization
-  const JoltEffectHook(this.joltEffect, {super.keys});
+  const JoltEffectHook(this.joltEffect, {super.keys})
+      : assert(joltEffect is Effect Function() ||
+            joltEffect is Watcher Function() ||
+            joltEffect is EffectScope Function());
 
   /// The effect node wrapped by this hook.
   final S Function() joltEffect;
@@ -80,13 +85,15 @@ class JoltEffectHook<S extends EffectNode> extends Hook<S> {
 ///
 /// Manages the lifecycle of the wrapped effect node, ensuring proper
 /// disposal when the hook is removed from the widget tree.
-class JoltEffectHookState<S extends EffectNode>
+class JoltEffectHookState<S extends Object>
     extends HookState<S, JoltEffectHook<S>> {
   late final _instance = hook.joltEffect();
 
   @override
   void dispose() {
-    _instance.dispose();
+    if (_instance is DisposableNode) {
+      (_instance as DisposableNode).dispose();
+    }
   }
 
   @override
@@ -160,7 +167,7 @@ class JoltWidgetHookState<T extends Widget>
 
   @override
   T build(BuildContext context) {
-    final prevSub = setActiveSub(_effect as ReactiveNode);
+    final prevSub = setActiveSub((_effect as EffectImpl).raw);
     try {
       return hook.builder();
     } finally {

@@ -79,7 +79,7 @@ class ValueNotifierSignal<T> implements Signal<T> {
   bool get isDisposed => _isDisposed;
 
   @override
-  void notify([bool force = true]) {
+  void notify() {
     if (_isDisposed) return;
     raw.notify();
   }

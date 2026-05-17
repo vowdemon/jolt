@@ -242,9 +242,6 @@ class JoltInspectorController {
           }
         }
       } else if (update.operation == 'link' || update.operation == 'unlink') {
-        // Handle link/unlink operations for dependencies and subscribers
-        // depId: the dependency node (the node being depended on)
-        // subId: the subscriber node (the node that depends on depId)
         final depId = update.depId;
         final subId = update.subId;
 
@@ -255,30 +252,24 @@ class JoltInspectorController {
           if (depNode != null && subNode != null) {
             batch(() {
               if (update.operation == 'link') {
-                // Link: sub depends on dep
-                // Add dep to sub's dependencies
                 if (!subNode.dependencies.value.contains(depId)) {
                   subNode.dependencies.value = [
                     ...subNode.dependencies.value,
-                    depId
+                    depId,
                   ];
                 }
-                // Add sub to dep's subscribers
                 if (!depNode.subscribers.value.contains(subId)) {
                   depNode.subscribers.value = [
                     ...depNode.subscribers.value,
-                    subId
+                    subId,
                   ];
                 }
-              } else if (update.operation == 'unlink') {
-                // Unlink: sub no longer depends on dep
-                // Remove dep from sub's dependencies
+              } else {
                 if (subNode.dependencies.value.contains(depId)) {
                   subNode.dependencies.value = subNode.dependencies.value
                       .where((id) => id != depId)
                       .toList();
                 }
-                // Remove sub from dep's subscribers
                 if (depNode.subscribers.value.contains(subId)) {
                   depNode.subscribers.value = depNode.subscribers.value
                       .where((id) => id != subId)

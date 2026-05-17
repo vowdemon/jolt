@@ -1,3 +1,4 @@
+import 'package:jolt_flutter/core.dart';
 import 'package:jolt_flutter/extension.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
 import 'package:shared_interfaces/shared_interfaces.dart';
@@ -15,7 +16,7 @@ import 'shared.dart';
 /// SurgeStateCreator<int> creator = (state) => Signal(state);
 /// final value = creator(42); // Creates a Signal(42)
 /// ```
-typedef SurgeStateCreator<T> = WritableNode<T> Function(T state);
+typedef SurgeStateCreator<T> = Writable<T> Function(T state);
 
 Signal<T> _defaultSignalCreator<T>(T state) => Signal(state);
 
@@ -68,7 +69,7 @@ abstract class Surge<State> implements ChainedDisposable {
   }
 
   /// The internal reactive value that manages the state.
-  final WritableNode<State> _state;
+  final Writable<State> _state;
 
   /// Whether this surge has been disposed.
   bool _isDisposed = false;
@@ -104,7 +105,7 @@ abstract class Surge<State> implements ChainedDisposable {
   /// final rawValue = surge.raw;
   /// rawValue.value = 43; // Directly set the value
   /// ```
-  WritableNode<State> get raw => _state;
+  Writable<State> get raw => _state;
 
   /// Gets a stream that emits state changes.
   ///
@@ -146,7 +147,10 @@ abstract class Surge<State> implements ChainedDisposable {
   void dispose() {
     if (_isDisposed) return;
     onDispose();
-    _state.dispose();
+    try {
+      (_state as dynamic).dispose();
+    } catch (_) {}
+
     _isDisposed = true;
   }
 

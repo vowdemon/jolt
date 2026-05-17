@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:jolt_flutter/core.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
 import 'package:jolt_setup/hooks.dart';
 import 'package:jolt_setup/jolt_setup.dart';
@@ -380,7 +379,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Signal should not update after unmount
-      expect((signal! as SignalNode).pendingValue, 0);
+      expect(signal!.isDisposed, isTrue);
+      expect(signal!.value, 0);
     });
 
     testWidgets('works with custom ChangeNotifier', (tester) async {

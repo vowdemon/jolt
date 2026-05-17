@@ -400,7 +400,7 @@ class _UseEffectHook extends SetupHook<EffectImpl> {
   void reassemble(covariant _UseEffectHook newHook) {
     if (debug != newHook.debug) {
       debug = newHook.debug;
-      JoltDebug.setDebug(state, newHook.debug?.onDebug);
+      JoltDebug.setDebug(state.raw, newHook.debug?.onDebug);
     }
     lazy = newHook.lazy;
     effect = newHook.effect;
@@ -514,7 +514,7 @@ class _UseFlutterEffectHook extends SetupHook<FlutterEffectImpl> {
   void reassemble(covariant _UseFlutterEffectHook newHook) {
     if (debug != newHook.debug) {
       debug = newHook.debug;
-      JoltDebug.setDebug(state, newHook.debug?.onDebug);
+      JoltDebug.setDebug(state.raw, newHook.debug?.onDebug);
     }
     lazy = newHook.lazy;
     effect = newHook.effect;
@@ -653,7 +653,7 @@ class _UseWatcherHook<T> extends SetupHook<WatcherImpl<T>> {
     state.fn = fn;
     state.when = when;
 
-    state.previosValues = untracked(state.sourcesFn);
+    state.currentValues = state.previosValues = untracked(state.sourcesFn);
 
     if (!wasPaused) {
       state.pause();

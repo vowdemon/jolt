@@ -690,7 +690,8 @@ class _UseInheritedHook<T> extends SetupHook<Computed<T>> {
   void reassemble(covariant _UseInheritedHook<T> newHook) {
     if (debug != newHook.debug) {
       debug = newHook.debug;
-      JoltDebug.setDebug(_computed, newHook.debug?.onDebug);
+      JoltDebug.setDebug(
+          (_computed as ComputedImpl<T>).raw, newHook.debug?.onDebug);
     }
     getter = newHook.getter;
     _computed.notify();

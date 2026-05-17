@@ -9,7 +9,7 @@ import "package:jolt/src/jolt/computed.dart";
 /// This mixin implements the basic IterableBase interface while maintaining
 /// reactivity for iterable operations. It serves as a foundation for reactive
 /// iterable implementations.
-mixin IterableSignalMixin<E> implements IterableBase<E>, IMutableCollection {
+mixin IterableSignalMixin<E> implements IterableBase<E> {
   /// The current iterable value.
   Iterable<E> get value;
 

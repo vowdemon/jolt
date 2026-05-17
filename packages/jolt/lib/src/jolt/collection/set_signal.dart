@@ -9,8 +9,7 @@ import "package:jolt/src/jolt/signal.dart";
 /// This mixin implements all Set operations while maintaining reactivity.
 /// Any modification to the set will automatically notify subscribers.
 /// All mutating operations trigger change notifications.
-mixin SetSignalMixin<E>
-    implements SetBase<E>, Readable<Set<E>>, IMutableCollection, Notifiable {
+mixin SetSignalMixin<E> implements SetBase<E>, Readable<Set<E>>, Notifiable {
   /// Returns true if the set contains the given element.
   ///
   /// This is a non-mutating query operation.

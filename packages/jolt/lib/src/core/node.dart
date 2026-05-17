@@ -172,7 +172,7 @@ class ComputedNode<T> extends ReactiveNode {
     var subs = this.subs;
 
     while (subs != null) {
-      subs.sub.flags |= ReactiveFlags.pending;
+      subs.sub?.flags |= ReactiveFlags.pending;
       shallowPropagate(subs);
       subs = subs.nextSub;
     }
@@ -224,10 +224,13 @@ mixin CleanableNode {
   }
 }
 
+final Set<BaseEffectNode> _retainedEffects = {};
+
 abstract class BaseEffectNode extends ReactiveNode with CleanableNode {
   BaseEffectNode({required super.flags});
 
   void dispose() {
+    _retainedEffects.remove(this);
     flags = ReactiveFlags.none;
     disposeDepsInReverse(this);
 
@@ -236,12 +239,14 @@ abstract class BaseEffectNode extends ReactiveNode with CleanableNode {
       unlink(sub);
     }
     cleanup();
-    untracked(() => JFinalizer.disposeObject(this));
   }
 }
 
 class EffectScopeNode extends BaseEffectNode {
   EffectScopeNode({bool detach = false}) : super(flags: ReactiveFlags.mutable) {
+    if (!detach) {
+      _retainedEffects.add(this);
+    }
     if (!detach) {
       final prevSub = getActiveSub();
       if (prevSub != null) {
@@ -278,6 +283,9 @@ class EffectScopeNode extends BaseEffectNode {
 class EffectNode extends BaseEffectNode {
   EffectNode(this.fn, {bool lazy = false, bool detach = false})
       : super(flags: ReactiveFlags.watching | ReactiveFlags.recursedCheck) {
+    if (!detach) {
+      _retainedEffects.add(this);
+    }
     final prevSub = setActiveSub(this);
     if (prevSub != null && !detach) {
       link(this, prevSub, 0);

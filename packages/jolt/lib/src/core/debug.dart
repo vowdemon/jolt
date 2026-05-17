@@ -286,6 +286,11 @@ final Expando<DebugInfo> debugInfo = Expando<DebugInfo>();
 /// to inspect and debug reactive nodes in a Jolt application.
 @internal
 abstract final class JoltDevTools {
+  static final _nodeFinalizer = Finalizer<int>((nodeId) {
+    _notifyNodeDisposed(nodeId);
+    debugNodes.remove(nodeId);
+  });
+
   static final _updateController =
       StreamController<Map<String, dynamic>>.broadcast();
   static bool _enabled = false;
@@ -374,10 +379,7 @@ abstract final class JoltDevTools {
       );
 
       _notifyNodeCreated(node, nodeId, createdAt);
-      JFinalizer.attachToJoltAttachments(node, () {
-        _notifyNodeDisposed(nodeId);
-        debugNodes.remove(nodeId);
-      });
+      _nodeFinalizer.attach(node, nodeId, detach: node);
       return;
     }
 
@@ -416,7 +418,9 @@ abstract final class JoltDevTools {
           break;
         }
       case DebugNodeOperationType.dispose:
+        _nodeFinalizer.detach(node);
         _notifyNodeDisposed(nodeId);
+        debugNodes.remove(nodeId);
         break;
 
       default:
@@ -541,7 +545,8 @@ abstract final class JoltDevTools {
     final deps = <int>{};
     var link = node.deps;
     while (link != null) {
-      final depId = debugInfo[link.dep]?.id;
+      final dep = link.dep;
+      final depId = dep != null ? debugInfo[dep]?.id : null;
       if (depId != null) {
         deps.add(depId);
       }
@@ -554,7 +559,8 @@ abstract final class JoltDevTools {
     final subs = <int>{};
     var link = node.subs;
     while (link != null) {
-      final subId = debugInfo[link.sub]?.id;
+      final sub = link.sub;
+      final subId = sub != null ? debugInfo[sub]?.id : null;
       if (subId != null) {
         subs.add(subId);
       }

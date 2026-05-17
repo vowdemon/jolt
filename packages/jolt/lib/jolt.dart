@@ -24,7 +24,6 @@
 /// ```
 library;
 
-export "src/jolt/base.dart";
 export "src/jolt/signal.dart";
 export "src/jolt/computed.dart";
 export "src/jolt/effect.dart";

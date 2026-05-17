@@ -9,11 +9,7 @@ import "package:jolt/jolt.dart";
 /// Any modification to the map will automatically notify subscribers.
 /// All mutating operations trigger change notifications.
 mixin MapSignalMixin<K, V>
-    implements
-        MapBase<K, V>,
-        Readable<Map<K, V>>,
-        IMutableCollection,
-        Notifiable {
+    implements MapBase<K, V>, Readable<Map<K, V>>, Notifiable {
   /// Gets the value associated with the given key.
   ///
   /// Returns the value for the given key, or null if the key is not present.

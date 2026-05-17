@@ -84,22 +84,27 @@ class Link {
   /// ```
   Link({
     required this.version,
-    required this.dep,
-    required this.sub,
+    required ReactiveNode dep,
+    required ReactiveNode sub,
     this.prevSub,
     this.nextSub,
     this.prevDep,
     this.nextDep,
-  });
+  })  : _dep = WeakReference(dep),
+        _sub = WeakReference(sub);
 
   /// Version number for this link.
   int version;
 
-  /// The dependency node.
-  ReactiveNode dep;
+  final WeakReference<ReactiveNode> _dep;
 
-  /// The subscriber node.
-  ReactiveNode sub;
+  final WeakReference<ReactiveNode> _sub;
+
+  /// The dependency node, if it has not been collected.
+  ReactiveNode? get dep => _dep.target;
+
+  /// The subscriber node, if it has not been collected.
+  ReactiveNode? get sub => _sub.target;
 
   /// Previous subscriber link.
   Link? prevSub;
@@ -228,17 +233,29 @@ abstract final class ReactiveFlags {
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
 void link(ReactiveNode dep, ReactiveNode sub, int version) {
-  final prevDep = sub.depsTail;
+  var prevDep = sub.depsTail;
+  while (prevDep != null && prevDep.dep == null) {
+    final prev = prevDep.prevDep;
+    unlink(prevDep, sub);
+    prevDep = prev;
+  }
   if (prevDep != null && identical(prevDep.dep, dep)) {
     return;
   }
-  final nextDep = prevDep != null ? prevDep.nextDep : sub.deps;
+  var nextDep = prevDep != null ? prevDep.nextDep : sub.deps;
+  while (nextDep != null && nextDep.dep == null) {
+    nextDep = unlink(nextDep, sub);
+  }
   if (nextDep != null && identical(nextDep.dep, dep)) {
     nextDep.version = version;
     sub.depsTail = nextDep;
     return;
   }
-  final prevSub = dep.subsTail;
+  var prevSub = dep.subsTail;
+  while (prevSub != null && prevSub.sub == null) {
+    unlink(prevSub);
+    prevSub = dep.subsTail;
+  }
   if (prevSub != null &&
       prevSub.version == version &&
       identical(prevSub.sub, sub)) {
@@ -287,25 +304,26 @@ void link(ReactiveNode dep, ReactiveNode sub, int version) {
 Link? unlink(Link link, [ReactiveNode? sub]) {
   sub ??= link.sub;
 
-  final Link(:dep, :prevDep, :nextDep, :nextSub, :prevSub) = link;
+  final dep = link.dep;
+  final Link(:prevDep, :nextDep, :nextSub, :prevSub) = link;
   if (nextDep != null) {
     nextDep.prevDep = prevDep;
-  } else {
+  } else if (sub != null) {
     sub.depsTail = prevDep;
   }
   if (prevDep != null) {
     prevDep.nextDep = nextDep;
-  } else {
+  } else if (sub != null) {
     sub.deps = nextDep;
   }
   if (nextSub != null) {
     nextSub.prevSub = prevSub;
-  } else {
+  } else if (dep != null) {
     dep.subsTail = prevSub;
   }
   if (prevSub != null) {
     prevSub.nextSub = nextSub;
-  } else if ((dep.subs = nextSub) == null) {
+  } else if (dep != null && (dep.subs = nextSub) == null) {
     dep.unwatched();
   }
 
@@ -331,6 +349,23 @@ void propagate(Link theLink, bool innerWrite) {
   top:
   do {
     final sub = link!.sub;
+    if (sub == null) {
+      final stale = link;
+      unlink(stale);
+      if ((link = next) != null) {
+        next = link!.nextSub;
+        continue;
+      }
+      while (stack != null) {
+        link = stack.value;
+        stack = stack.prev;
+        if (link != null) {
+          next = link.nextSub;
+          continue top;
+        }
+      }
+      break;
+    }
     var flags = sub.flags;
 
     if (flags &
@@ -407,7 +442,7 @@ void propagate(Link theLink, bool innerWrite) {
 
 bool checkDirty(Link theLink, ReactiveNode sub) {
   Link? link = theLink;
-  Stack<Link>? stack;
+  Stack<(Link, ReactiveNode)>? stack;
   var checkDepth = 0;
   var dirty = false;
 
@@ -416,6 +451,13 @@ bool checkDirty(Link theLink, ReactiveNode sub) {
   // ignore: literal_only_boolean_expressions
   do {
     final dep = link!.dep;
+    if (dep == null) {
+      link = unlink(link, sub);
+      if (link != null) {
+        continue;
+      }
+      break;
+    }
     final flags = dep.flags;
 
     if (sub.flags & (ReactiveFlags.dirty) == (ReactiveFlags.dirty)) {
@@ -431,7 +473,7 @@ bool checkDirty(Link theLink, ReactiveNode sub) {
       }
     } else if (flags & (ReactiveFlags.mutable | ReactiveFlags.pending) ==
         (ReactiveFlags.mutable | ReactiveFlags.pending)) {
-      stack = Stack(value: link, prev: stack);
+      stack = Stack(value: (link, sub), prev: stack);
       link = dep.deps;
       sub = dep;
       ++checkDepth;
@@ -447,7 +489,9 @@ bool checkDirty(Link theLink, ReactiveNode sub) {
     }
 
     while (checkDepth-- != 0) {
-      link = stack!.value;
+      final frame = stack!.value;
+      link = frame.$1;
+      final parentSub = frame.$2;
       stack = stack.prev;
       if (dirty) {
         final subs = sub.subs;
@@ -456,14 +500,14 @@ bool checkDirty(Link theLink, ReactiveNode sub) {
           if (subs!.nextSub != null) {
             shallowPropagate(subs);
           }
-          sub = link.sub;
+          sub = parentSub;
           continue;
         }
         dirty = false;
       } else {
         sub.flags &= ~ReactiveFlags.pending;
       }
-      sub = link.sub;
+      sub = parentSub;
       final nextDep = link.nextDep;
       if (nextDep != null) {
         link = nextDep;
@@ -473,6 +517,8 @@ bool checkDirty(Link theLink, ReactiveNode sub) {
 
     return dirty && sub.flags != ReactiveFlags.none;
   } while (true);
+
+  return dirty && sub.flags != ReactiveFlags.none;
 }
 
 /// Shallow propagates changes without deep recursion.
@@ -489,6 +535,12 @@ void shallowPropagate(Link theLink) {
   Link? link = theLink;
   do {
     final sub = link!.sub;
+    if (sub == null) {
+      final stale = link;
+      link = link.nextSub;
+      unlink(stale);
+      continue;
+    }
     final flags = sub.flags;
     if (flags & (ReactiveFlags.pending | ReactiveFlags.dirty) ==
         (ReactiveFlags.pending)) {
@@ -498,7 +550,7 @@ void shallowPropagate(Link theLink) {
         (sub as EffectNode).notifyEffect();
       }
     }
-  } while ((link = link.nextSub) != null);
+  } while ((link = link?.nextSub) != null);
 }
 
 /// Checks if a link is still valid for a subscriber.

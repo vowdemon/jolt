@@ -1,6 +1,5 @@
-import "dart:async";
-
 import "package:jolt/jolt.dart";
+import "package:jolt/src/jolt/impl/readonly.dart";
 import "package:jolt/src/utils/stream.dart";
 import "package:test/test.dart";
 import "utils.dart";
@@ -70,6 +69,23 @@ void main() {
         final stream2 = signal.stream;
 
         expect(stream1, equals(stream2));
+      });
+
+      test("Different readable wrappers reuse same node stream", () async {
+        final signal = Signal(1);
+        final readonly1 = ReadonlyImpl(signal);
+        final readonly2 = ReadonlyImpl(signal);
+        final values = <int>[];
+
+        expect(identical(readonly1, readonly2), isFalse);
+        expect(readonly1.stream, same(readonly2.stream));
+        expect(readonly1.stream, same(signal.stream));
+
+        readonly2.stream.listen(values.add);
+        signal.value = 2;
+        await Future.delayed(const Duration(milliseconds: 1));
+
+        expect(values, equals([2]));
       });
     });
 
@@ -471,54 +487,6 @@ void main() {
 
         final stream3 = signal.stream;
         expect(stream1, equals(stream3));
-      });
-    });
-
-    group("getStreamController", () {
-      test("getStreamController should return controller after stream creation",
-          () {
-        final signal = Signal(42);
-
-        // Initially, controller should be null
-        final controllerBefore = JoltStreamHelper.getStreamController(signal);
-        expect(controllerBefore, isNull);
-
-        // After accessing stream, controller should be created
-        final _ = signal.stream;
-        final controllerAfter = JoltStreamHelper.getStreamController(signal);
-        expect(controllerAfter, isNotNull);
-        expect(controllerAfter, isA<StreamController<int>>());
-      });
-
-      test("getStreamController should return same controller instance", () {
-        final signal = Signal(42);
-
-        // Access stream to create controller
-        final _ = signal.stream;
-
-        final controller1 = JoltStreamHelper.getStreamController(signal);
-        final controller2 = JoltStreamHelper.getStreamController(signal);
-
-        expect(controller1, isNotNull);
-        expect(controller2, isNotNull);
-        expect(controller1, same(controller2));
-      });
-
-      test("getStreamController should work with different signal types", () {
-        final signal = Signal(42);
-        final computed = Computed<int>(() => signal.value * 2);
-
-        // Access streams to create controllers
-        signal.stream;
-        computed.stream;
-
-        final signalController = JoltStreamHelper.getStreamController(signal);
-        final computedController =
-            JoltStreamHelper.getStreamController(computed);
-
-        expect(signalController, isNotNull);
-        expect(computedController, isNotNull);
-        expect(signalController, isNot(same(computedController)));
       });
     });
   });

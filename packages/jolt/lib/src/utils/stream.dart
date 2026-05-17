@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:jolt/core.dart';
 import 'package:jolt/jolt.dart';
+import 'package:jolt/src/core/utils.dart';
 
 extension JoltUtilsStreamExtension<T> on Readable<T> {
   /// Converts this reactive value to a broadcast stream.
@@ -17,7 +18,7 @@ extension JoltUtilsStreamExtension<T> on Readable<T> {
   /// counter.stream.listen((value) => print('Counter: $value'));
   /// counter.value = 1; // Prints: "Counter: 1"
   /// ```
-  Stream<T> get stream => JoltStreamHelper.getStream(this);
+  Stream<T> get stream => _getOrCreateStream(this);
 
   /// Listens to changes in this reactive value.
   ///
@@ -46,69 +47,79 @@ extension JoltUtilsStreamExtension<T> on Readable<T> {
     bool? cancelOnError,
     bool immediately = false,
   }) {
-    final controller = JoltStreamHelper.getOrCreateStreamController(this);
+    final stream = _getOrCreateStream(this);
 
     if (immediately) {
       Future.microtask(() => onData?.call(value));
     }
-    return controller.stream.listen(onData,
+    return stream.listen(onData,
         onError: onError, onDone: onDone, cancelOnError: cancelOnError);
   }
 }
 
-abstract final class JoltStreamHelper {
-  static final _readableStreams = Expando<StreamController>();
+final _nodeStreams = Expando<_StreamAttachment>();
+final _readableStreams = Expando<_StreamAttachment>();
 
-  static StreamController<T>? getStreamController<T>(Readable<T> obj) =>
-      _readableStreams[obj] as StreamController<T>?;
-
-  static StreamController<T> getOrCreateStreamController<T>(
-      Readable<T> readable) {
-    StreamController<T>? controller =
-        _readableStreams[readable] as StreamController<T>?;
-
-    if (controller == null) {
-      final newController = createWatchedStreamController(readable);
-      _readableStreams[readable] = newController;
-      controller = newController;
-    }
-
-    return controller;
+Stream<T> _getOrCreateStream<T>(Readable<T> readable) {
+  final readableAttachment =
+      _readableStreams[readable] as _StreamAttachment<T>?;
+  if (readableAttachment != null) {
+    return readableAttachment.stream;
   }
 
-  static Stream<T> getStream<T>(Readable<T> readable) {
-    return getOrCreateStreamController(readable).stream;
+  final node = captureReactiveNode(readable);
+  if (node == null) {
+    final newAttachment = _StreamAttachment<T>(readable);
+    _readableStreams[readable] = newAttachment;
+    return newAttachment.stream;
   }
 
-  static StreamController<T> createWatchedStreamController<T>(
-      Readable<T> readable,
-      {bool sync = false}) {
-    Watcher? watcher;
-    late final StreamController<T> controller;
+  final attachment = _nodeStreams[node] as _StreamAttachment<T>?;
+  if (attachment == null) {
+    final newAttachment = _StreamAttachment<T>(readable);
+    _nodeStreams[node] = newAttachment;
+    _readableStreams[readable] = newAttachment;
+    return newAttachment.stream;
+  }
 
-    void disposer() {
-      watcher?.dispose();
-      watcher = null;
-    }
+  _readableStreams[readable] = attachment;
+  return attachment.stream;
+}
 
+final class _StreamAttachment<T> {
+  _StreamAttachment(Readable<T> readable, {bool sync = false}) {
     controller = StreamController<T>.broadcast(
       sync: sync,
-      onListen: () {
-        watcher = Watcher(() => readable.value, (newValue, __) {
-          controller.add(newValue);
-        },
-            when: IMutableCollection.skipNode(readable),
-            detach: true,
-            debug: const JoltDebugOption.type('Watcher<ToStream>'));
-      },
-      onCancel: disposer,
+      onListen: () => _listen(readable),
+      onCancel: _cancel,
     );
+    stream = controller.stream;
+  }
 
-    JFinalizer.attachToJoltAttachments(readable, () {
-      disposer();
-      controller.close();
-    });
+  late final StreamController<T> controller;
+  late final Stream<T> stream;
+  Effect? _effect;
 
-    return controller;
+  void _listen(Readable<T> readable) {
+    if (_effect != null) return;
+
+    var isInitialRun = true;
+    _effect = Effect.lazy(
+      () {
+        final value = readable.value;
+        if (isInitialRun) {
+          isInitialRun = false;
+          return;
+        }
+        controller.add(value);
+      },
+      detach: true,
+      debug: const JoltDebugOption.type('Effect<ReadableStream>'),
+    )..run();
+  }
+
+  void _cancel() {
+    _effect?.dispose();
+    _effect = null;
   }
 }

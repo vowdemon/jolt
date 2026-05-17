@@ -362,7 +362,7 @@ class SetupContext<T extends Widget> extends EffectScopeImpl {
 /// - Tracks dependencies automatically when accessed in reactive contexts
 /// - Disposed when the associated [BuildContext] is unmounted
 class _PropsImpl<T extends Widget> extends ReactiveNode
-    implements Props<T>, Readonly<T>, CustomReactiveNode<T> {
+    implements Props<T>, Readonly<T> {
   _PropsImpl(this._context) : super(flags: ReactiveFlags.mutable);
 
   final BuildContext _context;
@@ -431,6 +431,11 @@ class _PropsImpl<T extends Widget> extends ReactiveNode
 
   @override
   void unwatched() {}
+
+  @override
+  set value(T value) {
+    throw UnsupportedError('Props is a readonly signal');
+  }
 }
 
 /// A reactive interface for accessing widget properties in setup functions.
@@ -458,13 +463,11 @@ class _PropsImpl<T extends Widget> extends ReactiveNode
 ///
 /// When the widget is updated with new properties, the [Props] node automatically
 /// notifies its subscribers, triggering recomputation of dependent reactive values.
-abstract class Props<T extends Widget> implements Readable<T>, DisposableNode {
+abstract class Props<T extends Widget> implements Signal<T> {
   /// Returns the current widget instance.
   ///
   /// This method enables function-like syntax for accessing the widget.
   /// It's equivalent to accessing [ReadableNode.value], but provides a more
   /// convenient call-site API.
   T call();
-
-  void notify();
 }

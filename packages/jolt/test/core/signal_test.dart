@@ -142,6 +142,8 @@ void main() {
       expect(signal.value, equals(42));
       signal.value = 1;
       signal.notify();
+      expect(signal.value, equals(1));
+      expect(signal.peek, equals(1));
     });
 
     group("disposed signal no longer reactive", () {

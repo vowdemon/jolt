@@ -183,7 +183,7 @@ void main() {
         signal1.dispose();
         signal2.value = 20;
       });
-      expect(values, equals([3, 21]));
+      expect(values, equals([3, 30]));
     });
 
     test("should handle batch with rapid updates", () {

@@ -144,7 +144,10 @@ void main() {
       expect(computed.value, equals(2));
 
       computed.dispose();
+      signal.value = 2;
+
       expect(computed.value, equals(2));
+      expect(computed.peek, equals(2));
     });
 
     test("should work with batch updates", () {
@@ -861,7 +864,7 @@ void main() {
       expect(computed.value, equals(5));
 
       // Soft update (force=false) - value hasn't changed, should not notify
-      computed.notify(false);
+      computed.notifySoft();
       expect(effectCount, equals(1)); // Effect not triggered
 
       // Change signal to make computed value change
@@ -870,7 +873,7 @@ void main() {
       expect(effectCount, equals(2)); // Effect triggered by value change
 
       // Soft update after value change - should not notify again
-      computed.notify(false);
+      computed.notifySoft();
       expect(
           effectCount, equals(2)); // Effect not triggered (value didn't change)
     });
@@ -918,7 +921,7 @@ void main() {
       expect(computeCount, equals(1));
 
       // Soft update - value hasn't changed, should not notify
-      computed.notify(false);
+      computed.notifySoft();
       expect(effectCount, equals(1)); // Effect not triggered
       expect(computeCount, equals(2)); // Recomputed but value unchanged
 
@@ -929,7 +932,7 @@ void main() {
       expect(computeCount, equals(3)); // Recomputed
 
       // Soft update - value already updated, should not notify again
-      computed.notify(false);
+      computed.notifySoft();
       expect(
           effectCount,
           equals(
@@ -973,7 +976,7 @@ void main() {
       expect(computeCount, equals(2)); // Recomputed
 
       // Soft update - value considered equal, should not notify
-      computed.notify(false);
+      computed.notifySoft();
       expect(effectCount, equals(1)); // Effect not triggered
       expect(computeCount, equals(3)); // Recomputed but value unchanged
 

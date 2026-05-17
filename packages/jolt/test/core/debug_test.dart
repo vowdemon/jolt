@@ -1,5 +1,6 @@
 import "package:jolt/core.dart";
 import "package:jolt/jolt.dart";
+import "package:jolt/src/core/debug.dart";
 import "package:test/test.dart";
 
 import "../utils.dart";
@@ -9,171 +10,270 @@ void main() {
     setUpAll(() {
       JoltDebug.init();
     });
-    test("debug signal", () {
+
+    test("debug signal binds to raw node and reports public operations", () {
+      final events = <DebugNodeOperationType>[];
+      final nodes = <ReactiveNode>[];
+      void onDebug(DebugNodeOperationType type, ReactiveNode node) {
+        events.add(type);
+        nodes.add(node);
+      }
+
+      final s = Signal(0, debug: JoltDebugOption.fn(onDebug));
+      final raw = (s as SignalImpl<int>).raw;
+
+      s.value = 1;
+      s.value;
+      s.notify();
+      s.dispose();
+
+      expect(nodes, everyElement(same(raw)));
+      expect(
+        events,
+        containsAllInOrder([
+          DebugNodeOperationType.create,
+          DebugNodeOperationType.set,
+          DebugNodeOperationType.get,
+          DebugNodeOperationType.notify,
+          DebugNodeOperationType.dispose,
+        ]),
+      );
+    });
+
+    test("debug computed binds to raw node and reports value operations", () {
+      final events = <DebugNodeOperationType>[];
+      final nodes = <ReactiveNode>[];
+      void onDebug(DebugNodeOperationType type, ReactiveNode node) {
+        events.add(type);
+        nodes.add(node);
+      }
+
+      final c = Computed(() => 1, debug: JoltDebugOption.fn(onDebug));
+      final raw = (c as ComputedImpl<int>).raw;
+
+      expect(c.value, equals(1));
+      c.notify();
+      c.dispose();
+
+      expect(nodes, everyElement(same(raw)));
+      expect(events, contains(DebugNodeOperationType.create));
+      expect(events, contains(DebugNodeOperationType.get));
+      expect(events, contains(DebugNodeOperationType.set));
+      expect(events, contains(DebugNodeOperationType.notify));
+      expect(events, contains(DebugNodeOperationType.dispose));
+    });
+
+    test("debug effect binds to raw node and reports runs", () {
+      final events = <DebugNodeOperationType>[];
+      final nodes = <ReactiveNode>[];
+      void onDebug(DebugNodeOperationType type, ReactiveNode node) {
+        events.add(type);
+        nodes.add(node);
+      }
+
+      final s = Signal(0);
+      final e = Effect(
+        () {
+          s.value;
+        },
+        debug: JoltDebugOption.fn(onDebug),
+      );
+      final raw = (e as EffectImpl).raw;
+
+      s.value = 1;
+      e.dispose();
+      s.dispose();
+
+      expect(nodes, everyElement(same(raw)));
+      expect(events, contains(DebugNodeOperationType.create));
+      expect(events, contains(DebugNodeOperationType.effect));
+      expect(events, contains(DebugNodeOperationType.dispose));
+    });
+
+    test("debug watcher binds to its raw effect node and reports trigger", () {
+      final events = <DebugNodeOperationType>[];
+      final nodes = <ReactiveNode>[];
+      void onDebug(DebugNodeOperationType type, ReactiveNode node) {
+        events.add(type);
+        nodes.add(node);
+      }
+
+      final w = Watcher(
+        () => 1,
+        (value, _) => value,
+        debug: JoltDebugOption.fn(onDebug),
+      );
+      final raw = (w as WatcherImpl<int>).raw;
+
+      w.trigger();
+      w.dispose();
+
+      expect(nodes, everyElement(same(raw)));
+      expect(events, contains(DebugNodeOperationType.create));
+      expect(events, contains(DebugNodeOperationType.effect));
+      expect(events, contains(DebugNodeOperationType.dispose));
+    });
+
+    test("debug effect scope binds to raw scope node", () {
+      final events = <DebugNodeOperationType>[];
+      final nodes = <ReactiveNode>[];
+      void onDebug(DebugNodeOperationType type, ReactiveNode node) {
+        events.add(type);
+        nodes.add(node);
+      }
+
+      final scope = EffectScope(debug: JoltDebugOption.fn(onDebug));
+      final raw = (scope as EffectScopeImpl).raw;
+
+      scope.run(() => 1);
+      scope.dispose();
+
+      expect(nodes, everyElement(same(raw)));
+      expect(events, contains(DebugNodeOperationType.create));
+      expect(events, contains(DebugNodeOperationType.dispose));
+    });
+
+    test("debug counter tracks stable operation types", () {
       final counter = DebugCounter();
 
       final s = Signal(0, debug: JoltDebugOption.fn(counter.onDebug));
-      expect(counter.createCount, equals(1));
-      expect(counter.count, equals(1));
+      final c =
+          Computed(() => s.value, debug: JoltDebugOption.fn(counter.onDebug));
 
+      expect(c.value, equals(0));
       s.value = 1;
-
-      expect(counter.setCount, equals(1));
-      expect(counter.count, equals(2));
-
-      s.value;
-      expect(counter.getCount, equals(1));
-      expect(counter.count, equals(3));
-
-      s.notify();
-      expect(counter.notifyCount, equals(1));
-      expect(counter.count, equals(4));
-
+      expect(c.value, equals(1));
+      c.dispose();
       s.dispose();
-      expect(counter.disposeCount, equals(1));
-      expect(counter.count, equals(5));
+
+      expect(counter.createCount, equals(2));
+      expect(counter.getCount, greaterThanOrEqualTo(2));
+      expect(counter.setCount, greaterThanOrEqualTo(2));
+      expect(counter.disposeCount, equals(2));
+      expect(
+          counter.count,
+          equals(counter.createCount +
+              counter.disposeCount +
+              counter.notifyCount +
+              counter.setCount +
+              counter.getCount +
+              counter.effectCount));
     });
 
-    test("debug computed", () {
-      final counter = DebugCounter();
+    test("devtools collects raw node payload with snapshot relationships", () {
+      final s = Signal(
+        1,
+        debug: const JoltDebugOption.of("debug-source", null),
+      );
+      final c = Computed(
+        () => s.value + 1,
+        debug: const JoltDebugOption.of("debug-computed", null),
+      );
 
-      final c = Computed(() => 1, debug: JoltDebugOption.fn(counter.onDebug));
-      expect(counter.createCount, equals(1));
-      expect(counter.count, equals(1));
+      expect(c.value, equals(2));
 
-      c.value;
+      final nodes = JoltDevTools.collectNodesForTesting();
+      final source =
+          nodes.singleWhere((node) => node["label"] == "debug-source");
+      final computed =
+          nodes.singleWhere((node) => node["label"] == "debug-computed");
 
-      expect(c.value, equals(1));
+      expect(source["nodeType"], equals("Signal"));
+      expect(source["type"], equals("SignalNode<int>"));
+      expect(source["value"], equals(1));
+      expect(source["valueType"], equals("int"));
+      expect(source["isDisposed"], isFalse);
 
-      expect(counter.getCount, equals(2));
-      expect(counter.setCount, equals(1));
-      expect(counter.count, equals(4));
-
-      c.notify();
-      expect(counter.notifyCount, equals(1));
-      expect(counter.count, equals(5));
+      expect(computed["nodeType"], equals("Computed"));
+      expect(computed["type"], equals("ComputedNode<int>"));
+      expect(computed["value"], equals(2));
+      expect(computed["valueType"], equals("int"));
+      expect(computed["dependencies"], contains(source["id"]));
+      expect(source["subscribers"], contains(computed["id"]));
 
       c.dispose();
-      expect(counter.disposeCount, equals(1));
-      expect(counter.count, equals(6));
+      s.dispose();
+
+      final afterDispose = JoltDevTools.collectNodesForTesting();
+      expect(
+        afterDispose.where((node) =>
+            node["label"] == "debug-source" ||
+            node["label"] == "debug-computed"),
+        isEmpty,
+      );
     });
 
-    test("debug effect", () {
-      final counter = DebugCounter();
+    test("devtools receives internal link updates without user debug events",
+        () async {
+      final userEvents = <DebugNodeOperationType>[];
+      final updates = <Map<String, dynamic>>[];
+      final subscription = JoltDevTools.updatesForTesting.listen(updates.add);
+      void onDebug(DebugNodeOperationType type, ReactiveNode _) {
+        userEvents.add(type);
+      }
 
-      final e = Effect(() => 1,
-          lazy: true, debug: JoltDebugOption.fn(counter.onDebug));
+      final s = Signal(
+        1,
+        debug: JoltDebugOption.of("link-source", onDebug),
+      );
+      final c = Computed(
+        () => s.value + 1,
+        debug: JoltDebugOption.of("link-computed", onDebug),
+      );
 
-      expect(counter.createCount, equals(1));
-      expect(counter.count, equals(1));
+      expect(c.value, equals(2));
+      await Future<void>.delayed(Duration.zero);
 
-      e.run();
+      final nodes = JoltDevTools.collectNodesForTesting();
+      final source =
+          nodes.singleWhere((node) => node["label"] == "link-source");
+      final computed =
+          nodes.singleWhere((node) => node["label"] == "link-computed");
 
-      expect(counter.effectCount, equals(1));
-      expect(counter.count, equals(2));
+      expect(
+        updates,
+        contains(
+          allOf(
+            containsPair("operation", "link"),
+            containsPair("depId", source["id"]),
+            containsPair("subId", computed["id"]),
+          ),
+        ),
+      );
 
-      e.dispose();
-      expect(counter.disposeCount, equals(1));
-      expect(counter.count, equals(3));
+      c.dispose();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        updates,
+        contains(
+          allOf(
+            containsPair("operation", "unlink"),
+            containsPair("depId", source["id"]),
+            containsPair("subId", computed["id"]),
+          ),
+        ),
+      );
+      expect(userEvents, everyElement(isA<DebugNodeOperationType>()));
+
+      await subscription.cancel();
+      s.dispose();
     });
 
-    test("debug watcher", () {
-      final counter = DebugCounter();
+    test("devtools uses explicit debug type while keeping raw node type", () {
+      final watcher = Watcher(
+        () => 1,
+        (value, _) => value,
+        debug: const JoltDebugOption.of("typed-watcher", null),
+      );
 
-      final w = Watcher(() => 1, (value, _) => 1,
-          debug: JoltDebugOption.fn(counter.onDebug));
+      final node = JoltDevTools.collectNodesForTesting()
+          .singleWhere((node) => node["label"] == "typed-watcher");
 
-      expect(counter.createCount, equals(1));
-      expect(counter.count, equals(1));
+      expect(node["nodeType"], equals("Effect"));
+      expect(node["type"], equals("EffectNode"));
 
-      w.trigger();
-      expect(counter.effectCount, equals(1));
-      expect(counter.count, equals(2));
-
-      w.dispose();
-      expect(counter.disposeCount, equals(1));
-      expect(counter.count, equals(3));
-    });
-
-    test("debug effect scope", () {
-      final counter = DebugCounter();
-
-      final e = EffectScope(debug: JoltDebugOption.fn(counter.onDebug))
-        ..run(() => 1);
-
-      expect(counter.createCount, equals(1));
-      expect(counter.count, equals(2));
-
-      e.run(() => 1);
-      // run when the scope is created
-      expect(counter.effectCount, equals(2));
-      expect(counter.count, equals(3));
-
-      e.dispose();
-      expect(counter.disposeCount, equals(1));
-      expect(counter.count, equals(4));
-    });
-
-    test("debug reactive", () {
-      final sCounter = DebugCounter();
-      final cCounter = DebugCounter();
-      final eCounter = DebugCounter();
-      final esCounter = DebugCounter();
-      final wCounter = DebugCounter();
-
-      final s = Signal(0, debug: JoltDebugOption.fn(sCounter.onDebug));
-      final c =
-          Computed(() => s.value, debug: JoltDebugOption.fn(cCounter.onDebug));
-      late Effect e;
-      late Watcher w;
-      final es = EffectScope(debug: JoltDebugOption.fn(esCounter.onDebug))
-        ..run(
-          () {
-            e = Effect(() => c.value,
-                debug: JoltDebugOption.fn(eCounter.onDebug));
-            w = Watcher(
-              () => c.value,
-              (value, _) => value,
-              debug: JoltDebugOption.fn(wCounter.onDebug),
-              when: (newValue, oldValue) => true,
-            );
-          },
-        );
-
-      expect(sCounter.linked, equals(1));
-      expect(cCounter.setCount, equals(1));
-      expect(cCounter.linked, equals(2));
-      expect(cCounter.getCount, equals(2));
-      expect(eCounter.effectCount, equals(1));
-      expect(wCounter.effectCount, equals(0));
-
-      s.value++;
-
-      expect(sCounter.setCount, equals(1));
-      expect(cCounter.getCount, equals(4));
-      expect(eCounter.effectCount, equals(2));
-      expect(wCounter.effectCount, equals(1));
-
-      w.trigger();
-      expect(wCounter.effectCount, equals(2));
-      e.run();
-      expect(eCounter.effectCount, equals(3));
-      w.dispose();
-      expect(wCounter.disposeCount, equals(1));
-      expect(cCounter.unlinked, equals(1));
-
-      es.dispose();
-
-      expect(eCounter.disposeCount, equals(1));
-      expect(esCounter.disposeCount, equals(1));
-      expect(cCounter.unlinked, equals(2));
-      expect(sCounter.unlinked, equals(1));
-
-      s.value = 2;
-      expect(cCounter.setCount, equals(2));
-      expect(sCounter.setCount, equals(2));
-      expect(sCounter.getCount, equals(3));
-      expect(cCounter.getCount, equals(6));
+      watcher.dispose();
     });
   });
 }

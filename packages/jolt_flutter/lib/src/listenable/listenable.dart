@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:jolt/jolt.dart';
 import 'package:jolt_flutter/core.dart';
@@ -30,36 +32,4 @@ mixin _ValueNotifierMixin<T> {
       listener();
     }
   }
-}
-
-/// Creates a delegated signal helper from a ValueListenable.
-///
-/// Parameters:
-/// - [notifier]: The ValueListenable to wrap
-/// - [debug]: Optional debug options
-/// - [expando]: Expando for caching the helper
-///
-/// Returns: A DelegatedRefCountHelper managing the signal
-DelegatedRefCountHelper<SignalImpl<T>> _createDelegatedSignalImpl<T>(
-    ValueListenable<T> notifier,
-    {JoltDebugOption? debug,
-    required Expando<dynamic> expando}) {
-  final source = SignalImpl<T>(notifier.value, debug: debug);
-  Disposer? watcherDisposer;
-
-  return DelegatedRefCountHelper(source, onCreate: (source) {
-    void listener() {
-      source.value = notifier.value;
-    }
-
-    notifier.addListener(listener);
-
-    watcherDisposer = () {
-      notifier.removeListener(listener);
-    };
-  }, onDispose: (source) {
-    watcherDisposer?.call();
-    watcherDisposer = null;
-    expando[notifier] = null;
-  }, autoDispose: true);
 }

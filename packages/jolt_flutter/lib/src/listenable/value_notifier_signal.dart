@@ -1,8 +1,5 @@
 part of 'listenable.dart';
 
-final _delegatedValueNotifierSignals =
-    Expando<DelegatedRefCountHelper<SignalImpl<Object?>>>();
-
 /// Extension for converting ValueNotifier to Jolt Signal.
 extension JoltValueNotifierSignalExtension<T> on ValueNotifier<T> {
   /// Converts this ValueNotifier to a Signal with bidirectional sync.
@@ -22,7 +19,7 @@ extension JoltValueNotifierSignalExtension<T> on ValueNotifier<T> {
   /// signal.value = 2;   // notifier.value becomes 2
   /// ```
   Signal<T> toNotifierSignal({JoltDebugOption? debug}) {
-    return ValueNotifierSignal.from(this, debug: debug);
+    return ValueNotifierSignal(this, debug: debug);
   }
 }
 
@@ -30,54 +27,43 @@ extension JoltValueNotifierSignalExtension<T> on ValueNotifier<T> {
 ///
 /// Multiple instances share the same DelegatedSignal via reference counting.
 /// When all instances are disposed, the shared signal is also disposed.
-class ValueNotifierSignal<T> extends DelegatedSignal<T> {
-  /// Creates from a DelegatedRefCountHelper and ValueNotifier.
-  ValueNotifierSignal.delegated(super.delegated, this.notifier);
-
-  /// The wrapped ValueNotifier.
+class ValueNotifierSignal<T> implements Signal<T> {
+  final SignalNode<T> raw;
   final ValueNotifier<T> notifier;
 
-  /// Creates a Signal from a ValueNotifier.
-  ///
-  /// Parameters:
-  /// - [notifier]: The ValueNotifier to wrap
-  /// - [debug]: Optional debug options
-  ///
-  /// Returns: A Signal synchronized with the ValueNotifier
-  static Signal<T> from<T>(ValueNotifier<T> notifier,
-      {JoltDebugOption? debug}) {
-    if (notifier is JoltValueNotifier<T>) {
-      final node = notifier.node;
-      if (node is Signal<T>) {
-        return node;
-      }
-    }
-
-    final delegated = _getOrCreateDelegated(notifier, debug: debug);
-    return ValueNotifierSignal.delegated(delegated, notifier);
+  /// Creates from a DelegatedRefCountHelper and ValueNotifier.
+  ValueNotifierSignal(this.notifier, {JoltDebugOption? debug})
+      : raw = SignalNode(notifier.value) {
+    notifier.addListener(_listener);
   }
 
-  static DelegatedRefCountHelper<SignalImpl<T>> _getOrCreateDelegated<T>(
-    ValueNotifier<T> notifier, {
-    JoltDebugOption? debug,
-  }) {
-    var delegated = _delegatedValueNotifierSignals[notifier]
-        as DelegatedRefCountHelper<SignalImpl<T>>?;
-
-    if (delegated == null) {
-      _delegatedValueNotifierSignals[notifier] =
-          delegated = _createDelegatedSignalImpl<T>(
-        notifier,
-        expando: _delegatedValueNotifierSignals,
-        debug: debug,
-      );
-    }
-
-    return delegated;
+  @override
+  T get value {
+    if (isDisposed) return notifier.value;
+    return raw.get();
   }
 
   @override
   set value(T value) {
     notifier.value = value;
+  }
+
+  @override
+  void dispose() {
+    notifier.removeListener(_listener);
+    raw.dispose();
+  }
+
+  @override
+  bool get isDisposed => raw.isDisposed;
+
+  @override
+  void notify([bool force = true]) => raw.notify();
+
+  @override
+  T get peek => notifier.value;
+
+  void _listener() {
+    raw.value = notifier.value;
   }
 }

@@ -1,8 +1,5 @@
 part of 'listenable.dart';
 
-final _delegatedValueListenableSignals =
-    Expando<DelegatedRefCountHelper<SignalImpl<Object?>>>();
-
 /// Extension for converting ValueListenable to Jolt Signal.
 extension JoltValueListenableSignalExtension<T> on ValueListenable<T> {
   /// Converts this ValueListenable to a read-only Signal.
@@ -21,8 +18,8 @@ extension JoltValueListenableSignalExtension<T> on ValueListenable<T> {
   /// final signal = notifier.toListenableSignal();
   /// notifier.value = 1; // signal.value becomes 1
   /// ```
-  ReadonlySignal<T> toListenableSignal({JoltDebugOption? debug}) {
-    return ValueListenableSignal.from(this, debug: debug);
+  ValueListenableSignal<T> toListenableSignal({JoltDebugOption? debug}) {
+    return ValueListenableSignal(this, debug: debug);
   }
 }
 
@@ -30,45 +27,33 @@ extension JoltValueListenableSignalExtension<T> on ValueListenable<T> {
 ///
 /// Multiple instances share the same DelegatedSignal via reference counting.
 /// When all instances are disposed, the shared signal is also disposed.
-class ValueListenableSignal<T> extends DelegatedReadonlySignal<T> {
-  /// Creates from a DelegatedRefCountHelper.
-  ValueListenableSignal.delegated(super.delegated);
+class ValueListenableSignal<T> implements Readonly<T>, Disposable {
+  final ValueListenable<T> listenable;
+  final SignalNode<T> raw;
 
-  /// Creates a ReadonlySignal from a ValueListenable.
-  ///
-  /// Parameters:
-  /// - [listenable]: The ValueListenable to wrap
-  /// - [debug]: Optional debug options
-  ///
-  /// Returns: A ReadonlySignal synchronized with the ValueListenable
-  static ReadonlySignal<T> from<T>(ValueListenable<T> listenable,
-      {JoltDebugOption? debug}) {
-    if (listenable is JoltValueListenable<T>) {
-      final node = listenable.node;
-      if (node is ReadonlySignal<T>) {
-        return node;
-      }
-    }
-    final delegated = _getOrCreateDelegated(listenable, debug: debug);
-    return ValueListenableSignal.delegated(delegated);
+  ValueListenableSignal(this.listenable, {JoltDebugOption? debug})
+      : raw = SignalNode(listenable.value) {
+    listenable.addListener(_listener);
   }
 
-  static DelegatedRefCountHelper<SignalImpl<T>> _getOrCreateDelegated<T>(
-    ValueListenable<T> listenable, {
-    JoltDebugOption? debug,
-  }) {
-    var delegated = _delegatedValueListenableSignals[listenable]
-        as DelegatedRefCountHelper<SignalImpl<T>>?;
+  @override
+  FutureOr<void> dispose() {
+    listenable.removeListener(_listener);
+    raw.dispose();
+  }
 
-    if (delegated == null) {
-      _delegatedValueListenableSignals[listenable] =
-          delegated = _createDelegatedSignalImpl<T>(
-        listenable,
-        expando: _delegatedValueListenableSignals,
-        debug: debug,
-      );
-    }
+  bool get isDisposed => raw.isDisposed;
 
-    return delegated;
+  @override
+  T get peek => listenable.value;
+
+  @override
+  T get value {
+    if (isDisposed) return listenable.value;
+    return raw.get();
+  }
+
+  void _listener() {
+    raw.value = listenable.value;
   }
 }

@@ -3,7 +3,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:jolt/core.dart';
 import 'package:jolt/jolt.dart';
-import 'package:shared_interfaces/shared_interfaces.dart';
 
 import '../effect/flutter_effect.dart';
 import 'jolt_state.dart';
@@ -292,7 +291,7 @@ class JoltProviderElement<T> extends ComponentElement {
 
     late Widget child;
 
-    final prevSub = setActiveSub(_effect as ReactiveNode);
+    final prevSub = setActiveSub((_effect as FlutterEffectImpl).raw);
     try {
       child = widget.builder(this, store);
     } finally {

@@ -112,7 +112,7 @@ class JoltWatchBuilderElement extends StatelessElement {
 
   @override
   Widget build() {
-    final prevSub = reactive.setActiveSub(_effect as ReactiveNode);
+    final prevSub = reactive.setActiveSub((_effect as FlutterEffectImpl).raw);
     try {
       widget.readable.value;
     } finally {

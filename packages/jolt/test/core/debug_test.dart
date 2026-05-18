@@ -275,5 +275,52 @@ void main() {
 
       watcher.dispose();
     });
+
+    test("devtools resolves root values for signal and computed nodes", () {
+      final signal = Signal(
+        1,
+        debug: const JoltDebugOption.of("root-signal", null),
+      );
+      final computed = Computed(
+        () => signal.value + 1,
+        debug: const JoltDebugOption.of("root-computed", null),
+      );
+
+      expect(computed.value, equals(2));
+
+      final nodes = JoltDevTools.collectNodesForTesting();
+      final signalNodeId =
+          nodes.singleWhere((node) => node["label"] == "root-signal")["id"]
+              as int;
+      final computedNodeId =
+          nodes.singleWhere((node) => node["label"] == "root-computed")["id"]
+              as int;
+
+      expect(JoltDevTools.readRootValue(signalNodeId), equals(1));
+      expect(JoltDevTools.readRootValue(computedNodeId), equals(2));
+
+      computed.dispose();
+      signal.dispose();
+    });
+
+    test("devtools writes signal roots via reactive setter semantics", () {
+      final signal = Signal(
+        1,
+        debug: const JoltDebugOption.of("editable-signal", null),
+      );
+      final doubled = Computed(() => signal.value * 2);
+
+      expect(doubled.value, equals(2));
+
+      final signalNodeId = JoltDevTools.collectNodesForTesting()
+          .singleWhere((node) => node["label"] == "editable-signal")["id"] as int;
+
+      expect(JoltDevTools.writeSignalValue(signalNodeId, 5), isTrue);
+      expect(signal.value, equals(5));
+      expect(doubled.value, equals(10));
+
+      doubled.dispose();
+      signal.dispose();
+    });
   });
 }

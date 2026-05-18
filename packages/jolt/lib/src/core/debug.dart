@@ -345,6 +345,28 @@ abstract final class JoltDevTools {
   static Stream<Map<String, dynamic>> get updatesForTesting =>
       _updateController.stream;
 
+  @visibleForTesting
+  static Object? readRootValue(int nodeId) {
+    final node = debugNodes[nodeId]?.target;
+    if (node == null) return null;
+
+    return switch (node) {
+      SignalNode() => node.pendingValue,
+      ComputedNode() => node.peek(),
+      _ => null,
+    };
+  }
+
+  @visibleForTesting
+  static bool writeSignalValue(int nodeId, Object? value) {
+    final node = debugNodes[nodeId]?.target;
+    if (node is! SignalNode) {
+      return false;
+    }
+    node.set(value);
+    return true;
+  }
+
   /// Notifies DevTools about a node update.
   @internal
   static void notifyUpdate(int nodeId, String operation, dynamic value,

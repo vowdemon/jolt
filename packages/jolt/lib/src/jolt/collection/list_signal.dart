@@ -158,8 +158,11 @@ mixin ListSignalMixin<E> implements ListBase<E>, Readable<List<E>>, Notifiable {
 
   @override
   void addAll(Iterable<E> iterable) {
+    final oldLength = peek.length;
     peek.addAll(iterable);
-    notify();
+    if (peek.length != oldLength) {
+      notify();
+    }
   }
 
   @override
@@ -194,8 +197,11 @@ mixin ListSignalMixin<E> implements ListBase<E>, Readable<List<E>>, Notifiable {
 
   @override
   void insertAll(int index, Iterable<E> iterable) {
+    final oldLength = peek.length;
     peek.insertAll(index, iterable);
-    notify();
+    if (peek.length != oldLength) {
+      notify();
+    }
   }
 
   @override

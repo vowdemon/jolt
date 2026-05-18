@@ -2,6 +2,7 @@ import "dart:async";
 
 import "package:jolt/core.dart";
 import "package:jolt/jolt.dart";
+import "package:meta/meta.dart";
 
 /// Mixin providing write queue and throttling for persistent signals.
 ///
@@ -119,16 +120,6 @@ mixin _PersistWriteMixin<T> on SignalImpl<T> {
         continue;
       }
 
-      // coverage:ignore-start
-      // Wait for pending write task
-      if (_pending != null) {
-        await _pending!.completer.future;
-        // After _pending completes, it may have been moved to _writing
-        // Continue loop to check again
-        continue;
-      }
-      // coverage:ignore-end
-
       // Wait for throttled write timer and its resulting write
       if (_writeTimer != null && _timerCompleter != null) {
         // Wait for timer to complete
@@ -213,8 +204,10 @@ class _SyncPersistSignalImpl<T> extends SignalImpl<T>
 
   // ===== Initialization State =====
 
-  /// Version counter for tracking state changes.
-  int _version = 0;
+  /// Monotonic counter bumped on each [value] assignment.
+  @override
+  @visibleForTesting
+  int version = 0;
 
   /// Whether initialized from storage.
   bool _isInitialized = false;
@@ -226,9 +219,9 @@ class _SyncPersistSignalImpl<T> extends SignalImpl<T>
 
   /// Loads value from storage synchronously.
   void _loadSync() {
-    final loadVersion = _version;
+    final loadVersion = version;
     final result = read();
-    if (_version == loadVersion) {
+    if (version == loadVersion) {
       super.value = result;
     }
     _isInitialized = true;
@@ -260,7 +253,7 @@ class _SyncPersistSignalImpl<T> extends SignalImpl<T>
     }
 
     super.value = newValue;
-    _version++;
+    version++;
 
     _scheduleWrite(newValue);
   }
@@ -337,8 +330,10 @@ class _AsyncPersistSignalImpl<T> extends SignalImpl<T>
 
   // ===== Initialization State =====
 
-  /// Version counter for tracking state changes.
-  int _version = 0;
+  /// Monotonic counter bumped on each [value] assignment.
+  @override
+  @visibleForTesting
+  int version = 0;
 
   /// Whether initialized from storage.
   bool _isInitialized = false;
@@ -359,7 +354,7 @@ class _AsyncPersistSignalImpl<T> extends SignalImpl<T>
     }
 
     _initCompleter = Completer<void>();
-    final loadVersion = _version;
+    final loadVersion = version;
     final result = read();
 
     batch(() {
@@ -370,7 +365,7 @@ class _AsyncPersistSignalImpl<T> extends SignalImpl<T>
       // Async read
       result.then((loadedValue) {
         // Only apply loaded value if version hasn't changed
-        if (_version == loadVersion) {
+        if (version == loadVersion) {
           super.value = loadedValue;
         }
         _isInitialized = true;
@@ -418,7 +413,7 @@ class _AsyncPersistSignalImpl<T> extends SignalImpl<T>
 
     // Update value immediately (optimistic)
     super.value = newValue;
-    _version++;
+    version++;
 
     // Schedule write
     _scheduleWrite(newValue);
@@ -573,6 +568,15 @@ abstract interface class PersistSignal<T> implements Signal<T> {
 
   /// Whether initialized from storage.
   bool get isInitialized;
+
+  /// Monotonic counter bumped on each [value] assignment.
+  ///
+  /// Used to ignore stale storage reads when the value changed during load.
+  @visibleForTesting
+  int get version;
+
+  @visibleForTesting
+  set version(int value);
 
   /// Gets value, ensuring initialization is complete.
   ///

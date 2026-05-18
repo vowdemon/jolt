@@ -201,33 +201,6 @@ void flushEffects() {
   }
 }
 
-/// Disposes a reactive node: marks it inactive, detaches
-/// dependencies/subscribers. The node no longer participates in updates or propagation.
-///
-/// Parameters:
-/// - [e]: Node to dispose
-///
-/// Example:
-/// ```dart
-/// final effectNode = CustomEffectNode();
-/// disposeNode(effectNode);
-/// ```
-void disposeNode(ReactiveNode e) {
-  e
-    ..depsTail = null
-    ..flags = ReactiveFlags.none;
-  purgeDeps(e);
-  final sub = e.subs;
-  if (sub != null) {
-    unlink(sub);
-  }
-
-  assert(() {
-    JoltDebug.dispose(e);
-    return true;
-  }());
-}
-
 /// Removes all dependencies from [sub] in reverse dependency order.
 ///
 /// This is used for disposal paths where child effects must clean up in LIFO
@@ -313,4 +286,3 @@ T trigger<T>(T Function() fn) {
 int getBatchDepth() => batchDepth;
 int getCycle() => cycle;
 int getRunDepth() => runDepth;
-List<EffectNode?> getEffectQueue() => queued;

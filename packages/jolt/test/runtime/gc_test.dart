@@ -179,8 +179,7 @@ void main() {
     expect(effectRef.target, isNotNull);
     expectWeakTargetNotNull(effectRawRef);
 
-    await waitForGc('effect wrapper can be collected while raw is retained',
-        () {
+    await waitForGc('effect wrapper can be collected while raw is retained', () {
       return weakTargetIsNull(effectRef) && weakTargetIsNotNull(effectRawRef);
     });
 
@@ -206,8 +205,7 @@ void main() {
     s.dispose();
   });
 
-  test('effect scope keeps child effect raw alive until scope dispose',
-      () async {
+  test('effect scope keeps child effect raw alive until scope dispose', () async {
     final s = Signal(1);
     final scope = EffectScope();
     final values = <int>[];

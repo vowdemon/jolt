@@ -3,7 +3,7 @@ import "package:jolt/jolt.dart";
 import "package:jolt/src/core/debug.dart";
 import "package:test/test.dart";
 
-import "../utils.dart";
+import "../test_utils.dart";
 
 void main() {
   group("Debug", () {

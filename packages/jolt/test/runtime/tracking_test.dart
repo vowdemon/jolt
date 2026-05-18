@@ -1,7 +1,7 @@
 import "package:jolt/jolt.dart";
 import "package:jolt/src/jolt/impl/effect.dart";
 import "package:test/test.dart";
-import "../utils.dart";
+import "../test_utils.dart";
 
 void main() {
   group("untracked", () {
@@ -449,8 +449,7 @@ void main() {
         final _ = signal.value;
       });
 
-      // Effect should be triggered again
-      expect(values.length, greaterThanOrEqualTo(2));
+      expect(values, equals([1, 2, 2]));
     });
 
     test("should return function result", () {
@@ -487,9 +486,8 @@ void main() {
         signal2.value;
       });
 
-      // Effects should be triggered again
-      expect(values1.length, greaterThanOrEqualTo(2));
-      expect(values2.length, greaterThanOrEqualTo(2));
+      expect(values1, equals([1, 10, 10]));
+      expect(values2, equals([2, 20, 20]));
     });
 
     test("should work with computed values", () {
@@ -512,11 +510,12 @@ void main() {
         final _ = computed.value;
       });
 
-      // Effect should be triggered again
-      expect(values.length, greaterThanOrEqualTo(2));
+      expect(values, equals([4, 6, 6]));
     });
 
-    test("should trigger effects that depend on accessed signals", () {
+    test(
+        "should not force computed-only dependents when only a source is accessed",
+        () {
       final signal1 = Signal(1);
       final signal2 = Signal(2);
       final computed = Computed<int>(() => signal1.value + signal2.value);
@@ -537,8 +536,7 @@ void main() {
         final _ = signal1.value;
       });
 
-      // Effect should be triggered again
-      expect(values.length, greaterThanOrEqualTo(2));
+      expect(values, equals([3, 12]));
     });
 
     test("should handle errors correctly", () {
@@ -577,8 +575,8 @@ void main() {
         });
       });
 
-      expect(values1.length, greaterThanOrEqualTo(1));
-      expect(values2.length, greaterThanOrEqualTo(1));
+      expect(values1, equals([1, 1]));
+      expect(values2, equals([2, 2]));
     });
 
     test("should work with batch operations", () {
@@ -601,9 +599,7 @@ void main() {
         });
       });
 
-      // After batch, effect should run with new values
-      expect(values.length, greaterThanOrEqualTo(1));
-      expect(values.last, equals(30));
+      expect(values, equals([3, 30]));
     });
 
     test("should work with multiple effects on same signal", () {
@@ -631,9 +627,26 @@ void main() {
         final _ = signal.value;
       });
 
-      // Effects should be triggered again
-      expect(values1.length, greaterThanOrEqualTo(2));
-      expect(values2.length, greaterThanOrEqualTo(2));
+      expect(values1, equals([1, 3, 3]));
+      expect(values2, equals([2, 6, 6]));
+    });
+
+    test("should not trigger effects for unrelated accessed signals", () {
+      final tracked = Signal(1);
+      final unrelated = Signal(2);
+      final values = <int>[];
+
+      Effect(() {
+        values.add(tracked.value);
+      });
+
+      expect(values, equals([1]));
+
+      triggerTracked(() {
+        final _ = unrelated.value;
+      });
+
+      expect(values, equals([1]));
     });
   });
 }

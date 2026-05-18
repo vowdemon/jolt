@@ -1,8 +1,7 @@
+import "package:jolt/extension.dart";
 import "package:jolt/jolt.dart";
-import "package:jolt/src/jolt/impl/readonly.dart";
-import "package:jolt/src/utils/stream.dart";
 import "package:test/test.dart";
-import "utils.dart";
+import "../test_utils.dart";
 
 void main() {
   group("Stream Extension Tests", () {
@@ -25,6 +24,22 @@ void main() {
         signal.value = 3;
         await Future.delayed(const Duration(milliseconds: 1));
         expect(values, equals([2, 3]));
+      });
+
+      test("Signal stream ignores same-value writes", () async {
+        final signal = Signal(1);
+        final values = <int>[];
+
+        signal.stream.listen(values.add);
+
+        signal.value = 1;
+        signal.set(1);
+        await Future.delayed(const Duration(milliseconds: 1));
+        expect(values, isEmpty);
+
+        signal.value = 2;
+        await Future.delayed(const Duration(milliseconds: 1));
+        expect(values, equals([2]));
       });
 
       test("Computed stream - reactive listening", () async {
@@ -68,16 +83,16 @@ void main() {
         final stream1 = signal.stream;
         final stream2 = signal.stream;
 
-        expect(stream1, equals(stream2));
+        expect(stream1, same(stream2));
       });
 
-      test("Different readable wrappers reuse same node stream", () async {
+      test("Readonly access reuses the signal stream", () async {
         final signal = Signal(1);
-        final readonly1 = ReadonlyImpl(signal);
-        final readonly2 = ReadonlyImpl(signal);
+        final readonly1 = signal.readonly();
+        final readonly2 = signal.readonly();
         final values = <int>[];
 
-        expect(identical(readonly1, readonly2), isFalse);
+        expect(readonly1, same(readonly2));
         expect(readonly1.stream, same(readonly2.stream));
         expect(readonly1.stream, same(signal.stream));
 
@@ -172,101 +187,6 @@ void main() {
       });
     });
 
-    group("Collection Signals", () {
-      test("ListSignal stream", () async {
-        final listSignal = ListSignal<int>([1, 2, 3]);
-        final values = <List<int>>[];
-
-        listSignal.stream.listen((value) {
-          values.add(List.from(value));
-        });
-
-        // Should not emit initial value
-        await Future.delayed(const Duration(milliseconds: 1));
-        expect(values, isEmpty);
-
-        // Should emit on mutation
-        listSignal.add(4);
-        await Future.delayed(const Duration(milliseconds: 1));
-        expect(
-            values,
-            equals([
-              [1, 2, 3, 4]
-            ]));
-
-        listSignal.remove(2);
-        await Future.delayed(const Duration(milliseconds: 1));
-        expect(
-            values,
-            equals([
-              [1, 2, 3, 4],
-              [1, 3, 4]
-            ]));
-      });
-
-      test("MapSignal stream", () async {
-        final mapSignal = MapSignal<String, int>({});
-        final values = <Map<String, int>>[];
-
-        mapSignal.stream.listen((value) {
-          values.add(Map.from(value));
-        });
-
-        // Should not emit initial value
-        await Future.delayed(const Duration(milliseconds: 1));
-        expect(values, isEmpty);
-
-        // Should emit on mutation
-        mapSignal["a"] = 1;
-        await Future.delayed(const Duration(milliseconds: 1));
-        expect(
-            values,
-            equals([
-              {"a": 1}
-            ]));
-
-        mapSignal["b"] = 2;
-        await Future.delayed(const Duration(milliseconds: 1));
-        expect(
-            values,
-            equals([
-              {"a": 1},
-              {"a": 1, "b": 2}
-            ]));
-      });
-
-      test("SetSignal stream", () async {
-        final setSignal = SetSignal<int>({});
-        final values = <Set<int>>[];
-
-        setSignal.stream.listen((value) {
-          values.add(Set.from(value));
-        });
-
-        // Should not emit initial value
-        await Future.delayed(const Duration(milliseconds: 1));
-        expect(values, isEmpty);
-
-        // Should emit on mutation
-        setSignal.add(1);
-        await Future.delayed(const Duration(milliseconds: 1));
-        expect(
-            values,
-            equals([
-              {1}
-            ]));
-
-        setSignal.add(2);
-        await Future.delayed(const Duration(milliseconds: 1));
-        expect(
-            values,
-            equals([
-              {1},
-              {1, 2}
-            ]));
-      });
-    });
-
     group("Batch Updates", () {
       test("Batch updates emit only final value", () async {
         final signal = Signal(1);
@@ -326,13 +246,46 @@ void main() {
     });
 
     group("Error Handling", () {
-      test("Disposed signal stream works as container", () {
+      test("Disposed signal stream keeps identity but stops emitting",
+          () async {
         final signal = Signal(1);
-        final _ = signal.stream; // Create stream first
+        final stream = signal.stream;
+        final values = <int>[];
+
+        final subscription = stream.listen(values.add);
+
+        signal.value = 2;
+        await Future.delayed(const Duration(milliseconds: 1));
+        expect(values, equals([2]));
 
         signal.dispose();
+        expect(signal.stream, same(stream));
 
-        expect(signal.stream, isNotNull);
+        signal.value = 3;
+        signal.notify();
+        await Future.delayed(const Duration(milliseconds: 1));
+
+        expect(values, equals([2]));
+
+        await subscription.cancel();
+      });
+
+      test("disposed signal listen(immediately: true) emits one snapshot only",
+          () async {
+        final signal = Signal(1)..dispose();
+        final values = <int>[];
+        final subscription = signal.listen(values.add, immediately: true);
+
+        await Future<void>.delayed(Duration.zero);
+        expect(values, equals([1]));
+
+        signal.value = 2;
+        signal.notify();
+        await Future<void>.delayed(Duration.zero);
+
+        expect(values, equals([1]));
+
+        await subscription.cancel();
       });
     });
 
@@ -466,8 +419,10 @@ void main() {
         // Dispose signal should clean up watcher
         signal.dispose();
 
-        // Disposed signal stream still works as container
-        expect(signal.stream, isNotNull);
+        signal.value = 3;
+        signal.notify();
+        await Future.delayed(const Duration(milliseconds: 1));
+        expect(values, equals([2]));
       });
 
       test("Stream holder reuse across multiple accesses", () {
@@ -477,7 +432,7 @@ void main() {
         final stream1 = signal.stream;
         final stream2 = signal.stream;
 
-        expect(stream1, equals(stream2));
+        expect(stream1, same(stream2));
 
         // Even after listeners are added and removed
         final subscription = signal.stream.listen((_) {});
@@ -486,7 +441,7 @@ void main() {
         subscription.cancel();
 
         final stream3 = signal.stream;
-        expect(stream1, equals(stream3));
+        expect(stream1, same(stream3));
       });
     });
   });

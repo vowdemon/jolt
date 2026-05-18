@@ -84,7 +84,8 @@ void main() {
         expect(values, equals([0, 6]));
       });
 
-      test("detach keeps effect from scope, until continues after scope dispose",
+      test(
+          "detach keeps effect from scope, until continues after scope dispose",
           () async {
         final signal = Signal(0);
         late Until<int> until;
@@ -98,6 +99,29 @@ void main() {
         signal.value = 5;
         await Future.delayed(const Duration(milliseconds: 1));
         expect(await until, equals(5));
+      });
+
+      test("detach false binds until to its scope disposal", () async {
+        final signal = Signal(0);
+        late Until<int> until;
+
+        final scope = EffectScope()
+          ..run(() {
+            until = Until(signal, (v) => v >= 5, detach: false);
+          });
+
+        scope.dispose();
+        signal.value = 5;
+
+        expect(
+          await until.timeout(
+            const Duration(milliseconds: 20),
+            onTimeout: () => -1,
+          ),
+          equals(-1),
+        );
+        expect(until.isCompleted, isFalse);
+        expect(until.isCancelled, isFalse);
       });
 
       test("Until.when factory works", () async {
@@ -162,6 +186,25 @@ void main() {
         final until = signal.until((value) => value >= 5);
 
         until.cancel();
+        expect(until.isCancelled, isTrue);
+        expect(until.isCompleted, isFalse);
+      });
+
+      test("cancel keeps future pending after later matching changes",
+          () async {
+        final signal = Signal(0);
+        final until = signal.until((value) => value >= 5);
+
+        until.cancel();
+        signal.value = 5;
+
+        expect(
+          await until.timeout(
+            const Duration(milliseconds: 20),
+            onTimeout: () => -1,
+          ),
+          equals(-1),
+        );
         expect(until.isCancelled, isTrue);
         expect(until.isCompleted, isFalse);
       });

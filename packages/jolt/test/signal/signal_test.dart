@@ -1,4 +1,3 @@
-import "package:jolt/core.dart";
 import "package:jolt/extension.dart";
 import "package:jolt/jolt.dart";
 import "package:meta/meta.dart";
@@ -23,9 +22,6 @@ void main() {
   group("Signal", () {
     test("should create signal with initial value", () {
       final signal = Signal(42);
-
-      expect(signal.value, equals(42));
-      expect(signal.peek, equals(42));
 
       expect(signal.value, equals(42));
       expect(signal.peek, equals(42));
@@ -103,6 +99,25 @@ void main() {
       expect(values, equals([1, 2, 3]));
     });
 
+    test("should not rerun effect when writing same value", () {
+      final signal = Signal(1);
+      final values = <int>[];
+
+      Effect(() {
+        values.add(signal.value);
+      });
+
+      expect(values, equals([1]));
+
+      signal.value = 1;
+      signal.set(1);
+
+      expect(values, equals([1]));
+
+      signal.value = 2;
+      expect(values, equals([1, 2]));
+    });
+
     test("should emit stream events", () async {
       final signal = Signal(1);
       final values = <int>[];
@@ -136,94 +151,183 @@ void main() {
       expect(values2, equals([2]));
     });
 
-    test("disposed signal works as container", () {
+    test("disposed signal stays inert for new reactive consumers", () {
       final signal = Signal(42)..dispose();
+      final values = <int>[];
+      final effect = Effect(() {
+        values.add(signal.value);
+      });
 
+      expect(values, equals([42]));
       expect(signal.value, equals(42));
       signal.value = 1;
       signal.notify();
       expect(signal.value, equals(1));
       expect(signal.peek, equals(1));
+      expect(values, equals([42]),
+          reason: "disposed signals must not resubscribe new effects");
+
+      effect.dispose();
     });
 
     group("disposed signal no longer reactive", () {
-      test("disposed signal setSignal does not trigger effect", () {
-        final a = Signal(0);
+      test("disposed signal stays inert for existing effects", () {
+        final signal = Signal(0);
         final values = <int>[];
-        final e = Effect(() {
-          values.add(a.value);
+        final effect = Effect(() {
+          values.add(signal.value);
         });
+
         expect(values, equals([0]));
 
-        a.dispose();
+        signal.value = 1;
+        expect(values, equals([0, 1]));
 
-        (a as SignalImpl).raw.set(1);
+        signal.dispose();
+        signal.value = 2;
+        signal.notify();
 
-        expect(a.isDisposed, isTrue);
-        expect(values, equals([0]),
-            reason: "effect must not run after signal disposed");
+        expect(signal.isDisposed, isTrue);
+        expect(values, equals([0, 1]),
+            reason: "disposed signals must not rerun existing effects");
 
-        e.dispose();
+        effect.dispose();
       });
 
-      test("disposed signal does not trigger its subscribers", () {
-        final s = Signal(1);
-        var runCount = 0;
-        Effect(() {
-          runCount++;
-          s.value;
-        });
-        expect(runCount, equals(1));
-
-        s.dispose();
-        (s as SignalImpl).raw.set(2);
-        expect(s.isDisposed, isTrue);
-        expect(runCount, equals(1),
-            reason: "effect must not run after signal disposed");
-
-        final s2 = Signal(10);
-        Effect(() {
-          runCount++;
-          s2.value;
-        });
-        expect(runCount, equals(2));
-        s2.value = 20;
-        expect(runCount, equals(3), reason: "only second effect should run");
-      });
-
-      test("batch with one disposed dependency runs once", () {
-        final a = Signal(0);
-        final b = Signal(0);
+      test("disposed signal stays inert for existing stream listeners",
+          () async {
+        final signal = Signal(1);
         final values = <int>[];
-        Effect(() {
-          values.add(b.value);
-        });
-        expect(values, equals([0]));
+        final subscription = signal.stream.listen(values.add);
 
-        a.dispose();
-        (a as SignalImpl).raw.set(1);
+        signal.value = 2;
+        await Future.delayed(const Duration(milliseconds: 1));
+        expect(values, equals([2]));
+
+        signal.dispose();
+        signal.value = 3;
+        signal.notify();
+        await Future.delayed(const Duration(milliseconds: 1));
+
+        expect(signal.isDisposed, isTrue);
+        expect(values, equals([2]),
+            reason: "disposed signals must not emit to existing listeners");
+
+        await subscription.cancel();
+      });
+
+      test("batch ignores disposed signals but still flushes active ones once",
+          () {
+        final disposed = Signal(0);
+        final active = Signal(0);
+        final disposedValues = <int>[];
+        final activeValues = <int>[];
+
+        Effect(() {
+          disposedValues.add(disposed.value);
+        });
+        Effect(() {
+          activeValues.add(active.value);
+        });
+
+        expect(disposedValues, equals([0]));
+        expect(activeValues, equals([0]));
+
+        disposed.value = 1;
+        active.value = 1;
+
+        expect(disposedValues, equals([0, 1]));
+        expect(activeValues, equals([0, 1]));
+
+        disposed.dispose();
         batch(() {
-          b.value = 2;
+          disposed.value = 2;
+          disposed.notify();
+          active
+            ..value = 2
+            ..value = 3;
         });
-        expect(a.isDisposed, isTrue);
-        expect(values, equals([0, 2]), reason: "effect runs once for b change");
+
+        expect(disposed.isDisposed, isTrue);
+        expect(disposedValues, equals([0, 1]),
+            reason: "disposed signals must stay inert inside batch");
+        expect(activeValues, equals([0, 1, 3]),
+            reason:
+                "active signals should still flush the final batched value");
       });
 
-      test("multiple subscribers with one disposed", () {
-        final s = Signal(1);
+      test("disposed signal freezes all existing subscribers", () {
+        final signal = Signal(1);
         final v1 = <int>[];
         final v2 = <int>[];
-        final e1 = Effect(() => v1.add(s.value));
-        final e2 = Effect(() => v2.add(s.value));
+        final e1 = Effect(() => v1.add(signal.value));
+        final e2 = Effect(() => v2.add(signal.value));
+
+        expect(v1, equals([1]));
+        expect(v2, equals([1]));
+
+        signal.dispose();
+        signal.value = 2;
+        signal.notify();
+
         expect(v1, equals([1]));
         expect(v2, equals([1]));
 
         e1.dispose();
-        s.value = 2;
-        expect(v1, equals([1]));
-        expect(v2, equals([1, 2]));
         e2.dispose();
       });
+    });
+
+    test("equal-value writes do not rerun effects, even in batches", () {
+      final signal = Signal(1);
+      final values = <int>[];
+
+      Effect(() {
+        values.add(signal.value);
+      });
+
+      signal.value = 1;
+      batch(() {
+        signal.value = 1;
+        signal.value = 1;
+      });
+
+      expect(values, equals([1]));
+
+      signal.value = 2;
+      expect(values, equals([1, 2]));
+    });
+
+    test("peek stays untracked while value/get()/call() stay reactive", () {
+      final signal = Signal(1);
+      var peekRuns = 0;
+      var valueRuns = 0;
+      var getRuns = 0;
+      var callRuns = 0;
+
+      Effect(() {
+        peekRuns++;
+        signal.peek;
+      });
+      Effect(() {
+        valueRuns++;
+        signal.value;
+      });
+      Effect(() {
+        getRuns++;
+        signal.get();
+      });
+      Effect(() {
+        callRuns++;
+        signal();
+      });
+
+      signal.value = 2;
+
+      expect(peekRuns, equals(1));
+      expect(valueRuns, equals(2));
+      expect(getRuns, equals(2));
+      expect(callRuns, equals(2));
     });
 
     test("should work with different data types", () {
@@ -393,9 +497,7 @@ void main() {
       Effect(() {
         values.add(lazySignal.value);
       });
-      // Effect runs immediately, so we should have one value
-      expect(values.length, greaterThanOrEqualTo(1));
-      expect(values.last, equals(10));
+      expect(values, equals([10]));
     });
   });
 
@@ -413,14 +515,6 @@ void main() {
       expect(constant(), equals(constant.get()));
       expect(constant(), equals(constant.value));
       expect(constant(), equals(constant.peek));
-    });
-
-    test("constant signal should always return same value", () {
-      final constant = Readonly("hello");
-      expect(constant.value, equals("hello"));
-      expect(constant.value, equals("hello"));
-      expect(constant(), equals("hello"));
-      expect(constant.peek, equals("hello"));
     });
 
     test("constant signal should not be writable", () {
@@ -462,21 +556,6 @@ void main() {
       expect(values, equals(["hello"]));
     });
 
-    test("constant signal should not trigger effect updates", () {
-      final constant = Readonly(1);
-      final values = <int>[];
-
-      Effect(() {
-        values.add(constant.value);
-      });
-
-      expect(values, equals([1]));
-
-      // Constant signal cannot change, so effect should not run again
-      // But we can't actually change it, so values should remain [1]
-      expect(values, equals([1]));
-    });
-
     test("constant signal toString should return value.toString()", () {
       final constant = Readonly(42);
       expect(constant.toString(), equals("42"));
@@ -489,29 +568,6 @@ void main() {
       final nullConstant = Readonly<int?>(null);
       expect(nullConstant.toString(), equals("null"));
       expect(nullConstant.toString(), equals(nullConstant.value.toString()));
-    });
-
-    test("constant signal notify should be noop and not trigger updates", () {
-      final constant = Readonly(5);
-      final values = <int>[];
-
-      // Create an effect that tracks the constant
-      final effect = Effect(() {
-        values.add(constant.value);
-      });
-
-      expect(values, equals([5]));
-
-      // Effect should not run again (constant signals don't trigger reactivity)
-      expect(values, equals([5]),
-          reason: "notify should not trigger effect updates");
-
-      expect(values, equals([5]));
-
-      // Verify value is still accessible
-      expect(constant.value, equals(5));
-
-      effect.dispose();
     });
   });
 }

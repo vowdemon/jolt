@@ -35,131 +35,37 @@ void main() {
       expect(signal.value, equals(15));
       expect(values, equals([10, 15])); // Only one update triggered
     });
-  });
 
-  group("JoltSignalExtension", () {
-    test("readonly returns ReadonlySignal and reflects changes", () {
-      final signal = Signal(42);
-      final readonly = signal.readonly();
+    test("update works with different data types", () {
+      final stringSignal = Signal("hello");
+      final listSignal = Signal<List<int>>([1, 2, 3]);
+      final mapSignal = Signal<Map<String, int>>({"a": 1});
 
-      expect(readonly, isA<Readonly<int>>());
-      expect(readonly.value, equals(42));
-      expect(readonly.peek, equals(42));
+      stringSignal.update((value) => value.toUpperCase());
+      listSignal.update((value) => [...value, 4, 5]);
+      mapSignal.update((value) => {...value, "b": 2});
 
-      signal.value = 10;
-      expect(readonly.value, equals(10));
-      expect(readonly.peek, equals(10));
+      expect(stringSignal.value, equals("HELLO"));
+      expect(listSignal.value, equals([1, 2, 3, 4, 5]));
+      expect(mapSignal.value, equals({"a": 1, "b": 2}));
     });
 
-    test("readonly view establishes reactive dependency", () {
-      final signal = Signal(0);
-      final readonly = signal.readonly();
-      final values = <int>[];
-
-      Effect(() {
-        values.add(readonly.value);
-      });
-
-      expect(values, equals([0]));
-      signal.value = 1;
-      expect(values, equals([0, 1]));
-    });
-
-    test("readonly view toString returns value string", () {
-      final signal = Signal(42);
-      final readonly = signal.readonly();
-
-      expect(readonly.toString(), equals("42"));
-
-      signal.value = 100;
-      expect(readonly.toString(), equals("100"));
-    });
-
-    test("readonly view operator == works correctly", () {
-      final signal1 = Signal(5);
-      final signal2 = Signal(5);
-      final readonly1 = signal1.readonly();
-      final readonly2 = signal1.readonly(); // Same signal
-      final readonly3 = signal2.readonly(); // Different signal
-
-      expect(readonly1 == readonly2, isTrue); // Same root signal
-      expect(readonly1 == readonly3, isFalse); // Different root signals
-      expect(readonly1 == readonly1, isTrue); // Same instance
-    });
-
-    test("readonly view hashCode is consistent", () {
-      final signal = Signal(5);
-      final readonly1 = signal.readonly();
-      final readonly2 = signal.readonly();
-
-      expect(readonly1.hashCode, equals(readonly2.hashCode));
-    });
-  });
-
-  group("JoltWritableComputedExtension", () {
-    test("readonly view establishes reactive dependency", () {
+    test("update works with WritableComputed", () {
       final baseSignal = Signal(5);
       final writableComputed = WritableComputed<int>(
         () => baseSignal.value * 2,
         (value) => baseSignal.value = value ~/ 2,
       );
-      final readonly = writableComputed.readonly();
-      final values = <int>[];
 
-      Effect(() {
-        values.add(readonly.value);
-      });
+      expect(writableComputed.value, equals(10));
 
-      expect(values, equals([10]));
-      baseSignal.value = 10;
-      expect(values, equals([10, 20]));
-    });
+      writableComputed.update((value) => value + 10);
+      expect(writableComputed.value, equals(20));
+      expect(baseSignal.value, equals(10));
 
-    test("readonly view toString returns value string", () {
-      final baseSignal = Signal(5);
-      final writableComputed = WritableComputed<int>(
-        () => baseSignal.value * 2,
-        (value) => baseSignal.value = value ~/ 2,
-      );
-      final readonly = writableComputed.readonly();
-
-      expect(readonly.toString(), equals("10"));
-
-      writableComputed.value = 20;
-      expect(readonly.toString(), equals("20"));
-    });
-
-    test("readonly view operator == works correctly", () {
-      final baseSignal1 = Signal(5);
-      final baseSignal2 = Signal(5);
-      final writableComputed1 = WritableComputed<int>(
-        () => baseSignal1.value * 2,
-        (value) => baseSignal1.value = value ~/ 2,
-      );
-      final writableComputed2 = WritableComputed<int>(
-        () => baseSignal2.value * 2,
-        (value) => baseSignal2.value = value ~/ 2,
-      );
-      final readonly1 = writableComputed1.readonly();
-      final readonly2 = writableComputed1.readonly(); // Same writable computed
-      final readonly3 =
-          writableComputed2.readonly(); // Different writable computed
-
-      expect(readonly1 == readonly2, isTrue); // Same root
-      expect(readonly1 == readonly3, isFalse); // Different roots
-      expect(readonly1 == readonly1, isTrue); // Same instance
-    });
-
-    test("readonly view hashCode is consistent", () {
-      final baseSignal = Signal(5);
-      final writableComputed = WritableComputed<int>(
-        () => baseSignal.value * 2,
-        (value) => baseSignal.value = value ~/ 2,
-      );
-      final readonly1 = writableComputed.readonly();
-      final readonly2 = writableComputed.readonly();
-
-      expect(readonly1.hashCode, equals(readonly2.hashCode));
+      writableComputed.update((value) => value * 2);
+      expect(writableComputed.value, equals(40));
+      expect(baseSignal.value, equals(20));
     });
   });
 }

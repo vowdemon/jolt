@@ -25,7 +25,7 @@ jobs:
         with:
           dry_run: true
           fail_ci_if_error: true
-          files: ./coverage/combined.info
+          files: ./coverage/lcov.info
       - name: Dry publish packages
         run: melos publish --dry-run -y
         shell: bash

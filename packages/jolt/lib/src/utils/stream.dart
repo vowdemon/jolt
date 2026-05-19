@@ -2,43 +2,36 @@ import 'dart:async';
 
 import 'package:jolt/core.dart';
 import 'package:jolt/jolt.dart';
-import 'package:jolt/src/core/utils.dart';
 
+/// Stream interop for [Readable] values.
 extension JoltUtilsStreamExtension<T> on Readable<T> {
-  /// Converts this reactive value to a broadcast stream.
+  /// A broadcast stream of later visible changes to this readable.
   ///
-  /// Emits values whenever the reactive value changes. Multiple listeners
-  /// can subscribe. Automatically cleaned up when disposed.
+  /// This stream does not emit the current value when a listener subscribes.
+  /// Use [listen] with `immediately: true` when a snapshot should be delivered
+  /// before later change events.
   ///
-  /// Returns: A broadcast stream of value changes
-  ///
-  /// Example:
   /// ```dart
   /// final counter = Signal(0);
-  /// counter.stream.listen((value) => print('Counter: $value'));
-  /// counter.value = 1; // Prints: "Counter: 1"
+  /// final values = <int>[];
+  ///
+  /// counter.stream.listen(values.add);
+  /// counter.value = 1;
+  /// await Future<void>.delayed(Duration.zero);
+  ///
+  /// print(values); // [1]
   /// ```
   Stream<T> get stream => _getOrCreateStream(this);
 
-  /// Listens to changes in this reactive value.
+  /// Subscribes to later visible changes to this readable.
   ///
-  /// Parameters:
-  /// - [onData]: Callback for each new value
-  /// - [onError]: Optional error callback
-  /// - [onDone]: Optional completion callback
-  /// - [cancelOnError]: Whether to cancel on error
-  /// - [immediately]: Whether to call [onData] with current value immediately
+  /// When [immediately] is `true`, Jolt first schedules one microtask that
+  /// calls [onData] with this readable's current value, then continues with
+  /// later stream events.
   ///
-  /// Returns: A StreamSubscription for cancellation
-  ///
-  /// Example:
   /// ```dart
-  /// final counter = Signal(0);
-  /// final sub = counter.listen(
-  ///   (value) => print('Counter: $value'),
-  ///   immediately: true,
-  /// );
-  /// sub.cancel();
+  /// final counter = Signal(1);
+  /// counter.listen(print, immediately: true); // prints 1, then later changes
   /// ```
   StreamSubscription<T> listen(
     void Function(T event)? onData, {

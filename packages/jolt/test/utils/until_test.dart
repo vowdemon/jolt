@@ -1,6 +1,5 @@
 import "dart:async";
 
-import "package:jolt/extension.dart";
 import "package:jolt/jolt.dart";
 import "package:test/test.dart";
 
@@ -159,7 +158,8 @@ void main() {
     });
 
     group("untilChanged()", () {
-      test("ignores writes equal to snapshot and completes on change", () async {
+      test("ignores writes equal to snapshot and completes on change",
+          () async {
         final signal = Signal(0);
         final until = signal.untilChanged();
 
@@ -174,7 +174,8 @@ void main() {
     });
 
     group("Future delegation", () {
-      test("then, whenComplete, and catchError forward to the completer", () async {
+      test("then, whenComplete, and catchError forward to the completer",
+          () async {
         final signal = Signal(5);
         final until = signal.until((value) => value >= 5);
         var completed = false;

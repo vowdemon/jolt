@@ -1,37 +1,8 @@
 import "package:jolt/core.dart";
 import "package:jolt/jolt.dart";
 
-/// Implementation of [ConvertComputed] that converts between different types.
-///
-/// This is the concrete implementation of the [ConvertComputed] interface.
-/// ConvertComputed provides a way to create a computed signal that converts
-/// between different types while maintaining reactivity. It acts as a bridge
-/// between signals of different types, automatically handling the conversion
-/// in both directions.
-///
-/// See [ConvertComputed] for the public interface and usage examples.
-///
-/// Example:
-/// ```dart
-/// final count = Signal(0);
-/// final textCount = ConvertComputed(
-///   count,
-///   decode: (int value) => value.toString(),
-///   encode: (String value) => int.parse(value),
-/// );
-///
-/// print(textCount.value); // "0"
-/// textCount.value = "42"; // Updates count to 42
-/// ```
 class _ConvertComputedImpl<T, U> extends WritableComputedImpl<T>
     implements ConvertComputed<T, U> {
-  /// Creates a type-converting computed signal.
-  ///
-  /// Parameters:
-  /// - [source]: The source signal to convert from
-  /// - [decode]: Function to convert from source type to target type
-  /// - [encode]: Function to convert from target type to source type
-  /// - [debug]: Optional debug options
   _ConvertComputedImpl(
     this.source, {
     required this.decode,
@@ -43,57 +14,42 @@ class _ConvertComputedImpl<T, U> extends WritableComputedImpl<T>
           (value) => source.value = encode(value),
         );
 
-  /// The source signal to convert from.
   final Writable<U> source;
 
-  /// Function to convert from source type to target type.
   final T Function(U value) decode;
 
-  /// Function to convert from target type to source type.
   final U Function(T value) encode;
 }
 
-/// Interface for type-converting computed signals.
+/// A writable computed value that converts through another writable source.
 ///
-/// ConvertComputed provides a way to create a computed signal that converts
-/// between different types while maintaining reactivity. It acts as a bridge
-/// between signals of different types, automatically handling the conversion
-/// in both directions.
-///
-/// Example:
-/// ```dart
-/// final count = Signal(0);
-/// ConvertComputed<String, int> textCount = ConvertComputed(
-///   count,
-///   decode: (int value) => value.toString(),
-///   encode: (String value) => int.parse(value),
-/// );
-///
-/// print(textCount.value); // "0"
-/// textCount.value = "42"; // Updates count to 42
-/// ```
+/// [ConvertComputed] reads from [source] through [decode] and writes back
+/// through [encode]. Use it to expose one representation of state while storing
+/// another.
 abstract interface class ConvertComputed<T, U> implements WritableComputed<T> {
-  /// Creates a type-converting computed signal.
+  /// Creates a writable computed value backed by [source].
   ///
-  /// Parameters:
-  /// - [source]: The source signal to convert from
-  /// - [decode]: Function to convert from source type to target type
-  /// - [encode]: Function to convert from target type to source type
-  /// - [debug]: Optional debug options for reactive system debugging
+  /// The [decode] callback converts values read from [source] into this
+  /// computed value's type. The [encode] callback converts assigned values back
+  /// into [source]'s type. Errors thrown by [decode] surface on reads, and
+  /// errors thrown by [encode] surface on writes.
   ///
-  /// Example:
   /// ```dart
-  /// final convertComputed = ConvertComputed(
-  ///   count,
-  ///   decode: (int v) => v.toString(),
-  ///   encode: (String v) => int.parse(v),
+  /// final cents = Signal(1250);
+  /// final dollars = ConvertComputed<String, int>(
+  ///   cents,
+  ///   decode: (value) => (value / 100).toStringAsFixed(2),
+  ///   encode: (value) => (double.parse(value) * 100).round(),
   /// );
+  ///
+  /// dollars.value = '20.00';
+  /// print(cents.value); // 2000
   /// ```
   factory ConvertComputed(
     Writable<U> source, {
     required T Function(U value) decode,
     required U Function(T value) encode,
-    EqualFn? equals,
+    ComputedEqualsFn? equals,
     JoltDebugOption? debug,
   }) = _ConvertComputedImpl<T, U>;
 }

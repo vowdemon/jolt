@@ -4,35 +4,23 @@ import "package:jolt/core.dart";
 import "package:jolt/jolt.dart";
 import "package:meta/meta.dart";
 
-/// Mixin providing write queue and throttling for persistent signals.
-///
-/// Uses a 2-element queue to ensure writes are never lost and supports
-/// throttling to debounce rapid writes.
 mixin _PersistWriteMixin<T> on SignalImpl<T> {
-  /// Function to write the value to storage.
   FutureOr<void> Function(T value) get write;
 
-  /// Throttle delay before writing (null = no throttling).
   Duration? get throttle;
 
   // ===== Write Queue (2-element) =====
 
-  /// Currently writing value (slot 1).
   _WriteTask<T>? _writing;
 
-  /// Pending write value (slot 2).
   _WriteTask<T>? _pending;
 
-  /// Timer for throttled writes.
   Timer? _writeTimer;
 
-  /// Completer to track when throttle timer completes.
   Completer<void>? _timerCompleter;
 
-  /// Value to write when throttle timer expires (for trailing write).
   T? _throttledValue;
 
-  /// Schedules a write with throttling (trailing edge).
   void _scheduleWrite(T value) {
     if (throttle != null) {
       // Update throttled value (always keep the latest)
@@ -58,7 +46,6 @@ mixin _PersistWriteMixin<T> on SignalImpl<T> {
     }
   }
 
-  /// Enqueues a write in the 2-element queue.
   void _enqueueWrite(T value) {
     final task = _WriteTask<T>(value);
 
@@ -72,7 +59,6 @@ mixin _PersistWriteMixin<T> on SignalImpl<T> {
     }
   }
 
-  /// Executes a write task asynchronously.
   Future<void> _executeWrite(_WriteTask<T> task) async {
     try {
       final result = write(task.value);
@@ -87,7 +73,6 @@ mixin _PersistWriteMixin<T> on SignalImpl<T> {
     }
   }
 
-  /// Handles write completion and processes next pending write.
   void _onWriteComplete() {
     // Clear slot 1
     _writing = null;
@@ -100,16 +85,6 @@ mixin _PersistWriteMixin<T> on SignalImpl<T> {
     }
   }
 
-  /// Waits for all pending writes to complete.
-  ///
-  /// Includes: currently executing write, pending write in queue,
-  /// and throttled write waiting for timer.
-  ///
-  /// Example:
-  /// ```dart
-  /// signal.value = 'new value';
-  /// await signal.ensureWrite(); // Wait for write
-  /// ```
   Future<void> ensureWrite() async {
     while (true) {
       // Wait for currently writing task
@@ -135,43 +110,17 @@ mixin _PersistWriteMixin<T> on SignalImpl<T> {
   }
 }
 
-/// A write task in the queue.
 class _WriteTask<T> {
   _WriteTask(this.value) : completer = Completer<void>();
 
-  /// Value to write.
   final T value;
 
-  /// Completer for task completion.
   final Completer<void> completer;
 }
 
-/// Synchronous persistent signal implementation.
-///
-/// Reads values synchronously and initializes immediately (unless lazy).
-/// Uses a 2-element write queue for efficient writes.
-///
-/// **Note:** Write operations require initialization. Lazy signals
-/// auto-initialize on first access.
 class _SyncPersistSignalImpl<T> extends SignalImpl<T>
     with _PersistWriteMixin<T>
     implements PersistSignal<T> {
-  /// Creates a synchronous persistent signal.
-  ///
-  /// Parameters:
-  /// - [read]: Synchronous function to read from storage
-  /// - [write]: Function to write to storage
-  /// - [lazy]: Defer loading until first access (default: false)
-  /// - [throttle]: Delay before writing (null = no throttling)
-  /// - [debug]: Optional debug options
-  ///
-  /// Example:
-  /// ```dart
-  /// final theme = PersistSignal.sync(
-  ///   read: () => prefs.getString('theme') ?? 'light',
-  ///   write: (value) => prefs.setString('theme', value),
-  /// );
-  /// ```
   _SyncPersistSignalImpl({
     required this.read,
     required this.write,
@@ -191,25 +140,20 @@ class _SyncPersistSignalImpl<T> extends SignalImpl<T>
     super.debug,
   }) : super(null);
 
-  /// Synchronous read function.
   final T Function() read;
 
-  /// Write function (sync or async).
   @override
   final FutureOr<void> Function(T value) write;
 
-  /// Throttle delay (null = no throttling).
   @override
   final Duration? throttle;
 
   // ===== Initialization State =====
 
-  /// Monotonic counter bumped on each [value] assignment.
   @override
   @visibleForTesting
   int version = 0;
 
-  /// Whether initialized from storage.
   bool _isInitialized = false;
 
   @override
@@ -217,7 +161,6 @@ class _SyncPersistSignalImpl<T> extends SignalImpl<T>
 
   // ===== Initialization =====
 
-  /// Loads value from storage synchronously.
   void _loadSync() {
     final loadVersion = version;
     final result = read();
@@ -265,34 +208,9 @@ class _SyncPersistSignalImpl<T> extends SignalImpl<T>
   }
 }
 
-/// Asynchronous persistent signal implementation.
-///
-/// Reads values asynchronously and supports optional initialValue during loading.
-/// Uses a 2-element write queue for efficient writes.
-///
-/// **Note:** Write operations require initialization. Use [ensure] or
-/// [getEnsured] before writing, or check [isInitialized].
 class _AsyncPersistSignalImpl<T> extends SignalImpl<T>
     with _PersistWriteMixin<T>
     implements PersistSignal<T> {
-  /// Creates an asynchronous persistent signal.
-  ///
-  /// Parameters:
-  /// - [read]: Async function to read from storage
-  /// - [write]: Function to write to storage
-  /// - [initialValue]: Optional temporary value during loading (null if omitted)
-  /// - [lazy]: Defer loading until first access (default: false)
-  /// - [throttle]: Delay before writing (null = no throttling)
-  /// - [debug]: Optional debug options
-  ///
-  /// Example:
-  /// ```dart
-  /// final theme = PersistSignal.async(
-  ///   read: () async => await prefs.getString('theme') ?? 'light',
-  ///   write: (value) => prefs.setString('theme', value),
-  ///   initialValue: () => 'light',  // Show while loading
-  /// );
-  /// ```
   _AsyncPersistSignalImpl({
     required this.read,
     required this.write,
@@ -314,31 +232,24 @@ class _AsyncPersistSignalImpl<T> extends SignalImpl<T>
     super.debug,
   }) : super(null);
 
-  /// Optional temporary value during async loading (for display).
   final T Function()? initialValue;
 
-  /// Async read function.
   final Future<T> Function() read;
 
-  /// Write function (sync or async).
   @override
   final FutureOr<void> Function(T value) write;
 
-  /// Throttle delay (null = no throttling).
   @override
   final Duration? throttle;
 
   // ===== Initialization State =====
 
-  /// Monotonic counter bumped on each [value] assignment.
   @override
   @visibleForTesting
   int version = 0;
 
-  /// Whether initialized from storage.
   bool _isInitialized = false;
 
-  /// Completer for initialization operation.
   Completer<void>? _initCompleter;
 
   @override
@@ -346,7 +257,6 @@ class _AsyncPersistSignalImpl<T> extends SignalImpl<T>
 
   // ===== Initialization =====
 
-  /// Loads value from storage asynchronously.
   Future<void> _load() {
     // Return existing init future if already loading
     if (_initCompleter != null) {
@@ -439,50 +349,29 @@ class _AsyncPersistSignalImpl<T> extends SignalImpl<T>
   }
 }
 
-/// Signal that persists its value to external storage.
+/// A signal that persists its value to external storage.
 ///
-/// Automatically saves value changes to storage. Supports sync/async reads,
-/// lazy loading, and write throttling. Uses a 2-element write queue.
-///
-/// **Initialization:**
-/// - Sync signals: initialized immediately (or on first access if lazy)
-/// - Async signals: must call [ensure] or [getEnsured] before writing
-///
-/// Example (sync):
-/// ```dart
-/// final theme = PersistSignal.sync(
-///   read: () => prefs.getString('theme') ?? 'light',
-///   write: (value) => prefs.setString('theme', value),
-/// );
-/// theme.value = 'dark'; // Auto-saved
-/// ```
-///
-/// Example (async):
-/// ```dart
-/// final theme = PersistSignal.async(
-///   read: () async => await prefs.getString('theme') ?? 'light',
-///   write: (value) => prefs.setString('theme', value),
-///   initialValue: () => 'light',
-/// );
-/// await theme.ensure(); // Wait for init
-/// theme.value = 'dark'; // Auto-saved
-/// ```
+/// [PersistSignal] keeps an in-memory reactive value and writes later
+/// assignments through the provided storage callback. Use the synchronous
+/// factories when storage reads are immediate, and the asynchronous factories
+/// when loading requires a [Future].
 abstract interface class PersistSignal<T> implements Signal<T> {
-  /// Creates a synchronous persistent signal.
+  /// Creates a persistent signal backed by synchronous storage reads.
   ///
-  /// Parameters:
-  /// - [read]: Sync function to read from storage
-  /// - [write]: Function to write to storage
-  /// - [lazy]: Defer loading until first access (default: false)
-  /// - [throttle]: Delay before writing (null = no throttling)
-  /// - [debug]: Optional debug options
+  /// The [read] callback loads the stored value. The [write] callback persists
+  /// later assignments. When [lazy] is `false`, this signal reads storage
+  /// during construction. When [lazy] is `true`, it reads on the first access
+  /// or write. Set [throttle] to delay persistence and collapse writes that
+  /// arrive during the throttle window to the latest value.
   ///
-  /// Example:
   /// ```dart
   /// final theme = PersistSignal.sync(
   ///   read: () => prefs.getString('theme') ?? 'light',
   ///   write: (value) => prefs.setString('theme', value),
   /// );
+  ///
+  /// theme.value = 'dark';
+  /// await theme.ensureWrite();
   /// ```
   factory PersistSignal.sync({
     required T Function() read,
@@ -492,21 +381,9 @@ abstract interface class PersistSignal<T> implements Signal<T> {
     JoltDebugOption? debug,
   }) = _SyncPersistSignalImpl<T>;
 
-  /// Creates a lazy synchronous persistent signal.
+  /// Creates a lazily initialized persistent signal with synchronous storage reads.
   ///
-  /// Parameters:
-  /// - [read]: Sync function to read from storage
-  /// - [write]: Function to write to storage
-  /// - [throttle]: Delay before writing (null = no throttling)
-  /// - [debug]: Optional debug options
-  ///
-  /// Example:
-  /// ```dart
-  /// final settings = PersistSignal.lazySync(
-  ///   read: () => loadSettings(),
-  ///   write: (value) => saveSettings(value),
-  /// );
-  /// ```
+  /// This is equivalent to [PersistSignal.sync] with `lazy: true`.
   factory PersistSignal.lazySync({
     required T Function() read,
     required FutureOr<void> Function(T value) write,
@@ -514,23 +391,26 @@ abstract interface class PersistSignal<T> implements Signal<T> {
     JoltDebugOption? debug,
   }) = _SyncPersistSignalImpl<T>.lazy;
 
-  /// Creates an asynchronous persistent signal.
+  /// Creates a persistent signal backed by asynchronous storage reads.
   ///
-  /// Parameters:
-  /// - [read]: Async function to read from storage
-  /// - [write]: Function to write to storage
-  /// - [initialValue]: Optional temporary value during loading (null if omitted)
-  /// - [lazy]: Defer loading until first access (default: false)
-  /// - [throttle]: Delay before writing (null = no throttling)
-  /// - [debug]: Optional debug options
+  /// The [read] callback loads the stored value. The [write] callback persists
+  /// later assignments. When [lazy] is `false`, loading starts during
+  /// construction. When [lazy] is `true`, loading starts on the first access or
+  /// call to [ensure] or [getEnsured]. The optional [initialValue] supplies a
+  /// temporary in-memory value while loading is in progress. Assigning
+  /// [PersistSignal.value] before initialization completes throws [StateError].
+  /// Set [throttle] to delay persistence and collapse writes that arrive during
+  /// the throttle window to the latest value.
   ///
-  /// Example:
   /// ```dart
-  /// final counter = PersistSignal.async(
-  ///   read: () async => await prefs.getInt('counter') ?? 0,
-  ///   write: (value) => prefs.setInt('counter', value),
-  ///   initialValue: () => 0,  // Show while loading
+  /// final profile = PersistSignal.async(
+  ///   read: () async => api.loadName(),
+  ///   write: (value) => api.saveName(value),
+  ///   initialValue: () => 'Loading...',
   /// );
+  ///
+  /// await profile.ensure();
+  /// print(profile.value);
   /// ```
   factory PersistSignal.async({
     required Future<T> Function() read,
@@ -541,23 +421,9 @@ abstract interface class PersistSignal<T> implements Signal<T> {
     JoltDebugOption? debug,
   }) = _AsyncPersistSignalImpl<T>;
 
-  /// Creates a lazy asynchronous persistent signal.
+  /// Creates a lazily initialized persistent signal with asynchronous storage reads.
   ///
-  /// Parameters:
-  /// - [read]: Async function to read from storage
-  /// - [write]: Function to write to storage
-  /// - [initialValue]: Optional temporary value during loading (null if omitted)
-  /// - [throttle]: Delay before writing (null = no throttling)
-  /// - [debug]: Optional debug options
-  ///
-  /// Example:
-  /// ```dart
-  /// final settings = PersistSignal.lazyAsync(
-  ///   read: () async => await loadSettings(),
-  ///   write: (value) async => await saveSettings(value),
-  ///   initialValue: () => defaultSettings,
-  /// );
-  /// ```
+  /// This is equivalent to [PersistSignal.async] with `lazy: true`.
   factory PersistSignal.lazyAsync({
     required Future<T> Function() read,
     required FutureOr<void> Function(T value) write,
@@ -566,47 +432,43 @@ abstract interface class PersistSignal<T> implements Signal<T> {
     JoltDebugOption? debug,
   }) = _AsyncPersistSignalImpl<T>.lazy;
 
-  /// Whether initialized from storage.
+  /// Whether this signal has finished its initial storage load.
+  ///
+  /// Synchronous eager signals become initialized during construction.
+  /// Asynchronous signals become initialized after [ensure] or [getEnsured]
+  /// finishes, or after a lazy load triggered by a read completes.
   bool get isInitialized;
 
-  /// Monotonic counter bumped on each [value] assignment.
+  /// A testing hook for the load-versus-write version counter.
   ///
-  /// Used to ignore stale storage reads when the value changed during load.
+  /// Jolt uses [version] to ignore stale storage reads that complete after a
+  /// newer in-memory value was written.
   @visibleForTesting
   int get version;
 
   @visibleForTesting
   set version(int value);
 
-  /// Gets value, ensuring initialization is complete.
+  /// The current value after ensuring initialization completed.
   ///
-  /// Waits for storage to load if needed.
-  ///
-  /// Returns: The loaded value
+  /// Synchronous signals return immediately. Asynchronous signals wait for the
+  /// initial storage load when needed.
   Future<T> getEnsured();
 
-  /// Ensures initialization, optionally running a function.
+  /// Ensures initialization and optionally runs [fn] with the loaded value.
   ///
-  /// Parameters:
-  /// - [fn]: Optional function to run after initialization
-  ///
-  /// Example:
-  /// ```dart
-  /// await counter.ensure(() {
-  ///   counter.value++; // Safe to write
-  /// });
-  /// ```
+  /// When [fn] is provided, it runs only after initialization completes, and
+  /// the returned future waits for [fn] if it returns a [Future].
   Future<void> ensure([FutureOr<void> Function(T value)? fn]);
 
-  /// Waits for all pending writes to complete.
+  /// Waits for all pending persistence work to complete.
   ///
-  /// Includes: currently executing write, pending write in queue,
-  /// and throttled write waiting for timer.
+  /// This includes the in-flight write, the queued trailing write, and any
+  /// write delayed by [throttle].
   ///
-  /// Example:
   /// ```dart
-  /// signal.value = 'new value';
-  /// await signal.ensureWrite(); // Wait for write
+  /// signal.value = 'dark';
+  /// await signal.ensureWrite();
   /// ```
   Future<void> ensureWrite();
 }

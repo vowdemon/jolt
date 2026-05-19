@@ -1,5 +1,4 @@
 import "package:jolt/jolt.dart";
-import "package:jolt/tricks.dart";
 import "package:test/test.dart";
 
 void main() {

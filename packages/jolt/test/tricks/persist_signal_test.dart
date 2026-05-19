@@ -1,7 +1,7 @@
 import "dart:async";
 
 import "package:fake_async/fake_async.dart";
-import "package:jolt/tricks.dart";
+import "package:jolt/jolt.dart";
 import "package:test/test.dart";
 
 const _throttle = Duration(milliseconds: 50);

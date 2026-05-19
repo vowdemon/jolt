@@ -1,4 +1,4 @@
 /// Re-exports the tricks from the jolt package.
 library;
 
-export 'package:jolt/tricks.dart';
+export 'package:jolt/jolt.dart';

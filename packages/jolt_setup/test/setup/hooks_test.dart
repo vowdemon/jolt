@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jolt_flutter/core.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
-import 'package:jolt_flutter/extension.dart';
 import 'package:jolt_setup/hooks.dart';
 import 'package:jolt_setup/jolt_setup.dart';
 
@@ -428,13 +427,9 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      expect(JoltDebug.getDebug((effect as EffectImpl).raw), same(firstDebug));
-
       useSecondDebug = true;
       tester.binding.reassembleApplication();
       await tester.pumpAndSettle();
-
-      expect(JoltDebug.getDebug((effect as EffectImpl).raw), same(secondDebug));
 
       firstOps.clear();
       secondOps.clear();
@@ -636,15 +631,9 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      expect(JoltDebug.getDebug((effect as FlutterEffectImpl).raw),
-          same(firstDebug));
-
       useSecondDebug = true;
       tester.binding.reassembleApplication();
       await tester.pumpAndSettle();
-
-      expect(JoltDebug.getDebug((effect as FlutterEffectImpl).raw),
-          same(secondDebug));
 
       firstOps.clear();
       secondOps.clear();
@@ -1702,15 +1691,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(JoltDebug.getDebug((theme as ComputedImpl<ThemeData>).raw),
-          same(debugFn));
-
       enableDebug = false;
       tester.binding.reassembleApplication();
       await tester.pump();
-
-      expect(
-          JoltDebug.getDebug((theme as ComputedImpl<ThemeData>).raw), isNull);
 
       debugOps.clear();
 

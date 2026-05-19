@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:jolt_flutter/core.dart';
-import 'package:jolt_flutter/extension.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
 import 'package:jolt_setup/hooks.dart';
 import 'package:jolt_setup/jolt_setup.dart';
@@ -400,7 +399,7 @@ class _UseEffectHook extends SetupHook<EffectImpl> {
   void reassemble(covariant _UseEffectHook newHook) {
     if (debug != newHook.debug) {
       debug = newHook.debug;
-      JoltDebug.setDebug(state.raw, newHook.debug?.onDebug);
+      JoltDevTools.setDebug(state.raw, newHook.debug?.onDebug);
     }
     lazy = newHook.lazy;
     effect = newHook.effect;
@@ -514,7 +513,7 @@ class _UseFlutterEffectHook extends SetupHook<FlutterEffectImpl> {
   void reassemble(covariant _UseFlutterEffectHook newHook) {
     if (debug != newHook.debug) {
       debug = newHook.debug;
-      JoltDebug.setDebug(state.raw, newHook.debug?.onDebug);
+      JoltDevTools.setDebug(state.raw, newHook.debug?.onDebug);
     }
     lazy = newHook.lazy;
     effect = newHook.effect;
@@ -635,7 +634,7 @@ class _UseWatcherHook<T> extends SetupHook<WatcherImpl<T>> {
 
     if (debug != newHook.debug) {
       debug = newHook.debug;
-      JoltDebug.setDebug(state, newHook.debug?.onDebug);
+      JoltDevTools.setDebug(state, newHook.debug?.onDebug);
     }
 
     sourcesFn = newHook.sourcesFn;

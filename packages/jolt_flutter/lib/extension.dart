@@ -1,6 +1,6 @@
 library;
 
-export 'package:jolt/extension.dart';
+export 'package:jolt/jolt.dart';
 export 'src/listenable/listenable.dart'
     show
         JoltValueNotifierExtension,

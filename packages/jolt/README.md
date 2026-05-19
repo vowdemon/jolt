@@ -323,7 +323,7 @@ signal2.value = 20; // Effect doesn't run
 Create signals that convert between different types:
 
 ```dart
-import 'package:jolt/tricks.dart';
+import 'package:jolt/jolt.dart';
 
 final count = Signal(0);
 final textCount = ConvertComputed(
@@ -341,7 +341,7 @@ print(count.value); // 42
 Signals that automatically persist to storage with efficient write queuing and throttling:
 
 ```dart
-import 'package:jolt/tricks.dart';
+import 'package:jolt/jolt.dart';
 
 // Async persistent signal (for SharedPreferences, etc.)
 final theme = PersistSignal.async(
@@ -423,7 +423,7 @@ Jolt ships with a DevTools extension: search/filter nodes, view details and depe
 import 'package:jolt/core.dart';
 
 void main() {
-  JoltDebug.init();
+  JoltDevTools.init();
   runApp(MyApp());
 }
 ```

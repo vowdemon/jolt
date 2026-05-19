@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:jolt/core.dart';
-import 'package:jolt/extension.dart';
 import 'package:jolt/jolt.dart';
 
 import 'base.dart';

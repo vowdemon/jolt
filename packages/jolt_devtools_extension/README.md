@@ -81,7 +81,7 @@ View where nodes were created to help understand code execution flow:
    import 'package:jolt/core.dart';
    
    void main() {
-     JoltDebug.init();
+     JoltDevTools.init();
      runApp(MyApp());
    }
    ```

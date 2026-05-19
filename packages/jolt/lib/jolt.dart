@@ -24,6 +24,9 @@
 /// ```
 library;
 
+export "src/core/debug.dart"
+    show DebugNodeOperationType, JoltDebugFn, JoltDebug;
+
 export "src/jolt/signal.dart";
 export "src/jolt/computed.dart";
 export "src/jolt/effect.dart";
@@ -33,9 +36,14 @@ export "src/jolt/watcher.dart";
 export "src/jolt/async.dart";
 export "src/jolt/batch.dart";
 export "src/jolt/track.dart";
-export "src/jolt/collection/iterable_signal.dart" hide IterableSignalImpl;
-export "src/jolt/collection/list_signal.dart" hide ListSignalImpl;
-export "src/jolt/collection/map_signal.dart" hide MapSignalImpl;
-export "src/jolt/collection/set_signal.dart" hide SetSignalImpl;
+export "src/jolt/collection/iterable_signal.dart";
+export "src/jolt/collection/list_signal.dart";
+export "src/jolt/collection/map_signal.dart";
+export "src/jolt/collection/set_signal.dart";
 
-export "src/core/debug.dart" show DebugNodeOperationType, JoltDebugFn;
+export "src/utils/until.dart";
+export "src/utils/readable.dart";
+export "src/utils/writable.dart";
+export "src/utils/stream.dart";
+export "src/tricks/convert_computed.dart";
+export "src/tricks/persist_signal.dart";

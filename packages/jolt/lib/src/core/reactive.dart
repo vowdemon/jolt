@@ -4,11 +4,11 @@ import "package:meta/meta.dart";
 export "package:jolt/src/core/system.dart"
     show link, unlink, propagate, shallowPropagate;
 
-/// Ported from and adapted from:
-/// https://github.com/stackblitz/alien-signals
-///
-/// This file has been modified to fit Jolt's Dart APIs, runtime behavior, and
-/// project conventions.
+// Ported from and adapted from:
+// https://github.com/stackblitz/alien-signals
+//
+// This file has been modified to fit Jolt's Dart APIs, runtime behavior, and
+// project conventions.
 
 @internal
 int cycle = 0;
@@ -34,6 +34,9 @@ ReactiveNode? activeSub;
 @internal
 EffectScopeNode? activeScope;
 
+/// Stores [e] in the global effect queue at [index].
+///
+/// The queue grows when [index] is beyond the current capacity.
 @pragma("vm:prefer-inline")
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
@@ -45,36 +48,15 @@ void setEffectQueue(int index, EffectNode? e) {
   }
 }
 
+/// The effect or computed node that is currently collecting dependencies.
 @pragma("vm:prefer-inline")
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
-
-/// Returns the effect or computed currently being tracked.
-///
-/// Example:
-/// ```dart
-/// final currentlyTracking = getActiveSub();
-/// if (currentlyTracking != null) {
-///   // mutate diagnostics
-/// }
-/// ```
 ReactiveNode? getActiveSub() => activeSub;
 
-/// Sets the currently active effect or computed and returns the previous one.
+/// Sets the subscriber that should collect subsequent dependencies.
 ///
-/// Parameters:
-/// - [sub]: Node that should collect dependencies
-///
-/// Example:
-/// ```dart
-/// final myEffect = CustomEffectNode();
-/// final prev = setActiveSub(myEffect);
-/// try {
-///   myEffect.effectFn();
-/// } finally {
-///   setActiveSub(prev);
-/// }
-/// ```
+/// Returns the previously active subscriber, if any.
 @pragma("vm:prefer-inline")
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
@@ -84,34 +66,15 @@ ReactiveNode? setActiveSub([ReactiveNode? sub]) {
   return prevSub;
 }
 
+/// The effect scope that currently owns newly created effects.
 @pragma("vm:prefer-inline")
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
-
-/// Returns the [EffectScopeNode] that is currently open.
-///
-/// Example:
-/// ```dart
-/// final scope = getActiveScope();
-/// scope?.dispose();
-/// ```
 EffectScopeNode? getActiveScope() => activeScope;
 
-/// Sets the ambient [EffectScopeNode] and returns the previous scope.
+/// Sets the ambient scope for newly created effects.
 ///
-/// Parameters:
-/// - [scope]: Scope that should own subsequently created effects
-///
-/// Example:
-/// ```dart
-/// final rootScope = CustomEffectScope();
-/// final prevScope = setActiveScope(rootScope);
-/// try {
-///   rootScope.flags |= ReactiveFlags.watching;
-/// } finally {
-///   setActiveScope(prevScope);
-/// }
-/// ```
+/// Returns the previously active scope, if any.
 @pragma("vm:prefer-inline")
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
@@ -122,15 +85,6 @@ EffectScopeNode? setActiveScope([EffectScopeNode? scope]) {
 }
 
 /// Begins a batch so multiple writes can be coalesced before effects run.
-///
-/// Example:
-/// ```dart
-/// final signalNode = CustomSignalNode<int>(0);
-/// startBatch();
-/// setSignal(signalNode, 1);
-/// setSignal(signalNode, 2);
-/// endBatch(); // Effects run once.
-/// ```
 @pragma("vm:prefer-inline")
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
@@ -138,15 +92,9 @@ void startBatch() {
   ++batchDepth;
 }
 
-/// Ends the current batch and flushes pending effects when depth reaches zero.
+/// Ends the current batch and flushes pending effects when the outer batch ends.
 ///
-/// Example:
-/// ```dart
-/// final signalNode = CustomSignalNode<int>(0);
-/// startBatch();
-/// setSignal(signalNode, 1);
-/// endBatch(); // Runs queued effects when this is the outer batch.
-/// ```
+/// In debug mode, this asserts if it is called more times than [startBatch].
 @pragma("vm:prefer-inline")
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
@@ -158,26 +106,10 @@ void endBatch() {
   }
 }
 
-/// Flushes all queued effects and executes them.
+/// Runs every effect currently queued for notification.
 ///
-/// This function processes all effects that have been queued for execution
-/// and runs them in order. It's typically called automatically by the reactive
-/// system, but can be called manually to force immediate execution of queued effects.
-///
-/// Example:
-/// ```dart
-/// final signal1 = Signal(0);
-/// final signal2 = Signal(0);
-/// final signal3 = Signal(0);
-///
-/// // Multiple signal updates
-/// signal1.value = 1;
-/// signal2.value = 2;
-/// signal3.value = 3;
-///
-/// // Force immediate execution of all queued effects
-/// flushEffects();
-/// ```
+/// The queue is drained in order. If an effect throws, remaining queued effects
+/// are restored to a watchable state before the queue is reset.
 @pragma("vm:prefer-inline")
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
@@ -201,31 +133,8 @@ void flushEffects() {
   }
 }
 
-/// Removes all dependencies from [sub] in reverse dependency order.
-///
-/// This is used for disposal paths where child effects must clean up in LIFO
-/// order while ordinary signal/computed dependencies still need to be detached.
-@internal
-void disposeDepsInReverse(ReactiveNode sub) {
-  var link = sub.depsTail;
-  while (link != null) {
-    final prev = link.prevDep;
-    unlink(link, sub);
-    link = prev;
-  }
-}
-
 /// Removes all dependency links from a subscriber so future tracking starts
 /// from a clean slate.
-///
-/// Parameters:
-/// - [sub]: Subscriber node whose dependencies should be detached
-///
-/// Example:
-/// ```dart
-/// final effectNode = CustomEffectNode();
-/// purgeDeps(effectNode);
-/// ```
 @pragma("vm:prefer-inline")
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
@@ -237,21 +146,11 @@ void purgeDeps(ReactiveNode sub) {
   }
 }
 
-/// Executes [fn] inside a temporary subscriber and propagates any triggered
-/// signals once the callback finishes.
+/// Runs [fn] while collecting the nodes it reads, then propagates those nodes.
 ///
-/// Parameters:
-/// - [fn]: Callback that performs reactive writes
-///
-/// Example:
-/// ```dart
-/// final list = <int>[];
-/// final signal = Signal(list);
-/// list.add(1);
-/// trigger(() {
-///   signal.value;
-/// });
-/// ```
+/// This is useful for in-place mutations that keep object identity the same.
+/// Reads inside [fn] decide which dependencies should notify subscribers after
+/// the callback finishes.
 @pragma("vm:prefer-inline")
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
@@ -283,6 +182,20 @@ T trigger<T>(T Function() fn) {
   }
 }
 
+/// Returns the current nested batch depth.
+///
+/// Each [startBatch] increments this counter and [endBatch] decrements it.
+/// Queued effects flush only when the depth returns to zero.
 int getBatchDepth() => batchDepth;
+
+/// Returns the current dependency-tracking generation.
+///
+/// The reactive system bumps this counter when recomputing nodes so dependency
+/// [link] versions can distinguish fresh reads from stale ones.
 int getCycle() => cycle;
+
+/// Returns how many effects are currently executing.
+///
+/// The depth increases while an effect body runs and is used to classify
+/// writes as inner or outer during propagation.
 int getRunDepth() => runDepth;

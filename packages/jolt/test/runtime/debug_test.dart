@@ -1,6 +1,5 @@
 import "package:jolt/core.dart";
 import "package:jolt/jolt.dart";
-import "package:jolt/src/core/debug.dart";
 import "package:test/test.dart";
 
 import "../test_utils.dart";
@@ -151,8 +150,7 @@ void main() {
       test("tracks per-type buckets across multiple nodes", () {
         final counter = DebugCounter();
 
-        final source =
-            Signal(0, debug: JoltDebugOption.fn(counter.onDebug));
+        final source = Signal(0, debug: JoltDebugOption.fn(counter.onDebug));
         final derived = Computed(
           () => source.value,
           debug: JoltDebugOption.fn(counter.onDebug),
@@ -220,8 +218,7 @@ void main() {
       test("streams link and unlink on dependency wiring", () async {
         final userEvents = <DebugNodeOperationType>[];
         final updates = <Map<String, dynamic>>[];
-        final subscription =
-            JoltDevTools.updatesForTesting.listen(updates.add);
+        final subscription = JoltDevTools.updatesForTesting.listen(updates.add);
         void onDebug(DebugNodeOperationType type, ReactiveNode _) {
           userEvents.add(type);
         }
@@ -301,9 +298,8 @@ void main() {
         expect(derived.value, equals(2));
 
         final nodes = JoltDevTools.collectNodesForTesting();
-        final sourceId =
-            nodes.singleWhere((node) => node["label"] == "root-signal")["id"]
-                as int;
+        final sourceId = nodes
+            .singleWhere((node) => node["label"] == "root-signal")["id"] as int;
         final derivedId =
             nodes.singleWhere((node) => node["label"] == "root-computed")["id"]
                 as int;
@@ -329,7 +325,7 @@ void main() {
         expect(doubled.value, equals(2));
 
         final sourceId = JoltDevTools.collectNodesForTesting()
-            .singleWhere((node) => node["label"] == "editable-signal")["id"]
+                .singleWhere((node) => node["label"] == "editable-signal")["id"]
             as int;
 
         expect(JoltDevTools.writeSignalValue(sourceId, 5), isTrue);
@@ -349,7 +345,7 @@ void main() {
         expect(derived.value, equals(1));
 
         final derivedId = JoltDevTools.collectNodesForTesting()
-            .singleWhere((node) => node["label"] == "non-signal-root")["id"]
+                .singleWhere((node) => node["label"] == "non-signal-root")["id"]
             as int;
 
         expect(JoltDevTools.writeSignalValue(derivedId, 2), isFalse);

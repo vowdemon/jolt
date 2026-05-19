@@ -3,10 +3,10 @@ import 'package:shared_interfaces/shared_interfaces.dart';
 
 export './impl/effect_scope.dart' show onScopeDispose;
 
-/// Interface for effect scopes that manage the lifecycle of effects.
+/// A disposal boundary that groups effects, signals, and scope cleanups.
 ///
-/// EffectScope allows you to group related effects together and dispose
-/// them all at once. It's useful for component-based architectures.
+/// Use [EffectScope] to bind related reactive work to a single lifecycle and
+/// dispose everything together.
 ///
 /// Example:
 /// ```dart
@@ -18,11 +18,10 @@ export './impl/effect_scope.dart' show onScopeDispose;
 /// scope.dispose(); // Disposes all effects in scope
 /// ```
 abstract class EffectScope implements DisposableNode {
-  /// Creates a new effect scope.
+  /// Creates an effect scope.
   ///
-  /// Parameters:
-  /// - [detach]: Whether to detach this scope from its parent scope
-  /// - [debug]: Optional debug options
+  /// The [detach] flag keeps this scope out of the current parent scope so
+  /// parent disposal does not dispose it automatically.
   ///
   /// Example:
   /// ```dart
@@ -33,12 +32,10 @@ abstract class EffectScope implements DisposableNode {
     JoltDebugOption? debug,
   }) = EffectScopeImpl;
 
-  /// Runs a function within this scope's context.
+  /// Runs [fn] with this scope set as the active scope.
   ///
-  /// Parameters:
-  /// - [fn]: Function to execute within the scope
-  ///
-  /// Returns: The result of the function execution
+  /// The [fn] callback can create effects, signals, and cleanups that should
+  /// belong to this scope.
   ///
   /// Example:
   /// ```dart
@@ -49,5 +46,13 @@ abstract class EffectScope implements DisposableNode {
   @override
   bool get isDisposed;
 
+  /// Registers a cleanup function to run when this scope disposes.
+  ///
+  /// The [fn] callback should release resources owned by this scope.
+  ///
+  /// Example:
+  /// ```dart
+  /// scope.onCleanup(() => subscription.cancel());
+  /// ```
   void onCleanup(Disposer fn);
 }

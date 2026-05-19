@@ -2,34 +2,36 @@ import 'package:jolt/core.dart';
 export 'package:jolt/core.dart'
     show JoltSignalReadonlyExtension, JoltComputedReadonlyExtension;
 
-/// A read-only interface for signals that prevents modification.
+/// A read-only reactive view that exposes values without write APIs.
 ///
-/// This is useful for exposing signals publicly while maintaining
-/// write access control internally.
+/// Use [Readonly] when callers should observe state owned elsewhere without
+/// being able to assign to it directly.
 ///
 /// Example:
 /// ```dart
 /// class Counter {
 ///   final _count = Signal(0);
 ///
-///   ReadonlySignal<int> get count => _count.readonly();
+///   Readonly<int> get count => _count.readonly();
 ///
 ///   void increment() => _count.value++;
 /// }
 /// ```
 abstract interface class Readonly<T> implements Readable<T> {
-  /// Creates a constant read-only signal with a fixed value.
+  /// Creates a constant read-only value.
   ///
-  /// The returned signal will always return the same value and cannot be modified.
-  /// This is useful for creating immutable signals that don't change over time.
-  ///
-  /// Parameters:
-  /// - [value]: The constant value for the signal
-  ///
-  /// Example:
-  /// ```dart
-  /// final constant = ReadonlySignal(42);
-  /// print(constant.value); // Always 42
-  /// ```
+  /// The returned [Readonly] always exposes [value] and never changes unless a
+  /// new instance is created.
   const factory Readonly(T value) = ConstantImpl<T>;
+
+  /// The current value without establishing a reactive dependency.
+  @override
+  T get peek;
+
+  /// The current value using this view's normal read semantics.
+  ///
+  /// When this view wraps a reactive source, reading [value] still participates
+  /// in dependency tracking.
+  @override
+  T get value;
 }

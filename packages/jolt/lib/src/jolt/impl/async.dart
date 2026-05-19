@@ -5,12 +5,10 @@ import 'package:jolt/jolt.dart';
 import 'package:meta/meta.dart';
 import 'package:shared_interfaces/shared_interfaces.dart';
 
-/// Represents the state of an asynchronous operation.
+/// Represents the current state of an asynchronous operation.
 ///
-/// AsyncState is a sealed class that represents different states of async operations:
-/// - [AsyncLoading]: Initial loading state
-/// - [AsyncSuccess]: Success state with data
-/// - [AsyncError]: Error state with error information
+/// Use [AsyncLoading], [AsyncSuccess], and [AsyncError] to branch on loading,
+/// data, and failure outcomes in a single value.
 ///
 /// Example:
 /// ```dart
@@ -57,14 +55,11 @@ sealed class AsyncState<T> {
   StackTrace? get stackTrace =>
       this is AsyncError<T> ? (this as AsyncError<T>).stackTrace : null;
 
-  /// Maps the async state to a value based on its current state.
+  /// Maps this state to a value with optional handlers.
   ///
-  /// Parameters:
-  /// - [loading]: Function called for loading state
-  /// - [success]: Function called for success state with data
-  /// - [error]: Function called for error state
-  ///
-  /// Returns: The result of the appropriate function, or null if no function provided
+  /// The [loading], [success], and [error] callbacks handle the corresponding
+  /// state variants. Returns `null` when the callback for this state's variant
+  /// is omitted.
   ///
   /// Example:
   /// ```dart
@@ -112,10 +107,7 @@ final class AsyncLoading<T> extends AsyncState<T> {
 /// print(state.data); // 'Hello World'
 /// ```
 final class AsyncSuccess<T> extends AsyncState<T> {
-  /// Creates a success state with the given value.
-  ///
-  /// Parameters:
-  /// - [value]: The successful result data
+  /// Creates a success state that carries [value].
   const AsyncSuccess(this.value);
 
   /// The successful result data.
@@ -133,11 +125,10 @@ final class AsyncSuccess<T> extends AsyncState<T> {
 /// print(state.error); // 'Something went wrong'
 /// ```
 final class AsyncError<T> extends AsyncState<T> {
-  /// Creates an error state with the given error and optional stack trace.
+  /// Creates an error state with an error and optional stack trace.
   ///
-  /// Parameters:
-  /// - [error]: The error that occurred
-  /// - [stackTrace]: Optional stack trace of the error
+  /// The [error] argument stores the failure. The optional [stackTrace]
+  /// captures where that failure came from.
   const AsyncError(this.error, [this.stackTrace]);
 
   @override
@@ -147,11 +138,10 @@ final class AsyncError<T> extends AsyncState<T> {
   final StackTrace? stackTrace;
 }
 
-/// Abstract interface for async data sources.
+/// A source of [AsyncState] updates for [AsyncSignal].
 ///
-/// AsyncSource defines how to start and manage an asynchronous operation
-/// that emits values to an AsyncSignal. Implement this interface to create
-/// custom async sources for AsyncSignal.
+/// Implement [AsyncSource] when you need custom logic for starting an
+/// asynchronous operation and emitting its loading, success, and error states.
 ///
 /// Example:
 /// ```dart
@@ -169,13 +159,11 @@ final class AsyncError<T> extends AsyncState<T> {
 /// }
 /// ```
 abstract class AsyncSource<T> implements Disposable {
-  /// Subscribes to the async source and emits states.
+  /// Starts the async source and emits state updates.
   ///
-  /// Parameters:
-  /// - [emit]: Function to call with async states (loading, success, error)
-  ///
-  /// This method should emit [AsyncLoading] initially, then either
-  /// [AsyncSuccess] on success or [AsyncError] on failure.
+  /// The [emit] callback publishes loading, success, and error states. This
+  /// method should emit [AsyncLoading] first, then later emit either
+  /// [AsyncSuccess] or [AsyncError].
   ///
   /// Example:
   /// ```dart
@@ -216,10 +204,9 @@ abstract class AsyncSource<T> implements Disposable {
 /// final signal = AsyncSignal(source);
 /// ```
 class FutureSource<T> extends AsyncSource<T> {
-  /// Creates a future source with the given future.
+  /// Creates a source backed by a [Future].
   ///
-  /// Parameters:
-  /// - [_future]: The future to wrap
+  /// The future is observed and translated into async states.
   FutureSource(this._future);
 
   final Future<T> _future;
@@ -248,10 +235,9 @@ class FutureSource<T> extends AsyncSource<T> {
 /// final signal = AsyncSignal(source);
 /// ```
 class StreamSource<T> extends AsyncSource<T> {
-  /// Creates a stream source with the given stream.
+  /// Creates a source backed by a [Stream].
   ///
-  /// Parameters:
-  /// - [_stream]: The stream to wrap
+  /// The stream is observed and translated into async states.
   StreamSource(this._stream);
 
   final Stream<T> _stream;
@@ -279,35 +265,8 @@ class StreamSource<T> extends AsyncSource<T> {
   }
 }
 
-/// Implementation of [AsyncSignal] that manages async state transitions.
-///
-/// This is the concrete implementation of the [AsyncSignal] interface. AsyncSignal
-/// wraps an AsyncSource and provides a reactive interface to async operations,
-/// automatically managing state transitions and providing convenient access to
-/// the current async state.
-///
-/// See [AsyncSignal] for the public interface and usage examples.
-///
-/// Example:
-/// ```dart
-/// final future = Future.delayed(Duration(seconds: 1), () => 'Hello');
-/// final signal = AsyncSignal.fromFuture(future);
-///
-/// // React to state changes
-/// Effect(() {
-///   final state = signal.value;
-///   if (state.isLoading) print('Loading...');
-///   if (state.isSuccess) print('Data: ${state.data}');
-///   if (state.isError) print('Error: ${state.error}');
-/// });
-/// ```
 class AsyncSignalImpl<T> extends SignalImpl<AsyncState<T>>
     implements AsyncSignal<T> {
-  /// Creates an async signal with the given source.
-  ///
-  /// Parameters:
-  /// - [source]: The async source to manage
-  /// - [initialValue]: Optional initial async state
   AsyncSignalImpl({
     AsyncSource<T>? source,
     AsyncState<T>? initialValue,

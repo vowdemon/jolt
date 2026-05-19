@@ -4,21 +4,29 @@ import 'package:meta/meta.dart';
 
 import 'package:shared_interfaces/shared_interfaces.dart';
 
-/// Interface for watchers that observe changes to reactive sources.
+/// Observes source values and runs a callback when their visible result changes.
 ///
-/// Watchers are similar to effects but provide more control over when they
-/// trigger. They compare old and new values and only execute when values
-/// actually change (or when a custom condition is met).
+/// Use [Watcher] when you need both the new and previous values, custom
+/// triggering rules, or lifecycle controls such as pause and resume.
 ///
 /// Example:
 /// ```dart
-/// Watcher<List<int>> watcher = Watcher(
+/// final count = Signal(0);
+/// final name = Signal('Alice');
+///
+/// final watcher = Watcher<List<int>>(
 ///   () => [count.value, name.value],
-///   (newValues, oldValues) => print('Changed'),
+///   (newValues, oldValues) => print('$oldValues -> $newValues'),
 /// );
 /// ```
 abstract class Watcher<T> implements DisposableNode {
-  /// {@macro jolt_watcher_impl}
+  /// Creates a watcher from [sourcesFn] and [fn].
+  ///
+  /// The [sourcesFn] callback returns the snapshot compared between runs. The
+  /// [fn] callback runs when this watcher decides that a visible change
+  /// occurred. Set [immediately] to invoke [fn] once right after construction.
+  /// The optional [when] predicate replaces the default `!=` comparison. Set
+  /// [detach] to keep this watcher out of the current [EffectScope].
   factory Watcher(
     SourcesFn<T> sourcesFn,
     WatcherFn<T> fn, {
@@ -28,7 +36,13 @@ abstract class Watcher<T> implements DisposableNode {
     JoltDebugOption? debug,
   }) = WatcherImpl<T>;
 
-  /// {@macro jolt_watcher_impl.immediately}
+  /// Creates a watcher that invokes [fn] immediately after construction.
+  ///
+  /// The [sourcesFn] callback returns the snapshot compared between runs. After
+  /// the immediate call, [fn] runs again only for later qualifying
+  /// transitions. The optional [when] predicate replaces the default `!=`
+  /// comparison. Set [detach] to keep this watcher out of the current
+  /// [EffectScope].
   factory Watcher.immediately(
     SourcesFn<T> sourcesFn,
     WatcherFn<T> fn, {
@@ -37,7 +51,13 @@ abstract class Watcher<T> implements DisposableNode {
     JoltDebugOption? debug,
   }) = WatcherImpl.immediately;
 
-  /// {@macro jolt_watcher_impl.once}
+  /// Creates a watcher that disposes itself after the first callback run.
+  ///
+  /// The [sourcesFn] callback returns the snapshot compared between runs. The
+  /// [fn] callback runs for the first qualifying transition before this
+  /// watcher disposes itself. The optional [when] predicate replaces the
+  /// default `!=` comparison. Set [detach] to keep this watcher out of the
+  /// current [EffectScope].
   factory Watcher.once(
     SourcesFn<T> sourcesFn,
     WatcherFn<T> fn, {
@@ -59,9 +79,7 @@ abstract class Watcher<T> implements DisposableNode {
   /// restored afterwards to maintain the previous watcher context.
   static Watcher? activeWatcher;
 
-  /// Manually runs the watcher function.
-  ///
-  /// This checks the sources and executes the callback if the condition is met.
+  /// Re-runs the watcher callback with the current cached values.
   ///
   /// Example:
   /// ```dart
@@ -69,10 +87,10 @@ abstract class Watcher<T> implements DisposableNode {
   /// ```
   void trigger();
 
-  /// Registers a cleanup function to be called when the watcher is disposed or re-run.
+  /// Registers a cleanup callback for this watcher.
   ///
-  /// Parameters:
-  /// - [fn]: The cleanup function to register
+  /// The [fn] callback runs before this watcher re-runs and when this watcher
+  /// disposes.
   ///
   /// Example:
   /// ```dart
@@ -86,11 +104,10 @@ abstract class Watcher<T> implements DisposableNode {
   /// sources. The watcher's dependencies are cleared when paused, and will be
   /// re-collected when resumed.
   ///
-  /// Returns: `true` if the watcher is paused, `false` otherwise
-  ///
   /// Example:
   /// ```dart
-  /// final watcher = Watcher(...);
+  /// final signal = Signal(0);
+  /// final watcher = Watcher(() => signal.value, (_, __) {});
   /// expect(watcher.isPaused, isFalse);
   ///
   /// watcher.pause();
@@ -101,15 +118,10 @@ abstract class Watcher<T> implements DisposableNode {
   /// ```
   bool get isPaused;
 
-  /// Pauses the watcher, preventing it from responding to changes.
+  /// Pauses the watcher and clears its current dependency list.
   ///
-  /// When paused, the watcher will:
-  /// - Stop responding to changes in watched sources
-  /// - Clear its dependencies
-  /// - Maintain its paused state until [resume] is called
-  ///
-  /// You can call [pause] multiple times; it is idempotent. After pausing,
-  /// use [resume] to re-enable the watcher and re-collect dependencies.
+  /// Changes that happen while paused do not invoke the callback. The next call
+  /// to [resume] re-collects dependencies and can replay the latest source value.
   ///
   /// Example:
   /// ```dart
@@ -133,34 +145,24 @@ abstract class Watcher<T> implements DisposableNode {
   /// ```
   void pause();
 
+  /// Resumes the watcher and immediately re-collects its dependencies.
+  ///
+  /// If the watched source changed while paused, resuming can invoke the
+  /// callback once with the latest visible value.
+  ///
+  /// Example:
+  /// ```dart
+  /// watcher.pause();
+  /// signal.value = 2;
+  /// watcher.resume();
+  /// ```
   void resume();
 
-  /// Temporarily ignores updates from the reactive sources during function execution.
+  /// Runs [fn] while suppressing watcher callbacks caused by its updates.
   ///
-  /// This method executes the given function while preventing the watcher's
-  /// callback from being triggered by any changes that occur during execution.
-  /// The reactive sources will still update normally, but the watcher's callback
-  /// will not be executed for changes during the ignored period.
-  ///
-  /// **Behavior:**
-  /// - Only prevents callback execution; ref changes and listener updates still occur
-  /// - Does not update `prevValue` during the ignored period
-  /// - Changes during ignore are treated as "never happened" for `oldValue` purposes,
-  ///   but `newValue` will always reflect the latest state
-  /// - Works correctly even when nested inside batches
-  ///
-  /// **Implementation note:** This method uses [batch] to delay side effects
-  /// and restores flags to prevent new changes during ignore from triggering
-  /// callbacks. If the previous flags required execution (e.g., had `dirty`),
-  /// it will still execute after restore (preserves existing pending tasks).
-  ///
-  /// Parameters:
-  /// - [fn]: The function to execute while ignoring updates
-  ///
-  /// Returns: The result of executing [fn]
-  ///
-  /// Type parameter:
-  /// - [U]: The return type of [fn]
+  /// Source values still change normally, but the watcher keeps the previous
+  /// visible state for the next callback. This is useful when applying internal
+  /// writes that should not count as observable watcher transitions.
   ///
   /// Example:
   /// ```dart
@@ -183,29 +185,26 @@ abstract class Watcher<T> implements DisposableNode {
   /// signal.value = 4; // Triggers again
   /// expect(values, equals([2, 4]));
   /// ```
-  ///
-  /// Example with nested batch:
-  /// ```dart
-  /// batch(() {
-  ///   signal.value = 5;
-  ///   watcher.ignoreUpdates(() {
-  ///     signal.value = 6;
-  ///   });
-  ///   signal.value = 7;
-  /// });
-  /// // Only the final value (7) triggers the callback
-  /// ```
   U ignoreUpdates<U>(U Function() fn);
 
   @override
   bool get isDisposed;
 }
 
-/// Function type for providing source values to a watcher.
+/// Returns the source value snapshot tracked by a [Watcher].
+///
+/// The returned value is compared between runs and passed to the watcher
+/// callback when the watcher triggers.
 typedef SourcesFn<T> = T Function();
 
-/// Function type for handling watcher value changes.
+/// A change callback for [Watcher].
+///
+/// The [newValue] argument is the latest value returned by the source
+/// function. The [oldValue] argument is the previous visible value, or `null`
+/// for the immediate first callback from [Watcher.immediately].
 typedef WatcherFn<T> = void Function(T newValue, T? oldValue);
 
-/// Function type for determining when a watcher should trigger.
+/// A predicate that decides whether a [Watcher] should notify.
+///
+/// The [newValue] and [oldValue] arguments describe the candidate transition.
 typedef WhenFn<T> = bool Function(T newValue, T oldValue);

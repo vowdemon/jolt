@@ -2,72 +2,12 @@ import 'package:jolt/core.dart';
 import 'package:jolt/jolt.dart';
 import 'package:shared_interfaces/shared_interfaces.dart';
 
-/// Implementation of [EffectScope] for managing the lifecycle of effects and other reactive nodes.
-///
-/// This is the concrete implementation of the [EffectScope] interface. EffectScope
-/// allows you to group related effects together and dispose them all at once.
-/// It's useful for component-based architectures where you want to clean up
-/// all effects when a component is destroyed.
-///
-/// See [EffectScope] for the public interface and usage examples.
-///
-/// Example:
-/// ```dart
-/// final scope = EffectScope()
-///   ..run(() {
-///     final signal = Signal(0);
-///     Effect(() => print('Value: ${signal.value}'));
-///
-///     // Both signal and effect will be disposed when scope is disposed
-///   });
-///
-/// // Later, dispose all effects in the scope
-/// scope.dispose();
-/// ```
 class EffectScopeImpl implements EffectScope {
   final EffectScopeNode raw;
 
-  /// Creates a new effect scope.
-  ///
-  /// Parameters:
-  /// - [detach]: Whether to detach this scope from its parent scope. If true,
-  ///   the scope will not be automatically disposed when its parent is disposed.
-  ///   Defaults to false.
-  /// - [debug]: Optional debug options
-  ///
-  /// The scope is automatically linked to its parent scope (if any) unless
-  /// [detach] is true. Use [run] to execute code within the scope context.
-  ///
-  /// Example:
-  /// ```dart
-  /// final scope = EffectScope()
-  ///   ..run(() {
-  ///     final signal = Signal(0);
-  ///     Effect(() => print(signal.value));
-  ///
-  ///     // Register cleanup function
-  ///     onScopeDispose(() => print('Scope disposed'));
-  ///   });
-  /// ```
   EffectScopeImpl({bool detach = false, JoltDebugOption? debug})
       : raw = EffectScopeNode(detach: detach, debug: debug);
 
-  /// Runs a function within this scope's context.
-  ///
-  /// Parameters:
-  /// - [fn]: Function to execute within the scope
-  ///
-  /// Returns: The result of the function execution
-  ///
-  /// Example:
-  /// ```dart
-  /// final scope = EffectScope();
-  ///
-  /// final result = scope.run(() {
-  ///   final signal = Signal(42);
-  ///   return signal.value;
-  /// });
-  /// ```
   @override
   T run<T>(T Function() fn) => raw.run(fn);
 
@@ -81,15 +21,13 @@ class EffectScopeImpl implements EffectScope {
   void onCleanup(Disposer fn) => raw.onCleanup(fn);
 }
 
-/// Registers a cleanup function to be executed when the current effect scope is disposed.
+/// Registers a cleanup function for the current effect scope.
 ///
-/// Parameters:
-/// - [fn]: The cleanup function to register
-/// - [owner]: Optional effect scope owner. If not provided, automatically detects
-///   the current active effect scope from the reactive context.
+/// The [fn] callback runs when the selected scope disposes. When [owner] is
+/// omitted, Jolt uses the active [EffectScope] or raw scope node from the
+/// current context.
 ///
-/// This function can only be called within an effect scope context. The cleanup
-/// function will be executed when the effect scope is disposed.
+/// Call this inside [EffectScope.run] or pass [owner] explicitly.
 ///
 /// Example:
 /// ```dart

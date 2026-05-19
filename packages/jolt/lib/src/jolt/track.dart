@@ -1,30 +1,21 @@
 import "package:jolt/core.dart";
 
-/// Executes a function without tracking reactive dependencies.
+/// Runs [fn] without recording reactive dependencies.
 ///
-/// When called within a reactive context (like an Effect or Computed),
-/// any reactive values accessed inside the untracked function will not
-/// be tracked as dependencies. This is useful for accessing values that
-/// should not trigger re-runs.
+/// Reads performed inside [fn] do not subscribe the current reactive context.
+/// Use [untracked] for incidental reads that should not trigger future re-runs.
 ///
-/// Parameters:
-/// - [fn]: Function to execute without dependency tracking
-///
-/// Returns: The result of the function execution
-///
-/// Example:
 /// ```dart
-/// final count = Signal(0);
-/// final name = Signal('Alice');
+/// final tracked = Signal(1);
+/// final ignored = Signal(2);
+/// final seen = <String>[];
 ///
-/// final computed = Computed(() {
-///   final currentCount = count.value; // Tracked dependency
-///   final currentName = untracked(() => name.value); // Not tracked
-///   return 'Count: $currentCount, Name: $currentName';
+/// Effect(() {
+///   seen.add('${tracked.value}:${untracked(() => ignored.value)}');
 /// });
 ///
-/// count.value = 1; // Triggers recomputation
-/// name.value = 'Bob'; // Does NOT trigger recomputation
+/// ignored.value = 3;
+/// print(seen); // ['1:2']
 /// ```
 @pragma("vm:prefer-inline")
 @pragma("wasm:prefer-inline")
@@ -38,23 +29,20 @@ T untracked<T>(T Function() fn) {
   }
 }
 
-/// Executes a function and notifies all dependencies of changes.
+/// Runs [fn] in a temporary tracking context and propagates the touched values.
 ///
-/// This function creates a temporary reactive context, executes the function,
-/// and then notifies all dependencies that were accessed during execution.
-/// This is useful for triggering updates without actually changing values.
+/// Reads performed inside [fn] are treated as if they were manually touched for
+/// notification purposes, but the current caller does not stay subscribed after
+/// [fn] returns. Returns the result of [fn].
 ///
-/// Parameters:
-/// - [fn]: Function to execute
-///
-/// Returns: The result of the function execution
-///
-/// Example:
 /// ```dart
-/// notifyAll(() {
-///   // Access signals to trigger their subscribers
-///   final value = signal.value;
-/// });
+/// final signal = Signal(1);
+/// final seen = <int>[];
+///
+/// Effect(() => seen.add(signal.value));
+///
+/// triggerTracked(() => signal.value);
+/// print(seen); // [1, 1]
 /// ```
 @pragma("vm:prefer-inline")
 @pragma("wasm:prefer-inline")

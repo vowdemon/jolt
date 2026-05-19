@@ -1,6 +1,5 @@
 import "package:jolt/core.dart";
 import "package:jolt/jolt.dart";
-import "package:jolt/src/jolt/impl/effect.dart" show EffectImpl;
 import "package:test/test.dart";
 
 void main() {

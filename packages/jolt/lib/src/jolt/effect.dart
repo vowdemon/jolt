@@ -4,11 +4,7 @@ import "package:jolt/core.dart";
 
 export './impl/effect.dart' show onEffectCleanup;
 
-/// Interface for reactive effects that run when dependencies change.
-///
-/// Effects are side-effect functions that run in response to reactive state
-/// changes. They automatically track their dependencies and re-run when
-/// any dependency changes.
+/// A reactive side effect that re-runs when its tracked dependencies change.
 ///
 /// Nested effects created inside an effect are not automatically disposed when
 /// the parent effect is disposed. The caller is responsible for managing the
@@ -16,14 +12,21 @@ export './impl/effect.dart' show onEffectCleanup;
 ///
 /// Example:
 /// ```dart
-/// Effect effect = Effect(() {
+/// final count = Signal(0);
+/// final effect = Effect(() {
 ///   print('Count: ${count.value}');
 /// });
-/// effect.run(); // Manually trigger
-/// effect.dispose(); // Stop the effect
+///
+/// count.value = 1;
+/// effect.dispose();
 /// ```
 abstract class Effect implements DisposableNode {
-  /// {@macro jolt_effect_impl}
+  /// Creates an effect from [fn].
+  ///
+  /// The [fn] callback tracks the reactive values it reads. When [lazy] is
+  /// `false`, this effect runs immediately and then re-runs after tracked
+  /// dependencies change. Set [detach] to keep this effect out of the current
+  /// [EffectScope].
   factory Effect(
     void Function() fn, {
     bool lazy,
@@ -31,30 +34,23 @@ abstract class Effect implements DisposableNode {
     JoltDebugOption? debug,
   }) = EffectImpl;
 
-  /// {@macro jolt_effect_impl.lazy}
+  /// Creates an effect that does not run until [run] is called.
+  ///
+  /// The [fn] callback starts tracking dependencies on the first manual run.
+  /// Set [detach] to keep this effect out of the current [EffectScope].
   factory Effect.lazy(void Function() fn,
       {bool detach, JoltDebugOption? debug}) = EffectImpl.lazy;
 
   /// Manually runs the effect function.
   ///
-  /// This establishes the effect as the current reactive context,
-  /// allowing it to track dependencies accessed during execution.
-  ///
-  /// Example:
-  /// ```dart
-  /// effect.run(); // Triggers the effect
-  /// ```
+  /// This marks the effect dirty and executes it with dependency tracking.
+  /// Calling [run] after disposal fails in debug builds.
   void run();
 
-  /// Registers a cleanup function to be called when the effect is disposed or re-run.
+  /// Registers a cleanup callback for this effect.
   ///
-  /// Parameters:
-  /// - [fn]: The cleanup function to register
-  ///
-  /// Example:
-  /// ```dart
-  /// effect.onCleanup(() => subscription.cancel());
-  /// ```
+  /// The [fn] callback runs before this effect re-runs and when this effect
+  /// disposes.
   void onCleanup(Disposer fn);
 
   @override

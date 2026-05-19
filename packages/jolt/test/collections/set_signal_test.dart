@@ -1,4 +1,3 @@
-import "package:jolt/extension.dart";
 import "package:jolt/jolt.dart";
 import "package:test/test.dart";
 
@@ -107,7 +106,8 @@ void main() {
         signal.fold<int>(0, (sum, value) => sum + value),
         baseline.fold<int>(0, (sum, value) => sum + value),
       );
-      expect(signal.followedBy([5]).toList(), baseline.followedBy([5]).toList());
+      expect(
+          signal.followedBy([5]).toList(), baseline.followedBy([5]).toList());
       expect(signal.join("-"), baseline.join("-"));
       expect(signal.lastWhere((value) => value < 4),
           baseline.lastWhere((value) => value < 4));
@@ -130,7 +130,8 @@ void main() {
       expect(signal.takeWhile((value) => value < 4).toList(),
           baseline.takeWhile((value) => value < 4).toList());
       expect(signal.toList(), baseline.toList());
-      expect(signal.whereType<int>().toList(), baseline.whereType<int>().toList());
+      expect(
+          signal.whereType<int>().toList(), baseline.whereType<int>().toList());
       expect(signal.where((value) => value.isEven).toList(),
           baseline.where((value) => value.isEven).toList());
       expect(signal.isNotEmpty, baseline.isNotEmpty);

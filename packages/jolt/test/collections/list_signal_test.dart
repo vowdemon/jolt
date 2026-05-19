@@ -1,4 +1,3 @@
-import "package:jolt/extension.dart";
 import "package:jolt/jolt.dart";
 import "package:test/test.dart";
 import "dart:math";
@@ -273,8 +272,10 @@ void main() {
       );
       expect(signal.where((value) => value.isEven).toList(),
           baseline.where((value) => value.isEven).toList());
-      expect(signal.whereType<int>().toList(), baseline.whereType<int>().toList());
-      expect(signal.any((value) => value == 3), baseline.any((value) => value == 3));
+      expect(
+          signal.whereType<int>().toList(), baseline.whereType<int>().toList());
+      expect(signal.any((value) => value == 3),
+          baseline.any((value) => value == 3));
       expect(signal.every((value) => value > 0),
           baseline.every((value) => value > 0));
       expect(signal.contains(3), baseline.contains(3));
@@ -293,7 +294,8 @@ void main() {
         signal.fold<int>(0, (sum, value) => sum + value),
         baseline.fold<int>(0, (sum, value) => sum + value),
       );
-      expect(signal.followedBy([6]).toList(), baseline.followedBy([6]).toList());
+      expect(
+          signal.followedBy([6]).toList(), baseline.followedBy([6]).toList());
       expect(signal.getRange(1, 3).toList(), baseline.getRange(1, 3).toList());
       expect(signal.asMap(), baseline.asMap());
       expect(
@@ -339,7 +341,9 @@ void main() {
 
       Effect(() {
         values.add(
-          signal.where((value) => value.isEven).fold(0, (sum, value) => sum + value),
+          signal
+              .where((value) => value.isEven)
+              .fold(0, (sum, value) => sum + value),
         );
       });
 

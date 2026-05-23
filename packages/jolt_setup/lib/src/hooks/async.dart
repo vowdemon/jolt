@@ -2,45 +2,44 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:jolt_flutter/core.dart';
+import 'package:jolt/core.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
-import 'package:jolt_setup/hooks.dart';
-import 'package:jolt_setup/jolt_setup.dart';
 import 'package:shared_interfaces/shared_interfaces.dart';
 
-/// Creates a reactive signal that tracks the state of a Future.
+import '../setup/framework.dart';
+import 'annotation.dart';
+
+/// Tracks a [Future] as an [AsyncSnapshot] for the current setup scope.
 ///
-/// This hook provides an [AsyncSnapshot] that updates automatically as the
-/// Future progresses through its lifecycle. The behavior matches [FutureBuilder].
+/// Use `useFuture(future)` to mirror a specific future, or
+/// `useFuture.watch(readableFuture)` when the future itself is reactive and can
+/// be replaced over time. A non-null [initialData] produces an initial
+/// `ConnectionState.none` snapshot with that data.
 ///
-/// Parameters:
-/// - [future]: The Future to track, can be null
-/// - [initialData]: Optional initial data to use before the Future completes
-///
-/// Example:
 /// ```dart
-/// final future = Future.delayed(Duration(seconds: 1), () => 42);
-/// final snapshot = useFuture(future);
+/// setup(context, props) {
+///   final snapshot = useFuture(loadUser());
 ///
-/// if (snapshot.connectionState == ConnectionState.waiting) {
-///   return CircularProgressIndicator();
-/// } else if (snapshot.hasError) {
-///   return Text('Error: ${snapshot.error}');
-/// } else {
-///   return Text('Data: ${snapshot.data}');
+///   return () => switch (snapshot.connectionState) {
+///     ConnectionState.done => Text('${snapshot.data}'),
+///     _ => const CircularProgressIndicator(),
+///   };
 /// }
 /// ```
 @defineHook
-final useFuture = JoltUseFutureHookCreator._();
+final useFuture = JoltSetupHookFutureCreator._();
 
-final class JoltUseFutureHookCreator {
-  const JoltUseFutureHookCreator._();
+/// Future snapshot hook factory methods.
+final class JoltSetupHookFutureCreator {
+  const JoltSetupHookFutureCreator._();
 
+  /// Creates an [AsyncSnapshotFutureSignal] that tracks [future].
   @defineHook
   AsyncSnapshotFutureSignal<T> call<T>(FutureOr<T>? future, {T? initialData}) {
     return useHook(_UseFutureHook(future, initialData: initialData));
   }
 
+  /// Creates an [AsyncSnapshotFutureSignal] that tracks [future.value].
   @defineHook
   AsyncSnapshotFutureSignal<T> watch<T>(Readable<FutureOr<T>?> future,
       {T? initialData}) {
@@ -71,7 +70,7 @@ class _UseFutureWatchHook<T>
   @override
   _AsyncSnapshotFutureSignalImpl<T> build() {
     _future = future.value;
-    return JoltUseFutureHookCreator._create(future.value,
+    return JoltSetupHookFutureCreator._create(future.value,
         initialData: initialData);
   }
 
@@ -107,7 +106,7 @@ class _UseFutureHook<T> extends SetupHook<_AsyncSnapshotFutureSignalImpl<T>> {
 
   @override
   _AsyncSnapshotFutureSignalImpl<T> build() {
-    return JoltUseFutureHookCreator._create(future, initialData: initialData);
+    return JoltSetupHookFutureCreator._create(future, initialData: initialData);
   }
 
   @override
@@ -120,10 +119,14 @@ class _UseFutureHook<T> extends SetupHook<_AsyncSnapshotFutureSignalImpl<T>> {
 class _AsyncSnapshotFutureSignalImpl<T> extends SignalImpl<AsyncSnapshot<T>>
     with _AsyncSnapshotSignalMixin<T>
     implements AsyncSnapshotFutureSignal<T> {
-  _AsyncSnapshotFutureSignalImpl(this.future, {T? initialData, super.debug})
-      : super(initialData == null
-            ? AsyncSnapshot<T>.nothing()
-            : AsyncSnapshot<T>.withData(ConnectionState.none, initialData)) {
+  _AsyncSnapshotFutureSignalImpl(this.future,
+      {T? initialData, JoltDebugOption? debug})
+      : super(
+          initialData == null
+              ? AsyncSnapshot<T>.nothing()
+              : AsyncSnapshot<T>.withData(ConnectionState.none, initialData),
+          debug: debug,
+        ) {
     batch(_subscribe);
   }
 
@@ -188,68 +191,126 @@ class _AsyncSnapshotFutureSignalImpl<T> extends SignalImpl<AsyncSnapshot<T>>
   }
 
   @override
-  void onDispose() {
+  void dispose() {
     _unsubscribe();
-    super.onDispose();
+    super.dispose();
   }
 }
 
 /// Interface for a signal that tracks a Future's state.
 ///
-/// Provides methods to update the Future being tracked.
+/// The signal exposes the current [AsyncSnapshot] fields and can be pointed at
+/// another future with [setFuture].
 abstract interface class AsyncSnapshotFutureSignal<T>
     implements AsyncSnapshot<T> {
-  /// Updates the Future being tracked.
+  /// Starts tracking [future].
   ///
-  /// Parameters:
-  /// - [future]: The new Future to track, can be null
+  /// Passing `null` clears the active future without producing a new waiting
+  /// snapshot. Passing a synchronous value treats that value as a completed
+  /// future.
   void setFuture(FutureOr<T>? future);
 }
 
-/// Creates a reactive signal that tracks the state of a Stream.
+/// Tracks a [Stream] as an [AsyncSnapshot] for the current setup scope.
 ///
-/// This hook provides an [AsyncSnapshot] that updates automatically as the
-/// Stream emits data, errors, or completes. The behavior matches [StreamBuilder].
+/// Use `useStream(stream)` to mirror a specific stream, or
+/// `useStream.watch(readableStream)` when the stream itself is reactive and can
+/// be replaced over time. The subscription is cancelled when the setup scope
+/// unmounts.
 ///
-/// Parameters:
-/// - [stream]: The Stream to track, can be null
-/// - [initialData]: Optional initial data to use before the Stream emits
-///
-/// Example:
 /// ```dart
-/// final controller = StreamController<int>();
-/// final snapshot = useStream(controller.stream);
+/// setup(context, props) {
+///   final snapshot = useStream(messages);
 ///
-/// if (snapshot.connectionState == ConnectionState.waiting) {
-///   return CircularProgressIndicator();
-/// } else if (snapshot.hasError) {
-///   return Text('Error: ${snapshot.error}');
-/// } else {
-///   return Text('Data: ${snapshot.data}');
+///   return () => Text(snapshot.data ?? 'No messages yet');
 /// }
-///
-/// // Later, emit data
-/// controller.add(42);
 /// ```
 @defineHook
-AsyncSnapshotStreamSignal<T> useStream<T>(Stream<T>? stream, {T? initialData}) {
-  return useAutoDispose<_AsyncSnapshotStreamSignalImpl<T>>(() {
-    final signal = _AsyncSnapshotStreamSignalImpl<T>(
+final useStream = JoltSetupHookStreamCreator._();
+
+/// Stream snapshot hook factory methods.
+final class JoltSetupHookStreamCreator {
+  const JoltSetupHookStreamCreator._();
+
+  /// Creates an [AsyncSnapshotStreamSignal] that tracks [stream].
+  @defineHook
+  AsyncSnapshotStreamSignal<T> call<T>(Stream<T>? stream, {T? initialData}) {
+    return useAutoDispose<_AsyncSnapshotStreamSignalImpl<T>>(() {
+      return _create(stream, initialData: initialData);
+    });
+  }
+
+  /// Creates an [AsyncSnapshotStreamSignal] that tracks [source.value].
+  @defineHook
+  AsyncSnapshotStreamSignal<T> watch<T>(
+    Readable<Stream<T>?> source, {
+    T? initialData,
+  }) {
+    return useHook(_UseStreamWatchHook(source, initialData: initialData));
+  }
+
+  static _AsyncSnapshotStreamSignalImpl<T> _create<T>(
+    Stream<T>? stream, {
+    T? initialData,
+  }) {
+    return _AsyncSnapshotStreamSignalImpl<T>(
       stream,
       initialData: initialData,
     );
-    return signal;
-  });
+  }
+}
+
+class _UseStreamWatchHook<T>
+    extends SetupHook<_AsyncSnapshotStreamSignalImpl<T>> {
+  _UseStreamWatchHook(this.source, {this.initialData});
+
+  final Readable<Stream<T>?> source;
+  final T? initialData;
+
+  Stream<T>? _stream;
+  Disposer? _disposer;
+
+  @override
+  _AsyncSnapshotStreamSignalImpl<T> build() {
+    _stream = source.value;
+    return JoltSetupHookStreamCreator._create(
+      _stream,
+      initialData: initialData,
+    );
+  }
+
+  @override
+  void mount() {
+    _disposer = Effect(() {
+      if (identical(_stream, source.value)) {
+        return;
+      }
+      _stream = source.value;
+      state.setStream(_stream);
+    }).dispose;
+  }
+
+  @override
+  void unmount() {
+    _disposer?.call();
+    _disposer = null;
+    _stream = null;
+    state.dispose();
+  }
 }
 
 // ignore: must_be_immutable
 class _AsyncSnapshotStreamSignalImpl<T> extends SignalImpl<AsyncSnapshot<T>>
     with _AsyncSnapshotSignalMixin<T>
     implements AsyncSnapshotStreamSignal<T> {
-  _AsyncSnapshotStreamSignalImpl(this.stream, {T? initialData})
-      : super(initialData == null
-            ? AsyncSnapshot<T>.nothing()
-            : AsyncSnapshot<T>.withData(ConnectionState.none, initialData)) {
+  _AsyncSnapshotStreamSignalImpl(this.stream,
+      {T? initialData, JoltDebugOption? debug})
+      : super(
+          initialData == null
+              ? AsyncSnapshot<T>.nothing()
+              : AsyncSnapshot<T>.withData(ConnectionState.none, initialData),
+          debug: debug,
+        ) {
     batch(_subscribe);
   }
 
@@ -300,26 +361,27 @@ class _AsyncSnapshotStreamSignalImpl<T> extends SignalImpl<AsyncSnapshot<T>>
   }
 
   @override
-  void onDispose() {
+  void dispose() {
     _unsubscribe();
-    super.onDispose();
+    super.dispose();
   }
 }
 
 /// Interface for a signal that tracks a Stream's state.
 ///
-/// Provides methods to update the Stream being tracked.
+/// The signal exposes the current [AsyncSnapshot] fields and can be pointed at
+/// another stream with [setStream].
 abstract interface class AsyncSnapshotStreamSignal<T>
     implements AsyncSnapshot<T> {
-  /// Updates the Stream being tracked.
+  /// Starts tracking [stream].
   ///
-  /// Parameters:
-  /// - [stream]: The new Stream to track, can be null
+  /// Passing `null` clears the active stream without creating a new
+  /// subscription.
   void setStream(Stream<T>? stream);
 }
 
 // ignore: unused_element
-mixin _AsyncSnapshotSignalMixin<T> on SignalImpl<AsyncSnapshot<T>>
+mixin _AsyncSnapshotSignalMixin<T> on Signal<AsyncSnapshot<T>>
     implements AsyncSnapshot<T> {
   @override
   ConnectionState get connectionState => value.connectionState;
@@ -349,26 +411,11 @@ mixin _AsyncSnapshotSignalMixin<T> on SignalImpl<AsyncSnapshot<T>>
   StackTrace? get stackTrace => value.stackTrace;
 }
 
-final class _StreamControllerCreator {
-  const _StreamControllerCreator._();
+/// Stream-controller hook factory methods.
+final class JoltSetupHookStreamControllerCreator {
+  const JoltSetupHookStreamControllerCreator._();
 
-  /// Creates a StreamController that is automatically closed when the widget is unmounted.
-  ///
-  /// Parameters:
-  /// - [onListen]: Optional callback called when the stream is listened to
-  /// - [onPause]: Optional callback called when the stream subscription is paused
-  /// - [onResume]: Optional callback called when the stream subscription is resumed
-  /// - [onCancel]: Optional callback called when the stream subscription is cancelled
-  /// - [sync]: Whether the stream controller is synchronous (default: false)
-  ///
-  /// Example:
-  /// ```dart
-  /// final controller = useStreamController<int>();
-  /// controller.stream.listen((value) {
-  ///   print('Received: $value');
-  /// });
-  /// controller.add(42);
-  /// ```
+  /// Creates a single-subscription [StreamController].
   @defineHook
   StreamController<T> call<T>(
       {void Function()? onListen,
@@ -387,24 +434,7 @@ final class _StreamControllerCreator {
     }, (controller) => controller.close());
   }
 
-  /// Creates a broadcast StreamController that is automatically closed when the widget is unmounted.
-  ///
-  /// Parameters:
-  /// - [onListen]: Optional callback called when the stream is listened to
-  /// - [onCancel]: Optional callback called when the stream subscription is cancelled
-  /// - [sync]: Whether the stream controller is synchronous (default: false)
-  ///
-  /// Example:
-  /// ```dart
-  /// final controller = useStreamController.broadcast<int>();
-  /// controller.stream.listen((value) {
-  ///   print('Listener 1: $value');
-  /// });
-  /// controller.stream.listen((value) {
-  ///   print('Listener 2: $value');
-  /// });
-  /// controller.add(42); // Both listeners receive the value
-  /// ```
+  /// Creates a broadcast [StreamController].
   @defineHook
   StreamController<T> broadcast<T>(
       {void Function()? onListen,
@@ -420,105 +450,19 @@ final class _StreamControllerCreator {
   }
 }
 
-/// Creates a StreamController that is automatically closed when the widget is unmounted.
+/// Creates a [StreamController] for the current setup scope.
 ///
-/// Use [useStreamController] to create a single-subscription controller,
-/// or [useStreamController.broadcast] to create a broadcast controller.
+/// The controller is created once and closed when the setup scope unmounts.
+/// Use [JoltSetupHookStreamControllerCreator.broadcast] for a broadcast
+/// controller.
 ///
-/// Example:
 /// ```dart
-/// final controller = useStreamController<int>();
-/// controller.stream.listen((value) => print(value));
-/// controller.add(42);
+/// setup(context, props) {
+///   final controller = useStreamController<int>();
+///   final snapshot = useStream(controller.stream);
+///
+///   return () => Text('${snapshot.data ?? 0}');
+/// }
 /// ```
 @defineHook
-const useStreamController = _StreamControllerCreator._();
-
-/// Subscribes to a Stream and automatically cancels the subscription when the widget is unmounted.
-///
-/// Parameters:
-/// - [stream]: The Stream to subscribe to
-/// - [onData]: Optional callback called when data is emitted
-/// - [onError]: Optional callback called when an error occurs
-/// - [onDone]: Optional callback called when the stream completes
-/// - [cancelOnError]: Whether to cancel the subscription on error (default: false)
-///
-/// Example:
-/// ```dart
-/// final controller = StreamController<int>();
-/// useStreamSubscription(
-///   controller.stream,
-///   onData: (value) {
-///     print('Received: $value');
-///   },
-///   onError: (error, stackTrace) {
-///     print('Error: $error');
-///   },
-///   onDone: () {
-///     print('Stream completed');
-///   },
-/// );
-/// controller.add(42);
-/// ```
-@defineHook
-StreamSubscription<T> useStreamSubscription<T>(
-  Stream<T> stream,
-  void Function(T event)? onData, {
-  Function? onError,
-  void Function()? onDone,
-  bool? cancelOnError,
-}) {
-  return useHook(_UseStreamSubscriptionHook(
-      stream, onData, onError, onDone, cancelOnError));
-}
-
-class _UseStreamSubscriptionHook<T> extends SetupHook<StreamSubscription<T>> {
-  _UseStreamSubscriptionHook(
-      this.stream, this.onData, this.onError, this.onDone, this.cancelOnError);
-
-  late Stream<T> stream;
-  late void Function(T event)? onData;
-  late Function? onError;
-  late void Function()? onDone;
-  late bool? cancelOnError;
-
-  void _onData(T data) {
-    onData?.call(data);
-  }
-
-  void _onError(Object error, StackTrace stackTrace) {
-    onError?.call(error, stackTrace);
-  }
-
-  void _onDone() {
-    onDone?.call();
-  }
-
-  @override
-  StreamSubscription<T> build() {
-    return stream.listen(_onData,
-        onError: _onError, onDone: _onDone, cancelOnError: cancelOnError);
-  }
-
-  @override
-  void unmount() {
-    state.cancel();
-  }
-
-  @override
-  void reassemble(covariant _UseStreamSubscriptionHook<T> newHook) {
-    final needRecreate =
-        stream != newHook.stream || cancelOnError != newHook.cancelOnError;
-
-    stream = newHook.stream;
-    onData = newHook.onData;
-    onError = newHook.onError;
-    onDone = newHook.onDone;
-    cancelOnError = newHook.cancelOnError;
-
-    if (needRecreate) {
-      state.cancel();
-      rawState = build();
-    }
-  }
-}
+const useStreamController = JoltSetupHookStreamControllerCreator._();

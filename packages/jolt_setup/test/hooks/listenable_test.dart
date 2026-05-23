@@ -1,8 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:jolt_flutter/core.dart';
-import 'package:jolt_flutter/jolt_flutter.dart';
-import 'package:jolt_setup/hooks.dart';
 import 'package:jolt_setup/jolt_setup.dart';
 
 class _CustomNotifier extends ChangeNotifier {
@@ -67,14 +65,14 @@ void main() {
     });
   });
 
-  group('useValueListenable', () {
+  group('useListen.value', () {
     testWidgets('subscribes, triggers listener, and disposes', (tester) async {
       final notifier = ValueNotifier(0);
       final values = <int>[];
 
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
-          useValueListenable(notifier, (value) {
+          useListen.value(notifier, (value) {
             values.add(value);
           });
           return () => Text('Value: ${notifier.value}');
@@ -105,7 +103,7 @@ void main() {
 
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
-          useValueListenable(
+          useListen.value(
             useSecondNotifier ? notifierB : notifierA,
             (value) => values.add(value),
           );
@@ -138,7 +136,7 @@ void main() {
 
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
-          useValueListenable(
+          useListen.value(
             notifier,
             useSecondCallback ? secondValues.add : firstValues.add,
           );
@@ -160,14 +158,41 @@ void main() {
     });
   });
 
-  group('useListenable', () {
+  group('useListen.value.watch', () {
+    testWidgets('switches ValueListenable sources and detaches old listener',
+        (tester) async {
+      final notifierA = ValueNotifier(0);
+      final notifierB = ValueNotifier(10);
+      final source = Signal<ValueListenable<int>>(notifierA);
+      final values = <int>[];
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          useListen.value.watch(source, values.add);
+          return () => const Text('Test');
+        }),
+      ));
+      await tester.pumpAndSettle();
+
+      source.value = notifierB;
+      await tester.pumpAndSettle();
+
+      notifierA.value = 1;
+      notifierB.value = 20;
+      await tester.pumpAndSettle();
+
+      expect(values, [10, 20]);
+    });
+  });
+
+  group('useListen.listenable', () {
     testWidgets('subscribes, triggers listener, and disposes', (tester) async {
       final notifier = ChangeNotifier();
       int callCount = 0;
 
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
-          useListenable(notifier, () {
+          useListen.listenable(notifier, () {
             callCount++;
           });
           return () => const Text('Test');
@@ -198,7 +223,7 @@ void main() {
 
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
-          useListenable(
+          useListen.listenable(
             useSecondNotifier ? notifierB : notifierA,
             () => callCount++,
           );
@@ -230,7 +255,7 @@ void main() {
 
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
-          useListenable(
+          useListen.listenable(
             notifier,
             useSecondCallback
                 ? () => secondCallCount++
@@ -254,7 +279,34 @@ void main() {
     });
   });
 
-  group('useChangeNotifierSync', () {
+  group('useListen.listenable.watch', () {
+    testWidgets('switches Listenable sources and detaches old listener',
+        (tester) async {
+      final notifierA = ChangeNotifier();
+      final notifierB = ChangeNotifier();
+      final source = Signal<Listenable>(notifierA);
+      var callCount = 0;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          useListen.listenable.watch(source, () => callCount++);
+          return () => const Text('Test');
+        }),
+      ));
+      await tester.pumpAndSettle();
+
+      source.value = notifierB;
+      await tester.pumpAndSettle();
+
+      notifierA.notifyListeners();
+      notifierB.notifyListeners();
+      await tester.pumpAndSettle();
+
+      expect(callCount, 2);
+    });
+  });
+
+  group('useSync', () {
     testWidgets('syncs ChangeNotifier to Signal (unidirectional)',
         (tester) async {
       final notifier = ValueNotifier(0);
@@ -263,7 +315,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           signal = useSignal(0);
-          useListenableSync(
+          useSync.from(
             signal!,
             notifier,
             getter: (notifier) => notifier.value,
@@ -290,7 +342,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           signal = useSignal(0);
-          useListenableSync(
+          useSync.bidi(
             signal!,
             notifier,
             getter: (notifier) => notifier.value,
@@ -331,7 +383,7 @@ void main() {
           notifier.addListener(() {
             notifierChangeCount++;
           });
-          useListenableSync(
+          useSync.bidi(
             signal!,
             notifier,
             getter: (notifier) => notifier.value,
@@ -360,7 +412,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           signal = useSignal(0);
-          useListenableSync(
+          useSync.from(
             signal!,
             notifier,
             getter: (notifier) => notifier.value,
@@ -380,7 +432,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Signal should not update after unmount
-      expect((signal! as SignalReactiveNode).pendingValue, 0);
+      expect(signal!.isDisposed, isTrue);
+      expect(signal!.value, 0);
     });
 
     testWidgets('works with custom ChangeNotifier', (tester) async {
@@ -390,7 +443,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           signal = useSignal(0);
-          useListenableSync(
+          useSync.bidi(
             signal!,
             notifier,
             getter: (notifier) => notifier.value,

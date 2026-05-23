@@ -539,7 +539,6 @@ void main() {
 
       expect(tester.takeException(), isNull);
     });
-
   });
 
   group('SetupHook Hot Reload with SetupWidget', () {
@@ -877,7 +876,8 @@ class _HookTestStatefulWidget extends StatefulWidget {
   const _HookTestStatefulWidget({required this.setup});
 
   @override
-  State<_HookTestStatefulWidget> createState() => _HookTestStatefulWidgetState();
+  State<_HookTestStatefulWidget> createState() =>
+      _HookTestStatefulWidgetState();
 }
 
 class _HookTestStatefulWidgetState extends State<_HookTestStatefulWidget>

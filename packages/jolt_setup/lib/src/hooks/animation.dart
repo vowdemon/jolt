@@ -1,12 +1,29 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
-import 'package:jolt_setup/hooks.dart';
-import 'package:jolt_setup/jolt_setup.dart';
 
-/// Creates a single ticker provider
+import '../setup/framework.dart';
+import 'annotation.dart';
+
+/// Creates a single-use [TickerProvider] for the current setup scope.
 ///
-/// If you need multiple tickers, call this hook multiple times or use [useTickerProvider]
+/// Use this when one animation resource, such as a single
+/// [AnimationController], needs a stable `vsync`. If you need multiple tickers
+/// from the same provider, use [useTickerProvider] instead.
+///
+/// ```dart
+/// setup(context, props) {
+///   final vsync = useSingleTickerProvider();
+///   final controller = useAnimationController(vsync: vsync);
+///
+///   return () => FadeTransition(
+///     opacity: controller,
+///     child: const FlutterLogo(),
+///   );
+/// }
+/// ```
 @defineHook
 TickerProvider useSingleTickerProvider() {
   final provider = useHook(_SingleTickerProviderHook());
@@ -100,9 +117,20 @@ class _SingleTickerProviderHook extends SetupHook<TickerProvider>
   }
 }
 
-/// Creates a ticker provider that can create multiple tickers
+/// Creates a [TickerProvider] that can vend multiple tickers.
 ///
-/// If you need a single ticker, use [useSingleTickerProvider]
+/// This is useful when the current setup needs several animation controllers
+/// that should all follow the same [TickerMode].
+///
+/// ```dart
+/// setup(context, props) {
+///   final vsync = useTickerProvider();
+///   final enter = useAnimationController(vsync: vsync);
+///   final exit = useAnimationController(vsync: vsync);
+///
+///   return () => const SizedBox.shrink();
+/// }
+/// ```
 @defineHook
 TickerProvider useTickerProvider() {
   return useHook(_TickerProviderHook());
@@ -209,9 +237,26 @@ class _WidgetTicker extends Ticker {
   }
 }
 
-/// Creates an animation controller
+/// Creates an [AnimationController] for the current setup scope.
 ///
-/// The controller will be automatically disposed when the component is unmounted
+/// The controller is disposed automatically when the setup unmounts. If
+/// [vsync] is omitted, this hook creates a single-use ticker provider through
+/// [useSingleTickerProvider].
+///
+/// ```dart
+/// setup(context, props) {
+///   final controller = useAnimationController(
+///     duration: const Duration(milliseconds: 250),
+///   );
+///
+///   onMounted(controller.forward);
+///
+///   return () => FadeTransition(
+///     opacity: controller,
+///     child: const FlutterLogo(),
+///   );
+/// }
+/// ```
 @defineHook
 AnimationController useAnimationController({
   TickerProvider? vsync,

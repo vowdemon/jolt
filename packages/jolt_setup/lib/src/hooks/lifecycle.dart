@@ -1,14 +1,24 @@
 import 'package:flutter/widgets.dart';
-import 'package:jolt_flutter/extension.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
-import 'package:jolt_setup/hooks.dart';
-import 'package:jolt_setup/jolt_setup.dart';
 
-/// Listens to application lifecycle state changes
+import '../setup/framework.dart';
+import 'annotation.dart';
+
+/// Tracks the application's current [AppLifecycleState].
 ///
-/// Returns a reactive Signal representing the current application lifecycle state
+/// The returned readable updates when Flutter reports lifecycle changes. Use
+/// [onChange] for imperative reactions and the returned signal for reactive UI
+/// or effects.
+///
+/// ```dart
+/// setup(context, props) {
+///   final lifecycle = useAppLifecycleState();
+///
+///   return () => Text('${lifecycle.value}');
+/// }
+/// ```
 @defineHook
-ReadonlySignal<AppLifecycleState?> useAppLifecycleState({
+Readonly<AppLifecycleState?> useAppLifecycleState({
   AppLifecycleState? initialState,
   void Function(AppLifecycleState state)? onChange,
 }) {

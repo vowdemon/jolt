@@ -1,9 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:jolt_setup/hooks.dart';
 
-/// Creates a scroll controller
+import 'animation.dart';
+import 'annotation.dart';
+import 'listenable.dart';
+
+/// Creates a [ScrollController] for the current setup scope.
 ///
-/// The controller will be automatically disposed when the component is unmounted
+/// The controller is disposed automatically when the setup unmounts.
+///
+/// ```dart
+/// setup(context, props) {
+///   final controller = useScrollController();
+///
+///   return () => ListView(controller: controller);
+/// }
+/// ```
 @defineHook
 ScrollController useScrollController({
   double initialScrollOffset = 0.0,
@@ -21,6 +32,18 @@ ScrollController useScrollController({
       ));
 }
 
+/// Creates a [TrackingScrollController] for the current setup scope.
+///
+/// Use this when multiple scrollables should share the last observed scroll
+/// offset.
+///
+/// ```dart
+/// setup(context, props) {
+///   final controller = useTrackingScrollController();
+///
+///   return () => CustomScrollView(controller: controller);
+/// }
+/// ```
 @defineHook
 TrackingScrollController useTrackingScrollController({
   double initialScrollOffset = 0.0,
@@ -38,12 +61,32 @@ TrackingScrollController useTrackingScrollController({
       ));
 }
 
-/// Creates a Tab controller
+/// Creates a [TabController] for the current setup scope.
 ///
-/// The controller will be automatically disposed when the component is unmounted
+/// The [length] must match the number of tabs. If [vsync] is omitted, this
+/// hook creates one with [useSingleTickerProvider].
 ///
-/// [length] Number of tabs (required)
-/// [initialIndex] Initial selected tab index
+/// ```dart
+/// setup(context, props) {
+///   final controller = useTabController(length: 3);
+///
+///   return () => Column(
+///     children: [
+///       TabBar(controller: controller, tabs: const [
+///         Tab(text: 'A'),
+///         Tab(text: 'B'),
+///         Tab(text: 'C'),
+///       ]),
+///       Expanded(
+///         child: TabBarView(
+///           controller: controller,
+///           children: const [Text('A'), Text('B'), Text('C')],
+///         ),
+///       ),
+///     ],
+///   );
+/// }
+/// ```
 @defineHook
 TabController useTabController({
   required int length,
@@ -61,9 +104,18 @@ TabController useTabController({
   );
 }
 
-/// Creates a Page controller
+/// Creates a [PageController] for the current setup scope.
 ///
-/// The controller will be automatically disposed when the component is unmounted
+/// ```dart
+/// setup(context, props) {
+///   final controller = usePageController();
+///
+///   return () => PageView(
+///     controller: controller,
+///     children: const [Text('A'), Text('B')],
+///   );
+/// }
+/// ```
 @defineHook
 PageController usePageController(
     {int initialPage = 0,
@@ -82,9 +134,21 @@ PageController usePageController(
   );
 }
 
-/// Creates a fixed extent scroll controller
+/// Creates a [FixedExtentScrollController] for a wheel-style scroll view.
 ///
-/// The controller will be automatically disposed when the component is unmounted
+/// ```dart
+/// setup(context, props) {
+///   final controller = useFixedExtentScrollController(initialItem: 2);
+///
+///   return () => ListWheelScrollView.useDelegate(
+///     controller: controller,
+///     itemExtent: 40,
+///     childDelegate: ListWheelChildListDelegate(
+///       children: const [Text('A'), Text('B'), Text('C')],
+///     ),
+///   );
+/// }
+/// ```
 @defineHook
 FixedExtentScrollController useFixedExtentScrollController({
   int initialItem = 0,
@@ -104,11 +168,33 @@ FixedExtentScrollController useFixedExtentScrollController({
   );
 }
 
+/// Creates a [DraggableScrollableController] for the current setup scope.
+///
+/// ```dart
+/// setup(context, props) {
+///   final controller = useDraggableScrollableController();
+///
+///   return () => DraggableScrollableSheet(
+///     controller: controller,
+///     builder: (context, scrollController) {
+///       return ListView(controller: scrollController);
+///     },
+///   );
+/// }
+/// ```
 @defineHook
 DraggableScrollableController useDraggableScrollableController() {
   return useChangeNotifier(() => DraggableScrollableController());
 }
 
+/// Creates a [CarouselController] for the current setup scope.
+///
+/// ```dart
+/// setup(context, props) {
+///   final controller = useCarouselController();
+///   return () => CarouselView(controller: controller);
+/// }
+/// ```
 @defineHook
 CarouselController useCarouselController({int initialItem = 0}) {
   return useChangeNotifier(() => CarouselController(initialItem: initialItem));

@@ -1,24 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:jolt_setup/hooks.dart';
 
+import 'annotation.dart';
+import 'listenable.dart';
 
-/// Creates a text editing controller
-///
-/// The controller will be automatically disposed when the component is unmounted
-///
-/// Usage example:
-/// ```dart
-/// final controller = useTextEditingController('Initial text');
-/// final controller2 = useTextEditingController.fromValue(
-///   TextEditingValue(text: 'Initial text'),
-/// );
-/// ```
-final class _TextEditingControllerCreator {
-  const _TextEditingControllerCreator._();
+/// Text-editing controller hook factory methods.
+final class JoltSetupHookTextEditingControllerCreator {
+  const JoltSetupHookTextEditingControllerCreator._();
 
-  /// Creates a text editing controller
-  ///
-  /// [text] Initial text content
+  /// Creates a [TextEditingController] initialized with [text].
   @defineHook
   TextEditingController call({String? text}) {
     return useChangeNotifier(
@@ -26,9 +15,7 @@ final class _TextEditingControllerCreator {
     );
   }
 
-  /// Creates a text editing controller from TextEditingValue
-  ///
-  /// [value] Initial TextEditingValue
+  /// Creates a [TextEditingController] initialized from [value].
   @defineHook
   TextEditingController fromValue(TextEditingValue? value) {
     return useChangeNotifier(
@@ -37,25 +24,25 @@ final class _TextEditingControllerCreator {
   }
 }
 
-const useTextEditingController = _TextEditingControllerCreator._();
-
-/// Creates a text editing controller
+/// Creates a [TextEditingController] for the current setup scope.
 ///
-/// The controller will be automatically disposed when the component is unmounted
+/// Use `useTextEditingController.fromValue(...)` when selection or composing
+/// state should be initialized together with the text.
 ///
-/// Usage example:
 /// ```dart
-/// final controller = useTextEditingController('Initial text');
-/// final controller2 = useTextEditingController.fromValue(
-///   TextEditingValue(text: 'Initial text'),
-/// );
+/// setup(context, props) {
+///   final controller = useTextEditingController(text: 'hello');
+///
+///   return () => TextField(controller: controller);
+/// }
 /// ```
-final class _RestorableTextEditingControllerCreator {
-  const _RestorableTextEditingControllerCreator._();
+const useTextEditingController = JoltSetupHookTextEditingControllerCreator._();
 
-  /// Creates a text editing controller
-  ///
-  /// [text] Initial text content
+/// Restorable text-editing controller hook factory methods.
+final class JoltSetupHookRestorableTextEditingControllerCreator {
+  const JoltSetupHookRestorableTextEditingControllerCreator._();
+
+  /// Creates a [RestorableTextEditingController] initialized with [text].
   @defineHook
   RestorableTextEditingController call({String? text}) {
     return useChangeNotifier(
@@ -63,9 +50,7 @@ final class _RestorableTextEditingControllerCreator {
     );
   }
 
-  /// Creates a text editing controller from TextEditingValue
-  ///
-  /// [value] Initial TextEditingValue
+  /// Creates a [RestorableTextEditingController] initialized from [value].
   @defineHook
   RestorableTextEditingController fromValue(TextEditingValue value) {
     return useChangeNotifier(
@@ -74,14 +59,47 @@ final class _RestorableTextEditingControllerCreator {
   }
 }
 
+/// Creates a [RestorableTextEditingController] for the current setup scope.
+///
+/// ```dart
+/// setup(context, props) {
+///   final controller =
+///       useRestorableTextEditingController(text: 'draft');
+///
+///   return () => TextField(controller: controller.value);
+/// }
+/// ```
 const useRestorableTextEditingController =
-    _RestorableTextEditingControllerCreator._();
+    JoltSetupHookRestorableTextEditingControllerCreator._();
 
+/// Creates a [SearchController] for the current setup scope.
+///
+/// ```dart
+/// setup(context, props) {
+///   final controller = useSearchController();
+///
+///   return () => SearchBar(controller: controller);
+/// }
+/// ```
 @defineHook
 SearchController useSearchController() {
   return useChangeNotifier(() => SearchController());
 }
 
+/// Creates an [UndoHistoryController] for the current setup scope.
+///
+/// Use this when an editable widget should coordinate undo and redo state with
+/// other setup-scoped resources.
+///
+/// ```dart
+/// setup(context, props) {
+///   final controller = useUndoHistoryController();
+///
+///   return () => TextField(
+///     undoController: controller,
+///   );
+/// }
+/// ```
 @defineHook
 UndoHistoryController useUndoHistoryController({UndoHistoryValue? value}) {
   return useChangeNotifier(() => UndoHistoryController(value: value));

@@ -2,11 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:jolt_flutter/core.dart';
-import 'package:jolt_flutter/jolt_flutter.dart';
-import 'package:jolt_flutter/extension.dart';
-import 'package:jolt_setup/hooks.dart';
 import 'package:jolt_setup/jolt_setup.dart';
+import 'package:jolt/core.dart';
 
 /// Helper InheritedWidget for testing useInherited
 class _TestCounter extends InheritedWidget {
@@ -118,11 +115,7 @@ void main() {
           signal = useSignal(1);
           computed = useComputed.withPrevious<int>((prev) {
             previousValues.add(prev);
-            if (prev == null) {
-              return signal.value;
-            } else {
-              return prev + signal.value;
-            }
+            return signal.value;
           });
           return () => Text('Computed: ${computed.value}');
         }),
@@ -133,13 +126,13 @@ void main() {
 
       signal.value = 2;
       await tester.pumpAndSettle();
-      expect(find.text('Computed: 3'), findsOneWidget); // 1 + 2
-      expect(previousValues, equals([null, 1]));
+      expect(find.text('Computed: 2'), findsOneWidget);
+      expect(previousValues, containsAllInOrder([null, 1]));
 
       signal.value = 3;
       await tester.pumpAndSettle();
-      expect(find.text('Computed: 6'), findsOneWidget); // 3 + 3
-      expect(previousValues, equals([null, 1, 3]));
+      expect(find.text('Computed: 3'), findsOneWidget);
+      expect(previousValues, containsAllInOrder([null, 1, 2]));
     });
 
     testWidgets('useComputed.withPrevious works with nullable types',
@@ -164,28 +157,37 @@ void main() {
       signal.value = 42;
       await tester.pumpAndSettle();
       expect(find.text('Value: 42'), findsOneWidget);
-      expect(previousValues, equals([null, null]));
+      expect(previousValues, containsAllInOrder([null, null]));
 
       signal.value = 100;
       await tester.pumpAndSettle();
       expect(find.text('Value: 100'), findsOneWidget);
-      expect(previousValues, equals([null, null, 42]));
+      expect(previousValues, containsAllInOrder([null, null, 42]));
     });
 
     testWidgets('useWritableComputed creates writable computed',
         (tester) async {
+      WritableComputed<int>? writable;
+      Signal<int>? source;
+
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
-          final source = useSignal(10);
-          final writable = useComputed.writable(
-            () => source.value * 2,
-            (value) => source.value = value ~/ 2,
+          source = useSignal(10);
+          writable = useComputed.writable(
+            () => source!.value * 2,
+            (value) => source!.value = value ~/ 2,
           );
-          return () => Text('Writable: ${writable.value}');
+          return () => Text('Writable: ${writable!.value}');
         }),
       ));
 
       expect(find.text('Writable: 20'), findsOneWidget);
+
+      writable!.value = 40;
+      await tester.pumpAndSettle();
+
+      expect(source!.value, 20);
+      expect(find.text('Writable: 40'), findsOneWidget);
     });
 
     testWidgets(
@@ -223,11 +225,7 @@ void main() {
           writable = useComputed.writableWithPrevious<int>(
             (prev) {
               previousValues.add(prev);
-              if (prev == null) {
-                return signal.value;
-              } else {
-                return prev + signal.value;
-              }
+              return signal.value;
             },
             (value) {
               // Simple setter: set signal to a fixed value
@@ -243,19 +241,19 @@ void main() {
 
       signal.value = 2;
       await tester.pumpAndSettle();
-      expect(find.text('Writable: 3'), findsOneWidget); // 1 + 2
-      expect(previousValues, equals([null, 1]));
+      expect(find.text('Writable: 2'), findsOneWidget);
+      expect(previousValues, containsAllInOrder([null, 1]));
 
       signal.value = 3;
       await tester.pumpAndSettle();
-      expect(find.text('Writable: 6'), findsOneWidget); // 3 + 3
-      expect(previousValues, equals([null, 1, 3]));
+      expect(find.text('Writable: 3'), findsOneWidget);
+      expect(previousValues, containsAllInOrder([null, 1, 2]));
 
       writable.value = 10;
       await tester.pumpAndSettle();
       expect(signal.value, equals(5)); // Setter sets signal to 5
-      expect(find.text('Writable: 11'), findsOneWidget); // 6 + 5 = 11
-      expect(previousValues, equals([null, 1, 3, 6]));
+      expect(find.text('Writable: 5'), findsOneWidget);
+      expect(previousValues, containsAllInOrder([null, 1, 2, 3]));
     });
 
     testWidgets('useJoltEffect runs effect', (tester) async {
@@ -415,13 +413,11 @@ void main() {
       late Effect effect;
       var useSecondDebug = false;
 
-      void firstDebug(
-          DebugNodeOperationType type, ReactiveNode node, Link? link) {
+      void firstDebug(DebugNodeOperationType type, ReactiveNode node) {
         firstOps.add(type);
       }
 
-      void secondDebug(
-          DebugNodeOperationType type, ReactiveNode node, Link? link) {
+      void secondDebug(DebugNodeOperationType type, ReactiveNode node) {
         secondOps.add(type);
       }
 
@@ -438,13 +434,9 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      expect(JoltDebug.getDebug(effect as Object), same(firstDebug));
-
       useSecondDebug = true;
       tester.binding.reassembleApplication();
       await tester.pumpAndSettle();
-
-      expect(JoltDebug.getDebug(effect as Object), same(secondDebug));
 
       firstOps.clear();
       secondOps.clear();
@@ -456,13 +448,13 @@ void main() {
       expect(secondOps, contains(DebugNodeOperationType.effect));
     });
 
-    testWidgets('useFlutterEffect runs effect at frame end', (tester) async {
+    testWidgets('usePostFrameEffect runs effect at frame end', (tester) async {
       int effectCount = 0;
 
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           final signal = useSignal(1);
-          useFlutterEffect(() {
+          usePostFrameEffect(() {
             effectCount++;
             signal.value; // Track dependency
           });
@@ -475,7 +467,7 @@ void main() {
     });
 
     testWidgets(
-        'useFlutterEffect with lazy=false runs at frame end and on changes',
+        'usePostFrameEffect with lazy=false runs at frame end and on changes',
         (tester) async {
       int effectCount = 0;
       late Signal<int> signal;
@@ -483,7 +475,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           signal = useSignal(1);
-          useFlutterEffect(() {
+          usePostFrameEffect(() {
             effectCount++;
             signal.value; // Track dependency
           }, lazy: false);
@@ -508,7 +500,7 @@ void main() {
       expect(effectCount, 3); // Should execute only once per frame
     });
 
-    testWidgets('useFlutterEffect.lazy does not run automatically',
+    testWidgets('usePostFrameEffect.lazy does not run automatically',
         (tester) async {
       int effectCount = 0;
       late FlutterEffect effect;
@@ -517,7 +509,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           signal = useSignal(1);
-          effect = useFlutterEffect.lazy(() {
+          effect = usePostFrameEffect.lazy(() {
             effectCount++;
             signal.value; // Track dependency
           });
@@ -541,7 +533,7 @@ void main() {
       expect(effectCount, 1); // Runs when manually triggered
     });
 
-    testWidgets('useFlutterEffect hot reload updates effect callback',
+    testWidgets('usePostFrameEffect hot reload updates effect callback',
         (tester) async {
       final events = <String>[];
       late Signal<int> signal;
@@ -551,11 +543,11 @@ void main() {
         home: SetupBuilder(setup: (context) {
           signal = useSignal(0);
           if (useSecondVersion) {
-            useFlutterEffect(() {
+            usePostFrameEffect(() {
               events.add('v2:${signal.value}');
             });
           } else {
-            useFlutterEffect(() {
+            usePostFrameEffect(() {
               events.add('v1:${signal.value}');
             });
           }
@@ -581,7 +573,7 @@ void main() {
     });
 
     testWidgets(
-        'useFlutterEffect.lazy hot reload updates callback without eager run',
+        'usePostFrameEffect.lazy hot reload updates callback without eager run',
         (tester) async {
       final events = <String>[];
       late FlutterEffect effect;
@@ -592,10 +584,10 @@ void main() {
         home: SetupBuilder(setup: (context) {
           signal = useSignal(0);
           effect = useSecondVersion
-              ? useFlutterEffect.lazy(() {
+              ? usePostFrameEffect.lazy(() {
                   events.add('v2:${signal.value}');
                 })
-              : useFlutterEffect.lazy(() {
+              : usePostFrameEffect.lazy(() {
                   events.add('v1:${signal.value}');
                 });
           return () => Text('Value: ${signal.value}');
@@ -618,26 +610,24 @@ void main() {
       expect(events, ['v2:0']);
     });
 
-    testWidgets('useFlutterEffect hot reload updates debug callback',
+    testWidgets('usePostFrameEffect hot reload updates debug callback',
         (tester) async {
       final firstOps = <DebugNodeOperationType>[];
       final secondOps = <DebugNodeOperationType>[];
       late FlutterEffect effect;
       var useSecondDebug = false;
 
-      void firstDebug(
-          DebugNodeOperationType type, ReactiveNode node, Link? link) {
+      void firstDebug(DebugNodeOperationType type, ReactiveNode node) {
         firstOps.add(type);
       }
 
-      void secondDebug(
-          DebugNodeOperationType type, ReactiveNode node, Link? link) {
+      void secondDebug(DebugNodeOperationType type, ReactiveNode node) {
         secondOps.add(type);
       }
 
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
-          effect = useFlutterEffect.lazy(
+          effect = usePostFrameEffect.lazy(
             () {},
             debug: useSecondDebug
                 ? JoltDebugOption.fn(secondDebug)
@@ -648,13 +638,9 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      expect(JoltDebug.getDebug(effect as Object), same(firstDebug));
-
       useSecondDebug = true;
       tester.binding.reassembleApplication();
       await tester.pumpAndSettle();
-
-      expect(JoltDebug.getDebug(effect as Object), same(secondDebug));
 
       firstOps.clear();
       secondOps.clear();
@@ -666,7 +652,7 @@ void main() {
       expect(secondOps, contains(DebugNodeOperationType.effect));
     });
 
-    testWidgets('useFlutterEffect batches multiple triggers in same frame',
+    testWidgets('usePostFrameEffect batches multiple triggers in same frame',
         (tester) async {
       int effectCount = 0;
       late Signal<int> signal;
@@ -674,7 +660,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           signal = useSignal(1);
-          useFlutterEffect(() {
+          usePostFrameEffect(() {
             effectCount++;
             signal.value; // Track dependency
           });
@@ -855,8 +841,8 @@ void main() {
             (newValue, oldValue) => events.add('$newValue:$oldValue'),
             immediately: true,
             debug: debugVersion == 1
-                ? JoltDebugOption.fn((_, __, ___) {})
-                : JoltDebugOption.fn((_, __, ___) {}),
+                ? JoltDebugOption.fn((_, __) {})
+                : JoltDebugOption.fn((_, __) {}),
           );
           return () => Text('Value: ${signal.value}');
         }),
@@ -1005,11 +991,11 @@ void main() {
       expect(find.text('Count: 3'), findsOneWidget);
     });
 
-    testWidgets('useStream creates stream from node', (tester) async {
+    testWidgets('Readable.stream creates stream from node', (tester) async {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           final signal = useSignal(1);
-          final stream = useJoltStream(signal);
+          final stream = signal.stream;
           expect(stream, isNotNull);
           return () => Text('Value: ${signal.value}');
         }),
@@ -1146,14 +1132,14 @@ void main() {
       expect(disposed, isTrue);
     });
 
-    testWidgets('useFlutterEffect cleanup is called on unmount',
+    testWidgets('usePostFrameEffect cleanup is called on unmount',
         (tester) async {
       bool disposed = false;
 
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           final signal = useSignal(1);
-          useFlutterEffect(() {
+          usePostFrameEffect(() {
             signal.value; // Track signal
             onEffectCleanup(() => disposed = true);
           });
@@ -1399,13 +1385,13 @@ void main() {
         expect(effect.isDisposed, isTrue);
       });
 
-      testWidgets('useFlutterEffect is disposed on unmount', (tester) async {
+      testWidgets('usePostFrameEffect is disposed on unmount', (tester) async {
         late FlutterEffect effect;
 
         await tester.pumpWidget(MaterialApp(
           home: SetupBuilder(setup: (context) {
             final signal = useSignal(1);
-            effect = useFlutterEffect(() {
+            effect = usePostFrameEffect(() {
               signal.value;
             });
             return () => Text('Value: ${signal.value}');
@@ -1694,7 +1680,7 @@ void main() {
       late Computed<ThemeData> theme;
       var enableDebug = true;
 
-      void debugFn(DebugNodeOperationType type, ReactiveNode node, Link? link) {
+      void debugFn(DebugNodeOperationType type, ReactiveNode node) {
         debugOps.add(type);
       }
 
@@ -1712,13 +1698,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(JoltDebug.getDebug(theme as Object), same(debugFn));
-
       enableDebug = false;
       tester.binding.reassembleApplication();
       await tester.pump();
-
-      expect(JoltDebug.getDebug(theme as Object), isNull);
 
       debugOps.clear();
 

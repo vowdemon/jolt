@@ -1,52 +1,71 @@
 import 'dart:async';
 
-import 'package:jolt_setup/hooks.dart';
-import 'package:jolt_setup/jolt_setup.dart';
+import '../setup/framework.dart';
+import 'annotation.dart';
 
-/// Hook factory for creating one-shot or periodic timers in Setup components.
-///
-/// Usage:
-/// - One-shot: [useTimer] invokes [callback] once after [duration].
-/// - Periodic: [useTimer].periodic invokes [callback] every [duration]; cancel via the returned [TimerHook].
-///
-/// When [immediately] is true, the timer is started during build; when false, after mount.
-/// The timer is cancelled automatically when the component unmounts.
-final class TimerHookCreator {
-  const TimerHookCreator._();
+/// Timer hook factory methods.
+final class JoltSetupHookTimerCreator {
+  const JoltSetupHookTimerCreator._();
 
   /// Creates a one-shot timer that invokes [callback] after [duration].
-  ///
-  /// Returns a [TimerHook]; call [TimerHook.cancel] to cancel before it fires.
   @defineHook
   TimerHook call(Duration duration, void Function() callback,
-      {bool immediately = false}) {
+      {TimerStart start = TimerStart.mounted}) {
     return useHook(_TimerHook(
-        duration: duration, callback: callback, immediately: immediately));
+        duration: duration,
+        callback: callback,
+        immediately: start == TimerStart.immediate));
   }
 
   /// Creates a periodic timer that invokes [callback] every [duration].
-  ///
-  /// [callback] receives the current [Timer] instance. Returns a [TimerHook];
-  /// call [TimerHook.cancel] to stop. [TimerHook.tick] increments on each callback.
   @defineHook
   TimerHook periodic(Duration duration, void Function(Timer timer) callback,
-      {bool immediately = false}) {
+      {TimerStart start = TimerStart.mounted}) {
     return useHook(_TimerPeriodicHook(
-        duration: duration, callback: callback, immediately: immediately));
+        duration: duration,
+        callback: callback,
+        immediately: start == TimerStart.immediate));
   }
 }
 
-/// Hook for creating one-shot or periodic timers in Setup components.
-///
-/// Use [useTimer](duration, callback) for a one-shot timer,
-/// and [useTimer].periodic(duration, callback) for a periodic timer.
-const useTimer = TimerHookCreator._();
+/// Controls when a timer starts counting.
+enum TimerStart {
+  /// Starts during hook creation.
+  immediate,
 
-/// Return type of the timer hook; implements [Timer]'s [cancel], [isActive], [tick], etc.
+  /// Starts after the setup scope has mounted.
+  mounted,
+}
+
+/// Creates a one-shot or periodic timer for the current setup scope.
 ///
-/// Cancelled automatically on unmount; call [cancel] to cancel earlier if needed.
-/// Use [pause] / [resume] to temporarily stop and restart without losing the hook;
-/// use [reset] to restart from the beginning (for one-shot, resets the delay).
+/// By default, the timer starts after the setup scope mounts. Pass
+/// [TimerStart.immediate] to [JoltSetupHookTimerCreator.call] or
+/// [JoltSetupHookTimerCreator.periodic] when the countdown should begin during
+/// hook creation. The returned [TimerHook] is cancelled automatically when the
+/// setup scope unmounts.
+///
+/// ```dart
+/// setup(context, props) {
+///   final visible = useSignal(false);
+///   useTimer(const Duration(milliseconds: 300), () {
+///     visible.value = true;
+///   });
+///
+///   return () => AnimatedOpacity(
+///     opacity: visible.value ? 1 : 0,
+///     duration: const Duration(milliseconds: 150),
+///     child: const Text('Ready'),
+///   );
+/// }
+/// ```
+const useTimer = JoltSetupHookTimerCreator._();
+
+/// A setup-owned timer handle returned by [useTimer].
+///
+/// The handle implements [Timer] and is cancelled automatically on unmount.
+/// Call [pause] and [resume] to temporarily stop and restart the timer, or
+/// [reset] to restart from the beginning.
 abstract class TimerHook implements Timer {
   /// Stops the timer without cancelling; call [resume] to run again.
   void pause();
@@ -59,7 +78,6 @@ abstract class TimerHook implements Timer {
   void reset();
 }
 
-/// Base implementation for one-shot and periodic timer hooks.
 abstract class _TimerBaseHook extends SetupHook<TimerHook>
     implements TimerHook {
   _TimerBaseHook({required this.duration, required this.immediately});
@@ -68,10 +86,8 @@ abstract class _TimerBaseHook extends SetupHook<TimerHook>
   Timer? timer;
   final bool immediately;
 
-  /// True after [cancel]; [resume] will no longer start.
   bool isCancelled = false;
 
-  /// Starts the underlying [Timer]; no-op if already running or cancelled.
   void start();
 
   @override
@@ -133,7 +149,6 @@ abstract class _TimerBaseHook extends SetupHook<TimerHook>
   }
 }
 
-/// One-shot timer: fires [callback] once after [duration].
 class _TimerHook extends _TimerBaseHook {
   _TimerHook(
       {required super.duration,
@@ -157,7 +172,6 @@ class _TimerHook extends _TimerBaseHook {
   }
 }
 
-/// Periodic timer: invokes [callback] every [duration] with the current [Timer].
 class _TimerPeriodicHook extends _TimerBaseHook {
   _TimerPeriodicHook(
       {required super.duration,

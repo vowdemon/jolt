@@ -1,100 +1,47 @@
 import 'package:flutter/widgets.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
-import 'package:jolt_setup/hooks.dart';
-import 'package:jolt_setup/jolt_setup.dart';
 
-/// Creator class for the useAutomaticKeepAlive hook.
-///
-/// Provides two ways to control widget keep-alive behavior:
-/// - [call]: Accepts a boolean value directly
-/// - [value]: Accepts a reactive ReadableNode
-class _UseAutomaticKeepAliveCreator {
-  const _UseAutomaticKeepAliveCreator._();
+import '../setup/framework.dart';
+import 'annotation.dart';
 
-  /// Controls whether the widget should be kept alive using a boolean value.
-  ///
-  /// When [wantKeepAlive] is `true`, the widget will be kept alive even when
-  /// it's scrolled out of view (e.g., in a PageView or ListView). When `false`,
-  /// the widget will be disposed normally when scrolled out of view.
-  ///
-  /// Parameters:
-  /// - [wantKeepAlive]: Whether to keep the widget alive
-  ///
-  /// Example:
-  /// ```dart
-  /// @override
-  /// setup(context, props) {
-  ///   useAutomaticKeepAlive(true); // Keep widget alive
-  ///   return () => MyExpensiveWidget();
-  /// }
-  /// ```
+/// Automatic keep-alive hook factory methods.
+class JoltSetupHookAutomaticKeepAliveCreator {
+  const JoltSetupHookAutomaticKeepAliveCreator._();
+
+  /// Sets a fixed keep-alive policy for the current setup scope.
   @defineHook
   void call(bool wantKeepAlive) {
-    return useHook(_AutomaticKeepAliveClientHook(
-        wantKeepAlive: ReadonlySignal(wantKeepAlive)));
+    return useHook(
+        _AutomaticKeepAliveClientHook(wantKeepAlive: Readonly(wantKeepAlive)));
   }
 
-  /// Controls whether the widget should be kept alive using a reactive value.
-  ///
-  /// When [wantKeepAlive] evaluates to `true`, the widget will be kept alive.
-  /// The keep-alive state will automatically update when the reactive value changes.
-  ///
-  /// Parameters:
-  /// - [wantKeepAlive]: A reactive ReadableNode that controls keep-alive
-  ///
-  /// Example:
-  /// ```dart
-  /// @override
-  /// setup(context, props) {
-  ///   final shouldKeepAlive = useSignal(true);
-  ///   useAutomaticKeepAlive.value(shouldKeepAlive);
-  ///
-  ///   return () => Column(
-  ///     children: [
-  ///       MyExpensiveWidget(),
-  ///       ElevatedButton(
-  ///         onPressed: () => shouldKeepAlive.value = !shouldKeepAlive.value,
-  ///         child: Text('Toggle Keep Alive'),
-  ///       ),
-  ///     ],
-  ///   );
-  /// }
-  /// ```
+  /// Sets a reactive keep-alive policy for the current setup scope.
   @defineHook
-  void value(ReadableNode<bool> wantKeepAlive) {
+  void value(Readable<bool> wantKeepAlive) {
     return useHook(_AutomaticKeepAliveClientHook(wantKeepAlive: wantKeepAlive));
   }
 }
 
-/// Hook for controlling widget keep-alive behavior.
+/// Controls whether the current subtree should stay alive when off-screen.
 ///
-/// This hook allows you to prevent widgets from being disposed when they're
-/// scrolled out of view, which is useful for expensive widgets that should
-/// maintain their state (e.g., in PageView, ListView, or TabBarView).
+/// Call `useAutomaticKeepAlive(true)` for a fixed keep-alive policy, or
+/// `useAutomaticKeepAlive.value(readable)` when the policy should react to
+/// state changes.
 ///
-/// Use [call] for static boolean values, or [value] for reactive values.
-///
-/// Example:
 /// ```dart
-/// @override
 /// setup(context, props) {
-///   // Static value
 ///   useAutomaticKeepAlive(true);
 ///
-///   // Or reactive value
-///   final keepAlive = useSignal(true);
-///   useAutomaticKeepAlive.value(keepAlive);
-///
-///   return () => MyExpensiveWidget();
+///   return () => const ExpensiveEditor();
 /// }
 /// ```
-final useAutomaticKeepAlive = _UseAutomaticKeepAliveCreator._();
+final useAutomaticKeepAlive = JoltSetupHookAutomaticKeepAliveCreator._();
 
 class _AutomaticKeepAliveClientHook extends SetupHook<void> {
-  _AutomaticKeepAliveClientHook({required ReadableNode<bool> wantKeepAlive})
+  _AutomaticKeepAliveClientHook({required Readable<bool> wantKeepAlive})
       : _wantKeepAlive = wantKeepAlive;
 
-  final ReadableNode<bool> _wantKeepAlive;
+  final Readable<bool> _wantKeepAlive;
   FlutterEffect? _effect;
   KeepAliveHandle? _keepAliveHandle;
 

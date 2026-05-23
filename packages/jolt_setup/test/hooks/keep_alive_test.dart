@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:jolt_flutter/jolt_flutter.dart';
-import 'package:jolt_setup/hooks.dart';
 import 'package:jolt_setup/jolt_setup.dart';
 import '../shared/helper.dart';
 
@@ -11,7 +9,7 @@ void main() {
         (tester) async {
       var buildCount = 0;
       var disposeCount = 0;
-      ReadableNode<bool>? wantKeepAlive;
+      Readable<bool>? wantKeepAlive;
 
       final pageController = PageController();
 
@@ -70,7 +68,7 @@ void main() {
         (tester) async {
       var buildCount = 0;
       var disposeCount = 0;
-      ReadableNode<bool>? wantKeepAlive;
+      Readable<bool>? wantKeepAlive;
 
       final pageController = PageController();
 

@@ -1,75 +1,36 @@
 part of 'framework.dart';
 
-/// A mixin that brings setup-based composition API to [StatefulWidget].
+/// A mixin that adds the setup runtime to a [StatefulWidget] [State].
 ///
-/// This mixin allows you to use Jolt's reactive setup pattern with traditional
-/// [StatefulWidget], providing a bridge between Flutter's standard widget system
-/// and Jolt's composition API.
+/// Use this when you want hook-based setup logic but still need a custom
+/// [State] subclass. The `setup` function runs once for the current state
+/// object, while the returned builder participates in normal Flutter rebuilds.
 ///
-/// ## Usage
+/// This is the bridge API for existing `StatefulWidget` codebases. It keeps
+/// Flutter's [State] lifecycle and instance methods available while giving the
+/// state object access to Jolt hooks such as [useSignal], [useComputed],
+/// [useEffect], and the setup lifecycle callbacks.
 ///
 /// ```dart
-/// class MyWidget extends StatefulWidget {
-///   final String title;
-///   final int initialCount;
+/// class SearchBox extends StatefulWidget {
+///   const SearchBox({super.key, required this.initialText});
 ///
-///   const MyWidget({super.key, required this.title, required this.initialCount});
+///   final String initialText;
 ///
 ///   @override
-///   State<MyWidget> createState() => _MyWidgetState();
+///   State<SearchBox> createState() => _SearchBoxState();
 /// }
 ///
-/// class _MyWidgetState extends State<MyWidget> with SetupMixin<MyWidget> {
+/// class _SearchBoxState extends State<SearchBox> with SetupMixin<SearchBox> {
 ///   @override
-///   setup(context) {
-///     // Access widget properties via props getter
-///     final count = useSignal(props.initialCount);
+///   WidgetFunction<SearchBox> setup(BuildContext context) {
+///     final controller =
+///         useTextEditingController(text: props.initialText);
 ///
-///     // Use any Jolt hooks
-///     useEffect(() {
-///       print('Title: ${props.title}');
-///     }, [props.title]);
-///
-///     return () => Column(
-///       children: [
-///         Text(props.title),
-///         Text('Count: ${count.value}'),
-///         ElevatedButton(
-///           onPressed: () => count.value++,
-///           child: Text('Increment'),
-///         ),
-///       ],
-///     );
+///     return () => TextField(controller: controller);
 ///   }
 /// }
 /// ```
-///
-/// ## Features
-///
-/// - **Props Access**: Use the [props] getter to access widget properties reactively
-/// - **Hooks Support**: All Jolt hooks ([useSignal], [useComputed], [useEffect], etc.)
-/// - **Lifecycle Integration**: Automatically integrates with Flutter's State lifecycle
-/// - **Hot Reload**: Full hot reload support with hook state preservation
-///
-/// ## Lifecycle
-///
-/// The mixin automatically handles:
-/// - Setup function runs on first build (after [initState], before first [build])
-/// - Props updates trigger [SetupContext.notifyUpdate]
-/// - Dependencies changes trigger [SetupContext.notifyDependenciesChanged]
-/// - Cleanup on [dispose]
-///
-/// ## When to Use
-///
-/// Use [SetupMixin] when:
-/// - You need [StatefulWidget] features (like [State.mounted])
-/// - Integrating with existing StatefulWidget code
-/// - You prefer State's lifecycle methods
-///
-/// Use [SetupWidget] when:
-/// - Building new components from scratch
-/// - You want the simplest API
-/// - Element's lifecycle is sufficient
 mixin SetupMixin<T extends StatefulWidget> on State<T> {
   late final Props<T> _propsNode = _PropsImpl<T>(context);
   late final SetupContext<T> setupContext = SetupContext<T>(
@@ -80,67 +41,18 @@ mixin SetupMixin<T extends StatefulWidget> on State<T> {
 
   bool _isFirstBuild = true;
 
-  /// Provides direct access to the widget properties.
+  /// The current widget instance for this state object.
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
   T get props => _propsNode.value;
 
-  /// The setup function that runs once when the widget is created.
+  /// Runs once to register hooks and returns the widget builder.
   ///
-  /// This function is called during the first [build] (after [initState] but
-  /// before the first frame is rendered). It executes only once during the
-  /// widget's lifetime.
-  ///
-  /// Use this function to:
-  /// - Initialize reactive state with hooks ([useSignal], [useComputed], etc.)
-  /// - Set up side effects with [useEffect]
-  /// - Access widget properties via the [props] getter
-  /// - Create the widget builder function
-  ///
-  /// ## Parameters
-  ///
-  /// - [context]: The [BuildContext] for this State. Note that you can access
-  ///   widget properties via the [props] getter instead of [context.widget]
-  ///
-  /// ## Returns
-  ///
-  /// A [WidgetFunction] that will be called on each rebuild triggered by
-  /// reactive dependencies. The builder should be a pure function that returns
-  /// a [Widget] based on the current reactive state.
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// @override
-  /// setup(context) {
-  ///   final count = useSignal(0);
-  ///   final doubled = useComputed(() => count.value * 2);
-  ///
-  ///   useEffect(() {
-  ///     print('Count changed: ${count.value}');
-  ///   }, [count.value]);
-  ///
-  ///   // Return the builder function
-  ///   return () => Text('Count: ${count.value}, Doubled: ${doubled.value}');
-  /// }
-  /// ```
-  ///
-  /// ## Accessing InheritedWidgets
-  ///
-  /// Unlike [initState], the setup function can safely access [InheritedWidget]s:
-  /// ```dart
-  /// @override
-  /// setup(context) {
-  ///   final theme = Theme.of(context);
-  ///   final count = useSignal(0);
-  ///
-  ///   return () => Text(
-  ///     'Count: ${count.value}',
-  ///     style: theme.textTheme.bodyLarge,
-  ///   );
-  /// }
-  /// ```
+  /// Use [context] to read inherited widgets during setup and [props] to read
+  /// the current widget instance. The returned [WidgetFunction] should render
+  /// from reactive state created during this call rather than allocating new
+  /// long-lived resources on every rebuild.
   WidgetFunction<T> setup(BuildContext context);
 
   /* --------------------------- Lifecycle hooks --------------------------- */
@@ -192,29 +104,11 @@ mixin SetupMixin<T extends StatefulWidget> on State<T> {
     super.dispose();
   }
 
-  /// Schedules a reset of the current `setup`.
+  /// Schedules a full rerun of the current `setup`.
   ///
-  /// It runs at the end of the current frame. Multiple calls in the same
-  /// frame are coalesced into one.
-  ///
-  /// When executed, it unmounts the current hooks, cleans up resources
-  /// created by `setup`, then runs `setup` again and creates a new hook set.
-  ///
-  /// This is closer to a local rebuild of the current setup subtree.
-  /// It is not a normal rebuild, and it is not development-time hot reload.
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// setup(context) {
-  ///   final count = useSignal(0);
-  ///
-  ///   // Somewhere in your code, reset the current setup
-  ///   setupContext.setupContext();
-  ///
-  ///   return () => Text('Count: ${count.value}');
-  /// }
-  /// ```
+  /// The reset happens at frame end and coalesces multiple calls in the same
+  /// frame. It tears down the current hooks and renderer, then runs `setup`
+  /// again to rebuild the setup boundary from scratch.
   void resetSetup() {
     setupContext.scheduleResetSetup();
   }
@@ -228,7 +122,7 @@ mixin SetupMixin<T extends StatefulWidget> on State<T> {
     setupContext.renderer = null;
 
     // 3. Clean up all EffectScope cleanup functions registered during setup
-    setupContext.cleanup();
+    setupContext.raw.cleanup();
 
     // 4. Clear all hooks
     setupContext._hooks.clear();
@@ -247,9 +141,11 @@ mixin SetupMixin<T extends StatefulWidget> on State<T> {
       setupContext.setupBuilder = setup(context);
 
       // 6. Recreate the renderer effect
-      setupContext.renderer = FlutterEffect.lazy(
-          (context as Element).markNeedsBuild,
-          debug: JoltDebugOption.type("SetupRenderer<$T>"));
+      setupContext.renderer = FlutterEffect(
+        (context as Element).markNeedsBuild,
+        lazy: true,
+        debug: JoltDebugOption.type("SetupRenderer<$T>"),
+      );
 
       // 7. Mount all new hooks
       for (var hook in setupContext._hooks) {
@@ -287,9 +183,11 @@ mixin SetupMixin<T extends StatefulWidget> on State<T> {
       // we must initialize here.
       setupContext.run(() {
         setupContext.setupBuilder = setup(context);
-        setupContext.renderer = FlutterEffect.lazy(
-            (context as Element).markNeedsBuild,
-            debug: JoltDebugOption.type("SetupRenderer<$T>"));
+        setupContext.renderer = FlutterEffect(
+          (context as Element).markNeedsBuild,
+          lazy: true,
+          debug: JoltDebugOption.type("SetupRenderer<$T>"),
+        );
 
         for (var hook in setupContext._hooks) {
           hook.mount();
@@ -305,7 +203,7 @@ mixin SetupMixin<T extends StatefulWidget> on State<T> {
       return true;
     }());
 
-    return setupContext.run(() => trackWithEffect(
-        () => setupContext.setupBuilder!(), setupContext.renderer!));
+    return setupContext.run(() => (setupContext.renderer! as EffectImpl)
+        .track(() => setupContext.setupBuilder!()));
   }
 }

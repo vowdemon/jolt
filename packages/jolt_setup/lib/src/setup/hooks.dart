@@ -32,19 +32,20 @@ class _OnMountedHook extends _LifeCycleHook {
   }
 }
 
-/// Registers a callback to run when the widget is mounted.
+/// Registers [callback] to run after the current setup is mounted.
 ///
-/// This is called after the widget is fully initialized and added to the tree.
+/// Use this for work that should start only after all hooks in the current
+/// setup pass have been created and mounted.
 ///
-/// Example:
 /// ```dart
-/// @override
 /// setup(context, props) {
+///   final controller = useScrollController();
+///
 ///   onMounted(() {
-///     print('Widget mounted!');
+///     controller.jumpTo(0);
 ///   });
 ///
-///   return () => Text('Hello');
+///   return () => ListView(controller: controller);
 /// }
 /// ```
 @defineHook
@@ -64,20 +65,17 @@ class _OnUnmountedHook extends _LifeCycleHook {
   }
 }
 
-/// Registers a callback to run when the widget is unmounted.
+/// Registers [callback] to run when the current setup unmounts.
 ///
-/// This is called when the widget is being removed from the tree permanently.
-/// Use this for cleanup operations.
+/// Use this for cleanup that is local to the setup scope.
 ///
-/// Example:
 /// ```dart
-/// @override
 /// setup(context, props) {
-///   onUnmounted(() {
-///     print('Cleaning up resources');
-///   });
+///   final socket = connectSomeSocket();
 ///
-///   return () => Text('Hello');
+///   onUnmounted(socket.close);
+///
+///   return () => const SizedBox.shrink();
 /// }
 /// ```
 @defineHook
@@ -85,14 +83,9 @@ void onUnmounted(void Function() callback) {
   useHook(_OnUnmountedHook(callback));
 }
 
-/// Hook that registers a callback for widget updates.
-///
-/// This hook is called when the widget is updated with new properties,
-/// providing access to both the old and new widget instances.
 class _OnDidUpdateWidgetHook<T> extends SetupHook<_LifeCycleHookType> {
   _OnDidUpdateWidgetHook(this.callback);
 
-  /// Callback function that receives old and new widget instances.
   final void Function(T, T) callback;
 
   _LifeCycleHookType get hookType => _LifeCycleHookType.didUpdateWidget;
@@ -106,102 +99,64 @@ class _OnDidUpdateWidgetHook<T> extends SetupHook<_LifeCycleHookType> {
   }
 }
 
-/// Registers a callback to run when the widget is updated with new properties.
+/// Registers [callback] for parent-driven widget updates.
 ///
-/// This is called whenever the parent widget rebuilds and provides new
-/// properties to this widget. The callback receives both the old and new
-/// widget instances for comparison.
+/// The callback receives the previous widget instance and the new one. Use
+/// this when a setup resource should react to prop updates without being fully
+/// recreated.
 ///
-/// Parameters:
-/// - [callback]: Function that receives (oldWidget, newWidget) when updated
-///
-/// Example:
 /// ```dart
-/// @override
 /// setup(context, props) {
-///   onDidUpdateWidgetAt<MyWidget>((oldWidget, newWidget) {
-///     if (oldWidget.title != newWidget.title) {
-///       print('Title changed from ${oldWidget.title} to ${newWidget.title}');
+///   final controller = useTextEditingController(text: props().query);
+///
+///   onDidUpdateWidget<SearchField>((oldWidget, newWidget) {
+///     if (oldWidget.query != newWidget.query) {
+///       controller.text = newWidget.query;
 ///     }
 ///   });
 ///
-///   return () => Text('Hello');
+///   return () => TextField(controller: controller);
 /// }
 /// ```
 @defineHook
-void onDidUpdateWidgetAt<T>(void Function(T, T) callback) {
-  useHook(_OnDidUpdateWidgetHook(callback));
+void onDidUpdateWidget<T>(void Function(T oldWidget, T newWidget) callback) {
+  useHook(_OnDidUpdateWidgetHook<T>(callback));
 }
 
-/// Extension for registering widget update callbacks on SetupWidget.
-///
-/// This extension provides a convenient way to register update callbacks
-/// directly on SetupWidget instances. The widget type is automatically
-/// inferred from the SetupWidget type parameter.
-///
-/// Example:
-/// ```dart
-/// class MyWidget extends SetupWidget<MyWidget> {
-///   final String title;
-///
-///   const MyWidget({super.key, required this.title});
-///
-///   @override
-///   setup(context, props) {
-///     onDidUpdateWidget((oldWidget, newWidget) {
-///       print('Updated: ${oldWidget.title} -> ${newWidget.title}');
-///     });
-///
-///     return () => Text(props().title);
-///   }
-/// }
-/// ```
+/// Adds widget-typed update hooks inside [SetupWidget.setup].
 extension JoltSetupOnDidUpdateWidget<T extends SetupWidget<T>>
     on SetupWidget<T> {
-  /// Registers a callback for widget updates.
+  /// Registers [callback] for updates to this widget type.
   ///
-  /// Parameters:
-  /// - [callback]: Function that receives (oldWidget, newWidget) when updated
+  /// ```dart
+  /// setup(context, props) {
+  ///   onDidUpdateWidget((oldWidget, newWidget) {
+  ///     debugPrint('${oldWidget.key} -> ${newWidget.key}');
+  ///   });
+  ///
+  ///   return () => const SizedBox.shrink();
+  /// }
+  /// ```
   @defineHook
   void onDidUpdateWidget(void Function(T, T) callback) {
     useHook(_OnDidUpdateWidgetHook(callback));
   }
 }
 
-/// Extension for registering widget update callbacks on SetupMixin.
-///
-/// This extension provides a convenient way to register update callbacks
-/// directly on SetupMixin instances. The widget type is automatically
-/// inferred from the StatefulWidget type parameter.
-///
-/// Example:
-/// ```dart
-/// class MyWidget extends StatefulWidget {
-///   final String title;
-///
-///   const MyWidget({super.key, required this.title});
-///
-///   @override
-///   State<MyWidget> createState() => _MyWidgetState();
-/// }
-///
-/// class _MyWidgetState extends State<MyWidget> with SetupMixin<MyWidget> {
-///   @override
-///   setup(context) {
-///     onDidUpdateWidget((oldWidget, newWidget) {
-///       print('Updated: ${oldWidget.title} -> ${newWidget.title}');
-///     });
-///
-///     return () => Text(widget.title);
-///   }
-/// }
-/// ```
+/// Adds widget-typed update hooks inside [SetupMixin.setup].
 extension JoltSetupMixinOnDidUpdateWidget<T extends StatefulWidget>
     on SetupMixin<T> {
-  /// Registers a callback for widget updates.
+  /// Registers [callback] for updates to this widget type.
   ///
-  /// Parameters:
-  /// - [callback]: Function that receives (oldWidget, newWidget) when updated
+  /// ```dart
+  /// setup(context) {
+  ///   onDidUpdateWidget((oldWidget, newWidget) {
+  ///     debugPrint('${oldWidget.key} -> ${newWidget.key}');
+  ///   });
+  ///
+  ///   return () => const SizedBox.shrink();
+  /// }
+  /// ```
   @defineHook
   void onDidUpdateWidget(void Function(T, T) callback) {
     useHook(_OnDidUpdateWidgetHook(callback));
@@ -220,19 +175,19 @@ class _OnDidChangeDependenciesHook extends _LifeCycleHook {
   }
 }
 
-/// Registers a callback to run when the widget's dependencies change.
+/// Registers [callback] for inherited-dependency changes.
 ///
-/// This is called when an InheritedWidget that this widget depends on changes.
+/// This mirrors Flutter's `didChangeDependencies` lifecycle and is useful when
+/// setup code needs to respond to dependency changes outside normal reactive
+/// computation.
 ///
-/// Example:
 /// ```dart
-/// @override
 /// setup(context, props) {
 ///   onDidChangeDependencies(() {
-///     print('Dependencies changed');
+///     debugPrint('dependencies changed');
 ///   });
 ///
-///   return () => Text('Hello');
+///   return () => const SizedBox.shrink();
 /// }
 /// ```
 @defineHook
@@ -252,19 +207,15 @@ class _OnActivatedHook extends _LifeCycleHook {
   }
 }
 
-/// Registers a callback to run when the widget is reactivated.
+/// Registers [callback] for reactivation after a prior [onDeactivated] event.
 ///
-/// This is called when a deactivated widget is reinserted into the tree.
-///
-/// Example:
 /// ```dart
-/// @override
 /// setup(context, props) {
 ///   onActivated(() {
-///     print('Widget reactivated');
+///     debugPrint('active again');
 ///   });
 ///
-///   return () => Text('Hello');
+///   return () => const SizedBox.shrink();
 /// }
 /// ```
 @defineHook
@@ -284,20 +235,15 @@ class _OnDeactivatedHook extends _LifeCycleHook {
   }
 }
 
-/// Registers a callback to run when the widget is deactivated.
+/// Registers [callback] for temporary deactivation.
 ///
-/// This is called when the widget is removed from the tree but may be
-/// reinserted later.
-///
-/// Example:
 /// ```dart
-/// @override
 /// setup(context, props) {
 ///   onDeactivated(() {
-///     print('Widget deactivated');
+///     debugPrint('temporarily removed');
 ///   });
 ///
-///   return () => Text('Hello');
+///   return () => const SizedBox.shrink();
 /// }
 /// ```
 @defineHook
@@ -305,19 +251,15 @@ void onDeactivated(void Function() callback) {
   useHook(_OnDeactivatedHook(callback));
 }
 
-/// Gets the current BuildContext from the SetupWidget.
+/// The current [BuildContext] for the active setup runtime.
 ///
-/// This can only be called within the [SetupWidget.setup] function or within
-/// hooks that are called from setup.
+/// This is mainly useful inside reusable hooks that need context access
+/// without receiving it as an explicit parameter.
 ///
-/// Example:
 /// ```dart
-/// @override
 /// setup(context, props) {
-///   final context = useContext();
-///   final theme = Theme.of(context);
-///
-///   return () => Container(color: theme.primaryColor);
+///   final localizations = MaterialLocalizations.of(useContext());
+///   return () => Text(localizations.okButtonLabel);
 /// }
 /// ```
 @defineHook
@@ -328,22 +270,16 @@ BuildContext useContext() {
   return currentContext!;
 }
 
-/// Gets the current SetupContext.
+/// The active [SetupContext].
 ///
-/// This provides access to the underlying setup context, which manages hooks
-/// and reactive effects for the widget. This is primarily used for advanced
-/// use cases.
+/// This is mainly useful for advanced hook implementations and setup-boundary
+/// control such as resets.
 ///
-/// Example:
 /// ```dart
-/// @override
 /// setup(context, props) {
-///   final setupContext = useSetupContext();
+///   final setup = useSetupContext();
 ///
-///   // Register cleanup when the scope is disposed
-///   onScopeDispose(() => print('Scope disposed'));
-///
-///   return () => Text('Hello');
+///   return () => Text('${setup.context.widget.runtimeType}');
 /// }
 /// ```
 @defineHook
@@ -359,83 +295,30 @@ SetupContext useSetupContext() {
 // /// See [HookUtils.useWidgetProps] for details.
 // final useWidgetProps = HookUtils.useWidgetProps;
 
-/// Creates a hook that persists across rebuilds and hot reloads.
+/// Registers a custom [SetupHook] with the active setup runtime.
 ///
-/// Hooks are matched during hot reload by their runtime type and position in
-/// the sequence. If the hook sequence changes:
-/// - Matching hooks are reused and [SetupHook.reassemble] is called
-/// - Mismatched hooks trigger unmount of all subsequent hooks
-/// - New hooks are created and [SetupHook.mount] is called
+/// Use this when a reusable hook needs lifecycle methods that cannot be
+/// expressed with the simpler helper hooks.
 ///
-/// Example:
 /// ```dart
-/// class CounterHook extends SetupHook<int> {
+/// final class CounterHook extends SetupHook<int> {
 ///   @override
 ///   int build() => 0;
-///
-///   @override
-///   void mount() {
-///     print('Hook mounted');
-///   }
-///
-///   @override
-///   void unmount() {
-///     print('Hook unmounted');
-///   }
 /// }
 ///
-/// // In setup:
-/// final counter = useHook(CounterHook());
+/// setup(context, props) {
+///   final count = useHook(CounterHook());
+///   return () => Text('$count');
+/// }
 /// ```
 @defineHook
 T useHook<T>(SetupHook<T> hook) => SetupContext.current!._useHook(hook);
 
-/// Base class for all setup hooks.
+/// Base class for custom setup hooks.
 ///
-/// Hooks provide a way to encapsulate reusable stateful logic in SetupWidget.
-/// Each hook has a lifecycle that mirrors the widget lifecycle.
-///
-/// ## Lifecycle Methods
-///
-/// - [build]: Called once to create the initial state (on first use)
-/// - [mount]: Called after the hook is created and added to the widget
-/// - [unmount]: Called when the hook is being removed (on dispose or hot reload mismatch)
-/// - [didUpdateWidget]: Called when the widget is updated with new properties
-/// - [didChangeDependencies]: Called when the widget's dependencies change
-/// - [activate]: Called when the widget is reactivated (e.g., after being in a navigator stack)
-/// - [deactivate]: Called when the widget is deactivated
-/// - [reassemble]: Called during hot reload when the hook is reused
-///
-/// ## Hot Reload Behavior
-///
-/// During hot reload, hooks are matched by their runtime type and position:
-/// - If the hook type at position N matches, the hook is reused and [reassemble] is called
-/// - If there's a type mismatch, this and all subsequent hooks are unmounted
-/// - New or replacement hooks have [mount] called
-///
-/// Example:
-/// ```dart
-/// class TimerHook extends SetupHook<Timer> {
-///   @override
-///   Timer build() => Timer.periodic(Duration(seconds: 1), (_) {});
-///
-///   @override
-///   void mount() {
-///     print('Timer started');
-///   }
-///
-///   @override
-///   void unmount() {
-///     state.cancel();
-///     print('Timer cancelled');
-///   }
-///
-///   @override
-///   void reassemble() {
-///     print('Hot reload - timer preserved');
-///   }
-/// }
-/// ```
+/// A hook builds a state object once, then receives widget lifecycle callbacks
+/// such as [mount], [didUpdateWidget], [didChangeDependencies], [activate],
+/// [deactivate], [unmount], and [reassemble].
 abstract class SetupHook<T> {
   SetupHook()
       : assert(SetupContext.current != null, 'Setup context is not exists'),
@@ -443,7 +326,7 @@ abstract class SetupHook<T> {
 
   late final BuildContext _context;
 
-  /// The BuildContext of the widget that owns this hook.
+  /// The [BuildContext] that owns this hook.
   BuildContext get context => _context;
 
   @protected
@@ -453,70 +336,27 @@ abstract class SetupHook<T> {
   T get state => rawState as T;
 
   /// Builds the initial state for this hook.
-  ///
-  /// Called once when the hook is first created. The returned value becomes
-  /// the [state] of this hook.
   T build();
 
-  /// Called after the hook is created and added to the widget.
-  ///
-  /// This is called after [build] for new hooks, or after hot reload for
-  /// hooks that were newly created due to type mismatches.
-  ///
-  /// Use this to set up resources, subscriptions, or perform initialization.
+  /// Called after [build] when this hook is mounted.
   void mount() {}
 
-  /// Called when the hook is being removed.
-  ///
-  /// This happens when:
-  /// - The widget is being disposed
-  /// - During hot reload when there's a type mismatch
-  ///
-  /// Use this to clean up resources, cancel subscriptions, etc.
+  /// Called when this hook is removed from the setup runtime.
   void unmount() {}
 
-  /// Called when the parent widget is updated with new properties.
+  /// Called when the parent widget is updated with a new widget instance.
   void didUpdateWidget(dynamic oldWidget, dynamic newWidget) {}
 
-  /// Called during hot reload when this hook is reused.
-  ///
-  /// This is called instead of [mount] for hooks that matched during
-  /// hot reload sequence matching.
-  ///
-  /// The [newHook] parameter contains the new hook instance with updated
-  /// configuration from the hot-reloaded code. You can compare it with
-  /// the current hook configuration and update state if needed.
-  ///
-  /// Example:
-  /// ```dart
-  /// class TimerHook extends SetupHook<Timer> {
-  ///   TimerHook(this.duration);
-  ///   final Duration duration;
-  ///
-  ///   @override
-  ///   Timer build() => Timer.periodic(duration, (_) {});
-  ///
-  ///   @override
-  ///   void reassemble(covariant TimerHook newHook) {
-  ///     if (newHook.duration != duration) {
-  ///       state.cancel();
-  ///       _state = Timer.periodic(newHook.duration, (_) {});
-  ///     }
-  ///   }
-  ///
-  ///   @override
-  ///   void unmount() => state.cancel();
-  /// }
-  /// ```
+  /// Called during hot reload when this hook instance is reused.
   void reassemble(SetupHook newHook) {}
 
-  /// Called when the widget's InheritedWidget dependencies change.
+  /// Called when inherited dependencies change.
   void didChangeDependencies() {}
 
-  /// Called when the widget is reactivated.
+  /// Called when the owning widget is reactivated.
   void activate() {}
 
-  /// Called when the widget is deactivated.
+  /// Called when the owning widget is deactivated.
   void deactivate() {}
 }
 
@@ -527,22 +367,11 @@ extension<T> on SetupHook<T> {
   }
 }
 
-/// Creates a stream hook from a reactive node.
-// Stream<T> useJoltStream<T>(ReadonlyNode<T> node, {JoltDebugFn? onDebug}) {
-//   return useHook(AutoDisposeHook(() => node.stream));
-// }
-
-/// A hook implementation that manages disposable Jolt reactive nodes.
-///
-/// This hook automatically disposes the reactive node when the widget is unmounted
-/// or when the hook is removed during hot reload.
-///
-/// This is used internally by all Jolt hook functions (useSignal, useComputed, etc.)
-/// to ensure proper lifecycle management.
+/// A hook that disposes its [Disposable] state on unmount.
 class AutoDisposeHook<T extends Disposable> extends SetupHook<T> {
   AutoDisposeHook(this.creator);
 
-  /// Function that creates the reactive node.
+  /// Creates the disposable state object for this hook.
   final T Function() creator;
 
   @override
@@ -554,19 +383,12 @@ class AutoDisposeHook<T extends Disposable> extends SetupHook<T> {
   }
 }
 
-/// Creates a hook that automatically disposes a disposable resource.
+/// Memoizes a [Disposable] and disposes it when the hook unmounts.
 ///
-/// This is a convenience function for creating hooks that manage Jolt reactive
-/// nodes (Signal, Computed, Effect, etc.). The resource will be automatically
-/// disposed when the widget is unmounted or during hot reload.
-///
-/// Example:
 /// ```dart
 /// setup(context, props) {
-///   final signal = useAutoDispose(() => Signal(0));
-///   final computed = useAutoDispose(() => Computed(() => signal.value * 2));
-///
-///   return () => Text('${computed.value}');
+///   final scope = useAutoDispose(() => EffectScope());
+///   return () => Text('disposed: ${scope.isDisposed}');
 /// }
 /// ```
 @defineHook
@@ -574,7 +396,7 @@ T useAutoDispose<T extends Disposable>(T Function() creator) {
   return useHook(AutoDisposeHook(creator));
 }
 
-/// A hook that memoizes a value and optionally calls a disposer on unmount.
+/// A hook that memoizes a value and optionally disposes it on unmount.
 class DisposableHook<T> extends SetupHook<T> {
   final T Function() creator;
   final void Function(T state)? disposer;
@@ -590,17 +412,15 @@ class DisposableHook<T> extends SetupHook<T> {
   }
 }
 
-/// Memoizes a value and optionally calls a disposer when unmounted.
+/// Memoizes a value for the lifetime of the current hook slot.
 ///
-/// Similar to [useMemoized], but allows you to provide a custom disposer function
-/// that will be called when the widget is unmounted or during hot reload.
+/// If [disposer] is provided, it runs when the hook unmounts.
 ///
-/// Example:
 /// ```dart
 /// setup(context, props) {
 ///   final controller = useMemoized(
-///     () => TextEditingController(text: 'Hello'),
-///     (state) => state.dispose(),
+///     () => TextEditingController(text: props().title),
+///     (controller) => controller.dispose(),
 ///   );
 ///
 ///   return () => TextField(controller: controller);
@@ -611,60 +431,6 @@ T useMemoized<T>(T Function() creator, [void Function(T state)? disposer]) {
   return useHook(DisposableHook(creator, disposer));
 }
 
-/// A hook that provides reactive access to an [InheritedWidget].
-///
-/// This hook ensures that when the [InheritedWidget] changes, the widget
-/// will rebuild automatically. Use this in [setup] instead of directly
-/// calling methods like [Theme.of] to ensure your widget responds to changes.
-///
-/// ## Why use this?
-///
-/// When you access an [InheritedWidget] directly in [setup] (e.g., `Theme.of(context)`),
-/// the value is captured once and won't update when the inherited widget changes.
-/// This hook creates a reactive signal that updates when dependencies change.
-///
-/// ## Example
-///
-/// ```dart
-/// @override
-/// setup(context, props) {
-///   // ✅ Correct: Use useInherited to get reactive access
-///   final theme = useInherited((context) => Theme.of(context));
-///
-///   // Now calling theme() returns the latest Theme
-///   return () => Text(
-///     'Hello',
-///     style: theme().textTheme.bodyLarge,
-///   );
-/// }
-/// ```
-///
-/// ## Comparison
-///
-/// ```dart
-/// // ❌ Wrong: Theme won't update when it changes
-/// @override
-/// setup(context, props) {
-///   final theme = Theme.of(context);
-///   return () => Text('Hello', style: theme.textTheme.bodyLarge);
-/// }
-///
-/// // ✅ Correct: Theme updates reactively
-/// @override
-/// setup(context, props) {
-///   final theme = useInherited((context) => Theme.of(context));
-///   return () => Text('Hello', style: theme().textTheme.bodyLarge);
-/// }
-///
-/// // ✅ Also correct: Access in builder function
-/// @override
-/// setup(context, props) {
-///   return () {
-///     final theme = Theme.of(context);
-///     return Text('Hello', style: theme.textTheme.bodyLarge);
-///   };
-/// }
-/// ```
 class _UseInheritedHook<T> extends SetupHook<Computed<T>> {
   _UseInheritedHook(this.getter, {this.debug});
 
@@ -690,78 +456,40 @@ class _UseInheritedHook<T> extends SetupHook<Computed<T>> {
   void reassemble(covariant _UseInheritedHook<T> newHook) {
     if (debug != newHook.debug) {
       debug = newHook.debug;
-      JoltDebug.setDebug(_computed, newHook.debug?.onDebug);
+      JoltDevTools.setDebug(
+          (_computed as ComputedImpl<T>).raw, newHook.debug?.onDebug);
     }
     getter = newHook.getter;
     _computed.notify();
   }
 }
 
-/// Reactively tracks an [InheritedWidget] inside `setup`.
+/// Reactively reads an inherited value during `setup`.
 ///
-/// Provide a `getter` such as `(context) => Theme.of(context)`. The hook calls it
-/// with the current [BuildContext], and the returned [Computed] keeps widgets in
-/// sync by updating whenever the inherited widget changes.
+/// The returned [Computed] is invalidated when inherited dependencies change.
 ///
-/// Example:
+/// ```dart
+/// setup(context, props) {
+///   final theme = useInherited((context) => Theme.of(context));
 ///
+///   return () => Text(
+///     'Hello',
+///     style: theme.value.textTheme.bodyLarge,
+///   );
+/// }
 /// ```
-/// final theme = useInherited((context) => Theme.of(context));
-/// return () => Text('Hello', style: theme().textTheme.bodyLarge);
-/// ```
-///
-/// Returns a computed signal that stays in sync with the inherited widget.
 @defineHook
 Computed<T> useInherited<T>(T Function(BuildContext) getter,
     {JoltDebugOption? debug}) {
   return useHook(_UseInheritedHook<T>(getter, debug: debug));
 }
 
-/// {@template jolt_reset_hook_creator}
-/// Provides setup-level reset APIs.
-///
-/// `useReset` is an experimental API.
-/// It destroys the hooks / effects / cleanup created by the current `setup`,
-/// then runs `setup` again.
-///
-/// This is not a normal state update mechanism.
-/// In most cases, prefer ordinary reactive updates, or rebuild boundaries
-/// expressed through widget splitting / keys.
-///
-/// Only use `useReset` when the current setup initialization boundary really
-/// needs to be rebuilt as a whole.
-/// {@endtemplate}
-final class JoltResetHookCreator {
-  /// Helper class for creating reset setup hooks in SetupWidget.
-  const JoltResetHookCreator._();
+/// Setup reset hook factory methods.
+final class JoltSetupHookResetCreator {
+  /// Creates the reset hook namespace.
+  const JoltSetupHookResetCreator._();
 
-  /// Returns the reset function for the current `setup`.
-  ///
-  /// Calling it schedules a setup reset at the end of the current frame.
-  /// This discards the current hook state inside `setup` and runs `setup`
-  /// again.
-  ///
-  /// This is for cases where the current setup needs to be rebuilt as a
-  /// whole, not for ordinary value updates, UI refreshes, or effect reruns.
-  ///
-  /// This is experimental and should be used carefully.
-  ///
-  /// Example:
-  /// ```dart
-  /// @override
-  /// setup(context, props) {
-  ///   final reset = useReset();
-  ///
-  ///   // Later, call reset to reset the entire setup
-  ///   onMounted(() {
-  ///     if (shouldReset) {
-  ///       reset();
-  ///     }
-  ///   });
-  ///
-  ///   return () => Text('Hello');
-  /// }
-  /// ```
+  /// Returns a callback that schedules a full setup reset.
   @defineHook
   @experimental
   void Function() call() {
@@ -771,26 +499,7 @@ final class JoltResetHookCreator {
     return currentContext!._resetSetupFn;
   }
 
-  /// Listens to [Listenable]s and schedules a `setup` reset when they notify.
-  ///
-  /// This is not an incremental update. It maps an external change to a
-  /// setup-level rebuild.
-  ///
-  /// If you only need to respond to value changes, prefer more ordinary
-  /// reactive APIs.
-  ///
-  /// Example:
-  /// ```dart
-  /// @override
-  /// setup(context, props) {
-  ///   final notifier = ValueNotifier(0);
-  ///
-  ///   // Reset setup whenever notifier changes
-  ///   useReset.listen(() => [notifier]);
-  ///
-  ///   return () => Text('Count: ${notifier.value}');
-  /// }
-  /// ```
+  /// Resets the current setup when any watched [Listenable] notifies.
   @defineHook
   @experimental
   void listen(Iterable<Listenable> Function() watcher) {
@@ -803,27 +512,7 @@ final class JoltResetHookCreator {
     ));
   }
 
-  /// Tracks reactive sources and schedules a `setup` reset when they change.
-  ///
-  /// Unlike `useWatcher`, this does not run incremental logic.
-  /// It rebuilds the current setup as a whole.
-  ///
-  /// Only use this when the setup initialization boundary itself needs to be
-  /// recreated.
-  ///
-  /// Example:
-  /// ```dart
-  /// @override
-  /// setup(context, props) {
-  ///   final count = useSignal(0);
-  ///   final name = useSignal('Alice');
-  ///
-  ///   // Reset setup whenever count or name changes
-  ///   useReset.watch(() => [count, name]);
-  ///
-  ///   return () => Text('${name.value}: ${count.value}');
-  /// }
-  /// ```
+  /// Resets the current setup when any watched [Readable] changes.
   @defineHook
   @experimental
   void watch(Iterable<Readable> Function() watchFn) {
@@ -834,27 +523,7 @@ final class JoltResetHookCreator {
     useHook(_ResetSetupWatchHook(watchFn, resetSetup));
   }
 
-  /// Tracks a derived value and schedules a `setup` reset when it changes.
-  ///
-  /// Like [watch], this is for rebuilding the current setup, not for normal
-  /// derived updates.
-  ///
-  /// It is useful when multiple dependencies should be collapsed into a
-  /// single "should reset setup" condition.
-  ///
-  /// Example:
-  /// ```dart
-  /// @override
-  /// setup(context, props) {
-  ///   final count = useSignal(0);
-  ///   final name = useSignal('Alice');
-  ///
-  ///   // Reset setup only when the combined string changes
-  ///   useReset.select(() => '${name.value}: ${count.value}');
-  ///
-  ///   return () => Text('${name.value}: ${count.value}');
-  /// }
-  /// ```
+  /// Resets the current setup when [selector] changes value.
   @defineHook
   @experimental
   void select<T>(T Function() selector) {
@@ -866,11 +535,24 @@ final class JoltResetHookCreator {
   }
 }
 
-/// {@macro jolt_reset_hook_creator}
+/// Experimental API that tears down the current setup boundary and reruns `setup`.
+///
+/// Prefer ordinary reactive updates unless the initialization boundary itself
+/// must be recreated.
+///
+/// ```dart
+/// setup(context, props) {
+///   final reset = useSetupReset();
+///
+///   return () => FilledButton(
+///     onPressed: reset,
+///     child: const Text('Reset setup'),
+///   );
+/// }
+/// ```
 @experimental
-final useReset = JoltResetHookCreator._();
+final useSetupReset = JoltSetupHookResetCreator._();
 
-/// Hook that listens to a Listenable and calls resetSetup when it notifies.
 class _ResetSetupOnListenableHook extends SetupHook<Iterable<Listenable>> {
   _ResetSetupOnListenableHook(this.watcher, this.resetSetup);
 
@@ -926,7 +608,6 @@ class _ResetSetupOnListenableHook extends SetupHook<Iterable<Listenable>> {
   }
 }
 
-/// Hook that watches reactive signals and calls resetSetup when they change.
 class _ResetSetupWatchHook extends SetupHook<FlutterEffect> {
   _ResetSetupWatchHook(this.watchFn, this.resetSetup);
 
@@ -949,7 +630,7 @@ class _ResetSetupWatchHook extends SetupHook<FlutterEffect> {
 
   @override
   void mount() {
-    trackWithEffect(_watcher, state, false);
+    (state as EffectImpl).track(_watcher, false);
   }
 
   @override
@@ -961,11 +642,10 @@ class _ResetSetupWatchHook extends SetupHook<FlutterEffect> {
   void reassemble(covariant _ResetSetupWatchHook newHook) {
     watchFn = newHook.watchFn;
     resetSetup = newHook.resetSetup;
-    trackWithEffect(_watcher, state, true);
+    (state as EffectImpl).track(_watcher, true);
   }
 }
 
-/// Hook that selects a value and calls resetSetup when it changes.
 class _ResetSetupSelectHook<T> extends SetupHook<FlutterEffect> {
   _ResetSetupSelectHook(this.selector, this.resetSetup);
 
@@ -994,7 +674,7 @@ class _ResetSetupSelectHook<T> extends SetupHook<FlutterEffect> {
     _prevValue = selector();
     _hasPrevValue = true;
     // Track dependencies for reactive updates
-    trackWithEffect(_select, state, false);
+    (state as EffectImpl).track(_select, false);
   }
 
   @override
@@ -1008,6 +688,6 @@ class _ResetSetupSelectHook<T> extends SetupHook<FlutterEffect> {
     resetSetup = newHook.resetSetup;
     _prevValue = untracked(selector);
     _hasPrevValue = true;
-    trackWithEffect(_select, state, true);
+    (state as EffectImpl).track(_select, true);
   }
 }

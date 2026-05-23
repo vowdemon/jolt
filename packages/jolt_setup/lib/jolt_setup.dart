@@ -1,8 +1,10 @@
-/// Setup Widget - A composition-based API for Flutter widgets.
+/// Setup-based widgets and hooks for Jolt-powered Flutter components.
 ///
-/// This library provides SetupWidget, a widget system similar to Vue's Composition API,
-/// where the setup function executes only once when the widget is created. It includes
-/// hooks for reactive state management and lifecycle callbacks.
+/// Combines a one-time `setup` phase with reactive hooks for state, effects,
+/// lifecycle callbacks, and controller objects.
 library;
 
-export './src/setup/framework.dart';
+export 'package:jolt_flutter/jolt_flutter.dart';
+
+export 'src/setup/framework.dart';
+export 'src/hooks/hooks.dart';

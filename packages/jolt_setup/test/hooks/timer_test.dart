@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:jolt_setup/hooks.dart';
 import 'package:jolt_setup/jolt_setup.dart';
 
 void main() {
@@ -19,14 +18,14 @@ void main() {
       expect(hook!.isActive, isTrue);
     });
 
-    testWidgets('callback is invoked after duration when immediately is true',
+    testWidgets('callback is invoked after duration with TimerStart.immediate',
         (tester) async {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           final invoked = useSignal(false);
           useTimer(const Duration(milliseconds: 50), () {
             invoked.value = true;
-          }, immediately: true);
+          }, start: TimerStart.immediate);
           return () => Text(invoked.value ? 'done' : 'waiting');
         }),
       ));
@@ -36,14 +35,14 @@ void main() {
       expect(find.text('done'), findsOneWidget);
     });
 
-    testWidgets('callback is invoked after duration when immediately is false',
+    testWidgets('callback is invoked after duration with TimerStart.mounted',
         (tester) async {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           final invoked = useSignal(false);
           useTimer(const Duration(milliseconds: 50), () {
             invoked.value = true;
-          }, immediately: false);
+          }, start: TimerStart.mounted);
           return () => Text(invoked.value ? 'done' : 'waiting');
         }),
       ));
@@ -114,7 +113,7 @@ void main() {
         home: SetupBuilder(setup: (context) {
           useTimer(duration, () {
             fired.add(label);
-          }, immediately: true);
+          }, start: TimerStart.immediate);
           return () => const SizedBox();
         }),
       ));
@@ -156,7 +155,7 @@ void main() {
           final tickCount = useSignal(0);
           useTimer.periodic(const Duration(milliseconds: 50), (_) {
             tickCount.value++;
-          }, immediately: true);
+          }, start: TimerStart.immediate);
           return () => Text('${tickCount.value}', key: tickKey);
         }),
       ));
@@ -200,7 +199,7 @@ void main() {
           hook = useTimer.periodic(
             const Duration(milliseconds: 40),
             (_) {},
-            immediately: true,
+            start: TimerStart.immediate,
           );
           return () => Text('tick:${hook?.tick ?? 0}');
         }),
@@ -221,7 +220,7 @@ void main() {
         home: SetupBuilder(setup: (context) {
           useTimer.periodic(duration, (_) {
             fired.add(label);
-          }, immediately: true);
+          }, start: TimerStart.immediate);
           return () => const SizedBox();
         }),
       ));
@@ -255,7 +254,7 @@ void main() {
           hook = useTimer.periodic(
             const Duration(milliseconds: 50),
             (_) => tickCount.value++,
-            immediately: true,
+            start: TimerStart.immediate,
           );
           return () => Column(
                 mainAxisSize: MainAxisSize.min,
@@ -303,7 +302,7 @@ void main() {
           hook = useTimer.periodic(
             const Duration(milliseconds: 50),
             (_) => tickCount.value++,
-            immediately: true,
+            start: TimerStart.immediate,
           );
           return () => Column(
                 mainAxisSize: MainAxisSize.min,
@@ -356,7 +355,7 @@ void main() {
           hook = useTimer.periodic(
             const Duration(milliseconds: 50),
             (_) => tickCount.value++,
-            immediately: true,
+            start: TimerStart.immediate,
           );
           return () => Column(
                 mainAxisSize: MainAxisSize.min,
@@ -392,7 +391,7 @@ void main() {
           hook = useTimer(
             const Duration(milliseconds: 80),
             () => invoked.value = true,
-            immediately: true,
+            start: TimerStart.immediate,
           );
           return () => Column(
                 mainAxisSize: MainAxisSize.min,
@@ -436,7 +435,7 @@ void main() {
           hook = useTimer(
             const Duration(milliseconds: 100),
             () => invoked.value = true,
-            immediately: true,
+            start: TimerStart.immediate,
           );
           return () => Column(
                 mainAxisSize: MainAxisSize.min,

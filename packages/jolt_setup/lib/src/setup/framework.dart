@@ -1,49 +1,27 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
-import 'package:jolt_flutter/core.dart';
+import 'package:jolt/core.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
-import 'package:jolt_setup/hooks.dart';
 import 'package:meta/meta.dart';
 
-import 'package:shared_interfaces/shared_interfaces.dart';
+import '../hooks/hooks.dart';
 
 part 'widget.dart';
 part 'hooks.dart';
 part 'stateful_mixin.dart';
 
-/// The core context that manages hooks and reactive state for setup-based widgets.
+/// The runtime context that owns a setup widget's hooks and reactive scope.
 ///
-/// This context extends [EffectScopeImpl] to provide automatic cleanup of
-/// reactive nodes when the widget is disposed. It manages the complete hook
-/// lifecycle including creation, update, and hot reload support.
+/// [SetupContext] stores the current [BuildContext], reactive [Props], the
+/// builder returned from `setup`, and the hooks registered during that run.
+/// It also drives hot-reload hook reconciliation and setup-level resets.
 ///
-/// ## Design
-///
-/// [SetupContext] is intentionally decoupled from both [Element] and [State],
-/// making it reusable across different widget implementations:
-/// - [SetupWidgetElement] uses it for [SetupWidget]
-/// - [SetupMixin] uses it for [StatefulWidget]
-///
-/// While the external API (setup function signature) remains consistent across
-/// implementations, the internal build trigger mechanisms differ to leverage
-/// the specific advantages of Element ([markNeedsBuild]) vs State ([setState]).
-///
-/// ## Responsibilities
-///
-/// - Manages hook registration and lifecycle ([_useHook], [unmountHooks])
-/// - Handles hot reload with hook sequence matching ([_reload])
-/// - Provides reactive scope for setup functions ([run])
-/// - Stores the widget builder and renderer effect
-/// - Notifies hooks of lifecycle events ([notifyUpdate], [notifyDependenciesChanged], etc.)
-///
-/// ## Hot Reload
-///
-/// During hot reload, hooks are matched by runtime type and position:
-/// 1. Matching hooks preserve their state and receive [SetupHook.reassemble]
-/// 2. Mismatched hooks are unmounted and replaced with new instances
-/// 3. New hooks receive [SetupHook.mount] after setup completes
+/// Most applications interact with this type indirectly through [useContext],
+/// [useSetupContext], [SetupWidgetElement], or [SetupMixin]. It becomes useful
+/// directly when writing custom hooks, debugging setup lifecycles, or
+/// implementing advanced reset behavior.
 class SetupContext<T extends Widget> extends EffectScopeImpl {
+  /// Creates a setup runtime for [context] and [propsNode].
   SetupContext(
     this.context,
     this.propsNode, {
@@ -51,7 +29,10 @@ class SetupContext<T extends Widget> extends EffectScopeImpl {
   })  : _resetSetupFn = resetSetupFn,
         super(detach: true, debug: JoltDebugOption.type('SetupContext<$T>'));
 
+  /// The build context that owns this setup runtime.
   final BuildContext context;
+
+  /// Reactive access to the current widget instance.
   final Props<T> propsNode;
 
   /// Callback function to reset and re-run the setup function.
@@ -60,10 +41,10 @@ class SetupContext<T extends Widget> extends EffectScopeImpl {
   /// Whether resetSetup has been scheduled for the current frame.
   bool _isResetSetupScheduled = false;
 
-  /// The setup function that returns the widget builder.
+  /// The most recent builder returned from `setup`.
   WidgetFunction<T>? setupBuilder;
 
-  /// The effect that triggers widget rebuilds when reactive dependencies change.
+  /// The effect that schedules rebuilds for the current setup builder.
   FlutterEffect? renderer;
 
   /// The list of hooks registered for this widget.
@@ -259,14 +240,11 @@ class SetupContext<T extends Widget> extends EffectScopeImpl {
     }
   }
 
-  /// Schedules resetSetup to run at the end of the current frame.
+  /// Schedules a setup reset at the end of the current frame.
   ///
-  /// This method ensures that multiple calls to resetSetup within the same
-  /// frame are debounced to a single execution, improving performance and
-  /// preventing unnecessary repeated setup executions.
-  ///
-  /// The resetSetup will be executed once at the end of the current frame,
-  /// even if this method is called multiple times within the same frame.
+  /// Multiple calls in the same frame coalesce into one reset. When the
+  /// callback runs, the current hooks and renderer are torn down and `setup`
+  /// runs again to produce a fresh hook sequence.
   void scheduleResetSetup() {
     // If already scheduled for this frame, skip
     if (_isResetSetupScheduled) {
@@ -286,7 +264,8 @@ class SetupContext<T extends Widget> extends EffectScopeImpl {
   }
 
   @override
-  void onDispose() {
+  void dispose() {
+    super.dispose();
     _hooks.clear();
 
     assert(() {
@@ -300,22 +279,18 @@ class SetupContext<T extends Widget> extends EffectScopeImpl {
     renderer?.dispose();
     renderer = null;
     _isResetSetupScheduled = false;
-
-    super.onDispose();
-  }
-
-  @internal
-  void cleanup() {
-    doCleanup();
   }
 
   /* -------------------------------- Static -------------------------------- */
 
+  /// The setup runtime that is currently executing hook code.
   static SetupContext? current;
 
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
+
+  /// Makes [context] current and returns the previous active runtime.
   static SetupContext? setActiveContext([SetupContext? context]) {
     final prev = current;
     current = context;
@@ -323,66 +298,31 @@ class SetupContext<T extends Widget> extends EffectScopeImpl {
   }
 }
 
-/// A reactive node that tracks widget property changes.
-///
-/// This node allows reactive code (like [useComputed] or [useEffect]) to depend
-/// on widget properties. When the widget is updated with new properties, this
-/// node notifies all its subscribers to re-run.
-///
-/// ## Usage
-///
-/// The node's [value] returns the current widget instance, providing reactive
-/// access to all widget properties.
-///
-/// ### With SetupWidget
-/// ```dart
-/// class UserCard extends SetupWidget<UserCard> {
-///   final String name;
-///   final int age;
-///
-///   const UserCard({super.key, required this.name, required this.age});
-///
-///   @override
-///   setup(context, props) {
-///     // Access props reactively - rebuilds when name changes
-///     final displayName = useComputed(() => 'User: ${props().name}');
-///
-///     return () => Text(displayName.value);
-///   }
-/// }
-/// ```
-///
-/// ### With SetupMixin
-/// ```dart
-/// class _MyWidgetState extends State<MyWidget> with SetupMixin<MyWidget> {
-///   @override
-///   setup(context) {
-///     // Access props via mixin's getter
-///     final displayName = useComputed(() => 'User: ${props.name}');
-///
-///     return () => Text(displayName.value);
-///   }
-/// }
-/// ```
-///
-/// ## Implementation Notes
-///
-/// - Implements [ReadonlySignal] for compatibility with Jolt's reactive system
-/// - Tracks dependencies automatically when accessed in reactive contexts
-/// - Disposed when the associated [BuildContext] is unmounted
-class _PropsImpl<T extends Widget> extends ReadonlySignalImpl<T>
-    implements Props<T> {
-  _PropsImpl(this._context)
-      : super(null, debug: JoltDebugOption.type("SetupProps<$T>"));
+class _PropsImpl<T extends Widget> extends ReactiveNode
+    implements Props<T>, Readonly<T> {
+  _PropsImpl(this._context) : super(flags: ReactiveFlags.mutable);
 
   final BuildContext _context;
+
+  @override
+  bool get isDisposed => flags == ReactiveFlags.none;
 
   @pragma('vm:prefer-inline')
   @pragma('wasm:prefer-inline')
   @pragma('dart2js:prefer-inline')
   @override
   T get value {
-    getCustom(this);
+    if (isDisposed) return peek;
+    var sub = getActiveSub();
+    while (sub != null) {
+      if (sub.flags & (ReactiveFlags.mutable | ReactiveFlags.watching) != 0) {
+        link(this, sub, getCycle());
+
+        break;
+      }
+      sub = sub.subs?.sub;
+    }
+
     return _context.widget as T;
   }
 
@@ -393,49 +333,58 @@ class _PropsImpl<T extends Widget> extends ReadonlySignalImpl<T>
   T get peek => _context.widget as T;
 
   @override
-  bool get isDisposed => !_context.mounted;
-
-  @override
   T call() {
     return value;
   }
 
   @override
-  void onDispose() {
-    disposeNode(this);
+  void dispose() {
+    this
+      ..depsTail = null
+      ..flags = ReactiveFlags.none;
+
+    purgeDeps(this);
+    final sub = subs;
+    if (sub != null) {
+      unlink(sub);
+    }
+  }
+
+  @override
+  void notify() {
+    flags = ReactiveFlags.mutable | ReactiveFlags.dirty;
+
+    if (subs != null) {
+      propagate(subs!, getRunDepth() > 0);
+      shallowPropagate(subs!);
+      if (getBatchDepth() == 0) {
+        flushEffects();
+      }
+    }
+  }
+
+  @override
+  bool update() => true;
+
+  @override
+  void unwatched() {}
+
+  @override
+  set value(T value) {
+    throw UnsupportedError('Props is a readonly signal');
   }
 }
 
-/// A reactive interface for accessing widget properties in setup functions.
+/// Reactive access to a widget instance inside `setup`.
 ///
-/// [Props] extends [ReadableNode] to provide reactive access to widget instances.
-/// It allows setup functions to track widget property changes and rebuild
-/// reactive computations when properties are updated.
+/// Reading [value] or calling [call] inside reactive code tracks the current
+/// widget as a dependency, so computed values and effects are refreshed when
+/// the parent rebuilds with a new widget instance.
 ///
-/// The [call] method enables function-like syntax for accessing the widget,
-/// making it convenient to use in setup functions: `final widget = props();`
-///
-/// ## Usage
-///
-/// In setup functions, [Props] is passed as a parameter and can be used
-/// reactively in computed values or effects:
-///
-/// ```dart
-/// @override
-/// setup(context, props) {
-///   // Access widget properties reactively
-///   final displayName = useComputed(() => 'Hello ${props().name}');
-///   return () => Text(displayName.value);
-/// }
-/// ```
-///
-/// When the widget is updated with new properties, the [Props] node automatically
-/// notifies its subscribers, triggering recomputation of dependent reactive values.
-abstract class Props<T extends Widget> implements ReadableNode<T> {
-  /// Returns the current widget instance.
-  ///
-  /// This method enables function-like syntax for accessing the widget.
-  /// It's equivalent to accessing [ReadableNode.value], but provides a more
-  /// convenient call-site API.
+/// This is the object passed as `props` to [SetupWidget.setup]. It lets setup
+/// code derive reactive state from widget fields without manually wiring update
+/// callbacks.
+abstract class Props<T extends Widget> implements Signal<T> {
+  /// Returns the current widget instance and tracks it as a dependency.
   T call();
 }

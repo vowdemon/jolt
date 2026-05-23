@@ -1,20 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:jolt_flutter/core.dart';
-import 'package:jolt_flutter/jolt_flutter.dart';
-import 'package:jolt_setup/hooks.dart';
 import 'package:jolt_setup/jolt_setup.dart';
 
 void main() {
-  group('useReset', () {
-    testWidgets('useReset() returns resetSetup function', (tester) async {
+  group('useSetupReset', () {
+    testWidgets('useSetupReset() returns resetSetup function', (tester) async {
       void Function()? resetFn;
       int setupCount = 0;
 
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           setupCount++;
-          resetFn = useReset();
+          resetFn = useSetupReset();
           return () => Text('Setup count: $setupCount');
         }),
       ));
@@ -26,14 +23,14 @@ void main() {
       expect(find.text('Setup count: 1'), findsOneWidget);
     });
 
-    testWidgets('useReset() can be called to reset setup', (tester) async {
+    testWidgets('useSetupReset() can be called to reset setup', (tester) async {
       int setupCount = 0;
       void Function()? resetFn;
 
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           setupCount++;
-          resetFn = useReset();
+          resetFn = useSetupReset();
           return () => Text('Count: $setupCount');
         }),
       ));
@@ -52,7 +49,7 @@ void main() {
       expect(find.text('Count: 2'), findsOneWidget);
     });
 
-    testWidgets('useReset() resets all hooks and state', (tester) async {
+    testWidgets('useSetupReset() resets all hooks and state', (tester) async {
       int setupCount = 0;
       Signal<int>? signal;
       void Function()? resetFn;
@@ -61,7 +58,7 @@ void main() {
         home: SetupBuilder(setup: (context) {
           setupCount++;
           signal = useSignal(0);
-          resetFn = useReset();
+          resetFn = useSetupReset();
           return () => Text('Setup: $setupCount, Signal: ${signal!.value}');
         }),
       ));
@@ -88,7 +85,7 @@ void main() {
     });
   });
 
-  group('useReset.listen', () {
+  group('useSetupReset.listen', () {
     testWidgets('listens to Listenable and resets setup on notify',
         (tester) async {
       final notifier = ValueNotifier(0);
@@ -97,7 +94,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           setupCount++;
-          useReset.listen(() => [notifier]);
+          useSetupReset.listen(() => [notifier]);
           return () => Text('Setup: $setupCount, Value: ${notifier.value}');
         }),
       ));
@@ -130,7 +127,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           setupCount++;
-          useReset.listen(() => [notifier]);
+          useSetupReset.listen(() => [notifier]);
           return () => Text('Setup: $setupCount');
         }),
       ));
@@ -158,7 +155,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           setupCount++;
-          useReset.listen(() => [notifier]);
+          useSetupReset.listen(() => [notifier]);
           return () => Text('Setup: $setupCount');
         }),
       ));
@@ -183,7 +180,8 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           setupCount++;
-          useReset.listen(() => [useSecondNotifier ? notifierB : notifierA]);
+          useSetupReset
+              .listen(() => [useSecondNotifier ? notifierB : notifierA]);
           return () => Text('Setup: $setupCount');
         }),
       ));
@@ -207,7 +205,7 @@ void main() {
     });
   });
 
-  group('useReset.watch', () {
+  group('useSetupReset.watch', () {
     testWidgets('watches signals and resets setup on change', (tester) async {
       final countSignal = Signal(0);
       final nameSignal = Signal('Alice');
@@ -217,7 +215,7 @@ void main() {
         home: SetupBuilder(setup: (context) {
           setupCount++;
 
-          useReset.watch(() => [countSignal, nameSignal]);
+          useSetupReset.watch(() => [countSignal, nameSignal]);
 
           return () => Text(
               'Setup: $setupCount, Count: ${countSignal.value}, Name: ${nameSignal.value}');
@@ -255,7 +253,7 @@ void main() {
         home: SetupBuilder(setup: (context) {
           setupCount++;
 
-          useReset.watch(() => [doubled]);
+          useSetupReset.watch(() => [doubled]);
 
           return () => Text('Setup: $setupCount, Doubled: ${doubled.value}');
         }),
@@ -282,7 +280,7 @@ void main() {
         home: SetupBuilder(setup: (context) {
           setupCount++;
 
-          useReset.watch(() => [signal]);
+          useSetupReset.watch(() => [signal]);
 
           return () => Text('Setup: $setupCount');
         }),
@@ -314,7 +312,7 @@ void main() {
         home: SetupBuilder(setup: (context) {
           setupCount++;
 
-          useReset.watch(() => [signal1, signal2, signal3]);
+          useSetupReset.watch(() => [signal1, signal2, signal3]);
 
           return () => Text(
               'Setup: $setupCount, S1: ${signal1.value}, S2: ${signal2.value}, S3: ${signal3.value}');
@@ -343,7 +341,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           setupCount++;
-          useReset.watch(() => [useSecondSignal ? signalB : signalA]);
+          useSetupReset.watch(() => [useSecondSignal ? signalB : signalA]);
           return () => Text('Setup: $setupCount');
         }),
       ));
@@ -379,7 +377,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           setupCount++;
-          useReset.watch(readSignals);
+          useSetupReset.watch(readSignals);
           return () => Text('Setup: $setupCount');
         }),
       ));
@@ -403,7 +401,7 @@ void main() {
     });
   });
 
-  group('useReset.select', () {
+  group('useSetupReset.select', () {
     testWidgets('selects value and resets setup when it changes',
         (tester) async {
       final countSignal = Signal(0);
@@ -414,7 +412,8 @@ void main() {
         home: SetupBuilder(setup: (context) {
           setupCount++;
 
-          useReset.select(() => '${nameSignal.value}: ${countSignal.value}');
+          useSetupReset
+              .select(() => '${nameSignal.value}: ${countSignal.value}');
 
           return () => Text(
               'Setup: $setupCount, Count: ${countSignal.value}, Name: ${nameSignal.value}');
@@ -452,7 +451,7 @@ void main() {
         home: SetupBuilder(setup: (context) {
           setupCount++;
 
-          useReset.select(() => doubled.value);
+          useSetupReset.select(() => doubled.value);
 
           return () => Text('Setup: $setupCount, Doubled: ${doubled.value}');
         }),
@@ -482,7 +481,7 @@ void main() {
           setupCount++;
 
           // Select sum, which should remain the same when we swap values
-          useReset.select(() => signal1.value + signal2.value);
+          useSetupReset.select(() => signal1.value + signal2.value);
 
           return () => Text(
               'Setup: $setupCount, S1: ${signal1.value}, S2: ${signal2.value}');
@@ -519,7 +518,7 @@ void main() {
         home: SetupBuilder(setup: (context) {
           setupCount++;
 
-          useReset.select(() => signal.value);
+          useSetupReset.select(() => signal.value);
 
           return () => Text('Setup: $setupCount');
         }),
@@ -551,7 +550,7 @@ void main() {
         home: SetupBuilder(setup: (context) {
           setupCount++;
 
-          useReset.select(
+          useSetupReset.select(
               () => '${signal1.value}-${signal2.value}-${signal3.value}');
 
           return () => Text(
@@ -581,7 +580,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           setupCount++;
-          useReset
+          useSetupReset
               .select(() => useSecondSignal ? signalB.value : signalA.value);
           return () => Text('Setup: $setupCount');
         }),
@@ -618,7 +617,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           setupCount++;
-          useReset.select(selectValue);
+          useSetupReset.select(selectValue);
           return () => Text('Setup: $setupCount');
         }),
       ));
@@ -649,7 +648,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
           setupCount++;
-          useReset.select(() => signal.value);
+          useSetupReset.select(() => signal.value);
           return () => Text('Setup: $setupCount');
         }),
       ));
@@ -664,15 +663,15 @@ void main() {
     });
   });
 
-  group('useReset with SetupMixin', () {
-    testWidgets('useReset() works with SetupMixin', (tester) async {
+  group('useSetupReset with SetupMixin', () {
+    testWidgets('useSetupReset() works with SetupMixin', (tester) async {
       int setupCount = 0;
       void Function()? resetFn;
 
       await tester.pumpWidget(MaterialApp(
         home: _TestStatefulWidget(setup: (context) {
           setupCount++;
-          resetFn = useReset();
+          resetFn = useSetupReset();
           return () => Text('Setup: $setupCount');
         }),
       ));
@@ -690,14 +689,14 @@ void main() {
       expect(find.text('Setup: 2'), findsOneWidget);
     });
 
-    testWidgets('useReset.listen works with SetupMixin', (tester) async {
+    testWidgets('useSetupReset.listen works with SetupMixin', (tester) async {
       final notifier = ValueNotifier(0);
       int setupCount = 0;
 
       await tester.pumpWidget(MaterialApp(
         home: _TestStatefulWidget(setup: (context) {
           setupCount++;
-          useReset.listen(() => [notifier]);
+          useSetupReset.listen(() => [notifier]);
           return () => Text('Setup: $setupCount');
         }),
       ));
@@ -712,7 +711,7 @@ void main() {
       expect(setupCount, 2);
     });
 
-    testWidgets('useReset.watch works with SetupMixin', (tester) async {
+    testWidgets('useSetupReset.watch works with SetupMixin', (tester) async {
       Signal<int>? signal;
       int setupCount = 0;
 
@@ -721,7 +720,7 @@ void main() {
           setupCount++;
           signal = useSignal(0);
 
-          useReset.watch(() => [signal!]);
+          useSetupReset.watch(() => [signal!]);
 
           return () => Text('Setup: $setupCount');
         }),
@@ -737,7 +736,7 @@ void main() {
       expect(setupCount, 2);
     });
 
-    testWidgets('useReset.select works with SetupMixin', (tester) async {
+    testWidgets('useSetupReset.select works with SetupMixin', (tester) async {
       final signal = Signal(0);
       int setupCount = 0;
 
@@ -745,7 +744,7 @@ void main() {
         home: _TestStatefulWidget(setup: (context) {
           setupCount++;
 
-          useReset.select(() => signal.value);
+          useSetupReset.select(() => signal.value);
 
           return () => Text('Setup: $setupCount');
         }),

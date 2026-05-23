@@ -3,8 +3,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:jolt_flutter/jolt_flutter.dart';
-import 'package:jolt_setup/hooks.dart';
 import 'package:jolt_setup/jolt_setup.dart';
 
 void main() {
@@ -890,6 +888,38 @@ void main() {
 
       controller.close();
     });
+
+    testWidgets('watch switches streams when Readable source changes',
+        (tester) async {
+      final controller1 = StreamController<int>.broadcast();
+      final controller2 = StreamController<int>.broadcast();
+      final source = Signal<Stream<int>?>(controller1.stream);
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final snapshot = useStream.watch(source);
+          return () => Text(
+              'State: ${snapshot.connectionState}, Data: ${snapshot.data}');
+        }),
+      ));
+
+      controller1.add(1);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Data: 1'), findsOneWidget);
+
+      source.value = controller2.stream;
+      await tester.pump();
+
+      controller1.add(10);
+      controller2.add(2);
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Data: 10'), findsNothing);
+      expect(find.textContaining('Data: 2'), findsOneWidget);
+
+      await controller1.close();
+      await controller2.close();
+    });
   });
 
   group('useStreamController', () {
@@ -963,14 +993,14 @@ void main() {
     });
   });
 
-  group('useStreamSubscription', () {
+  group('useListen.stream', () {
     testWidgets('subscribes to stream and calls onData', (tester) async {
       final controller = StreamController<int>();
       final values = <int>[];
 
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
-          useStreamSubscription(
+          useListen.stream(
             controller.stream,
             (value) {
               values.add(value);
@@ -996,7 +1026,7 @@ void main() {
 
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
-          useStreamSubscription(
+          useListen.stream(
             controller.stream,
             null,
             onError: (error, stackTrace) {
@@ -1021,7 +1051,7 @@ void main() {
 
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
-          useStreamSubscription(
+          useListen.stream(
             controller.stream,
             null,
             onDone: () {
@@ -1045,7 +1075,7 @@ void main() {
 
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
-          useStreamSubscription(
+          useListen.stream(
             controller.stream,
             (value) {
               values.add(value);
@@ -1076,7 +1106,7 @@ void main() {
 
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
-          useStreamSubscription(
+          useListen.stream(
             controller.stream,
             (value) {
               values.add(value);
@@ -1119,7 +1149,7 @@ void main() {
 
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
-          useStreamSubscription(
+          useListen.stream(
             controller.stream,
             useSecondCallback ? secondValues.add : firstValues.add,
           );
@@ -1150,9 +1180,9 @@ void main() {
 
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
-          useStreamSubscription(currentController.stream, values.add);
-          return () =>
-              Text('Using second stream: ${identical(currentController, secondController)}');
+          useListen.stream(currentController.stream, values.add);
+          return () => Text(
+              'Using second stream: ${identical(currentController, secondController)}');
         }),
       ));
       await tester.pumpAndSettle();
@@ -1166,6 +1196,44 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(values, [2]);
+
+      await firstController.close();
+      await secondController.close();
+    });
+
+    testWidgets('stream.watch switches subscriptions when source changes',
+        (tester) async {
+      final firstController = StreamController<int>.broadcast();
+      final secondController = StreamController<int>.broadcast();
+      final source = Signal<Stream<int>?>(firstController.stream);
+      final values = <int>[];
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          useListen.stream.watch(source, values.add);
+          return () => const Text('Test');
+        }),
+      ));
+      await tester.pumpAndSettle();
+
+      firstController.add(1);
+      await tester.pumpAndSettle();
+      expect(values, [1]);
+
+      source.value = secondController.stream;
+      await tester.pump();
+
+      firstController.add(2);
+      secondController.add(3);
+      await tester.pumpAndSettle();
+      expect(values, [1, 3]);
+
+      source.value = null;
+      await tester.pump();
+
+      secondController.add(4);
+      await tester.pumpAndSettle();
+      expect(values, [1, 3]);
 
       await firstController.close();
       await secondController.close();

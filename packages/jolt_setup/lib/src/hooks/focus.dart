@@ -1,9 +1,22 @@
 import 'package:flutter/widgets.dart';
-import 'package:jolt_setup/hooks.dart';
 
-/// Creates a focus node
+import 'annotation.dart';
+import 'listenable.dart';
+
+/// Creates a [FocusNode] for the current setup scope.
 ///
-/// The node will be automatically disposed when the component is unmounted
+/// The node is disposed automatically when the setup unmounts. Use this when a
+/// widget needs stable focus state created once during setup.
+///
+/// ```dart
+/// setup(context, props) {
+///   final focusNode = useFocusNode(debugLabel: 'search');
+///
+///   onMounted(focusNode.requestFocus);
+///
+///   return () => TextField(focusNode: focusNode);
+/// }
+/// ```
 @defineHook
 FocusNode useFocusNode({
   String? debugLabel,
@@ -25,9 +38,21 @@ FocusNode useFocusNode({
   );
 }
 
-/// Creates a focus scope node
+/// Creates a [FocusScopeNode] for the current setup scope.
 ///
-/// The node will be automatically disposed when the component is unmounted
+/// Use this when the widget owns a dedicated focus scope, such as a dialog,
+/// composite input surface, or keyboard-managed section of the tree.
+///
+/// ```dart
+/// setup(context, props) {
+///   final scopeNode = useFocusScopeNode(debugLabel: 'editor-scope');
+///
+///   return () => FocusScope(
+///     node: scopeNode,
+///     child: const Placeholder(),
+///   );
+/// }
+/// ```
 @defineHook
 FocusScopeNode useFocusScopeNode({
   String? debugLabel,

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:jolt_flutter/jolt_flutter.dart';
 import 'package:jolt_setup/jolt_setup.dart';
 import '../shared/helper.dart';
 
@@ -75,7 +74,7 @@ void main() {
 
       Widget buildWidget(String title) => MaterialApp(
             home: SetupBuilder(setup: (context) {
-              onDidUpdateWidgetAt((oldWidget, newWidget) => updateCount++);
+              onDidUpdateWidget((oldWidget, newWidget) => updateCount++);
               return () {
                 rebuildCount++;
                 return Text(title);
@@ -105,7 +104,7 @@ void main() {
           theme: theme.value,
           home: Builder(builder: (context) {
             return SetupBuilder(setup: (context) {
-              onDidUpdateWidgetAt((oldWidget, newWidget) => updateCount++);
+              onDidUpdateWidget((oldWidget, newWidget) => updateCount++);
               return () {
                 rebuildCount++;
                 return const Text('Test');

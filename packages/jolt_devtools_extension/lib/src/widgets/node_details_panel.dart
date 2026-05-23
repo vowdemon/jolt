@@ -7,7 +7,6 @@ import 'package:jolt_devtools_extension/src/widgets/detail_section.dart';
 import 'package:jolt_devtools_extension/src/widgets/detail_row.dart';
 import 'package:jolt_devtools_extension/src/widgets/node_icon.dart';
 import 'package:jolt_devtools_extension/src/widgets/node_link_list_section.dart';
-import 'package:jolt_flutter/jolt_flutter.dart';
 import 'package:jolt_setup/jolt_setup.dart';
 import 'package:provider/provider.dart';
 

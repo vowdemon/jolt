@@ -5,7 +5,7 @@ import 'package:jolt_flutter/jolt_flutter.dart';
 class DetailSection extends StatelessWidget {
   final String title;
   final List<Widget> children;
-  final WritableNode<bool>? collapseSignal;
+  final Signal<bool>? collapseSignal;
   final VoidCallback? onToggle;
 
   const DetailSection({
@@ -36,9 +36,7 @@ class DetailSection extends StatelessWidget {
     }
 
     final signal = collapseSignal!;
-    final isSignal = signal is Signal<bool>;
-    final toggleCallback =
-        isSignal ? () => signal.value = !signal.value : onToggle;
+    final toggleCallback = onToggle ?? () => signal.value = !signal.value;
 
     return JoltBuilder(builder: (context) {
       return Column(

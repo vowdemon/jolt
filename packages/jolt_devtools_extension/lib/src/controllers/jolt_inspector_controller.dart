@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:devtools_extensions/devtools_extensions.dart';
 import 'package:flutter/material.dart';
+import 'package:jolt_devtools_extension/src/devtools/service_manager_scope.dart';
 import 'package:jolt_devtools_extension/src/models/filter_autocomplete.dart';
 import 'package:jolt_devtools_extension/src/models/jolt_node.dart';
 import 'package:jolt_devtools_extension/src/service/jolt_service.dart';
@@ -69,7 +69,7 @@ class JoltInspectorController {
   JoltInspectorController({bool initializeConnection = true})
       : _initializeConnection = initializeConnection {
     if (initializeConnection) {
-      joltService = JoltService(serviceManager);
+      joltService = JoltService(devtoolsServiceManager);
       _checkConnection();
     }
   }
@@ -100,7 +100,7 @@ class JoltInspectorController {
 
   void _checkConnection() {
     // Check if we have a VM service connection
-    if (serviceManager.service != null) {
+    if (devtoolsServiceManager.service != null) {
       $isConnected.value = true;
 
       loadNodes();
@@ -108,7 +108,7 @@ class JoltInspectorController {
     }
 
     _connectionListener = () {
-      final connected = serviceManager.connectedState.value.connected;
+      final connected = devtoolsServiceManager.connectedState.value.connected;
       if ($isConnected.value != connected) {
         $isConnected.value = connected;
 
@@ -124,12 +124,12 @@ class JoltInspectorController {
         }
       }
     };
-    serviceManager.connectedState.addListener(_connectionListener!);
+    devtoolsServiceManager.connectedState.addListener(_connectionListener!);
 
     _isolateListener = () {
       joltService.clearValueInspectorCaches();
     };
-    serviceManager.isolateManager.selectedIsolate
+    devtoolsServiceManager.isolateManager.selectedIsolate
         .addListener(_isolateListener!);
   }
 
@@ -242,9 +242,6 @@ class JoltInspectorController {
           }
         }
       } else if (update.operation == 'link' || update.operation == 'unlink') {
-        // Handle link/unlink operations for dependencies and subscribers
-        // depId: the dependency node (the node being depended on)
-        // subId: the subscriber node (the node that depends on depId)
         final depId = update.depId;
         final subId = update.subId;
 
@@ -255,30 +252,24 @@ class JoltInspectorController {
           if (depNode != null && subNode != null) {
             batch(() {
               if (update.operation == 'link') {
-                // Link: sub depends on dep
-                // Add dep to sub's dependencies
                 if (!subNode.dependencies.value.contains(depId)) {
                   subNode.dependencies.value = [
                     ...subNode.dependencies.value,
-                    depId
+                    depId,
                   ];
                 }
-                // Add sub to dep's subscribers
                 if (!depNode.subscribers.value.contains(subId)) {
                   depNode.subscribers.value = [
                     ...depNode.subscribers.value,
-                    subId
+                    subId,
                   ];
                 }
-              } else if (update.operation == 'unlink') {
-                // Unlink: sub no longer depends on dep
-                // Remove dep from sub's dependencies
+              } else {
                 if (subNode.dependencies.value.contains(depId)) {
                   subNode.dependencies.value = subNode.dependencies.value
                       .where((id) => id != depId)
                       .toList();
                 }
-                // Remove sub from dep's subscribers
                 if (depNode.subscribers.value.contains(subId)) {
                   depNode.subscribers.value = depNode.subscribers.value
                       .where((id) => id != subId)
@@ -905,10 +896,10 @@ class JoltInspectorController {
     _refreshTimer?.cancel();
     _clockTimer?.cancel();
     if (_connectionListener != null) {
-      serviceManager.connectedState.removeListener(_connectionListener!);
+      devtoolsServiceManager.connectedState.removeListener(_connectionListener!);
     }
     if (_isolateListener != null) {
-      serviceManager.isolateManager.selectedIsolate
+      devtoolsServiceManager.isolateManager.selectedIsolate
           .removeListener(_isolateListener!);
     }
   }

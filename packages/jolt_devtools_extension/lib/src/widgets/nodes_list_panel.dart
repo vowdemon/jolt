@@ -5,8 +5,6 @@ import 'package:jolt_devtools_extension/src/models/filter_autocomplete.dart';
 import 'package:jolt_devtools_extension/src/models/jolt_node.dart';
 import 'package:jolt_devtools_extension/src/widgets/node_icon.dart';
 
-import 'package:jolt_flutter/jolt_flutter.dart';
-import 'package:jolt_setup/hooks.dart';
 import 'package:jolt_setup/jolt_setup.dart';
 import 'package:provider/provider.dart';
 

@@ -176,6 +176,29 @@ void main() {
       expect(service.calculateRangeSize(1000000), 10000);
     });
 
+    test('builds debug helper expressions for root reads and writes', () {
+      expect(
+        service.debugRootReadExpressionForTesting(7),
+        equals('JoltDevTools.readRootValue(7)'),
+      );
+      expect(
+        service.debugRootWriteExpressionForTesting(
+          nodeId: 7,
+          editableKind: JoltEditableKind.number,
+          rawInput: '42',
+        ),
+        equals('JoltDevTools.writeSignalValue(7, 42)'),
+      );
+      expect(
+        service.debugRootWriteExpressionForTesting(
+          nodeId: 9,
+          editableKind: JoltEditableKind.string,
+          rawInput: "hi'\\n",
+        ),
+        equals(r"JoltDevTools.writeSignalValue(9, 'hi\'\\n')"),
+      );
+    });
+
     test('filters private members and getters independently', () {
       final root = JoltValuePath.root(nodeId: 11);
       final publicField = JoltObjectField(

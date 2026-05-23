@@ -2,6 +2,7 @@ import 'dart:developer' as developer;
 import 'dart:math' as math;
 
 import 'package:devtools_app_shared/service.dart';
+import 'package:flutter/foundation.dart';
 import 'package:jolt_devtools_extension/src/inspector_value/models/jolt_inspected_value.dart';
 import 'package:jolt_devtools_extension/src/inspector_value/models/jolt_object_field.dart';
 import 'package:jolt_devtools_extension/src/inspector_value/models/jolt_value_inspector_policy.dart';
@@ -257,6 +258,26 @@ class JoltValueInspectorService {
 
   Future<JoltValueResolution?> resolveRoot(JoltNode node) async {
     return inspectRoot(node);
+  }
+
+  @visibleForTesting
+  String debugRootReadExpressionForTesting(int nodeId) {
+    return _buildRootReadExpression(nodeId);
+  }
+
+  @visibleForTesting
+  String debugRootWriteExpressionForTesting({
+    required int nodeId,
+    required JoltEditableKind editableKind,
+    required String rawInput,
+  }) {
+    return _buildRootWriteExpression(
+      JoltValueSetter.rootSignal(
+        nodeId: nodeId,
+        editableKind: editableKind,
+      ),
+      rawInput,
+    );
   }
 
   Future<JoltInspectedValue> loadValue(JoltValuePath path) async {
@@ -609,7 +630,7 @@ class JoltValueInspectorService {
     final response = await _service.evaluate(
       isolateId,
       libraryId,
-      'debugNodes[$nodeId]?.target?.pendingValue',
+      _buildRootReadExpression(nodeId),
       disableBreakpoints: true,
     );
     final resolved = _ResolvedValue(isolateId: isolateId, value: response);
@@ -1103,7 +1124,11 @@ class JoltValueInspectorService {
       JoltEditableKind.string => _quoteDartString(rawInput),
       JoltEditableKind.nullValue => 'null',
     };
-    return 'debugNodes[${setter.nodeId}]?.target?.value = $expression';
+    return 'JoltDevTools.writeSignalValue(${setter.nodeId}, $expression)';
+  }
+
+  String _buildRootReadExpression(int nodeId) {
+    return 'JoltDevTools.readRootValue($nodeId)';
   }
 
   String _quoteDartString(String input) {

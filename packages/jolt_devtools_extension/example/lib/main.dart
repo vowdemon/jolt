@@ -1,8 +1,6 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:jolt_flutter/core.dart';
-import 'package:jolt_flutter/jolt_flutter.dart';
 import 'package:jolt_setup/jolt_setup.dart';
 
 void main() {

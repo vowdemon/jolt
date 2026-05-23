@@ -78,7 +78,7 @@ View where nodes were created to help understand code execution flow:
 
 1. Enable Jolt DevTools in your Flutter app:
    ```dart
-   import 'package:jolt/core.dart';
+   import 'package:jolt/jolt.dart';
    
    void main() {
      JoltDebug.init();

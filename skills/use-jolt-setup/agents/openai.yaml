@@ -1,0 +1,4 @@
+interface:
+  display_name: "Use Jolt Setup"
+  short_description: "Use jolt_setup setup-style widgets and hooks."
+  default_prompt: "Help me build a Flutter widget with jolt_setup SetupWidget / SetupMixin / SetupBuilder and hooks."

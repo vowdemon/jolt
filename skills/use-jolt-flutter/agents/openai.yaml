@@ -1,0 +1,4 @@
+interface:
+  display_name: "Use Jolt Flutter"
+  short_description: "Use jolt_flutter Flutter widgets and bridges."
+  default_prompt: "Help me use jolt_flutter APIs in a Flutter app."

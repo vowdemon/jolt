@@ -1,4 +1,4 @@
-name: _
+name: jolt_workspace
 publish_to: none
 
 repository: https://github.com/vowdemon/jolt
@@ -44,25 +44,28 @@ melos:
       linkToCommits: true
 
   scripts:
-    test:select:
-      run: melos exec --category="testable" -c 1 -- flutter test --coverage
-      packageFilters:
-        dirExists: test
-      description: Run `flutter test` for selected packages.
-    coverage:combine:
-      run: |
-        chmod +x ./.github/scripts/merge_coverage.sh
-        ./.github/scripts/merge_coverage.sh
-    coverage:
-      run: |
-        melos run test
-        genhtml coverage/combined.info -o coverage/html
-    analyze:
-      run: melos exec -c 1 -- flutter analyze --no-fatal-infos --no-fatal-warnings
     test:
       run: |
-        melos run test:select --no-select
-        melos run coverage:combine
-      description: Run all Flutter tests in this project.
+        mkdir -p coverage
+        flutter test \
+          --coverage \
+          --coverage-path=coverage/lcov.info \
+          $(melos list --category=testable --parsable | sed 's#$#/test#')
+      description: Run Flutter tests with coverage for melos testable packages.
+    test:devtools:
+      run: |
+        cd packages/jolt_devtools_extension
+        flutter test
+      description: Run the jolt_devtools_extension package tests without coverage.
+    test:lint:
+      run: |
+        cd packages/jolt_lint
+        dart test
+      description: Run the jolt_lint package tests without coverage.
+    coverage:html:
+      run: genhtml coverage/lcov.info -o coverage/html
+      description: Generate HTML coverage report from workspace coverage output.
+    analyze:
+      run: melos exec -c 1 -- flutter analyze --no-fatal-infos --no-fatal-warnings
     update:version:
       run: melos version --no-published --no-private --no-git-commit-version

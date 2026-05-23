@@ -1,30 +1,15 @@
-part of "./reactive.dart";
+import 'package:jolt/core.dart';
 
-/// Base class for all reactive nodes in the dependency graph.
+/// Base node in the reactive dependency graph.
 ///
-/// ReactiveNode represents a node in the reactive dependency graph that can
-/// have dependencies (values it reads from) and subscribers (effects that
-/// depend on it). This is the foundation of Jolt's reactive system.
-///
-/// Example:
-/// ```dart
-/// final node = ReactiveNode(flags: ReactiveFlags.mutable);
-/// node.flags |= ReactiveFlags.dirty;
-/// ```
-class ReactiveNode {
-  /// Creates a reactive node with the given configuration.
+/// A reactive node can depend on other nodes through [deps] and can be observed
+/// by other nodes through [subs]. Subclasses define how values are updated,
+/// cached, or disposed.
+abstract class ReactiveNode {
+  /// Creates a node with the supplied link state and [flags].
   ///
-  /// Parameters:
-  /// - [deps]: First dependency link
-  /// - [depsTail]: Last dependency link
-  /// - [subs]: First subscriber link
-  /// - [subsTail]: Last subscriber link
-  /// - [flags]: Reactive flags for this node
-  ///
-  /// Example:
-  /// ```dart
-  /// final node = ReactiveNode(flags: ReactiveFlags.mutable);
-  /// ```
+  /// The optional [deps] and [depsTail] values seed this node's dependency
+  /// chain, while [subs] and [subsTail] seed its subscriber chain.
   ReactiveNode({
     required this.flags,
     this.deps,
@@ -48,59 +33,51 @@ class ReactiveNode {
   /// Reactive flags for this node.
   int flags;
 
-  /// Whether this node has been disposed.
-  bool get isDisposed => false;
+  /// Called when this node no longer has subscribers.
+  ///
+  /// Implementations release dependency links or dispose resources that are
+  /// only needed while the node is observed.
+  void unwatched();
+
+  /// Recomputes or refreshes this node when it is dirty.
+  ///
+  /// Returns `true` when the observable value changed and shallow propagation
+  /// to subscribers may be required.
+  bool update();
 }
 
-/// Link between reactive nodes in the dependency graph.
+/// Dependency edge between two [ReactiveNode]s.
 ///
-/// Link represents a connection between a dependency node and a subscriber node
-/// in the reactive graph. It maintains bidirectional links for efficient
-/// traversal and cleanup.
-///
-/// Example:
-/// ```dart
-/// final depNode = ReactiveNode(flags: ReactiveFlags.mutable);
-/// final subNode = ReactiveNode(flags: ReactiveFlags.watching);
-/// final link = Link(version: cycle, dep: depNode, sub: subNode);
-/// depNode.subs = link;
-/// ```
+/// Each link connects a dependency node to a subscriber node and participates
+/// in doubly linked lists on both sides of the graph.
 class Link {
-  /// Creates a link between dependency and subscriber nodes.
+  /// Creates a dependency edge from [dep] to [sub].
   ///
-  /// Parameters:
-  /// - [version]: Version number for this link
-  /// - [dep]: The dependency node
-  /// - [sub]: The subscriber node
-  /// - [prevSub]: Previous subscriber link
-  /// - [nextSub]: Next subscriber link
-  /// - [prevDep]: Previous dependency link
-  /// - [nextDep]: Next dependency link
-  ///
-  /// Example:
-  /// ```dart
-  /// final depNode = ReactiveNode(flags: ReactiveFlags.mutable);
-  /// final subNode = ReactiveNode(flags: ReactiveFlags.watching);
-  /// final link = Link(version: 1, dep: depNode, sub: subNode);
-  /// ```
+  /// The optional neighboring links splice this edge into the subscriber and
+  /// dependency chains on both nodes.
   Link({
     required this.version,
-    required this.dep,
-    required this.sub,
+    required ReactiveNode dep,
+    required ReactiveNode sub,
     this.prevSub,
     this.nextSub,
     this.prevDep,
     this.nextDep,
-  });
+  })  : _dep = WeakReference(dep),
+        _sub = WeakReference(sub);
 
   /// Version number for this link.
   int version;
 
-  /// The dependency node.
-  ReactiveNode dep;
+  final WeakReference<ReactiveNode> _dep;
 
-  /// The subscriber node.
-  ReactiveNode sub;
+  final WeakReference<ReactiveNode> _sub;
+
+  /// The dependency node, if it has not been collected.
+  ReactiveNode? get dep => _dep.target;
+
+  /// The subscriber node, if it has not been collected.
+  ReactiveNode? get sub => _sub.target;
 
   /// Previous subscriber link.
   Link? prevSub;
@@ -115,28 +92,12 @@ class Link {
   Link? nextDep;
 }
 
-/// Stack data structure for managing recursive operations.
+/// Stack node used for iterative graph traversals.
 ///
-/// Stack is used internally by the reactive system to manage recursive
-/// traversal of the dependency graph during updates.
-///
-/// Example:
-/// ```dart
-/// final link = Link(version: 0, dep: ReactiveNode(flags: 0), sub: ReactiveNode(flags: 0));
-/// var stack = Stack(value: link);
-/// stack = Stack(value: link.nextSub, prev: stack);
-/// ```
+/// This lightweight frame type lets the core walk dependency chains without
+/// recursive calls.
 class Stack<T> {
-  /// Creates a stack node with the given value and previous node.
-  ///
-  /// Parameters:
-  /// - [value]: The value stored in this stack node
-  /// - [prev]: The previous node in the stack
-  ///
-  /// Example:
-  /// ```dart
-  /// final node = Stack(value: 1);
-  /// ```
+  /// Creates a stack node that stores [value] and points to [prev].
   Stack({required this.value, this.prev});
 
   /// The value stored in this stack node.
@@ -146,17 +107,7 @@ class Stack<T> {
   Stack<T>? prev;
 }
 
-/// Flags for tracking reactive node state.
-///
-/// These flags are used internally by the reactive system to track the
-/// state and lifecycle of reactive nodes during dependency tracking
-/// and update propagation.
-///
-/// Example:
-/// ```dart
-/// final node = ReactiveNode(flags: ReactiveFlags.mutable);
-/// node.flags |= ReactiveFlags.pending;
-/// ```
+/// Bit flags that describe a [ReactiveNode]'s reactive state.
 abstract final class ReactiveFlags {
   /// No flags set - node is inactive.
   static const none = 0;
@@ -178,61 +129,46 @@ abstract final class ReactiveFlags {
 
   /// Node is pending update.
   static const pending = 1 << 5;
+
+  /// Node owns at least one child effect or effect scope.
+  ///
+  /// This bit is used by the Jolt layer to preserve nested effect cleanup
+  /// ordering. Core propagation checks mask specific bits, so this flag can
+  /// travel alongside the core flags without changing propagation decisions.
+  static const hasChildEffect = 1 << 6;
 }
 
-/// Abstract reactive system for managing dependency tracking.
+/// Registers [dep] as a dependency of [sub] for [version].
 ///
-/// ReactiveSystem defines the core interface for managing reactive dependencies,
-/// updates, and notifications in the reactive graph.
-
-// /// Updates a reactive node and returns true if changed.
-// ///
-// /// Parameters:
-// /// - [sub]: The reactive node to update
-// ///
-// /// Returns: true if the node's value changed, false otherwise
-// bool update(ReactiveNode sub);
-
-// /// Notifies a subscriber that it needs to update.
-// ///
-// /// Parameters:
-// /// - [sub]: The subscriber node to notify
-// void notify(ReactiveNode sub);
-
-// /// Handles when a node is no longer being watched.
-// ///
-// /// Parameters:
-// /// - [sub]: The node that is no longer being watched
-// void unwatched(ReactiveNode sub);
-
-/// Links a dependency to a subscriber in the reactive graph.
-///
-/// Parameters:
-/// - [dep]: The dependency node
-/// - [sub]: The subscriber node
-/// - [version]: Version number for the link
-///
-/// Example:
-/// ```dart
-/// final depNode = CustomSignalNode<int>(0);
-/// final effectNode = CustomEffectNode();
-/// link(depNode, effectNode, cycle);
-/// ```
+/// Existing links are reused when possible, and stale collected links are
+/// removed while the subscriber and dependency chains are rewired.
 @pragma("vm:prefer-inline")
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
 void link(ReactiveNode dep, ReactiveNode sub, int version) {
-  final prevDep = sub.depsTail;
+  var prevDep = sub.depsTail;
+  while (prevDep != null && prevDep.dep == null) {
+    final prev = prevDep.prevDep;
+    unlink(prevDep, sub);
+    prevDep = prev;
+  }
   if (prevDep != null && identical(prevDep.dep, dep)) {
     return;
   }
-  final nextDep = prevDep != null ? prevDep.nextDep : sub.deps;
+  var nextDep = prevDep != null ? prevDep.nextDep : sub.deps;
+  while (nextDep != null && nextDep.dep == null) {
+    nextDep = unlink(nextDep, sub);
+  }
   if (nextDep != null && identical(nextDep.dep, dep)) {
     nextDep.version = version;
     sub.depsTail = nextDep;
     return;
   }
-  final prevSub = dep.subsTail;
+  var prevSub = dep.subsTail;
+  while (prevSub != null && prevSub.sub == null) {
+    unlink(prevSub);
+    prevSub = dep.subsTail;
+  }
   if (prevSub != null &&
       prevSub.version == version &&
       identical(prevSub.sub, sub)) {
@@ -260,81 +196,83 @@ void link(ReactiveNode dep, ReactiveNode sub, int version) {
   } else {
     dep.subs = newLink;
   }
-
   assert(() {
-    JoltDebug.linked(dep, newLink);
+    JoltDevTools.notifyLinkUpdate('link', dep, sub);
     return true;
   }());
 }
 
-/// Unlinks a dependency from a subscriber.
+/// Removes [link] from the dependency graph.
 ///
-/// Parameters:
-/// - [link]: The link to unlink
-/// - [sub]: Optional subscriber node
-///
-/// Returns: The next dependency link, or null if none
-///
-/// Example:
-/// ```dart
-/// final link = dep.subs!;
-/// final next = unlink(link);
-/// ```
+/// Returns the next dependency link for [sub]. When [sub] is omitted, this uses
+/// the subscriber stored on [link].
 @pragma("vm:prefer-inline")
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")
 Link? unlink(Link link, [ReactiveNode? sub]) {
   sub ??= link.sub;
 
-  final Link(:dep, :prevDep, :nextDep, :nextSub, :prevSub) = link;
+  final dep = link.dep;
+  assert(() {
+    JoltDevTools.notifyLinkUpdate('unlink', dep, sub);
+    return true;
+  }());
+  final Link(:prevDep, :nextDep, :nextSub, :prevSub) = link;
   if (nextDep != null) {
     nextDep.prevDep = prevDep;
-  } else {
+  } else if (sub != null) {
     sub.depsTail = prevDep;
   }
   if (prevDep != null) {
     prevDep.nextDep = nextDep;
-  } else {
+  } else if (sub != null) {
     sub.deps = nextDep;
   }
   if (nextSub != null) {
     nextSub.prevSub = prevSub;
-  } else {
+  } else if (dep != null) {
     dep.subsTail = prevSub;
   }
   if (prevSub != null) {
     prevSub.nextSub = nextSub;
-  } else if ((dep.subs = nextSub) == null) {
-    unwatched(dep);
+  } else if (dep != null && (dep.subs = nextSub) == null) {
+    dep.unwatched();
   }
 
-  assert(() {
-    JoltDebug.unlinked(dep, link);
-    return true;
-  }());
   return nextDep;
 }
 
 /// Propagates changes through the reactive graph.
 ///
-/// Parameters:
-/// - [theLink]: The link to start propagation from
-///
-/// Example:
-/// ```dart
-/// final signalNode = CustomSignalNode<int>(0);
-/// propagate(signalNode.subs!, false);
-/// ```
+/// Walks subscriber links starting at [theLink] and marks affected nodes
+/// pending. When [innerWrite] is true, writes are treated as occurring
+/// during an effect run and subscribers may receive [ReactiveFlags.recursed].
 void propagate(Link theLink, bool innerWrite) {
   Link? link = theLink;
+
   var next = link.nextSub;
   Stack<Link?>? stack;
 
   top:
-  // allow do-while loop
-  // ignore: literal_only_boolean_expressions
   do {
     final sub = link!.sub;
+    if (sub == null) {
+      final stale = link;
+      unlink(stale);
+      if ((link = next) != null) {
+        next = link!.nextSub;
+        continue;
+      }
+      while (stack != null) {
+        link = stack.value;
+        stack = stack.prev;
+        if (link != null) {
+          next = link.nextSub;
+          continue top;
+        }
+      }
+      break;
+    }
     var flags = sub.flags;
 
     if (flags &
@@ -362,7 +300,7 @@ void propagate(Link theLink, bool innerWrite) {
     }
 
     if (flags & (ReactiveFlags.watching) != 0) {
-      notifyEffect(sub);
+      (sub as EffectNode).notifyEffect();
     }
 
     if (flags & (ReactiveFlags.mutable) != 0) {
@@ -395,23 +333,14 @@ void propagate(Link theLink, bool innerWrite) {
   } while (true);
 }
 
-/// Checks if a node is dirty and needs updating.
+/// Whether [sub] has a dirty dependency reachable from [theLink].
 ///
-/// Parameters:
-/// - [theLink]: The link to check
-/// - [sub]: The subscriber node
-///
-/// Returns: true if the node is dirty and needs updating
-///
-/// Example:
-/// ```dart
-/// final effectNode = CustomEffectNode();
-/// final dirty = checkDirty(effectNode.deps!, effectNode);
-/// ```
+/// Mutable pending dependencies are recomputed as needed while traversing the
+/// graph. Returns `true` when [sub] should rerun or recompute.
 
 bool checkDirty(Link theLink, ReactiveNode sub) {
   Link? link = theLink;
-  Stack<Link?>? stack;
+  Stack<(Link, ReactiveNode)>? stack;
   var checkDepth = 0;
   var dirty = false;
 
@@ -420,6 +349,13 @@ bool checkDirty(Link theLink, ReactiveNode sub) {
   // ignore: literal_only_boolean_expressions
   do {
     final dep = link!.dep;
+    if (dep == null) {
+      link = unlink(link, sub);
+      if (link != null) {
+        continue;
+      }
+      break;
+    }
     final flags = dep.flags;
 
     if (sub.flags & (ReactiveFlags.dirty) == (ReactiveFlags.dirty)) {
@@ -427,7 +363,7 @@ bool checkDirty(Link theLink, ReactiveNode sub) {
     } else if (flags & (ReactiveFlags.mutable | ReactiveFlags.dirty) ==
         (ReactiveFlags.mutable | ReactiveFlags.dirty)) {
       final subs = dep.subs!;
-      if (updateNode(dep)) {
+      if (dep.update()) {
         if (subs.nextSub != null) {
           shallowPropagate(subs);
         }
@@ -435,7 +371,7 @@ bool checkDirty(Link theLink, ReactiveNode sub) {
       }
     } else if (flags & (ReactiveFlags.mutable | ReactiveFlags.pending) ==
         (ReactiveFlags.mutable | ReactiveFlags.pending)) {
-      stack = Stack(value: link, prev: stack);
+      stack = Stack(value: (link, sub), prev: stack);
       link = dep.deps;
       sub = dep;
       ++checkDepth;
@@ -451,22 +387,25 @@ bool checkDirty(Link theLink, ReactiveNode sub) {
     }
 
     while (checkDepth-- != 0) {
-      link = stack!.value;
+      final frame = stack!.value;
+      link = frame.$1;
+      final parentSub = frame.$2;
       stack = stack.prev;
       if (dirty) {
         final subs = sub.subs;
-        if (updateNode(sub)) {
-          if (subs?.nextSub != null) {
-            shallowPropagate(subs!);
+        if (sub.update()) {
+          assert(subs != null);
+          if (subs!.nextSub != null) {
+            shallowPropagate(subs);
           }
-          sub = link!.sub;
+          sub = parentSub;
           continue;
         }
         dirty = false;
       } else {
         sub.flags &= ~ReactiveFlags.pending;
       }
-      sub = link!.sub;
+      sub = parentSub;
       final nextDep = link.nextDep;
       if (nextDep != null) {
         link = nextDep;
@@ -476,48 +415,37 @@ bool checkDirty(Link theLink, ReactiveNode sub) {
 
     return dirty && sub.flags != ReactiveFlags.none;
   } while (true);
+
+  return dirty && sub.flags != ReactiveFlags.none;
 }
 
-/// Shallow propagates changes without deep recursion.
+/// Marks direct subscribers reachable from [theLink] dirty.
 ///
-/// Parameters:
-/// - [theLink]: The link to start shallow propagation from
-///
-/// Example:
-/// ```dart
-/// final signalNode = CustomSignalNode<int>(0);
-/// shallowPropagate(signalNode.subs!);
-/// ```
+/// This does not recurse into deeper subscriber chains. It is typically used
+/// after a value has already been recomputed.
 void shallowPropagate(Link theLink) {
   Link? link = theLink;
   do {
     final sub = link!.sub;
+    if (sub == null) {
+      final stale = link;
+      link = link.nextSub;
+      unlink(stale);
+      continue;
+    }
     final flags = sub.flags;
     if (flags & (ReactiveFlags.pending | ReactiveFlags.dirty) ==
         (ReactiveFlags.pending)) {
       sub.flags = flags | (ReactiveFlags.dirty);
       if (flags & (ReactiveFlags.watching | ReactiveFlags.recursedCheck) ==
           ReactiveFlags.watching) {
-        notifyEffect(sub);
+        (sub as EffectNode).notifyEffect();
       }
     }
-  } while ((link = link.nextSub) != null);
+  } while ((link = link?.nextSub) != null);
 }
 
-/// Checks if a link is still valid for a subscriber.
-///
-/// Parameters:
-/// - [checkLink]: The link to check
-/// - [sub]: The subscriber node
-///
-/// Returns: true if the link is still valid
-///
-/// Example:
-/// ```dart
-/// final effectNode = CustomEffectNode();
-/// final link = effectNode.depsTail!;
-/// final stillValid = isValidLink(link, effectNode);
-/// ```
+/// Whether [checkLink] is still present in [sub]'s dependency chain.
 @pragma("vm:prefer-inline")
 @pragma("wasm:prefer-inline")
 @pragma("dart2js:prefer-inline")

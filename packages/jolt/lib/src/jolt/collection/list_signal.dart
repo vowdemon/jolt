@@ -3,15 +3,14 @@ import "dart:math" show Random;
 
 import "package:jolt/core.dart";
 
-import "package:jolt/src/jolt/base.dart";
 import "package:jolt/src/jolt/signal.dart";
 
-/// A mixin that provides reactive list functionality.
+/// In-place [List] mutations for a [Signal] holding a [List].
 ///
-/// This mixin implements all List operations while maintaining reactivity.
-/// Any modification to the list will automatically notify subscribers.
-mixin ListSignalMixin<E>
-    implements ListBase<E>, Readable<List<E>>, IMutableCollection, Notifiable {
+/// Read operations delegate to [value] and track dependencies. Mutations update
+/// the backing list through [peek] and call [notify] only when content changes.
+/// See [ListSignal] for the public writable list signal type.
+mixin ListSignalMixin<E> implements ListBase<E>, Readable<List<E>>, Notifiable {
   @override
   int get length => value.length;
 
@@ -143,6 +142,7 @@ mixin ListSignalMixin<E>
   @override
   E operator [](int index) => value[index];
 
+  /// Replaces the element at [index] and notifies when the value changes.
   @override
   void operator []=(int index, E value) {
     final oldValue = peek[index];
@@ -152,18 +152,24 @@ mixin ListSignalMixin<E>
     }
   }
 
+  /// Appends [value] and notifies subscribers.
   @override
   void add(E value) {
     peek.add(value);
     notify();
   }
 
+  /// Appends all elements from [iterable] and notifies when length increases.
   @override
   void addAll(Iterable<E> iterable) {
+    final oldLength = peek.length;
     peek.addAll(iterable);
-    notify();
+    if (peek.length != oldLength) {
+      notify();
+    }
   }
 
+  /// Removes every element and notifies when the list was not already empty.
   @override
   void clear() {
     if (peek.isNotEmpty) {
@@ -172,6 +178,7 @@ mixin ListSignalMixin<E>
     }
   }
 
+  /// Fills the range [start, end) with [fill] and notifies when any slot changes.
   @override
   void fillRange(int start, int end, [E? fill]) {
     bool needNotify = false;
@@ -188,43 +195,54 @@ mixin ListSignalMixin<E>
     }
   }
 
+  /// Inserts [element] at [index] and notifies subscribers.
   @override
   void insert(int index, E element) {
     peek.insert(index, element);
     notify();
   }
 
+  /// Inserts all elements of [iterable] at [index] and notifies when length grows.
   @override
   void insertAll(int index, Iterable<E> iterable) {
+    final oldLength = peek.length;
     peek.insertAll(index, iterable);
-    notify();
+    if (peek.length != oldLength) {
+      notify();
+    }
   }
 
+  /// Removes the first occurrence of [value] and notifies when length shrinks.
   @override
   bool remove(Object? value) {
     return _checkLength(() => peek.remove(value));
   }
 
+  /// Removes the element at [index] and notifies subscribers.
   @override
   E removeAt(int index) {
     return _checkLength(() => peek.removeAt(index));
   }
 
+  /// Removes the last element and notifies subscribers.
   @override
   E removeLast() {
     return _checkLength(() => peek.removeLast());
   }
 
+  /// Removes the range [start, end) and notifies when length shrinks.
   @override
   void removeRange(int start, int end) {
     _checkLength(() => peek.removeRange(start, end));
   }
 
+  /// Removes elements matching [test] and notifies when length shrinks.
   @override
   void removeWhere(bool Function(E element) test) {
     _checkLength(() => peek.removeWhere(test));
   }
 
+  /// Replaces [start, end) with [replacements] and notifies when content changes.
   @override
   void replaceRange(int start, int end, Iterable<E> replacements) {
     final oldLength = end - start;
@@ -255,11 +273,13 @@ mixin ListSignalMixin<E>
     if (needNotify) notify();
   }
 
+  /// Keeps only elements matching [test] and notifies when length shrinks.
   @override
   void retainWhere(bool Function(E element) test) {
     _checkLength(() => peek.retainWhere(test));
   }
 
+  /// Overwrites elements from [index] with [iterable] and notifies on change.
   @override
   void setAll(int index, Iterable<E> iterable) {
     final iter = iterable.iterator;
@@ -286,6 +306,7 @@ mixin ListSignalMixin<E>
     if (needNotify) notify();
   }
 
+  /// Writes [iterable] into [start, end) and notifies when values differ.
   @override
   void setRange(int start, int end, Iterable<E> iterable, [int skipCount = 0]) {
     final iter = iterable.iterator;
@@ -312,6 +333,7 @@ mixin ListSignalMixin<E>
     if (changed) notify();
   }
 
+  /// Shuffles elements in place and notifies when the list is not empty.
   @override
   void shuffle([Random? random]) {
     if (peek.isNotEmpty) {
@@ -320,6 +342,7 @@ mixin ListSignalMixin<E>
     }
   }
 
+  /// Sorts elements in place and notifies when the list is not empty.
   @override
   void sort([int Function(E a, E b)? compare]) {
     if (peek.isNotEmpty) {
@@ -328,6 +351,7 @@ mixin ListSignalMixin<E>
     }
   }
 
+  /// Sets the first element and notifies when the value changes.
   @override
   set first(E val) {
     final oldValue = peek.first;
@@ -337,6 +361,7 @@ mixin ListSignalMixin<E>
     }
   }
 
+  /// Sets the last element and notifies when the value changes.
   @override
   set last(E val) {
     final oldValue = peek.last;
@@ -346,6 +371,7 @@ mixin ListSignalMixin<E>
     }
   }
 
+  /// Resizes the list and notifies when [value] differs from the current length.
   @override
   set length(int value) {
     if (peek.length != value) {
@@ -367,75 +393,37 @@ mixin ListSignalMixin<E>
   }
 }
 
-/// Implementation of [ListSignal] that automatically notifies subscribers when modified.
+class _ListSignalImpl<E> extends SignalImpl<List<E>>
+    with ListSignalMixin<E>
+    implements ListSignal<E> {
+  _ListSignalImpl(List<E>? value, {super.debug}) : super(value ?? []);
+}
+
+/// A [Signal] that behaves like a mutable [List] and notifies on in-place edits.
 ///
-/// This is the concrete implementation of the [ListSignal] interface. ListSignal
-/// extends Signal to provide full List functionality while maintaining reactivity.
-/// All list operations (add, remove, etc.) will trigger notifications to subscribers.
-///
-/// See [ListSignal] for the public interface and usage examples.
+/// Use [ListSignal] when subscribers should react to `add`, indexed assignment,
+/// and other list mutations without replacing the whole [Signal.value]. For a
+/// derived, read-only view, use [IterableSignal] or [Computed] instead.
 ///
 /// Example:
 /// ```dart
 /// final items = ListSignal(['apple', 'banana']);
 ///
 /// Effect(() => print('Items: ${items.join(', ')}'));
-/// // Prints: "Items: apple, banana"
-///
 /// items.add('cherry');
-/// // Prints: "Items: apple, banana, cherry"
-///
-/// items[0] = 'orange';
-/// // Prints: "Items: orange, banana, cherry"
-///
-/// items.removeAt(1);
-/// // Prints: "Items: orange, cherry"
-/// ```
-class ListSignalImpl<E> extends SignalImpl<List<E>>
-    with ListSignalMixin<E>
-    implements ListSignal<E> {
-  /// Creates a reactive list signal with the given initial list.
-  ///
-  /// Parameters:
-  /// - [value]: Initial list content, defaults to empty list if null
-  /// - [debug]: Optional debug options
-  ///
-  /// Example:
-  /// ```dart
-  /// final emptyList = ListSignal<String>(null); // Creates empty list
-  /// final numbers = ListSignal([1, 2, 3]);
-  /// final autoList = ListSignal(['a', 'b']);
-  /// ```
-  ListSignalImpl(List<E>? value, {super.debug}) : super(value ?? []);
-}
-
-/// Interface for reactive list signals.
-///
-/// ListSignal extends Signal to provide full List functionality while
-/// maintaining reactivity. All list operations (add, remove, etc.) will
-/// trigger notifications to subscribers.
-///
-/// Example:
-/// ```dart
-/// ListSignal<String> items = ListSignal(['apple', 'banana']);
-///
-/// Effect(() => print('Items: ${items.join(', ')}'));
-/// items.add('cherry'); // Triggers effect
 /// ```
 abstract interface class ListSignal<E>
     implements Signal<List<E>>, ListSignalMixin<E> {
-  /// Creates a reactive list signal with the given initial list.
+  /// Creates a list signal with optional initial contents.
   ///
-  /// Parameters:
-  /// - [value]: Initial list content, defaults to empty list if null
-  /// - [debug]: Optional debug options
+  /// The optional [value] supplies the initial list contents. Pass `null` to
+  /// start with an empty growable list.
   ///
   /// Example:
   /// ```dart
-  /// final emptyList = ListSignal<String>(null); // Creates empty list
   /// final numbers = ListSignal([1, 2, 3]);
-  /// final autoList = ListSignal(['a', 'b']);
+  /// final empty = ListSignal<int>(null);
   /// ```
   factory ListSignal(List<E>? value, {JoltDebugOption? debug}) =
-      ListSignalImpl<E>;
+      _ListSignalImpl<E>;
 }

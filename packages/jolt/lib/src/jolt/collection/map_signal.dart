@@ -2,23 +2,17 @@ import "dart:collection";
 
 import "package:jolt/core.dart";
 import "package:jolt/jolt.dart";
-import "package:jolt/src/jolt/signal.dart";
 
-/// A mixin that provides reactive map functionality.
+/// In-place [Map] mutations for a [Signal] holding a [Map].
 ///
-/// This mixin implements all Map operations while maintaining reactivity.
-/// Any modification to the map will automatically notify subscribers.
-/// All mutating operations trigger change notifications.
+/// Read operations delegate to [value] and track dependencies. Mutations update
+/// the backing map through [peek] and call [notify] when entries change.
+/// See [MapSignal] for the public writable map signal type.
 mixin MapSignalMixin<K, V>
-    implements
-        MapBase<K, V>,
-        Readable<Map<K, V>>,
-        IMutableCollection,
-        Notifiable {
-  /// Gets the value associated with the given key.
+    implements MapBase<K, V>, Readable<Map<K, V>>, Notifiable {
+  /// Looks up the value for [key] in the current map.
   ///
-  /// Returns the value for the given key, or null if the key is not present.
-  /// This operation does not trigger reactivity when used for reading.
+  /// Reads through [value], so reactive consumers track this access.
   @override
   V? operator [](Object? key) => value[key];
 
@@ -242,78 +236,37 @@ mixin MapSignalMixin<K, V>
   }
 }
 
-/// Implementation of [MapSignal] that automatically notifies subscribers when modified.
-///
-/// This is the concrete implementation of the [MapSignal] interface. MapSignal
-/// extends Signal to provide full Map functionality while maintaining reactivity.
-/// All map operations (put, remove, clear, etc.) will trigger notifications
-/// to subscribers.
-///
-/// See [MapSignal] for the public interface and usage examples.
-///
-/// Example:
-/// ```dart
-/// final userMap = MapSignal<String, dynamic>({'name': 'Alice', 'age': 30});
-///
-/// Effect(() => print('User: ${userMap['name']}, Age: ${userMap['age']}'));
-/// // Prints: "User: Alice, Age: 30"
-///
-/// userMap['name'] = 'Bob';
-/// // Prints: "User: Bob, Age: 30"
-///
-/// userMap['city'] = 'New York';
-/// // Prints: "User: Bob, Age: 30" (if city is not used in effect)
-///
-/// userMap.addAll({'age': 25, 'country': 'USA'});
-/// // Prints: "User: Bob, Age: 25"
-///
-/// userMap.clear();
-/// // Prints: "User: null, Age: null"
-/// ```
-class MapSignalImpl<K, V> extends SignalImpl<Map<K, V>>
+class _MapSignalImpl<K, V> extends SignalImpl<Map<K, V>>
     with MapSignalMixin<K, V>
     implements MapSignal<K, V> {
-  /// Creates a reactive map signal with the given initial map.
-  ///
-  /// Parameters:
-  /// - [value]: Initial map content, defaults to empty map if null
-  /// - [debug]: Optional debug options
-  ///
-  /// Example:
-  /// ```dart
-  /// final emptyMap = MapSignal<String, int>(null); // Creates empty map
-  /// final userMap = MapSignal({'name': 'Alice', 'age': 30});
-  /// final autoMap = MapSignal({'key': 'value'});
-  /// ```
-  MapSignalImpl(Map<K, V>? value, {super.debug}) : super(value ?? {});
+  _MapSignalImpl(Map<K, V>? value, {super.debug}) : super(value ?? {});
 }
 
-/// Interface for reactive map signals.
+/// A [Signal] that behaves like a mutable [Map] and notifies on in-place edits.
 ///
-/// MapSignal extends Signal to provide full Map functionality while
-/// maintaining reactivity. All map operations (put, remove, clear, etc.)
-/// will trigger notifications to subscribers.
+/// Use [MapSignal] when subscribers should react to `[]=`, [Map.addAll], and
+/// other map mutations without replacing the whole [Signal.value]. For a
+/// derived, read-only view, use [IterableSignal] or [Computed] instead.
 ///
 /// Example:
 /// ```dart
-/// MapSignal<String, dynamic> userMap = MapSignal({'name': 'Alice', 'age': 30});
+/// final user = MapSignal({'name': 'Alice', 'age': 30});
 ///
-/// Effect(() => print('User: ${userMap['name']}'));
-/// userMap['name'] = 'Bob'; // Triggers effect
+/// Effect(() => print('User: ${user['name']}'));
+/// user['name'] = 'Bob';
 /// ```
 abstract interface class MapSignal<K, V>
     implements Signal<Map<K, V>>, MapSignalMixin<K, V> {
-  /// Creates a reactive map signal with the given initial map.
+  /// Creates a map signal with optional initial entries.
   ///
-  /// Parameters:
-  /// - [value]: Initial map content, defaults to empty map if null
-  /// - [debug]: Optional debug options
+  /// The optional [value] supplies the initial entries. Pass `null` to start
+  /// with an empty map.
   ///
   /// Example:
   /// ```dart
-  /// final emptyMap = MapSignal<String, int>(null); // Creates empty map
-  /// final userMap = MapSignal({'name': 'Alice', 'age': 30});
+  /// final user = MapSignal({'name': 'Alice'});
+  /// final empty = MapSignal<String, int>(null);
   /// ```
   factory MapSignal(Map<K, V>? value, {JoltDebugOption? debug}) =
-      MapSignalImpl<K, V>;
+      _MapSignalImpl<K, V>;
 }

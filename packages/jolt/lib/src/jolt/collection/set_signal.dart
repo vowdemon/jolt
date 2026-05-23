@@ -2,16 +2,14 @@ import "dart:collection";
 
 import "package:jolt/core.dart";
 
-import "package:jolt/src/jolt/base.dart";
 import "package:jolt/src/jolt/signal.dart";
 
-/// A mixin that provides reactive set functionality.
+/// In-place [Set] mutations for a [Signal] holding a [Set].
 ///
-/// This mixin implements all Set operations while maintaining reactivity.
-/// Any modification to the set will automatically notify subscribers.
-/// All mutating operations trigger change notifications.
-mixin SetSignalMixin<E>
-    implements SetBase<E>, Readable<Set<E>>, IMutableCollection, Notifiable {
+/// Read operations delegate to [value] and track dependencies. Mutations update
+/// the backing set through [peek] and call [notify] when membership changes.
+/// See [SetSignal] for the public writable set signal type.
+mixin SetSignalMixin<E> implements SetBase<E>, Readable<Set<E>>, Notifiable {
   /// Returns true if the set contains the given element.
   ///
   /// This is a non-mutating query operation.
@@ -304,80 +302,37 @@ mixin SetSignalMixin<E>
   }
 }
 
-/// Implementation of [SetSignal] that automatically notifies subscribers when modified.
-///
-/// This is the concrete implementation of the [SetSignal] interface. SetSignal
-/// extends Signal to provide full Set functionality while maintaining reactivity.
-/// All set operations (add, remove, clear, etc.) will trigger notifications
-/// to subscribers.
-///
-/// See [SetSignal] for the public interface and usage examples.
-///
-/// Example:
-/// ```dart
-/// final tags = SetSignal<String>({'dart', 'flutter'});
-///
-/// Effect(() => print('Tags: ${tags.join(', ')} (${tags.length} total)'));
-/// // Prints: "Tags: dart, flutter (2 total)"
-///
-/// tags.add('reactive');
-/// // Prints: "Tags: dart, flutter, reactive (3 total)"
-///
-/// tags.add('dart'); // No change since 'dart' already exists
-/// // No notification triggered
-///
-/// tags.remove('flutter');
-/// // Prints: "Tags: dart, reactive (2 total)"
-///
-/// tags.addAll(['web', 'mobile']);
-/// // Prints: "Tags: dart, reactive, web, mobile (4 total)"
-///
-/// tags.clear();
-/// // Prints: "Tags:  (0 total)"
-/// ```
-class SetSignalImpl<E> extends SignalImpl<Set<E>>
+class _SetSignalImpl<E> extends SignalImpl<Set<E>>
     with SetSignalMixin<E>
     implements SetSignal<E> {
-  /// Creates a reactive set signal with the given initial set.
-  ///
-  /// Parameters:
-  /// - [value]: Initial set content, defaults to empty set if null
-  /// - [debug]: Optional debug options
-  ///
-  /// Example:
-  /// ```dart
-  /// final emptySet = SetSignal<String>(null); // Creates empty set
-  /// final tags = SetSignal({'dart', 'flutter'});
-  /// final autoSet = SetSignal({'tag1', 'tag2'});
-  /// ```
-  SetSignalImpl(Set<E>? value, {super.debug}) : super(value ?? {});
+  _SetSignalImpl(Set<E>? value, {super.debug}) : super(value ?? {});
 }
 
-/// Interface for reactive set signals.
+/// A [Signal] that behaves like a mutable [Set] and notifies on membership changes.
 ///
-/// SetSignal extends Signal to provide full Set functionality while
-/// maintaining reactivity. All set operations (add, remove, clear, etc.)
-/// will trigger notifications to subscribers.
+/// Use [SetSignal] when subscribers should react to [Set.add], [Set.remove], and
+/// similar mutations without replacing the whole [Signal.value]. For a derived,
+/// read-only view, use [IterableSignal] or [Computed] instead.
 ///
 /// Example:
 /// ```dart
-/// SetSignal<String> tags = SetSignal({'dart', 'flutter'});
+/// final tags = SetSignal({'dart', 'flutter'});
 ///
 /// Effect(() => print('Tags: ${tags.join(', ')}'));
-/// tags.add('reactive'); // Triggers effect
+/// tags.add('reactive');
 /// ```
 abstract interface class SetSignal<E>
     implements Signal<Set<E>>, SetSignalMixin<E> {
-  /// Creates a reactive set signal with the given initial set.
+  /// Creates a set signal with optional initial elements.
   ///
-  /// Parameters:
-  /// - [value]: Initial set content, defaults to empty set if null
-  /// - [debug]: Optional debug options
+  /// The optional [value] supplies the initial set elements. Pass `null` to
+  /// start with an empty set.
   ///
   /// Example:
   /// ```dart
-  /// final emptySet = SetSignal<String>(null); // Creates empty set
   /// final tags = SetSignal({'dart', 'flutter'});
+  /// final empty = SetSignal<String>(null);
   /// ```
-  factory SetSignal(Set<E>? value, {JoltDebugOption? debug}) = SetSignalImpl<E>;
+  factory SetSignal(Set<E>? value, {JoltDebugOption? debug}) =
+      _SetSignalImpl<E>;
 }

@@ -6,21 +6,18 @@
 /// advanced reactive programming scenarios.
 library;
 
+export 'package:shared_interfaces/shared_interfaces.dart' show Disposable;
+
 export 'src/core/reactive.dart';
-export 'src/core/debug.dart'
-    show JoltDebug, DebugNodeOperationType, JoltDebugFn, JoltDebugOption;
+export 'src/core/interface.dart';
+export 'src/core/node.dart';
+export 'src/core/debug.dart';
+export 'src/core/utils.dart';
 
-export "src/jolt/base.dart" show DisposableNodeMixin;
-export "src/jolt/signal.dart" show SignalImpl, ReadonlySignalImpl;
-export "src/jolt/computed.dart" show ComputedImpl, WritableComputedImpl;
-export "src/jolt/effect.dart" show EffectImpl, EffectScopeImpl, WatcherImpl;
-export "src/jolt/async.dart" show AsyncSignalImpl;
-
-export "src/jolt/collection/iterable_signal.dart" show IterableSignalImpl;
-export "src/jolt/collection/list_signal.dart" show ListSignalImpl;
-export "src/jolt/collection/map_signal.dart" show MapSignalImpl;
-export "src/jolt/collection/set_signal.dart" show SetSignalImpl;
-
-export "src/utils/finalizer.dart" show JFinalizer;
-export "src/utils/delegated.dart";
-export "src/utils/stream.dart" show JoltStreamHelper;
+export "src/jolt/impl/effect.dart";
+export "src/jolt/impl/effect_scope.dart";
+export "src/jolt/impl/watcher.dart";
+export "src/jolt/impl/signal.dart";
+export "src/jolt/impl/readonly.dart";
+export "src/jolt/impl/computed.dart";
+export "src/jolt/impl/async.dart";

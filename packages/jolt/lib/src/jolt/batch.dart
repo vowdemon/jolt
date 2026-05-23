@@ -1,28 +1,30 @@
 import "package:jolt/core.dart";
 
-/// Batches multiple reactive updates into a single notification cycle.
+/// Runs [fn] inside a batched notification cycle.
 ///
-/// When multiple signals are updated within a batch, their subscribers
-/// will only be notified once at the end of the batch, rather than after
-/// each individual update. This improves performance and prevents
-/// intermediate inconsistent states.
+/// Reactive writes performed before [fn] returns are flushed once at the end of
+/// the outermost batch. This lets related updates settle before effects,
+/// watchers, streams, and other subscribers observe the final state.
 ///
-/// Parameters:
-/// - [fn]: Function containing the updates to batch
+/// If [fn] throws, the batch still ends and pending notifications still flush
+/// before the error escapes. If [fn] is `async`, only the synchronous prefix
+/// before the first `await` stays inside this batch.
 ///
-/// Example:
 /// ```dart
-/// final firstName = Signal('John');
-/// final lastName = Signal('Doe');
-/// final fullName = Computed(() => '${firstName.value} ${lastName.value}');
+/// final first = Signal(1);
+/// final second = Signal(2);
+/// final seen = <int>[];
 ///
-/// Effect(() => print(fullName.value)); // Prints once per batch
+/// Effect(() => seen.add(first.value + second.value));
 ///
 /// batch(() {
-///   firstName.value = 'Jane';  // No immediate notification
-///   lastName.value = 'Smith';  // No immediate notification
-/// }); // Notification happens here: "Jane Smith"
+///   first.value = 10;
+///   second.value = 20;
+/// });
+///
+/// print(seen); // [3, 30]
 /// ```
+/// {@category Advanced Techniques}
 T batch<T>(T Function() fn) {
   startBatch();
   try {

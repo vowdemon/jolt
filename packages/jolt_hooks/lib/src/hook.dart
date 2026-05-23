@@ -3,48 +3,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:jolt/core.dart';
-import 'package:jolt/extension.dart';
-import 'package:jolt/jolt.dart';
+import 'package:jolt_flutter/jolt_flutter.dart';
 
 import 'base.dart';
 
-/// Helper class for creating signal hooks.
+/// Signal hook factory methods.
 final class JoltSignalHookCreator {
-  /// Helper class for creating signal hooks.
   const JoltSignalHookCreator._();
 
-  /// {@template jolt_signal_hook_creator}
-  /// Creates a reactive signal hook that holds a mutable value.
-  ///
-  /// A signal is the most basic reactive primitive that holds a value and
-  /// notifies subscribers when the value changes. This hook integrates signals
-  /// with Flutter's hook system for automatic disposal.
-  ///
-  /// Parameters:
-  /// - [value]: The initial value for the signal
-  /// - [keys]: Optional keys for hook memoization
-  /// - [debug]: Optional debug options
-  ///
-  /// Returns: A [Signal] that can be read and written to
-  ///
-  /// Example:
-  /// ```dart
-  /// Widget build(BuildContext context) {
-  ///   final count = useSignal(0);
-  ///
-  ///   return Column(
-  ///     children: [
-  ///       Text('Count: ${count.value}'),
-  ///       ElevatedButton(
-  ///         onPressed: () => count.value++,
-  ///         child: Text('Increment'),
-  ///       ),
-  ///     ],
-  ///   );
-  /// }
-  /// ```
-  /// {@endtemplate}
+  /// Creates a writable [Signal] with [value] as its initial value.
   Signal<T> call<T>(
     T value, {
     List<Object?>? keys,
@@ -53,6 +20,7 @@ final class JoltSignalHookCreator {
     return use(JoltHook(() => Signal(value, debug: debug), keys: keys));
   }
 
+  /// Creates a [Signal] without an initial value.
   Signal<T> lazy<T>({
     List<Object?>? keys,
     JoltDebugOption? debug,
@@ -60,34 +28,7 @@ final class JoltSignalHookCreator {
     return use(JoltHook(() => Signal.lazy(debug: debug), keys: keys));
   }
 
-  /// Creates a reactive list signal hook.
-  ///
-  /// A list signal provides reactive list operations with automatic change
-  /// notifications. Perfect for dynamic lists, todo items, etc.
-  ///
-  /// Parameters:
-  /// - [value]: The initial list value
-  /// - [keys]: Optional keys for hook memoization
-  /// - [debug]: Optional debug options
-  ///
-  /// Returns: A [ListSignal] with reactive list operations
-  ///
-  /// Example:
-  /// ```dart
-  /// Widget build(BuildContext context) {
-  ///   final items = useSignal.list(['Apple', 'Banana']);
-  ///
-  ///   return Column(
-  ///     children: [
-  ///       ...items.value.map((item) => ListTile(title: Text(item))),
-  ///       ElevatedButton(
-  ///         onPressed: () => items.add('Orange'),
-  ///         child: Text('Add Orange'),
-  ///       ),
-  ///     ],
-  ///   );
-  /// }
-  /// ```
+  /// Creates a reactive [ListSignal] initialized with [value].
   ListSignal<T> list<T>(
     List<T>? value, {
     List<Object?>? keys,
@@ -96,35 +37,7 @@ final class JoltSignalHookCreator {
     return use(JoltHook(() => ListSignal(value, debug: debug), keys: keys));
   }
 
-  /// Creates a reactive map signal hook.
-  ///
-  /// A map signal provides reactive map operations with automatic change
-  /// notifications. Perfect for key-value data, settings, etc.
-  ///
-  /// Parameters:
-  /// - [value]: The initial map value
-  /// - [keys]: Optional keys for hook memoization
-  /// - [debug]: Optional debug options
-  ///
-  /// Returns: A [MapSignal] with reactive map operations
-  ///
-  /// Example:
-  /// ```dart
-  /// Widget build(BuildContext context) {
-  ///   final settings = useSignal.map({'theme': 'light', 'lang': 'en'});
-  ///
-  ///   return Column(
-  ///     children: [
-  ///       Text('Theme: ${settings['theme']}'),
-  ///       Text('Language: ${settings['lang']}'),
-  ///       ElevatedButton(
-  ///         onPressed: () => settings['theme'] = 'dark',
-  ///         child: Text('Toggle Theme'),
-  ///       ),
-  ///     ],
-  ///   );
-  /// }
-  /// ```
+  /// Creates a reactive [MapSignal] initialized with [value].
   MapSignal<K, V> map<K, V>(
     Map<K, V>? value, {
     List<Object?>? keys,
@@ -133,34 +46,7 @@ final class JoltSignalHookCreator {
     return use(JoltHook(() => MapSignal(value, debug: debug), keys: keys));
   }
 
-  /// Creates a reactive set signal hook.
-  ///
-  /// A set signal provides reactive set operations with automatic change
-  /// notifications. Perfect for unique collections, tags, etc.
-  ///
-  /// Parameters:
-  /// - [value]: The initial set value
-  /// - [keys]: Optional keys for hook memoization
-  /// - [debug]: Optional debug options
-  ///
-  /// Returns: A [SetSignal] with reactive set operations
-  ///
-  /// Example:
-  /// ```dart
-  /// Widget build(BuildContext context) {
-  ///   final tags = useSignal.set({'urgent', 'important'});
-  ///
-  ///   return Column(
-  ///     children: [
-  ///       ...tags.value.map((tag) => Chip(label: Text(tag))),
-  ///       ElevatedButton(
-  ///         onPressed: () => tags.add('new'),
-  ///         child: Text('Add Tag'),
-  ///       ),
-  ///     ],
-  ///   );
-  /// }
-  /// ```
+  /// Creates a reactive [SetSignal] initialized with [value].
   SetSignal<T> set<T>(
     Set<T>? value, {
     List<Object?>? keys,
@@ -169,38 +55,7 @@ final class JoltSignalHookCreator {
     return use(JoltHook(() => SetSignal(value, debug: debug), keys: keys));
   }
 
-  /// Creates a reactive iterable signal hook.
-  ///
-  /// An iterable signal provides reactive iterable operations with automatic
-  /// change notifications. Perfect for filtered lists, computed collections, etc.
-  ///
-  /// Parameters:
-  /// - [getter]: Function that computes the iterable value
-  /// - [keys]: Optional keys for hook memoization
-  /// - [debug]: Optional debug options
-  ///
-  /// Returns: An [IterableSignal] with reactive iterable operations
-  ///
-  /// Example:
-  /// ```dart
-  /// Widget build(BuildContext context) {
-  ///   final numbers = useSignal([1, 2, 3, 4, 5]);
-  ///   final evenNumbers = useSignal.iterable(
-  ///     () => numbers.value.where((n) => n.isEven),
-  ///   );
-  ///
-  ///   return Column(
-  ///     children: [
-  ///       Text('All: ${numbers.value.join(', ')}'),
-  ///       Text('Even: ${evenNumbers.value.join(', ')}'),
-  ///       ElevatedButton(
-  ///         onPressed: () => numbers.add(6),
-  ///         child: Text('Add 6'),
-  ///       ),
-  ///     ],
-  ///   );
-  /// }
-  /// ```
+  /// Creates an [IterableSignal] derived from [getter].
   IterableSignal<T> iterable<T>(
     Iterable<T> Function() getter, {
     List<Object?>? keys,
@@ -210,84 +65,52 @@ final class JoltSignalHookCreator {
         JoltHook(() => IterableSignal(getter, debug: debug), keys: keys));
   }
 
-  /// Creates an async signal hook for managing asynchronous operations.
-  ///
-  /// An async signal manages the lifecycle of asynchronous operations, providing
-  /// loading, success, and error states. Perfect for API calls, data fetching, etc.
-  ///
-  /// Parameters:
-  /// - [source]: The async source that provides the data
-  /// - [keys]: Optional keys for hook memoization
-  /// - [debug]: Optional debug options
-  /// - [initialValue]: Optional initial async state
-  ///
-  /// Returns: An [AsyncSignal] that manages async state transitions
-  ///
-  /// Example:
-  /// ```dart
-  /// Widget build(BuildContext context) {
-  ///   final userData = useSignal.async(
-  ///     FutureSource(() async {
-  ///       final response = await http.get('/api/user');
-  ///       return User.fromJson(response.data);
-  ///     }),
-  ///   );
-  ///
-  ///   return userData.value.map(
-  ///     loading: () => CircularProgressIndicator(),
-  ///     success: (user) => Text('Welcome, ${user.name}'),
-  ///     error: (error, _) => Text('Error: $error'),
-  ///   ) ?? SizedBox();
-  /// }
-  /// ```
+  /// Creates an [AsyncSignal] from [source].
   AsyncSignal<T> async<T>(
-    AsyncSource<T> source, {
+    AsyncSource<T> Function() source, {
     List<Object?>? keys,
     JoltDebugOption? debug,
-    AsyncState<T>? initialValue,
+    AsyncState<T> Function()? initialValue,
   }) {
     return use(
       JoltHook(
         () => AsyncSignal(
-            source: source, initialValue: initialValue, debug: debug),
+          source: source(),
+          initialValue: initialValue?.call(),
+          debug: debug,
+        ),
         keys: keys,
       ),
     );
   }
 }
 
-/// {@macro jolt_signal_hook_creator}
+/// Creates a writable [Signal] for the current hook scope.
+///
+/// The signal is disposed automatically when the widget unmounts. Use
+/// [JoltSignalHookCreator.lazy], [JoltSignalHookCreator.list],
+/// [JoltSignalHookCreator.map], [JoltSignalHookCreator.set],
+/// [JoltSignalHookCreator.iterable], or [JoltSignalHookCreator.async] when the
+/// stored value needs specialized collection or async behavior. Pass [keys] to
+/// recreate the hook when dependencies change.
+///
+/// ```dart
+/// Widget build(BuildContext context) {
+///   final count = useSignal(0);
+///
+///   return FilledButton(
+///     onPressed: () => count.value++,
+///     child: Text('Count: ${count.value}'),
+///   );
+/// }
+/// ```
 const useSignal = JoltSignalHookCreator._();
 
-/// Helper class for creating computed hooks.
+/// Computed hook factory methods.
 final class JoltComputedHookCreator {
-  /// Helper class for creating computed hooks.
   const JoltComputedHookCreator._();
 
-  /// {@template jolt_computed_hook_creator}
-  /// Creates a computed signal hook that derives its value from other signals.
-  ///
-  /// A computed signal automatically recalculates its value when any of its
-  /// dependencies change. It's read-only and provides efficient caching.
-  ///
-  /// Parameters:
-  /// - [value]: Function that computes the derived value
-  /// - [keys]: Optional keys for hook memoization
-  /// - [debug]: Optional debug options
-  ///
-  /// Returns: A [Computed] that automatically updates when dependencies change
-  ///
-  /// Example:
-  /// ```dart
-  /// Widget build(BuildContext context) {
-  ///   final firstName = useSignal('John');
-  ///   final lastName = useSignal('Doe');
-  ///   final fullName = useComputed(() => '${firstName.value} ${lastName.value}');
-  ///
-  ///   return Text('Hello, ${fullName.value}');
-  /// }
-  /// ```
-  /// {@endtemplate}
+  /// Creates a [Computed] value from [value].
   Computed<T> call<T>(
     T Function() value, {
     List<Object?>? keys,
@@ -296,40 +119,18 @@ final class JoltComputedHookCreator {
     return use(JoltHook(() => Computed(value, debug: debug), keys: keys));
   }
 
-  /// Creates a writable computed signal hook with custom getter and setter.
-  ///
-  /// A writable computed signal allows you to define custom read and write
-  /// behavior, enabling two-way data binding with derived values.
-  ///
-  /// Parameters:
-  /// - [getter]: Function that computes the current value
-  /// - [setter]: Function that handles value updates
-  /// - [keys]: Optional keys for hook memoization
-  /// - [debug]: Optional debug options
-  ///
-  /// Returns: A [WritableComputed] with custom read/write behavior
-  ///
-  /// Example:
-  /// ```dart
-  /// Widget build(BuildContext context) {
-  ///   final count = useSignal(0);
-  ///   final doubled = useComputed.writable(
-  ///     () => count.value * 2,
-  ///     (value) => count.value = value ~/ 2,
-  ///   );
-  ///
-  ///   return Column(
-  ///     children: [
-  ///       Text('Count: ${count.value}'),
-  ///       Text('Doubled: ${doubled.value}'),
-  ///       ElevatedButton(
-  ///         onPressed: () => doubled.value = 10,
-  ///         child: Text('Set doubled to 10'),
-  ///       ),
-  ///     ],
-  ///   );
-  /// }
-  /// ```
+  /// Creates a [Computed] whose [getter] receives the previous value.
+  Computed<T> withPrevious<T>(
+    T Function(T?) getter, {
+    List<Object?>? keys,
+    JoltDebugOption? debug,
+  }) {
+    return use(
+      JoltHook(() => Computed.withPrevious(getter, debug: debug), keys: keys),
+    );
+  }
+
+  /// Creates a [WritableComputed] from [getter] and [setter].
   WritableComputed<T> writable<T>(
     T Function() getter,
     void Function(T) setter, {
@@ -341,50 +142,45 @@ final class JoltComputedHookCreator {
           keys: keys),
     );
   }
+
+  /// Creates a writable [Computed] whose [getter] receives the previous value.
+  WritableComputed<T> writableWithPrevious<T>(
+    T Function(T?) getter,
+    void Function(T) setter, {
+    List<Object?>? keys,
+    JoltDebugOption? debug,
+  }) {
+    return use(
+      JoltHook(
+        () => WritableComputed.withPrevious(getter, setter, debug: debug),
+        keys: keys,
+      ),
+    );
+  }
 }
 
-/// {@macro jolt_computed_hook_creator}
+/// Creates a [Computed] value for the current hook scope.
+///
+/// Reactive reads inside the getter become dependencies. The result is cached
+/// and recomputed only after one of those dependencies changes. Use
+/// [JoltComputedHookCreator.withPrevious] or [JoltComputedHookCreator.writable]
+/// when the derived value needs previous-value access or a writable interface.
+///
+/// ```dart
+/// Widget build(BuildContext context) {
+///   final count = useSignal(0);
+///   final doubled = useComputed(() => count.value * 2);
+///
+///   return Text('Double: ${doubled.value}');
+/// }
+/// ```
 const useComputed = JoltComputedHookCreator._();
 
-/// Helper class for creating effect hooks.
+/// Effect hook factory methods.
 final class JoltEffectHookCreator {
-  /// Helper class for creating effect hooks.
   const JoltEffectHookCreator._();
 
-  /// {@template jolt_effect_hook_creator}
-  /// Creates a reactive effect hook that runs when dependencies change.
-  ///
-  /// An effect is a side-effect function that automatically runs when any of
-  /// its reactive dependencies change. Useful for logging, analytics, etc.
-  ///
-  /// Parameters:
-  /// - [fn]: The effect function to execute
-  /// - [lazy]: Whether to defer running the effect on creation.
-  ///   If `true`, the effect will NOT run immediately and will not track
-  ///   dependencies until you call [run] on the returned effect. If `false`
-  ///   (default), the effect runs immediately on creation and then re-runs
-  ///   whenever its reactive dependencies change.
-  /// - [debug]: Optional debug options
-  /// - [keys]: Optional keys for hook memoization
-  ///
-  /// Returns: An [Effect] that tracks dependencies and runs automatically
-  ///
-  /// Example:
-  /// ```dart
-  /// Widget build(BuildContext context) {
-  ///   final count = useSignal(0);
-  ///
-  ///   useJoltEffect(() {
-  ///     print('Count changed to: ${count.value}');
-  ///   });
-  ///
-  ///   return ElevatedButton(
-  ///     onPressed: () => count.value++,
-  ///     child: Text('Count: ${count.value}'),
-  ///   );
-  /// }
-  /// ```
-  /// {@endtemplate}
+  /// Creates an [Effect] that runs [fn] reactively.
   Effect call(
     void Function() fn, {
     bool lazy = false,
@@ -399,36 +195,7 @@ final class JoltEffectHookCreator {
     );
   }
 
-  /// Creates an effect hook that does not run automatically upon creation.
-  ///
-  /// This method is a convenience constructor for creating an effect
-  /// with [lazy] set to `true`. The effect will not execute until you call
-  /// [run]. After the first manual run, it will track dependencies and re-run
-  /// when they change.
-  ///
-  /// Parameters:
-  /// - [fn]: The effect function to execute
-  /// - [debug]: Optional debug options
-  /// - [keys]: Optional keys for hook memoization
-  ///
-  /// Returns: An [Effect] that starts in deferred mode
-  ///
-  /// Example:
-  /// ```dart
-  /// Widget build(BuildContext context) {
-  ///   final count = useSignal(10);
-  ///   final effect = useJoltEffect.lazy(() {
-  ///     print('Count is: ${count.value}');
-  ///   });
-  ///
-  ///   useEffect(() {
-  ///     effect.run();
-  ///     return null;
-  ///   }, const []);
-  ///
-  ///   return Text('Count: ${count.value}');
-  /// }
-  /// ```
+  /// Creates an [Effect] that waits for an explicit first run.
   Effect lazy(
     void Function() fn, {
     JoltDebugOption? debug,
@@ -443,50 +210,86 @@ final class JoltEffectHookCreator {
   }
 }
 
-/// {@macro jolt_effect_hook_creator}
+/// Creates an [Effect] for the current hook scope.
+///
+/// Reactive reads inside [fn] become dependencies. Unless [lazy] is `true`, the
+/// effect runs immediately and then runs again when dependencies change. Use
+/// [onEffectCleanup] inside [fn] to clean up work from the previous run. Use
+/// [JoltEffectHookCreator.lazy] when the first run should be triggered manually
+/// with [Effect.run]. The effect is disposed when the widget unmounts.
+///
+/// ```dart
+/// Widget build(BuildContext context) {
+///   final count = useSignal(0);
+///
+///   useJoltEffect(() {
+///     debugPrint('Count changed: ${count.value}');
+///   });
+///
+///   return Text('Count: ${count.value}');
+/// }
+/// ```
 final useJoltEffect = JoltEffectHookCreator._();
 
-/// Helper class for creating watcher hooks.
+/// Post-frame effect hook factory methods.
+final class JoltPostFrameEffectHookCreator {
+  const JoltPostFrameEffectHookCreator._();
+
+  /// Creates a [FlutterEffect] that runs [fn] at frame end.
+  FlutterEffect call(
+    void Function() fn, {
+    bool lazy = false,
+    JoltDebugOption? debug,
+    List<Object?>? keys,
+  }) {
+    return use(
+      JoltEffectHook(
+        () => FlutterEffect(fn, lazy: lazy, debug: debug),
+        keys: keys,
+      ),
+    );
+  }
+
+  /// Creates a [FlutterEffect] that waits for an explicit first run.
+  FlutterEffect lazy(
+    void Function() fn, {
+    JoltDebugOption? debug,
+    List<Object?>? keys,
+  }) {
+    return use(
+      JoltEffectHook(
+        () => FlutterEffect(fn, lazy: true, debug: debug),
+        keys: keys,
+      ),
+    );
+  }
+}
+
+/// Creates a [FlutterEffect] for the current hook scope.
+///
+/// Reactive reads inside [fn] become dependencies. Unless [lazy] is `true`, the
+/// effect schedules its first run immediately, then coalesces later dependency
+/// changes so the body runs once at the end of the frame. Prefer [useJoltEffect]
+/// when immediate execution is acceptable.
+///
+/// ```dart
+/// Widget build(BuildContext context) {
+///   final size = useSignal(Size.zero);
+///
+///   usePostFrameEffect(() {
+///     debugPrint('Measured size: ${size.value}');
+///   });
+///
+///   return const SizedBox.expand();
+/// }
+/// ```
+final usePostFrameEffect = JoltPostFrameEffectHookCreator._();
+
+/// Watcher hook factory methods.
 final class JoltWatcherHookCreator {
-  /// Helper class for creating watcher hooks.
   const JoltWatcherHookCreator._();
 
-  /// {@template jolt_watcher_hook_creator}
-  /// Creates a watcher hook that observes changes with fine-grained control.
-  ///
-  /// A watcher provides more control than effects, allowing you to compare
-  /// old and new values and define custom trigger conditions.
-  ///
-  /// Parameters:
-  /// - [sources]: Function that returns the values to watch
-  /// - [fn]: Callback function executed when sources change
-  /// - [keys]: Optional keys for hook memoization
-  /// - [debug]: Optional debug options
-  /// - [immediately]: Whether to execute the callback immediately (default is false)
-  /// - [when]: Optional condition function for custom trigger logic
-  ///
-  /// Returns: A [Watcher] with fine-grained change detection
-  ///
-  /// Example:
-  /// ```dart
-  /// Widget build(BuildContext context) {
-  ///   final count = useSignal(0);
-  ///
-  ///   useWatcher(
-  ///     () => count.value,
-  ///     (newValue, oldValue) {
-  ///       print('Count changed from $oldValue to $newValue');
-  ///     },
-  ///     when: (new, old) => new > old, // Only when increasing
-  ///   );
-  ///
-  ///   return ElevatedButton(
-  ///     onPressed: () => count.value++,
-  ///     child: Text('Count: ${count.value}'),
-  ///   );
-  /// }
-  /// ```
-  /// {@endtemplate}
+  /// Creates a [Watcher] over values returned by [sources].
   Watcher call<T>(
     T Function() sources,
     WatcherFn<T> fn, {
@@ -509,16 +312,7 @@ final class JoltWatcherHookCreator {
     );
   }
 
-  /// Creates a watcher hook that executes immediately upon creation.
-  ///
-  /// Parameters:
-  /// - [sources]: Function that returns the values to watch
-  /// - [fn]: Callback function executed when sources change
-  /// - [keys]: Optional keys for hook memoization
-  /// - [debug]: Optional debug options
-  /// - [when]: Optional condition function for custom trigger logic
-  ///
-  /// Returns: A [Watcher] that executes immediately
+  /// Creates a [Watcher] that also runs [fn] for the initial source values.
   Watcher<T> immediately<T>(
     T Function() sources,
     WatcherFn<T> fn, {
@@ -531,16 +325,7 @@ final class JoltWatcherHookCreator {
         keys: keys));
   }
 
-  /// Creates a watcher hook that executes only once.
-  ///
-  /// Parameters:
-  /// - [sources]: Function that returns the values to watch
-  /// - [fn]: Callback function executed when sources change
-  /// - [keys]: Optional keys for hook memoization
-  /// - [debug]: Optional debug options
-  /// - [when]: Optional condition function for custom trigger logic
-  ///
-  /// Returns: A [Watcher] that executes only once
+  /// Creates a [Watcher] that disposes itself after the first callback.
   Watcher<T> once<T>(
     T Function() sources,
     WatcherFn<T> fn, {
@@ -554,43 +339,35 @@ final class JoltWatcherHookCreator {
   }
 }
 
-/// {@macro jolt_watcher_hook_creator}
+/// Creates a [Watcher] for the current hook scope.
+///
+/// [fn] receives the new and previous source values returned by [sources]. Use
+/// [when] to customize whether a change should trigger [fn]. Use
+/// [JoltWatcherHookCreator.immediately] when the callback should also run for
+/// the initial source values, or [JoltWatcherHookCreator.once] for a one-time
+/// reaction.
+///
+/// ```dart
+/// Widget build(BuildContext context) {
+///   final count = useSignal(0);
+///
+///   useWatcher(
+///     () => count.value,
+///     (current, previous) {
+///       debugPrint('Count changed from $previous to $current');
+///     },
+///   );
+///
+///   return Text('Count: ${count.value}');
+/// }
+/// ```
 final useWatcher = JoltWatcherHookCreator._();
 
-/// Helper class for creating effect scope hooks.
+/// Effect-scope hook factory methods.
 final class JoltEffectScopeHookCreator {
-  /// Helper class for creating effect scope hooks.
   const JoltEffectScopeHookCreator._();
 
-  /// {@template jolt_effect_scope_hook_creator}
-  /// Creates an effect scope hook for managing effect lifecycles.
-  ///
-  /// An effect scope allows you to group related effects together and dispose
-  /// them all at once. Useful for component-based architectures.
-  ///
-  /// Parameters:
-  /// - [fn]: Optional function to execute within the scope context
-  /// - [keys]: Optional keys for hook memoization
-  /// - [debug]: Optional debug options
-  ///
-  /// Returns: An [EffectScope] for managing effect lifecycles
-  ///
-  /// Example:
-  /// ```dart
-  /// Widget build(BuildContext context) {
-  ///   useEffectScope(fn: (scope) {
-  ///     scope.run(() {
-  ///       final signal = Signal(0);
-  ///       Effect(() => print(signal.value));
-  ///
-  ///       onScopeDispose(() => print('Scope cleaned up'));
-  ///     });
-  ///   });
-  ///
-  ///   return Text('Component with scoped effects');
-  /// }
-  /// ```
-  /// {@endtemplate}
+  /// Creates an [EffectScope] for the current hook scope.
   EffectScope call({
     void Function(EffectScope scope)? fn,
     bool detach = false,
@@ -607,21 +384,102 @@ final class JoltEffectScopeHookCreator {
   }
 }
 
-/// {@macro jolt_effect_scope_hook_creator}
+/// Creates an [EffectScope] for the current hook scope.
+///
+/// Use the returned scope to group related reactive work and dispose it
+/// together. When [detach] is `true`, the scope is detached from the current
+/// effect context. Optionally pass [fn] to run work inside the scope during
+/// hook creation.
+///
+/// ```dart
+/// Widget build(BuildContext context) {
+///   useEffectScope(fn: (scope) {
+///     scope.run(() {
+///       final count = Signal(0);
+///       Effect(() => debugPrint('${count.value}'));
+///     });
+///   });
+///
+///   return const SizedBox.shrink();
+/// }
+/// ```
 final useEffectScope = JoltEffectScopeHookCreator._();
 
-/// Creates a stream hook from a reactive value.
+/// Until hook factory methods.
+final class JoltUntilHookCreator {
+  const JoltUntilHookCreator._();
+
+  /// Creates an [Until] that waits for [source] to satisfy [predicate].
+  Until<T> call<T>(
+    Readable<T> source,
+    bool Function(T value) predicate, {
+    bool? detach,
+    List<Object?>? keys,
+  }) {
+    return use(
+      JoltUntilHook<T>(
+        () => Until<T>(source, predicate, detach: detach),
+        keys: keys,
+      ),
+    );
+  }
+
+  /// Creates an [Until] that waits for [source] to equal [value].
+  Until<T> when<T>(
+    Readable<T> source,
+    T value, {
+    bool? detach,
+    List<Object?>? keys,
+  }) {
+    return use(
+      JoltUntilHook<T>(
+        () => Until<T>.when(source, value, detach: detach),
+        keys: keys,
+      ),
+    );
+  }
+
+  /// Creates an [Until] that waits for [source] to change.
+  Until<T> changed<T>(
+    Readable<T> source, {
+    bool? detach,
+    List<Object?>? keys,
+  }) {
+    return use(
+      JoltUntilHook<T>(
+        () => Until<T>.changed(source, detach: detach),
+        keys: keys,
+      ),
+    );
+  }
+}
+
+/// Creates an [Until] hook that waits for a reactive value to satisfy a condition.
 ///
-/// Converts a reactive value into a Dart stream, allowing you to use
-/// reactive values with stream-based APIs like StreamBuilder.
+/// The returned [Until] implements [Future] and is cancelled automatically when
+/// the widget unmounts. Use [JoltUntilHookCreator.when] or
+/// [JoltUntilHookCreator.changed] for equality and change-based waits.
 ///
-/// Parameters:
-/// - [value]: The reactive value to convert to a stream
-/// - [keys]: Optional keys for hook memoization
+/// ```dart
+/// Widget build(BuildContext context) {
+///   final count = useSignal(0);
+///   final until = useUntil(count, (value) => value >= 5);
 ///
-/// Returns: A [Stream] that emits values when the reactive value changes
+///   useEffect(() {
+///     until.then((value) => debugPrint('Reached $value'));
+///     return null;
+///   }, const []);
 ///
-/// Example:
+///   return Text('Count: ${count.value}');
+/// }
+/// ```
+final useUntil = JoltUntilHookCreator._();
+
+/// Converts a [Readable] into a [Stream] for the current hook scope.
+///
+/// The stream emits whenever [value] changes. Pass [keys] to recreate the hook
+/// when the readable instance changes.
+///
 /// ```dart
 /// Widget build(BuildContext context) {
 ///   final count = useSignal(0);
@@ -641,37 +499,25 @@ Stream<T> useJoltStream<T>(Readable<T> value, {List<Object?>? keys}) {
   return stream;
 }
 
-/// Creates a reactive widget hook that automatically rebuilds when dependencies change.
+/// Creates a widget that rebuilds when reactive dependencies change.
 ///
-/// This hook wraps a widget builder function within a Jolt [Effect], automatically
-/// tracking any signals or computed values accessed during the build. When any
-/// tracked dependencies change, the widget is automatically rebuilt.
+/// This hook must be used inside a [HookBuilder]. Reactive reads inside
+/// [builder] become dependencies and schedule a rebuild when they change.
+/// Pass [keys] to recreate the hook when dependencies change.
 ///
-/// **Important:** This hook must be used within a [HookBuilder]. If you need to
-/// use signals outside of [HookBuilder], create them using [Signal] or [Computed]
-/// directly without the `use` prefix.
-///
-/// Parameters:
-/// - [builder]: Function that builds the widget. Any signals or computed values
-///   accessed within this function will be tracked as dependencies.
-/// - [keys]: Optional keys for hook memoization. When keys change, the hook
-///   will be recreated.
-///
-/// Returns: A [Widget] that automatically rebuilds when its dependencies change
-///
-/// Example:
 /// ```dart
 /// Widget build(BuildContext context) {
 ///   return HookBuilder(
 ///     builder: (context) {
-///       final counter = useSignal(0);
+///       final count = useSignal(0);
+///
 ///       return useJoltWidget(() {
 ///         return Column(
 ///           children: [
-///             Text('Count: ${counter.value}'),
+///             Text('Count: ${count.value}'),
 ///             ElevatedButton(
-///               onPressed: () => counter.value++,
-///               child: Text('Increment'),
+///               onPressed: () => count.value++,
+///               child: const Text('Increment'),
 ///             ),
 ///           ],
 ///         );

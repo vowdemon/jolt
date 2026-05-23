@@ -140,6 +140,66 @@ void main() {
       expect(find.text('Signal: 25'), findsOneWidget);
       expect(find.text('Computed: 50'), findsOneWidget);
     });
+
+    testWidgets('useComputed.withPrevious passes null on first computation',
+        (tester) async {
+      int? previousValue;
+
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            final signal = useSignal(5);
+            final computed = useComputed.withPrevious<int>((prev) {
+              previousValue = prev;
+              return signal.value * 2;
+            });
+
+            return JoltBuilder(
+              builder: (context) => Text(
+                'Computed: ${computed.value}',
+                textDirection: TextDirection.ltr,
+              ),
+            );
+          },
+        ),
+      );
+
+      expect(find.text('Computed: 10'), findsOneWidget);
+      expect(previousValue, isNull);
+    });
+
+    testWidgets('useComputed.withPrevious receives previous value on updates',
+        (tester) async {
+      final previousValues = <int?>[];
+      late Signal<int> signal;
+
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            signal = useSignal(1);
+            final computed = useComputed.withPrevious<int>((prev) {
+              previousValues.add(prev);
+              return signal.value;
+            });
+
+            return JoltBuilder(
+              builder: (context) => Text(
+                'Computed: ${computed.value}',
+                textDirection: TextDirection.ltr,
+              ),
+            );
+          },
+        ),
+      );
+
+      expect(find.text('Computed: 1'), findsOneWidget);
+      expect(previousValues, equals([null]));
+
+      signal.value = 2;
+      await tester.pumpAndSettle();
+      expect(find.text('Computed: 2'), findsOneWidget);
+      expect(previousValues, containsAllInOrder([null, 1]));
+    });
   });
 
   group('useAsyncSignal', () {
@@ -150,7 +210,7 @@ void main() {
         HookBuilder(
           builder: (context) {
             final asyncSignal = useSignal.async(
-              FutureSource(
+              () => FutureSource(
                 Future.delayed(const Duration(milliseconds: 100), () => 42),
               ),
             );
@@ -303,6 +363,171 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(effectCount, equals(1)); // Runs when manually triggered
+    });
+  });
+
+  group('usePostFrameEffect', () {
+    testWidgets('runs effect at frame end', (tester) async {
+      var runCount = 0;
+
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            final count = useSignal(0);
+            usePostFrameEffect(() {
+              runCount++;
+              count.value;
+            });
+            return JoltBuilder(
+              builder: (context) => Text(
+                '${count.value}',
+                textDirection: TextDirection.ltr,
+              ),
+            );
+          },
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      expect(runCount, equals(1));
+    });
+
+    testWidgets('with lazy=false runs at frame end when dependencies change',
+        (tester) async {
+      var runCount = 0;
+
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            final count = useSignal(0);
+            usePostFrameEffect(() {
+              runCount++;
+              count.value;
+            });
+            return GestureDetector(
+              onTap: () => count.value++,
+              child: JoltBuilder(
+                builder: (context) => Text(
+                  '${count.value}',
+                  textDirection: TextDirection.ltr,
+                ),
+              ),
+            );
+          },
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      expect(runCount, equals(1));
+
+      await tester.tap(find.byType(GestureDetector));
+      await tester.pumpAndSettle();
+      expect(runCount, equals(2));
+    });
+
+    testWidgets('lazy does not run automatically', (tester) async {
+      var runCount = 0;
+      late FlutterEffect effect;
+
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            final count = useSignal(0);
+            effect = usePostFrameEffect.lazy(() {
+              runCount++;
+            });
+            return JoltBuilder(
+              builder: (context) => Text(
+                '${count.value}',
+                textDirection: TextDirection.ltr,
+              ),
+            );
+          },
+        ),
+      );
+
+      await tester.pump();
+      expect(runCount, equals(0));
+
+      effect.run();
+      await tester.pump();
+      expect(runCount, equals(1));
+    });
+  });
+
+  group('useUntil', () {
+    testWidgets('completes when predicate is met', (tester) async {
+      late Until<int> until;
+      late Signal<int> count;
+
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            count = useSignal(0);
+            until = useUntil(count, (v) => v >= 5);
+            return JoltBuilder(
+              builder: (context) => Text(
+                'Count: ${count.value}',
+                textDirection: TextDirection.ltr,
+              ),
+            );
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(until.isCompleted, isFalse);
+
+      count.value = 5;
+      await tester.pumpAndSettle();
+
+      expect(await until, 5);
+      expect(until.isCompleted, isTrue);
+    });
+
+    testWidgets('cancel on unmount', (tester) async {
+      late Until<int> until;
+
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            final count = useSignal(0);
+            until = useUntil(count, (v) => v >= 100);
+            return const SizedBox.shrink();
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+      await tester.pumpAndSettle();
+
+      expect(until.isCancelled, isTrue);
+      expect(until.isCompleted, isFalse);
+    });
+
+    testWidgets('useUntil.when completes on equality', (tester) async {
+      late Until<String> until;
+      late Signal<String> status;
+
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            status = useSignal('loading');
+            until = useUntil.when(status, 'ready');
+            return const SizedBox.shrink();
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(until.isCompleted, isFalse);
+
+      status.value = 'ready';
+      await tester.pumpAndSettle();
+
+      expect(await until, 'ready');
+      expect(until.isCompleted, isTrue);
     });
   });
 
@@ -1366,7 +1591,7 @@ void main() {
         HookBuilder(
           builder: (context) {
             asyncSignal = useSignal.async(
-              FutureSource(Future.value(42)),
+              () => FutureSource(Future.value(42)),
             );
             return Text('Async', textDirection: TextDirection.ltr);
           },

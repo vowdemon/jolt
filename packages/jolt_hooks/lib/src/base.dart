@@ -1,43 +1,33 @@
-import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:jolt/core.dart';
-import 'package:jolt/jolt.dart';
+import 'package:jolt_flutter/jolt_flutter.dart';
 
-/// A Flutter hook that wraps Jolt reactive values.
+/// A [Hook] that wraps a Jolt [Readable] and disposes it on unmount.
 ///
-/// This hook provides integration between Jolt's reactive system and Flutter's
-/// hook system, ensuring proper lifecycle management and automatic disposal.
-///
-/// Type parameters:
-/// - [T]: The type of the reactive value
-/// - [S]: The specific reactive value type (extends [JReadonlyValue<T>])
-class JoltHook<T, S extends ReadableNode<T>> extends Hook<S> {
-  /// Creates a Jolt hook with the given reactive value.
-  ///
-  /// Parameters:
-  /// - [jolt]: The reactive value to wrap
-  /// - [keys]: Optional keys for hook memoization
+/// Use this through the public `use*` helpers rather than constructing it
+/// directly unless you are extending the hook system.
+class JoltHook<T, S extends Readable<T>> extends Hook<S> {
+  /// Creates a hook that builds [jolt] once per hook slot.
   const JoltHook(this.jolt, {super.keys});
 
-  /// The reactive value wrapped by this hook.
+  /// Builds the reactive value for this hook slot.
   final S Function() jolt;
 
   @override
   JoltHookState<T, S> createState() => JoltHookState();
 }
 
-/// The state class for [JoltHook].
-///
-/// Manages the lifecycle of the wrapped reactive value, ensuring proper
-/// disposal when the hook is removed from the widget tree.
-class JoltHookState<T, S extends ReadableNode<T>>
+/// The [HookState] for [JoltHook].
+class JoltHookState<T, S extends Readable<T>>
     extends HookState<S, JoltHook<T, S>> {
   late final _instance = hook.jolt();
 
   @override
   void dispose() {
-    _instance.dispose();
+    if (_instance case Disposable disposable) {
+      disposable.dispose();
+    }
   }
 
   @override
@@ -52,41 +42,32 @@ class JoltHookState<T, S extends ReadableNode<T>>
   // coverage:ignore-end
 }
 
-/// A Flutter hook that wraps Jolt effect nodes.
-///
-/// This hook provides integration between Jolt's effect system and Flutter's
-/// hook system, ensuring proper lifecycle management for effects, watchers,
-/// and effect scopes.
-///
-/// Type parameters:
-/// - [T]: The type parameter for the effect
-/// - [S]: The specific effect node type (extends [JEffect])
-class JoltEffectHook<S extends EffectNode> extends Hook<S> {
-  /// Creates a Jolt effect hook with the given effect node.
-  ///
-  /// Parameters:
-  /// - [joltEffect]: The effect node to wrap
-  /// - [keys]: Optional keys for hook memoization
-  const JoltEffectHook(this.joltEffect, {super.keys});
+/// A [Hook] that wraps a Jolt effect node and disposes it on unmount.
+class JoltEffectHook<S extends Object> extends Hook<S> {
+  /// Creates a hook that builds [joltEffect] once per hook slot.
+  const JoltEffectHook(this.joltEffect, {super.keys})
+      : assert(joltEffect is Effect Function() ||
+            joltEffect is FlutterEffect Function() ||
+            joltEffect is Watcher Function() ||
+            joltEffect is EffectScope Function());
 
-  /// The effect node wrapped by this hook.
+  /// Builds the effect node for this hook slot.
   final S Function() joltEffect;
 
   @override
   JoltEffectHookState<S> createState() => JoltEffectHookState();
 }
 
-/// The state class for [JoltEffectHook].
-///
-/// Manages the lifecycle of the wrapped effect node, ensuring proper
-/// disposal when the hook is removed from the widget tree.
-class JoltEffectHookState<S extends EffectNode>
+/// The [HookState] for [JoltEffectHook].
+class JoltEffectHookState<S extends Object>
     extends HookState<S, JoltEffectHook<S>> {
   late final _instance = hook.joltEffect();
 
   @override
   void dispose() {
-    _instance.dispose();
+    if (_instance is DisposableNode) {
+      (_instance as DisposableNode).dispose();
+    }
   }
 
   @override
@@ -101,39 +82,25 @@ class JoltEffectHookState<S extends EffectNode>
   // coverage:ignore-end
 }
 
-/// A Flutter hook that wraps Jolt reactive widget builders.
-///
-/// This hook provides integration between Jolt's reactive system and Flutter
-/// widgets, ensuring proper lifecycle management for reactive widget builders.
-/// The widget is automatically rebuilt when any tracked dependencies change.
-///
-/// Type parameters:
-/// - [T]: The widget type returned by the builder
+/// A [Hook] that rebuilds a widget when reactive dependencies change.
 class JoltWidgetHook<T extends Widget> extends Hook<T> {
-  /// Creates a Jolt widget hook with the given builder function.
-  ///
-  /// Parameters:
-  /// - [builder]: The builder function that creates the widget
-  /// - [keys]: Optional keys for hook memoization
+  /// Creates a hook that tracks dependencies accessed by [builder].
   const JoltWidgetHook(this.builder, {super.keys, this.debug});
 
-  /// The builder function that creates the widget.
+  /// Builds the widget for the current hook slot.
   final T Function() builder;
 
-  /// The debug options for the hook.
+  /// Optional debug options for the internal [FlutterEffect].
   final JoltDebugOption? debug;
 
   @override
   JoltWidgetHookState<T> createState() => JoltWidgetHookState();
 }
 
-/// The state class for [JoltWidgetHook].
-///
-/// Manages the lifecycle of the reactive widget builder, ensuring proper
-/// disposal of the effect when the hook is removed from the widget tree.
+/// The [HookState] for [JoltWidgetHook].
 class JoltWidgetHookState<T extends Widget>
     extends HookState<T, JoltWidgetHook<T>> {
-  Effect? _effect;
+  FlutterEffect? _effect;
 
   @override
   void dispose() {
@@ -143,24 +110,18 @@ class JoltWidgetHookState<T extends Widget>
 
   @override
   void initHook() {
-    _effect = Effect.lazy(_effectFn, debug: hook.debug);
+    _effect = FlutterEffect(_markNeedsBuild, lazy: true, debug: hook.debug);
   }
 
-  void _effectFn() {
-    if (SchedulerBinding.instance.schedulerPhase != SchedulerPhase.idle) {
-      SchedulerBinding.instance.endOfFrame.then((_) {
-        if ((context as Element).dirty) return;
-        (context as Element).markNeedsBuild();
-      });
-    } else {
-      if ((context as Element).dirty) return;
-      (context as Element).markNeedsBuild();
-    }
+  void _markNeedsBuild() {
+    final element = context as Element;
+    if (element.dirty) return;
+    element.markNeedsBuild();
   }
 
   @override
   T build(BuildContext context) {
-    final prevSub = setActiveSub(_effect as ReactiveNode);
+    final prevSub = setActiveSub((_effect as EffectImpl).raw);
     try {
       return hook.builder();
     } finally {
@@ -174,5 +135,38 @@ class JoltWidgetHookState<T extends Widget>
 
   @override
   String get debugLabel => 'useJoltWidget';
+  // coverage:ignore-end
+}
+
+/// A [Hook] that wraps a cancellable [Until] future.
+class JoltUntilHook<T> extends Hook<Until<T>> {
+  /// Creates a hook that builds [until] once per hook slot.
+  const JoltUntilHook(this.until, {super.keys});
+
+  /// Builds the [Until] instance for this hook slot.
+  final Until<T> Function() until;
+
+  @override
+  JoltUntilHookState<T> createState() => JoltUntilHookState();
+}
+
+/// The [HookState] for [JoltUntilHook].
+class JoltUntilHookState<T> extends HookState<Until<T>, JoltUntilHook<T>> {
+  late final Until<T> _until = hook.until();
+
+  @override
+  void dispose() {
+    _until.cancel();
+  }
+
+  @override
+  Until<T> build(BuildContext context) => _until;
+
+  // coverage:ignore-start
+  @override
+  bool get debugSkipValue => true;
+
+  @override
+  String get debugLabel => 'useUntil';
   // coverage:ignore-end
 }

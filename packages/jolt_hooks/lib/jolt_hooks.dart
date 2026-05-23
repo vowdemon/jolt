@@ -1,15 +1,7 @@
-/// A Flutter hooks integration package for [Jolt](https://pub.dev/packages/jolt) reactive state management.
+/// Flutter hooks integration for [Jolt](https://pub.dev/packages/jolt) reactive state.
 ///
-/// Jolt Hooks provides a comprehensive Hooks API built on [flutter_hooks](https://pub.dev/packages/flutter_hooks),
-/// enabling you to use Jolt's reactive primitives seamlessly within Flutter's hook system.
-/// All hooks automatically dispose their resources when the widget is removed from the tree,
-/// ensuring memory safety and preventing leaks.
-///
-/// ## Documentation
-///
-/// [Official Documentation](https://jolt.vowdemon.com)
-///
-/// ## Quick Start
+/// Built on [flutter_hooks](https://pub.dev/packages/flutter_hooks). Hooks dispose
+/// their reactive resources automatically when the widget unmounts.
 ///
 /// ```dart
 /// import 'package:flutter/material.dart';
@@ -40,22 +32,6 @@
 ///       ),
 ///     );
 ///   }
-/// }
-/// ```
-///
-/// ## Integration with JoltBuilder
-///
-/// You can also use `JoltBuilder` from `jolt_flutter` package for reactive UI updates:
-///
-/// ```dart
-/// import 'package:jolt_flutter/jolt_flutter.dart';
-///
-/// Widget build(BuildContext context) {
-///   final count = useSignal(0);
-///
-///   return JoltBuilder(
-///     builder: (context) => Text('Count: ${count.value}'),
-///   );
 /// }
 /// ```
 library;

@@ -1,7 +1,6 @@
 # Jolt Hooks
 
 [![CI/CD](https://github.com/vowdemon/jolt/actions/workflows/cicd.yml/badge.svg)](https://github.com/vowdemon/jolt/actions/workflows/cicd.yml)
-[![codecov](https://codecov.io/gh/vowdemon/jolt/graph/badge.svg?token=CBL7C4ZRZD)](https://codecov.io/gh/vowdemon/jolt)
 [![jolt_hooks](https://img.shields.io/pub/v/jolt_hooks?label=jolt_hooks)](https://pub.dev/packages/jolt_hooks)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/vowdemon/jolt/blob/main/LICENSE)
 
@@ -82,16 +81,16 @@ class TodoListWidget extends HookWidget {
 | `useSignal.map(value)` | Creates a reactive map signal |
 | `useSignal.set(value)` | Creates a reactive set signal |
 | `useSignal.iterable(getter)` | Creates a reactive iterable signal |
-| `useSignal.async(source)` | Creates an async signal for managing async operations |
-| `useSignal.persist(initialValue, read, write)` | Creates a persistent signal with automatic storage |
+| `useSignal.async(source)` | Creates an async signal from an async source factory |
 
 ### Computed Hooks
 
 | Hook | Description |
 |------|-------------|
 | `useComputed(getter)` | Creates a computed signal that derives from dependencies |
+| `useComputed.withPrevious(getter)` | Creates a computed value with access to the previous value |
 | `useComputed.writable(getter, setter)` | Creates a writable computed signal |
-| `useComputed.convert(source, decode, encode)` | Creates a type-converting computed signal |
+| `useComputed.writableWithPrevious(getter, setter)` | Creates a writable computed with previous-value access |
 
 ### Effect Hooks
 
@@ -99,6 +98,8 @@ class TodoListWidget extends HookWidget {
 |------|-------------|
 | `useJoltEffect(fn, {lazy})` | Creates a reactive effect that runs when dependencies change |
 | `useJoltEffect.lazy(fn)` | Creates an effect that does not run automatically (call `run()` to start) |
+| `usePostFrameEffect(fn, {lazy})` | Creates a frame-aligned effect that coalesces updates to frame end |
+| `usePostFrameEffect.lazy(fn)` | Creates a deferred frame-aligned effect (call `run()` to start) |
 
 ### Watcher Hooks
 
@@ -112,7 +113,10 @@ class TodoListWidget extends HookWidget {
 
 | Hook | Description |
 |------|-------------|
-| `useEffectScope({fn})` | Creates an effect scope for managing effect lifecycles |
+| `useEffectScope({fn, detach})` | Creates an effect scope for managing effect lifecycles |
+| `useUntil(source, predicate)` | Waits for a reactive value to satisfy a condition |
+| `useUntil.when(source, value)` | Waits for a reactive value to equal a specific value |
+| `useUntil.changed(source)` | Waits for a reactive value to change from its current value |
 | `useJoltStream(value)` | Creates a stream from a reactive value |
 | `useJoltWidget(builder)` | Creates a reactive widget that rebuilds when dependencies change |
 

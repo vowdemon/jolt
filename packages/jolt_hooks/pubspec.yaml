@@ -24,10 +24,10 @@ dependencies:
 
   flutter_hooks: ^0.21.3+1
   jolt: ^3.2.2
+  jolt_flutter: ^3.1.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  jolt_flutter: ^3.1.1
 
   flutter_lints: ^5.0.0

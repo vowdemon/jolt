@@ -16,7 +16,6 @@ import '../surge.dart';
 /// The Surge lifecycle needs to be manually managed. The Surge won't be
 /// automatically disposed when the widget is removed.
 ///
-/// Example:
 /// ```dart
 /// // Using create constructor (automatic lifecycle management)
 /// SurgeProvider<CounterSurge>(
@@ -49,26 +48,7 @@ import '../surge.dart';
 /// );
 /// ```
 class SurgeProvider<T extends Surge<dynamic>> extends InheritedProvider<T> {
-  /// Creates a SurgeProvider with automatic lifecycle management.
-  ///
-  /// Parameters:
-  /// - [key]: The widget key
-  /// - [create]: Function that creates the Surge instance
-  /// - [lazy]: Whether to create the Surge lazily (on first access).
-  ///   Defaults to true
-  /// - [child]: The child widget tree
-  ///
-  /// The Surge instance will be automatically disposed when this widget
-  /// is removed from the tree.
-  ///
-  /// Example:
-  /// ```dart
-  /// SurgeProvider<CounterSurge>(
-  ///   create: (_) => CounterSurge(),
-  ///   lazy: true, // Create on first access
-  ///   child: MyApp(),
-  /// );
-  /// ```
+  /// Creates a surge and disposes it when this provider unmounts.
   SurgeProvider({
     super.key,
     required Create<T> create,
@@ -80,33 +60,7 @@ class SurgeProvider<T extends Surge<dynamic>> extends InheritedProvider<T> {
           lazy: lazy,
         );
 
-  /// Creates a SurgeProvider with manual lifecycle management.
-  ///
-  /// Parameters:
-  /// - [key]: The widget key
-  /// - [value]: The Surge instance to provide
-  /// - [lazy]: Whether to provide the Surge lazily (on first access).
-  ///   Defaults to true
-  /// - [child]: The child widget tree
-  ///
-  /// The Surge instance will NOT be automatically disposed when this widget
-  /// is removed from the tree. You must manually call `dispose()` on the Surge.
-  ///
-  /// Use this constructor when you need to share a Surge instance across
-  /// multiple widget trees or manage its lifecycle manually.
-  ///
-  /// Example:
-  /// ```dart
-  /// final surge = CounterSurge();
-  ///
-  /// SurgeProvider<CounterSurge>.value(
-  ///   value: surge,
-  ///   child: MyApp(),
-  /// );
-  ///
-  /// // Later, manually dispose:
-  /// surge.dispose();
-  /// ```
+  /// Provides an existing surge without disposing it on unmount.
   SurgeProvider.value({
     super.key,
     required super.value,
@@ -115,18 +69,9 @@ class SurgeProvider<T extends Surge<dynamic>> extends InheritedProvider<T> {
   }) : super.value();
 }
 
-/// {@template surge_multiple_provider}
-/// A convenience widget that provides multiple Surge instances to the widget tree.
-///
-/// MultiSurgeProvider is a utility widget that combines multiple [SurgeProvider]
-/// widgets into a single widget, making it easier to provide multiple Surge instances
-/// without deeply nesting providers.
-///
-/// See also:
-/// - [SurgeProvider] for providing a single Surge instance
-/// {@endtemplate}
+/// Provides multiple [Surge] instances without nesting [SurgeProvider] widgets.
 class MultiSurgeProvider extends MultiProvider {
-  /// {@macro surge_multiple_provider}
+  /// Creates a provider tree from [providers].
   MultiSurgeProvider({
     super.key,
     required List<SurgeProvider> providers,

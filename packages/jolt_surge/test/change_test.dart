@@ -1,7 +1,7 @@
 // ignore_for_file: unrelated_type_equality_checks
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:jolt_surge/observer.dart';
+import 'package:jolt_surge/jolt_surge.dart';
 
 void main() {
   group('Change', () {

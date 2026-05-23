@@ -1,9 +1,7 @@
-import 'package:jolt_flutter/extension.dart';
-import 'package:jolt_flutter/jolt_flutter.dart';
 import 'package:flutter/widgets.dart';
-import 'package:jolt_surge/jolt_surge.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:jolt_surge/observer.dart';
+import 'package:jolt_flutter/jolt_flutter.dart';
+import 'package:jolt_surge/jolt_surge.dart';
 import 'package:provider/provider.dart';
 
 import 'surges/counter_surge.dart';

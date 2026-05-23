@@ -1,0 +1,25 @@
+dartdoc:
+  categories:
+    "Quick Start":
+      markdown: doc/en/quick-start.md
+    "Manage State":
+      markdown: doc/en/manage-state.md
+    "Derive State":
+      markdown: doc/en/derive-state.md
+    "React To State Changes":
+      markdown: doc/en/react-to-state-changes.md
+    "Manage Lifecycle":
+      markdown: doc/en/manage-lifecycle.md
+    "Advanced Techniques":
+      markdown: doc/en/advanced-techniques.md
+    "Jolt Ecosystem":
+      markdown: doc/en/jolt-ecosystem.md
+  categoryOrder:
+    - Quick Start
+    - Manage State
+    - Derive State
+    - React To State Changes
+    - Manage Lifecycle
+    - Advanced Techniques
+    - Jolt Ecosystem
+  showUndocumentedCategories: true

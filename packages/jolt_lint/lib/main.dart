@@ -38,8 +38,8 @@ class JoltLintPlugin extends Plugin {
   void register(PluginRegistry registry) {
     // Register diagnostics, quick fixes, and assists.
     registry.registerWarningRule(NoSetupThisRule());
-    registry.registerWarningRule(NoMutableCollectionValueOperationRule());
     registry.registerWarningRule(NoInvalidHookCallRule());
+    registry.registerWarningRule(NoMutableCollectionValueOperationRule());
     registry.registerFixForRule(JoltCode.setupThis, FixSetupThis.new);
     registry.registerFixForRule(JoltCode.setupThis, FixSetupThisMulti.new);
 

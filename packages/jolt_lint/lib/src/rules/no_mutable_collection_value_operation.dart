@@ -31,19 +31,22 @@ class NoMutableCollectionValueOperationRule extends MultiAnalysisRule {
 }
 
 class _MutableCollectionValueVisitor extends SimpleAstVisitor<void> {
+  static const _mutableCollectionMixins = {
+    'ListSignalMixin',
+    'MapSignalMixin',
+    'SetSignalMixin',
+  };
+
   final MultiAnalysisRule rule;
   final RuleContext context;
 
   _MutableCollectionValueVisitor(this.rule, this.context);
 
   bool _checkIsMutable(InterfaceType type) {
-    final isMutable = type.allSupertypes.any(
-      (interface) => interface.element.displayName == 'IMutableCollection',
+    return type.allSupertypes.any(
+      (interface) =>
+          _mutableCollectionMixins.contains(interface.element.displayName),
     );
-    if (!isMutable) {
-      return false;
-    }
-    return true;
   }
 
   bool _isTargetNotThisOrSuper(Expression target) {

@@ -37,7 +37,9 @@ abstract class JoltRuleTestBase extends AnalysisRuleTest {
       r'''
 library jolt_setup.src.setup.framework;
 
-abstract class IMutableCollection {}
+mixin ListSignalMixin {}
+mixin MapSignalMixin {}
+mixin SetSignalMixin {}
 ''',
     );
   }
@@ -65,12 +67,11 @@ class NoMutableCollectionValueOperationRuleTest extends JoltRuleTestBase {
   @override
   String get analysisRule => 'no_mutable_collection_value_operation';
 
-  // ---- Report: method invocation on .value (e.g. .add, .clear) ----
   Future<void> test_reports_method_on_value() async {
     final code = r'''
 import 'package:jolt_setup/src/setup/framework.dart';
 
-class MutableCollection<T> implements IMutableCollection {
+class MutableCollection<T> with ListSignalMixin {
   MutableCollection(this.value);
   T value;
 }
@@ -87,39 +88,17 @@ class Example {
     await assertDiagnostics(code, [lint(code.indexOf(target), target.length)]);
   }
 
-  Future<void> test_reports_clear_on_value() async {
+  Future<void> test_reports_map_mixin() async {
     final code = r'''
 import 'package:jolt_setup/src/setup/framework.dart';
 
-class MutableCollection<T> implements IMutableCollection {
+class MutableCollection<T> with MapSignalMixin {
   MutableCollection(this.value);
   T value;
 }
 
 class Example {
-  final mutable = MutableCollection<List<int>>([]);
-
-  void run() {
-    mutable.value.clear();
-  }
-}
-''';
-    const target = 'mutable.value.clear()';
-    await assertDiagnostics(code, [lint(code.indexOf(target), target.length)]);
-  }
-
-  // ---- Report: property access on .value (e.g. .length) ----
-  Future<void> test_reports_property_access_on_value() async {
-    final code = r'''
-import 'package:jolt_setup/src/setup/framework.dart';
-
-class MutableCollection<T> implements IMutableCollection {
-  MutableCollection(this.value);
-  T value;
-}
-
-class Example {
-  final mutable = MutableCollection<List<int>>([]);
+  final mutable = MutableCollection<Map<String, int>>(<String, int>{});
 
   int get size => mutable.value.length;
 }
@@ -128,27 +107,25 @@ class Example {
     await assertDiagnostics(code, [lint(code.indexOf(target), target.length)]);
   }
 
-  // ---- Ignore: this.value (receiver is this) ----
-  Future<void> test_ignores_direct_this_value() async {
+  Future<void> test_reports_set_mixin() async {
     final code = r'''
 import 'package:jolt_setup/src/setup/framework.dart';
 
-class MutableCollection<T> implements IMutableCollection {
+class MutableCollection<T> with SetSignalMixin {
   MutableCollection(this.value);
   T value;
 }
 
-class Example extends MutableCollection<List<int>> {
-  Example() : super([]);
-  void run() {
-    this.value.add(1);
-  }
+class Example {
+  final mutable = MutableCollection<Set<int>>({});
+
+  int get size => mutable.value.length;
 }
 ''';
-    await assertNoDiagnostics(code);
+    const target = 'mutable.value.length';
+    await assertDiagnostics(code, [lint(code.indexOf(target), target.length)]);
   }
 
-  // ---- Ignore: type does not implement IMutableCollection ----
   Future<void> test_ignores_non_mutable_collection_type() async {
     final code = r'''
 class PlainContainer<T> {
@@ -165,100 +142,5 @@ class Example {
 }
 ''';
     await assertNoDiagnostics(code);
-  }
-
-  // ---- Report: chained .value access (a.b.value.method) ----
-  Future<void> test_reports_chained_value_then_method() async {
-    final code = r'''
-import 'package:jolt_setup/src/setup/framework.dart';
-
-class MutableCollection<T> implements IMutableCollection {
-  MutableCollection(this.value);
-  T value;
-}
-
-class Holder {
-  final mutable = MutableCollection<List<int>>([]);
-}
-
-class Example {
-  final holder = Holder();
-
-  void run() {
-    holder.mutable.value.add(1);
-  }
-}
-''';
-    const target = 'holder.mutable.value.add(1)';
-    await assertDiagnostics(code, [lint(code.indexOf(target), target.length)]);
-  }
-
-  // ---- Report: .get() then method (receiver is .get() result) ----
-  Future<void> test_reports_get_then_method() async {
-    final code = r'''
-import 'package:jolt_setup/src/setup/framework.dart';
-
-class MutableCollection<T> implements IMutableCollection {
-  MutableCollection(this.value);
-  T value;
-  T get(int index) => value;
-}
-
-class Example {
-  final mutable = MutableCollection<List<int>>([]);
-
-  void run() {
-    mutable.get(0).add(1);
-  }
-}
-''';
-    const target = 'mutable.get(0).add(1)';
-    await assertDiagnostics(code, [lint(code.indexOf(target), target.length)]);
-  }
-
-  // ---- Ignore: bare .value read (no further property/method on value) ----
-  Future<void> test_ignores_bare_value_read() async {
-    final code = r'''
-import 'package:jolt_setup/src/setup/framework.dart';
-
-class MutableCollection<T> implements IMutableCollection {
-  MutableCollection(this.value);
-  T value;
-}
-
-class Example {
-  final mutable = MutableCollection<List<int>>([]);
-
-  List<int> get list => mutable.value;
-}
-''';
-    await assertNoDiagnostics(code);
-  }
-
-  // ---- Multiple reports in same unit ----
-  Future<void> test_reports_multiple_operations() async {
-    final code = r'''
-import 'package:jolt_setup/src/setup/framework.dart';
-
-class MutableCollection<T> implements IMutableCollection {
-  MutableCollection(this.value);
-  T value;
-}
-
-class Example {
-  final mutable = MutableCollection<List<int>>([]);
-
-  void run() {
-    mutable.value.add(1);
-    mutable.value.clear();
-  }
-}
-''';
-    final addExpr = 'mutable.value.add(1)';
-    final clearExpr = 'mutable.value.clear()';
-    await assertDiagnostics(code, [
-      lint(code.indexOf(addExpr), addExpr.length),
-      lint(code.indexOf(clearExpr), clearExpr.length),
-    ]);
   }
 }

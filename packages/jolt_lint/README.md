@@ -292,48 +292,18 @@ class MyWidget extends SetupWidget {
 }
 ```
 
-
-
 #### no_mutable_collection_value_operation
 
 Warns against dangerous mutation operations on mutable collection signals' `.value` property.
 
 **Rule Description**:
 
-This rule detects when you're performing mutation operations (other than direct assignment or simple reads) on the `.value` property of signals that implement `IMutableCollection`. These operations are dangerous because they mutate the collection without triggering reactivity.
+This rule detects when you're performing mutation operations on the `.value` property of signals built with Jolt's mutable collection mixins. These operations are dangerous because they mutate the collection without triggering reactivity.
 
 **Checks**:
-- ⚠️ Method calls on `.value` (e.g., `list.value.add()`, `map.value.clear()`)
-- ⚠️ Property access mutations on `.value` (e.g., `list.value.length = 5`)
-- ⚠️ Index mutations on `.value` (e.g., `list.value[0] = item`)
-- ⚠️ `.get()` method calls on mutable collection signals
-- ⚠️ Function call operator `()` on mutable collection signals
-
-**Correct Example**:
-```dart
-final list = ListSignal<int>([1, 2, 3]);
-
-// ✅ Direct assignment (allowed)
-list.value = [4, 5, 6];
-
-// ✅ Simple read (allowed)
-print(list.value);
-
-// ✅ Use signal's mutation methods
-list.add(4);
-list.remove(2);
-```
-
-**Incorrect Example**:
-```dart
-final list = ListSignal<int>([1, 2, 3]);
-
-// ⚠️ Dangerous: Mutating collection directly
-list.value.add(4);        // Won't trigger reactivity
-list.value[0] = 10;       // Won't trigger reactivity
-list.value.clear();       // Won't trigger reactivity
-list.get().add(5);        // Won't trigger reactivity
-```
+- Method calls on `.value` (e.g., `list.value.add()`, `map.value.clear()`)
+- Property access through `.value` (e.g., `list.value.length`)
+- `.get()` method calls on mutable collection signals
 
 #### no_invalid_hook_call
 

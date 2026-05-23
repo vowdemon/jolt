@@ -9,8 +9,6 @@ class DebugCounter {
   int notifyCount = 0;
   int setCount = 0;
   int getCount = 0;
-  int linked = 0;
-  int unlinked = 0;
   int effectCount = 0;
   int count = 0;
 
@@ -20,8 +18,6 @@ class DebugCounter {
     notifyCount = 0;
     setCount = 0;
     getCount = 0;
-    linked = 0;
-    unlinked = 0;
     effectCount = 0;
     count = 0;
   }
@@ -38,10 +34,6 @@ class DebugCounter {
         setCount++;
       case DebugNodeOperationType.get:
         getCount++;
-      case DebugNodeOperationType.linked:
-        linked++;
-      case DebugNodeOperationType.unlinked:
-        unlinked++;
       case DebugNodeOperationType.effect:
         effectCount++;
     }
@@ -50,9 +42,9 @@ class DebugCounter {
 
   @override
   String toString() =>
-      "DebugCounter(createCount: $createCount, disposeCount: $disposeCount, notifyCount: $notifyCount, setCount: $setCount, getCount: $getCount, linkedCount: $linked, unlinkedCount: $unlinked, effectCount: $effectCount, count: $count)";
+      "DebugCounter(createCount: $createCount, disposeCount: $disposeCount, notifyCount: $notifyCount, setCount: $setCount, getCount: $getCount, effectCount: $effectCount, count: $count)";
 
-  void onDebug(DebugNodeOperationType type, _, __) {
+  void onDebug(DebugNodeOperationType type, _) {
     increment(type);
   }
 }

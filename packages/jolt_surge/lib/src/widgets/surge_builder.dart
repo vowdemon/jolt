@@ -76,7 +76,7 @@ class _SurgeBuilderState<T extends Surge<S>, S>
   late T _surge;
   late S _state;
 
-  FlutterEffect? _effect;
+  PostFrameEffect? _effect;
 
   @override
   void initState() {
@@ -118,7 +118,7 @@ class _SurgeBuilderState<T extends Surge<S>, S>
   void _startEffect() {
     final allowNullSkip = widget.buildWhen == null;
     bool firstEffect = true;
-    _effect = FlutterEffect(() {
+    _effect = PostFrameEffect(() {
       if (!mounted) return;
 
       final state = _surge.state;

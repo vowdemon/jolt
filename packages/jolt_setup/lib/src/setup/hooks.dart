@@ -608,7 +608,7 @@ class _ResetSetupOnListenableHook extends SetupHook<Iterable<Listenable>> {
   }
 }
 
-class _ResetSetupWatchHook extends SetupHook<FlutterEffect> {
+class _ResetSetupWatchHook extends SetupHook<PostFrameEffect> {
   _ResetSetupWatchHook(this.watchFn, this.resetSetup);
 
   late Iterable<Readable> Function() watchFn;
@@ -621,8 +621,8 @@ class _ResetSetupWatchHook extends SetupHook<FlutterEffect> {
   }
 
   @override
-  FlutterEffect build() {
-    return FlutterEffect(() {
+  PostFrameEffect build() {
+    return PostFrameEffect(() {
       _watcher();
       resetSetup();
     }, lazy: true);
@@ -646,7 +646,7 @@ class _ResetSetupWatchHook extends SetupHook<FlutterEffect> {
   }
 }
 
-class _ResetSetupSelectHook<T> extends SetupHook<FlutterEffect> {
+class _ResetSetupSelectHook<T> extends SetupHook<PostFrameEffect> {
   _ResetSetupSelectHook(this.selector, this.resetSetup);
 
   late T Function() selector;
@@ -664,8 +664,8 @@ class _ResetSetupSelectHook<T> extends SetupHook<FlutterEffect> {
   }
 
   @override
-  FlutterEffect build() {
-    return FlutterEffect(_select, lazy: true);
+  PostFrameEffect build() {
+    return PostFrameEffect(_select, lazy: true);
   }
 
   @override

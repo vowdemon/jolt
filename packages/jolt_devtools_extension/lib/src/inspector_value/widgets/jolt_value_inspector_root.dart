@@ -33,7 +33,7 @@ class _JoltValueInspectorRootState extends State<JoltValueInspectorRoot> {
   final Set<JoltValuePath> _expandedPaths = {};
   final Map<JoltValuePath, List<JoltValueChild>> _childrenByPath = {};
   JoltValuePath? _editingPath;
-  FlutterEffect? _effect;
+  PostFrameEffect? _effect;
 
   @override
   void initState() {
@@ -68,7 +68,7 @@ class _JoltValueInspectorRootState extends State<JoltValueInspectorRoot> {
   }
 
   void _bindNodeEffect() {
-    _effect = FlutterEffect(() {
+    _effect = PostFrameEffect(() {
       widget.node.value.value;
       widget.node.updatedAt.value;
       widget.node.count.value;

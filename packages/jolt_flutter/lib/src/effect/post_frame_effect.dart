@@ -11,18 +11,18 @@ import 'package:jolt/jolt.dart';
 /// When [lazy] is `false` (the default), the callback runs once when created.
 /// When [lazy] is `true`, call [run] to execute. When [detach] is `true`, the
 /// effect does not keep its scope alive.
-abstract class FlutterEffect implements Effect {
+abstract class PostFrameEffect implements Effect {
   /// Creates a frame-aligned effect for [fn].
-  factory FlutterEffect(
+  factory PostFrameEffect(
     void Function() fn, {
     bool lazy,
     bool detach,
     JoltDebugOption? debug,
-  }) = _FlutterEffectImpl;
+  }) = _PostFrameEffectImpl;
 }
 
-class _FlutterEffectNode extends EffectNode {
-  _FlutterEffectNode(super.fn, {super.lazy, super.detach, super.debug});
+class _PostFrameEffectNode extends EffectNode {
+  _PostFrameEffectNode(super.fn, {super.lazy, super.detach, super.debug});
 
   bool _isScheduled = false;
 
@@ -41,10 +41,10 @@ class _FlutterEffectNode extends EffectNode {
   }
 }
 
-class _FlutterEffectImpl extends EffectImpl implements FlutterEffect {
-  _FlutterEffectImpl(super.fn,
+class _PostFrameEffectImpl extends EffectImpl implements PostFrameEffect {
+  _PostFrameEffectImpl(super.fn,
       {bool lazy = false, bool detach = false, JoltDebugOption? debug})
       : super.custom(
-            node: _FlutterEffectNode(fn,
+            node: _PostFrameEffectNode(fn,
                 lazy: lazy, detach: detach, debug: debug));
 }

@@ -503,7 +503,7 @@ void main() {
     testWidgets('usePostFrameEffect.lazy does not run automatically',
         (tester) async {
       int effectCount = 0;
-      late FlutterEffect effect;
+      late PostFrameEffect effect;
       late Signal<int> signal;
 
       await tester.pumpWidget(MaterialApp(
@@ -576,7 +576,7 @@ void main() {
         'usePostFrameEffect.lazy hot reload updates callback without eager run',
         (tester) async {
       final events = <String>[];
-      late FlutterEffect effect;
+      late PostFrameEffect effect;
       late Signal<int> signal;
       var useSecondVersion = false;
 
@@ -614,7 +614,7 @@ void main() {
         (tester) async {
       final firstOps = <DebugNodeOperationType>[];
       final secondOps = <DebugNodeOperationType>[];
-      late FlutterEffect effect;
+      late PostFrameEffect effect;
       var useSecondDebug = false;
 
       void firstDebug(DebugNodeOperationType type, ReactiveNode node) {
@@ -1386,7 +1386,7 @@ void main() {
       });
 
       testWidgets('usePostFrameEffect is disposed on unmount', (tester) async {
-        late FlutterEffect effect;
+        late PostFrameEffect effect;
 
         await tester.pumpWidget(MaterialApp(
           home: SetupBuilder(setup: (context) {

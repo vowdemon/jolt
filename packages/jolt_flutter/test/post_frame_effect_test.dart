@@ -2,12 +2,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
 
 void main() {
-  group('FlutterEffect', () {
+  group('PostFrameEffect', () {
     testWidgets('runs immediately when not lazy', (tester) async {
       final signal = Signal(1);
       final values = <int>[];
 
-      FlutterEffect(() {
+      PostFrameEffect(() {
         values.add(signal.value);
       });
 
@@ -20,7 +20,7 @@ void main() {
       final signal = Signal(1);
       final values = <int>[];
 
-      final effect = FlutterEffect(() {
+      final effect = PostFrameEffect(() {
         values.add(signal.value);
       }, lazy: true);
 
@@ -41,7 +41,7 @@ void main() {
       final signal = Signal(1);
       final values = <int>[];
 
-      FlutterEffect(() {
+      PostFrameEffect(() {
         values.add(signal.value);
       });
 
@@ -58,7 +58,7 @@ void main() {
       final signal = Signal(1);
       final values = <int>[];
 
-      FlutterEffect(() {
+      PostFrameEffect(() {
         values.add(signal.value);
       });
 
@@ -77,7 +77,7 @@ void main() {
       final signal = Signal(1);
       final values = <int>[];
 
-      final effect = FlutterEffect(() {
+      final effect = PostFrameEffect(() {
         values.add(signal.value);
       }, lazy: true);
 
@@ -96,7 +96,7 @@ void main() {
       final signal = Signal(1);
       final values = <int>[];
 
-      final effect = FlutterEffect(() {
+      final effect = PostFrameEffect(() {
         values.add(signal.value);
       });
 
@@ -114,7 +114,7 @@ void main() {
       final b = Signal(2);
       final values = <int>[];
 
-      FlutterEffect(() {
+      PostFrameEffect(() {
         values.add(a.value + b.value);
       });
 

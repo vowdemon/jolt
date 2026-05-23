@@ -235,8 +235,8 @@ final useJoltEffect = JoltEffectHookCreator._();
 final class JoltPostFrameEffectHookCreator {
   const JoltPostFrameEffectHookCreator._();
 
-  /// Creates a [FlutterEffect] that runs [fn] at frame end.
-  FlutterEffect call(
+  /// Creates a [PostFrameEffect] that runs [fn] at frame end.
+  PostFrameEffect call(
     void Function() fn, {
     bool lazy = false,
     JoltDebugOption? debug,
@@ -244,28 +244,28 @@ final class JoltPostFrameEffectHookCreator {
   }) {
     return use(
       JoltEffectHook(
-        () => FlutterEffect(fn, lazy: lazy, debug: debug),
+        () => PostFrameEffect(fn, lazy: lazy, debug: debug),
         keys: keys,
       ),
     );
   }
 
-  /// Creates a [FlutterEffect] that waits for an explicit first run.
-  FlutterEffect lazy(
+  /// Creates a [PostFrameEffect] that waits for an explicit first run.
+  PostFrameEffect lazy(
     void Function() fn, {
     JoltDebugOption? debug,
     List<Object?>? keys,
   }) {
     return use(
       JoltEffectHook(
-        () => FlutterEffect(fn, lazy: true, debug: debug),
+        () => PostFrameEffect(fn, lazy: true, debug: debug),
         keys: keys,
       ),
     );
   }
 }
 
-/// Creates a [FlutterEffect] for the current hook scope.
+/// Creates a [PostFrameEffect] for the current hook scope.
 ///
 /// Reactive reads inside [fn] become dependencies. Unless [lazy] is `true`, the
 /// effect schedules its first run immediately, then coalesces later dependency

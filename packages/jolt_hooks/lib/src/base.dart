@@ -47,7 +47,7 @@ class JoltEffectHook<S extends Object> extends Hook<S> {
   /// Creates a hook that builds [joltEffect] once per hook slot.
   const JoltEffectHook(this.joltEffect, {super.keys})
       : assert(joltEffect is Effect Function() ||
-            joltEffect is FlutterEffect Function() ||
+            joltEffect is PostFrameEffect Function() ||
             joltEffect is Watcher Function() ||
             joltEffect is EffectScope Function());
 
@@ -90,7 +90,7 @@ class JoltWidgetHook<T extends Widget> extends Hook<T> {
   /// Builds the widget for the current hook slot.
   final T Function() builder;
 
-  /// Optional debug options for the internal [FlutterEffect].
+  /// Optional debug options for the internal [PostFrameEffect].
   final JoltDebugOption? debug;
 
   @override
@@ -100,7 +100,7 @@ class JoltWidgetHook<T extends Widget> extends Hook<T> {
 /// The [HookState] for [JoltWidgetHook].
 class JoltWidgetHookState<T extends Widget>
     extends HookState<T, JoltWidgetHook<T>> {
-  FlutterEffect? _effect;
+  PostFrameEffect? _effect;
 
   @override
   void dispose() {
@@ -110,7 +110,7 @@ class JoltWidgetHookState<T extends Widget>
 
   @override
   void initHook() {
-    _effect = FlutterEffect(_markNeedsBuild, lazy: true, debug: hook.debug);
+    _effect = PostFrameEffect(_markNeedsBuild, lazy: true, debug: hook.debug);
   }
 
   void _markNeedsBuild() {

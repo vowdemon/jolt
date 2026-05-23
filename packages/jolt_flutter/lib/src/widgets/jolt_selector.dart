@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:jolt/core.dart';
 
-import '../effect/flutter_effect.dart';
+import '../effect/post_frame_effect.dart';
 
 /// A widget that rebuilds only when a selected value changes.
 ///
@@ -45,14 +45,14 @@ class _JoltSelectorElement<T> extends ComponentElement {
   @override
   JoltSelector<T> get widget => super.widget as JoltSelector<T>;
 
-  FlutterEffect? _effect;
+  PostFrameEffect? _effect;
 
   T? _state;
   bool _isFirstBuildEffect = true;
 
   @override
   void mount(Element? parent, Object? newSlot) {
-    _effect = FlutterEffect(() {
+    _effect = PostFrameEffect(() {
       final oldState = _state;
       _state = widget.selector(_state);
 

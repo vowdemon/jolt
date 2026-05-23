@@ -220,8 +220,8 @@ final class JoltSetupHookEffectCreator {
 /// ```
 const useEffect = JoltSetupHookEffectCreator._();
 
-class _UseFlutterEffectHook extends SetupHook<FlutterEffect> {
-  _UseFlutterEffectHook(this.effect, this.lazy, this.debug);
+class _UsePostFrameEffectHook extends SetupHook<PostFrameEffect> {
+  _UsePostFrameEffectHook(this.effect, this.lazy, this.debug);
 
   late void Function() effect;
   late bool lazy;
@@ -232,8 +232,8 @@ class _UseFlutterEffectHook extends SetupHook<FlutterEffect> {
   }
 
   @override
-  FlutterEffect build() {
-    return FlutterEffect(_runEffect, lazy: lazy, debug: debug);
+  PostFrameEffect build() {
+    return PostFrameEffect(_runEffect, lazy: lazy, debug: debug);
   }
 
   @override
@@ -242,7 +242,7 @@ class _UseFlutterEffectHook extends SetupHook<FlutterEffect> {
   }
 
   @override
-  void reassemble(covariant _UseFlutterEffectHook newHook) {
+  void reassemble(covariant _UsePostFrameEffectHook newHook) {
     if (debug != newHook.debug) {
       debug = newHook.debug;
       JoltDevTools.setDebug((state as EffectImpl).raw, newHook.debug?.onDebug);
@@ -256,28 +256,28 @@ class _UseFlutterEffectHook extends SetupHook<FlutterEffect> {
 final class JoltSetupHookPostFrameEffectCreator {
   const JoltSetupHookPostFrameEffectCreator._();
 
-  /// Creates a [FlutterEffect] that runs [effect] at frame end.
+  /// Creates a [PostFrameEffect] that runs [effect] at frame end.
   @defineHook
-  FlutterEffect call(void Function() effect,
+  PostFrameEffect call(void Function() effect,
       {bool lazy = false, JoltDebugOption? debug}) {
-    return useHook(_UseFlutterEffectHook(effect, lazy, debug));
+    return useHook(_UsePostFrameEffectHook(effect, lazy, debug));
   }
 
-  /// Creates a [FlutterEffect] that waits for an explicit first run.
+  /// Creates a [PostFrameEffect] that waits for an explicit first run.
   @defineHook
-  FlutterEffect lazy(void Function() effect, {JoltDebugOption? debug}) {
-    return useHook(_UseFlutterEffectHook(effect, true, debug));
+  PostFrameEffect lazy(void Function() effect, {JoltDebugOption? debug}) {
+    return useHook(_UsePostFrameEffectHook(effect, true, debug));
   }
 }
 
-/// Creates a [FlutterEffect] for the current setup scope.
+/// Creates a [PostFrameEffect] for the current setup scope.
 ///
 /// Reactive reads inside [effect] become dependencies. Unless [lazy] is
 /// `true`, the effect schedules its first run immediately, then coalesces later
 /// dependency changes so the body runs once at the end of the frame. Use
 /// [onEffectCleanup] inside [effect] to clean up work from the previous run.
 /// Use [JoltSetupHookPostFrameEffectCreator.lazy] when the first run should be
-/// triggered manually with [FlutterEffect.run].
+/// triggered manually with [PostFrameEffect.run].
 ///
 /// ```dart
 /// setup(context, props) {

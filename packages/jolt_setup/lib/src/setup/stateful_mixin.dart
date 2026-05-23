@@ -141,7 +141,7 @@ mixin SetupMixin<T extends StatefulWidget> on State<T> {
       setupContext.setupBuilder = setup(context);
 
       // 6. Recreate the renderer effect
-      setupContext.renderer = FlutterEffect(
+      setupContext.renderer = PostFrameEffect(
         (context as Element).markNeedsBuild,
         lazy: true,
         debug: JoltDebugOption.type("SetupRenderer<$T>"),
@@ -183,7 +183,7 @@ mixin SetupMixin<T extends StatefulWidget> on State<T> {
       // we must initialize here.
       setupContext.run(() {
         setupContext.setupBuilder = setup(context);
-        setupContext.renderer = FlutterEffect(
+        setupContext.renderer = PostFrameEffect(
           (context as Element).markNeedsBuild,
           lazy: true,
           debug: JoltDebugOption.type("SetupRenderer<$T>"),

@@ -427,7 +427,7 @@ void main() {
 
     testWidgets('lazy does not run automatically', (tester) async {
       var runCount = 0;
-      late FlutterEffect effect;
+      late PostFrameEffect effect;
 
       await tester.pumpWidget(
         HookBuilder(

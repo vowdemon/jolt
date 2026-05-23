@@ -1,13 +1,13 @@
 import 'package:flutter/widgets.dart';
 import 'package:jolt/core.dart';
 
-import '../effect/flutter_effect.dart';
+import '../effect/post_frame_effect.dart';
 
 /// A [StatelessWidget] that rebuilds when reactive values read in [builder] change.
 ///
 /// During each build, [builder] runs inside a reactive scope. Any [Readable]
 /// accessed there becomes a dependency. When a dependency changes,
-/// [FlutterEffect] schedules a rebuild at the end of the current frame, so
+/// [PostFrameEffect] schedules a rebuild at the end of the current frame, so
 /// multiple updates in one frame coalesce into a single rebuild.
 ///
 /// For explicit dependencies only, use [JoltBuilder.manual].
@@ -50,11 +50,11 @@ class _JoltBuilderElement extends StatelessElement {
   @override
   JoltBuilder get widget => super.widget as JoltBuilder;
 
-  FlutterEffect? _effect;
+  PostFrameEffect? _effect;
 
   @override
   void mount(Element? parent, Object? newSlot) {
-    _effect = FlutterEffect(markNeedsBuild,
+    _effect = PostFrameEffect(markNeedsBuild,
         lazy: true, debug: const JoltDebugOption.type('JoltBuilder'));
 
     super.mount(parent, newSlot);
@@ -100,11 +100,11 @@ class _JoltBuilderManualElement extends StatelessElement {
   @override
   _JoltBuilderManual get widget => super.widget as _JoltBuilderManual;
 
-  FlutterEffect? _effect;
+  PostFrameEffect? _effect;
 
   @override
   void mount(Element? parent, Object? newSlot) {
-    _effect = FlutterEffect(markNeedsBuild,
+    _effect = PostFrameEffect(markNeedsBuild,
         debug: const JoltDebugOption.type('JoltBuilder'));
 
     super.mount(parent, newSlot);

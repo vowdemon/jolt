@@ -111,7 +111,7 @@ class SetupWidgetElement<T extends SetupWidget<T>> extends ComponentElement {
       // First build: initialize setup
       setupContext.run(() {
         setupContext.setupBuilder = widget.setup(this, _propsNode);
-        setupContext.renderer = FlutterEffect(
+        setupContext.renderer = PostFrameEffect(
           markNeedsBuild,
           lazy: true,
           debug: JoltDebugOption.type("SetupRenderer<$T>"),
@@ -199,7 +199,7 @@ class SetupWidgetElement<T extends SetupWidget<T>> extends ComponentElement {
       setupContext.setupBuilder = widget.setup(this, _propsNode);
 
       // 6. Recreate the renderer effect
-      setupContext.renderer = FlutterEffect(
+      setupContext.renderer = PostFrameEffect(
         markNeedsBuild,
         lazy: true,
         debug: JoltDebugOption.type("SetupRenderer<$T>"),

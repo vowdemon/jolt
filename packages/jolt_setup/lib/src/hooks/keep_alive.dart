@@ -42,7 +42,7 @@ class _AutomaticKeepAliveClientHook extends SetupHook<void> {
       : _wantKeepAlive = wantKeepAlive;
 
   final Readable<bool> _wantKeepAlive;
-  FlutterEffect? _effect;
+  PostFrameEffect? _effect;
   KeepAliveHandle? _keepAliveHandle;
 
   void _ensureKeepAlive() {
@@ -74,7 +74,7 @@ class _AutomaticKeepAliveClientHook extends SetupHook<void> {
   @protected
   void mount() {
     _isActive = true;
-    _effect = FlutterEffect(() {
+    _effect = PostFrameEffect(() {
       _wantKeepAlive.value;
       if (_isActive) {
         updateKeepAlive();

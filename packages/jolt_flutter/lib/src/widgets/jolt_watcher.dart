@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:jolt/core.dart';
 
-import '../effect/flutter_effect.dart';
+import '../effect/post_frame_effect.dart';
 
 /// A widget that rebuilds when a single [Readable] changes.
 ///
@@ -57,11 +57,11 @@ class _JoltWatcherElement extends StatelessElement {
   @override
   JoltWatcher get widget => super.widget as JoltWatcher;
 
-  FlutterEffect? _effect;
+  PostFrameEffect? _effect;
 
   @override
   void mount(Element? parent, Object? newSlot) {
-    _effect = FlutterEffect(markNeedsBuild,
+    _effect = PostFrameEffect(markNeedsBuild,
         lazy: true,
         detach: true,
         debug: const JoltDebugOption.type('JoltWatcher'));

@@ -70,7 +70,7 @@ class _SurgeSelectorState<T extends Surge<S>, S, C>
   late T _surge;
   late C _selectorValue;
 
-  FlutterEffect? _effect;
+  PostFrameEffect? _effect;
 
   @override
   void initState() {
@@ -112,7 +112,7 @@ class _SurgeSelectorState<T extends Surge<S>, S, C>
   }
 
   void _startEffect() {
-    _effect = FlutterEffect(() {
+    _effect = PostFrameEffect(() {
       if (!mounted) return;
       final state = _surge.state;
 

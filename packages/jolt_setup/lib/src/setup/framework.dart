@@ -45,7 +45,7 @@ class SetupContext<T extends Widget> extends EffectScopeImpl {
   WidgetFunction<T>? setupBuilder;
 
   /// The effect that schedules rebuilds for the current setup builder.
-  FlutterEffect? renderer;
+  PostFrameEffect? renderer;
 
   /// The list of hooks registered for this widget.
   final List<SetupHook> _hooks = [];

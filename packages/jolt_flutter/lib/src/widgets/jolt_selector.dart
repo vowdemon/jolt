@@ -3,105 +3,44 @@ import 'package:jolt/core.dart';
 
 import '../effect/flutter_effect.dart';
 
-/// A widget that rebuilds only when a specific selector function's result changes.
+/// A widget that rebuilds only when a selected value changes.
 ///
-/// [JoltSelector] provides fine-grained control over when rebuilds occur by
-/// watching a selector function. The widget only rebuilds when the selector's
-/// return value changes, making it more efficient than [JoltBuilder] for
-/// scenarios where you only need to react to specific derived values.
+/// The [selector] runs in a reactive scope on mount and whenever dependencies
+/// change. The widget rebuilds only when the new result is not equal (`!=`) to
+/// the previous one. On the first run, a change does not schedule an extra
+/// rebuild. When the widget is updated, the selected value is cleared, the
+/// selector runs again, and the subtree is force-rebuilt.
 ///
-/// The [selector] function receives the previous selected value (or `null` on first run)
-/// and returns the new value to watch. Rebuilds occur only when the returned value
-/// changes (using equality comparison).
-///
-/// ## When to Use
-///
-/// Use [JoltSelector] when you need to:
-/// - Select a specific value from a complex object
-/// - Filter or transform reactive data before rebuilding
-/// - Avoid unnecessary rebuilds when unrelated parts of a signal change
-///
-/// For general reactive UI needs, [JoltBuilder] is simpler and recommended.
-///
-/// ## Parameters
-///
-/// - [builder]: Function that builds the widget tree. Receives the context and
-///   the current selected value.
-/// - [selector]: Function that computes the value to watch for changes. Receives
-///   the previous selected value (or `null` on first run) and returns the new value.
-///
-/// ## Example
+/// Prefer [JoltBuilder] when the whole subtree should track every reactive read.
 ///
 /// ```dart
-/// final user = Signal(User(name: 'John', age: 30));
+/// final user = Signal(User(name: 'Ada', age: 30));
 ///
-/// // Only rebuilds when the user's name changes, not age
 /// JoltSelector(
-///   selector: (prev) => user.value.name,
+///   selector: (_) => user.value.name,
 ///   builder: (context, name) => Text('Hello $name'),
 /// )
 /// ```
-///
-/// With multiple signals:
-///
-/// ```dart
-/// final firstName = Signal('John');
-/// final lastName = Signal('Doe');
-///
-/// JoltSelector(
-///   selector: (prev) => '${firstName.value} ${lastName.value}',
-///   builder: (context, fullName) => Text('Hello $fullName'),
-/// )
-/// ```
 class JoltSelector<T> extends Widget {
-  const JoltSelector({
-    super.key,
-    required this.builder,
-    required this.selector,
-  });
+  /// Creates a selector-driven reactive widget.
+  const JoltSelector(
+      {super.key, required this.builder, required this.selector});
 
-  /// Function that builds the widget tree.
-  ///
-  /// This builder receives the context and the currently selected value.
-  /// The selected value is the result of the last [selector] execution.
+  /// Builds the subtree from the latest value produced by [selector].
   final Widget Function(BuildContext context, T state) builder;
 
-  /// Function that computes the value to watch for changes.
+  /// Computes the value to compare across updates.
   ///
-  /// This selector runs in a reactive scope, automatically tracking any signals
-  /// accessed within it. The widget rebuilds only when the returned value changes
-  /// (using equality comparison).
-  ///
-  /// The function receives the previous selected value (or `null` on first run),
-  /// which can be useful for comparison or initialization logic.
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// JoltSelector(
-  ///   selector: (prev) {
-  ///     // Can use previous value for comparison
-  ///     final current = computeValue();
-  ///     if (prev != null && prev == current) {
-  ///       return prev; // Return same instance to prevent rebuild
-  ///     }
-  ///     return current;
-  ///   },
-  ///   builder: (context, value) => Text('$value'),
-  /// )
-  /// ```
+  /// Receives the previous result, or `null` on the first run. Return a value
+  /// equal to the previous one (by `!=`) to skip a rebuild.
   final T Function(T? prevState) selector;
 
   @override
-  JoltSelectorElement<T> createElement() => JoltSelectorElement(this);
+  ComponentElement createElement() => _JoltSelectorElement(this);
 }
 
-/// Element for [JoltSelector] that manages selective rebuilds.
-///
-/// This element creates an [EffectScope] to track dependencies in the selector
-/// function and only triggers rebuilds when the selected value actually changes.
-class JoltSelectorElement<T> extends ComponentElement {
-  JoltSelectorElement(JoltSelector<T> super.widget);
+class _JoltSelectorElement<T> extends ComponentElement {
+  _JoltSelectorElement(JoltSelector<T> super.widget);
 
   @override
   JoltSelector<T> get widget => super.widget as JoltSelector<T>;

@@ -2,23 +2,13 @@ part of 'listenable.dart';
 
 final _notifiers = Expando<JoltValueNotifier<Object?>>();
 
-/// Extension for converting Jolt Writable values to Flutter ValueNotifier.
+/// Converts [Writable] values to Flutter [ValueNotifier].
 extension JoltValueNotifierExtension<T> on Writable<T> {
-  /// Converts this Jolt value to a Flutter ValueNotifier.
+  /// A cached [JoltValueNotifier] synchronized with this writable.
   ///
-  /// Returns a cached instance synchronized with this value.
-  /// Multiple calls return the same instance. Supports bidirectional sync.
-  ///
-  /// Example:
-  /// ```dart
-  /// final counter = Signal(0);
-  /// final notifier = counter.notifier;
-  ///
-  /// ValueListenableBuilder<int>(
-  ///   valueListenable: notifier,
-  ///   builder: (context, value, child) => Text('$value'),
-  /// )
-  /// ```
+  /// Assigning to [JoltValueNotifier.value] updates the underlying writable and
+  /// vice versa. Repeated access returns the same instance until
+  /// [JoltValueNotifier.dispose] clears the cache entry.
   JoltValueNotifier<T> get notifier {
     var notifier = _notifiers[this] as JoltValueNotifier<T>?;
 
@@ -30,44 +20,24 @@ extension JoltValueNotifierExtension<T> on Writable<T> {
   }
 }
 
-/// A ValueNotifier that wraps a Jolt Writable value.
+/// A [ValueNotifier] backed by a Jolt [Writable].
 ///
-/// Provides Flutter's ValueNotifier interface with bidirectional sync.
-/// Changes to either the Jolt value or ValueNotifier are synchronized.
-///
-/// Example:
-/// ```dart
-/// final signal = Signal(42);
-/// final notifier = signal.notifier;
-///
-/// AnimatedBuilder(
-///   animation: notifier,
-///   builder: (context, child) => Text('${notifier.value}'),
-/// )
-/// ```
+/// [value] reads via [Writable.peek] and writes propagate to [node]. Listeners
+/// are notified when the writable changes from any source.
 class JoltValueNotifier<T>
     with _ValueNotifierMixin<T>
     implements ValueNotifier<T>, Disposable {
-  /// Creates a ValueNotifier from a Jolt Writable.
-  ///
-  /// Parameters:
-  /// - [node]: The Jolt Writable value to wrap
+  /// Wraps [node] and keeps it in sync with this notifier.
   JoltValueNotifier(this.node) {
-    final watcher = Watcher(() => node.value, (value, __) {
+    final effect = Effect(() {
+      node.value;
       notifyListeners();
-    },
-        when: IMutableCollection.skipNode(node),
-        detach: true,
-        debug: const JoltDebugOption.type('JoltValueNotifier'));
+    }, detach: true, debug: const JoltDebugOption.type('JoltValueNotifier'));
 
-    final finalizerDisposer = JFinalizer.attachToJoltAttachments(node, dispose);
-    _disposer = () {
-      watcher.dispose();
-      finalizerDisposer();
-    };
+    _disposer = effect.dispose;
   }
 
-  /// The wrapped Jolt Writable value.
+  /// The Jolt writable this notifier mirrors.
   final Writable<T> node;
 
   @override

@@ -2,23 +2,12 @@ part of 'listenable.dart';
 
 final _listenables = Expando<JoltValueListenable<Object?>>();
 
-/// Extension for converting Jolt values to Flutter ValueListenable.
+/// Converts [Readable] values to Flutter [ValueListenable].
 extension JoltValueListenableExtension<T> on Readable<T> {
-  /// Converts this Jolt value to a Flutter ValueListenable.
+  /// A cached [JoltValueListenable] synchronized with this readable.
   ///
-  /// Returns a cached instance synchronized with this value.
-  /// Multiple calls return the same instance.
-  ///
-  /// Example:
-  /// ```dart
-  /// final signal = Signal(42);
-  /// final listenable = signal.listenable;
-  ///
-  /// ValueListenableBuilder<int>(
-  ///   valueListenable: listenable,
-  ///   builder: (context, value, child) => Text('$value'),
-  /// )
-  /// ```
+  /// Repeated access returns the same instance until [JoltValueListenable.dispose]
+  /// clears the cache entry.
   JoltValueListenable<T> get listenable {
     var listenable = _listenables[this] as JoltValueListenable<T>?;
 
@@ -30,40 +19,25 @@ extension JoltValueListenableExtension<T> on Readable<T> {
   }
 }
 
-/// A ValueListenable that wraps a Jolt Readable value.
+/// A [ValueListenable] backed by a Jolt [Readable].
 ///
-/// Provides Flutter's ValueListenable interface for Jolt reactive values.
-/// Automatically synchronizes with the underlying Jolt value.
-///
-/// Example:
-/// ```dart
-/// final signal = Signal(42);
-/// final listenable = signal.listenable;
-/// listenable.addListener(() => print('Changed'));
-/// ```
+/// [value] reflects the readable via [Readable.peek]. Listeners are notified
+/// when the underlying readable changes. [dispose] stops synchronization and
+/// removes this wrapper from the cache for [node].
 class JoltValueListenable<T>
     with _ValueNotifierMixin<T>
     implements ValueListenable<T>, Disposable {
-  /// Creates a ValueListenable from a Jolt Readable.
-  ///
-  /// Parameters:
-  /// - [node]: The Jolt Readable value to wrap
+  /// Wraps [node] and subscribes to its updates.
   JoltValueListenable(this.node) {
-    final watcher = Watcher(() => node.value, (value, __) {
+    final effect = Effect(() {
+      node.value;
       notifyListeners();
-    },
-        when: IMutableCollection.skipNode(node),
-        detach: true,
-        debug: const JoltDebugOption.type('JoltValueListenable'));
+    }, detach: true, debug: const JoltDebugOption.type('JoltValueListenable'));
 
-    final finalizerDisposer = JFinalizer.attachToJoltAttachments(node, dispose);
-    _disposer = () {
-      watcher.dispose();
-      finalizerDisposer();
-    };
+    _disposer = effect.dispose;
   }
 
-  /// The wrapped Jolt Readable value.
+  /// The Jolt readable this listenable mirrors.
   final Readable<T> node;
 
   Disposer? _disposer;

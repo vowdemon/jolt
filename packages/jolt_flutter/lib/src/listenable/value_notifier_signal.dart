@@ -1,83 +1,89 @@
 part of 'listenable.dart';
 
-final _delegatedValueNotifierSignals =
-    Expando<DelegatedRefCountHelper<SignalImpl<Object?>>>();
+final _valueNotifierSignals = Expando<ValueNotifierSignal<Object?>>();
 
-/// Extension for converting ValueNotifier to Jolt Signal.
+/// Converts Flutter [ValueNotifier] to Jolt [Signal].
 extension JoltValueNotifierSignalExtension<T> on ValueNotifier<T> {
-  /// Converts this ValueNotifier to a Signal with bidirectional sync.
+  /// A writable Jolt view of this notifier with bidirectional sync.
   ///
-  /// Changes to either ValueNotifier or Signal are synchronized.
-  ///
-  /// Parameters:
-  /// - [debug]: Optional debug options
-  ///
-  /// Returns: A Signal synchronized with this ValueNotifier
-  ///
-  /// Example:
-  /// ```dart
-  /// final notifier = ValueNotifier(0);
-  /// final signal = notifier.toNotifierSignal();
-  /// notifier.value = 1; // signal.value becomes 1
-  /// signal.value = 2;   // notifier.value becomes 2
-  /// ```
+  /// If this is a [JoltValueNotifier] backed by a [Signal], that signal is
+  /// returned. Otherwise a cached [ValueNotifierSignal] is shared until
+  /// [ValueNotifierSignal.dispose].
   Signal<T> toNotifierSignal({JoltDebugOption? debug}) {
-    return ValueNotifierSignal.from(this, debug: debug);
-  }
-}
-
-/// A writable Signal wrapping a ValueNotifier with bidirectional sync.
-///
-/// Multiple instances share the same DelegatedSignal via reference counting.
-/// When all instances are disposed, the shared signal is also disposed.
-class ValueNotifierSignal<T> extends DelegatedSignal<T> {
-  /// Creates from a DelegatedRefCountHelper and ValueNotifier.
-  ValueNotifierSignal.delegated(super.delegated, this.notifier);
-
-  /// The wrapped ValueNotifier.
-  final ValueNotifier<T> notifier;
-
-  /// Creates a Signal from a ValueNotifier.
-  ///
-  /// Parameters:
-  /// - [notifier]: The ValueNotifier to wrap
-  /// - [debug]: Optional debug options
-  ///
-  /// Returns: A Signal synchronized with the ValueNotifier
-  static Signal<T> from<T>(ValueNotifier<T> notifier,
-      {JoltDebugOption? debug}) {
-    if (notifier is JoltValueNotifier<T>) {
-      final node = notifier.node;
+    final source = this;
+    if (source is JoltValueNotifier<T>) {
+      final node = source.node;
       if (node is Signal<T>) {
         return node;
       }
     }
 
-    final delegated = _getOrCreateDelegated(notifier, debug: debug);
-    return ValueNotifierSignal.delegated(delegated, notifier);
+    var signal = _valueNotifierSignals[this] as ValueNotifierSignal<T>?;
+    if (signal == null) {
+      _valueNotifierSignals[this] =
+          signal = ValueNotifierSignal(this, debug: debug);
+    }
+    return signal;
+  }
+}
+
+/// A writable Jolt bridge from a [ValueNotifier].
+///
+/// Assignments to [value] update the notifier, and notifier changes update the
+/// signal. One cached instance exists per source notifier until [dispose].
+/// After disposal, [peek] and [value] keep returning the last value seen before
+/// disposal, and assignments to [value] are ignored.
+class ValueNotifierSignal<T> implements Signal<T> {
+  /// The Jolt node that tracks the current notifier value.
+  final SignalNode<T> raw;
+
+  /// The Flutter notifier mirrored by this bridge.
+  final ValueNotifier<T> notifier;
+
+  /// Creates a writable bridge for [notifier].
+  ValueNotifierSignal(this.notifier, {JoltDebugOption? debug})
+      : raw = SignalNode(notifier.value) {
+    notifier.addListener(_listener);
   }
 
-  static DelegatedRefCountHelper<SignalImpl<T>> _getOrCreateDelegated<T>(
-    ValueNotifier<T> notifier, {
-    JoltDebugOption? debug,
-  }) {
-    var delegated = _delegatedValueNotifierSignals[notifier]
-        as DelegatedRefCountHelper<SignalImpl<T>>?;
+  late final T _disposedValue;
+  bool _isDisposed = false;
 
-    if (delegated == null) {
-      _delegatedValueNotifierSignals[notifier] =
-          delegated = _createDelegatedSignalImpl<T>(
-        notifier,
-        expando: _delegatedValueNotifierSignals,
-        debug: debug,
-      );
-    }
-
-    return delegated;
+  @override
+  T get value {
+    if (_isDisposed) return _disposedValue;
+    return raw.get();
   }
 
   @override
   set value(T value) {
+    if (_isDisposed) return;
     notifier.value = value;
+  }
+
+  @override
+  void dispose() {
+    if (_isDisposed) return;
+    _disposedValue = peek;
+    _isDisposed = true;
+    _valueNotifierSignals[notifier] = null;
+    notifier.removeListener(_listener);
+    raw.dispose();
+  }
+
+  @override
+  bool get isDisposed => _isDisposed;
+
+  @override
+  void notify() {
+    if (_isDisposed) return;
+    raw.notify();
+  }
+
+  @override
+  T get peek => _isDisposed ? _disposedValue : notifier.value;
+
+  void _listener() {
+    raw.set(notifier.value);
   }
 }

@@ -1,74 +1,77 @@
 part of 'listenable.dart';
 
-final _delegatedValueListenableSignals =
-    Expando<DelegatedRefCountHelper<SignalImpl<Object?>>>();
+final _valueListenableSignals = Expando<ValueListenableSignal<Object?>>();
 
-/// Extension for converting ValueListenable to Jolt Signal.
+/// Converts Flutter [ValueListenable] to Jolt [Readable].
 extension JoltValueListenableSignalExtension<T> on ValueListenable<T> {
-  /// Converts this ValueListenable to a read-only Signal.
+  /// A read-only Jolt view of this listenable.
   ///
-  /// Creates a unidirectional bridge: ValueListenable changes sync to Signal,
-  /// but Signal cannot be modified.
-  ///
-  /// Parameters:
-  /// - [debug]: Optional debug options
-  ///
-  /// Returns: A ReadonlySignal synchronized with this ValueListenable
-  ///
-  /// Example:
-  /// ```dart
-  /// final notifier = ValueNotifier(0);
-  /// final signal = notifier.toListenableSignal();
-  /// notifier.value = 1; // signal.value becomes 1
-  /// ```
-  ReadonlySignal<T> toListenableSignal({JoltDebugOption? debug}) {
-    return ValueListenableSignal.from(this, debug: debug);
+  /// Changes on the listenable update the returned readable; the readable cannot
+  /// push values back. If this is a [JoltValueListenable] or [JoltValueNotifier],
+  /// the original Jolt node is returned. Otherwise a cached
+  /// [ValueListenableSignal] is shared until [ValueListenableSignal.dispose].
+  Readable<T> toListenableSignal({JoltDebugOption? debug}) {
+    final source = this;
+    if (source is JoltValueListenable<T>) {
+      return source.node;
+    }
+    if (source is JoltValueNotifier<T>) {
+      return source.node;
+    }
+
+    var signal = _valueListenableSignals[this] as ValueListenableSignal<T>?;
+    if (signal == null) {
+      _valueListenableSignals[this] =
+          signal = ValueListenableSignal(this, debug: debug);
+    }
+    return signal;
   }
 }
 
-/// A read-only Signal wrapping a ValueListenable.
+/// A read-only Jolt bridge from a [ValueListenable].
 ///
-/// Multiple instances share the same DelegatedSignal via reference counting.
-/// When all instances are disposed, the shared signal is also disposed.
-class ValueListenableSignal<T> extends DelegatedReadonlySignal<T> {
-  /// Creates from a DelegatedRefCountHelper.
-  ValueListenableSignal.delegated(super.delegated);
+/// One cached instance exists per source listenable until [dispose]. After
+/// disposal, both [peek] and tracked [value] reads keep returning the last
+/// value seen before disposal.
+class ValueListenableSignal<T> implements Readonly<T>, Disposable {
+  /// The Flutter listenable mirrored by this bridge.
+  final ValueListenable<T> listenable;
 
-  /// Creates a ReadonlySignal from a ValueListenable.
-  ///
-  /// Parameters:
-  /// - [listenable]: The ValueListenable to wrap
-  /// - [debug]: Optional debug options
-  ///
-  /// Returns: A ReadonlySignal synchronized with the ValueListenable
-  static ReadonlySignal<T> from<T>(ValueListenable<T> listenable,
-      {JoltDebugOption? debug}) {
-    if (listenable is JoltValueListenable<T>) {
-      final node = listenable.node;
-      if (node is ReadonlySignal<T>) {
-        return node;
-      }
-    }
-    final delegated = _getOrCreateDelegated(listenable, debug: debug);
-    return ValueListenableSignal.delegated(delegated);
+  /// The Jolt node that tracks the current listenable value.
+  final SignalNode<T> raw;
+
+  /// Creates a read-only bridge for [listenable].
+  ValueListenableSignal(this.listenable, {JoltDebugOption? debug})
+      : raw = SignalNode(listenable.value) {
+    listenable.addListener(_listener);
   }
 
-  static DelegatedRefCountHelper<SignalImpl<T>> _getOrCreateDelegated<T>(
-    ValueListenable<T> listenable, {
-    JoltDebugOption? debug,
-  }) {
-    var delegated = _delegatedValueListenableSignals[listenable]
-        as DelegatedRefCountHelper<SignalImpl<T>>?;
+  late final T _disposedValue;
+  bool _isDisposed = false;
 
-    if (delegated == null) {
-      _delegatedValueListenableSignals[listenable] =
-          delegated = _createDelegatedSignalImpl<T>(
-        listenable,
-        expando: _delegatedValueListenableSignals,
-        debug: debug,
-      );
-    }
+  @override
+  void dispose() {
+    if (_isDisposed) return;
+    _disposedValue = peek;
+    _isDisposed = true;
+    _valueListenableSignals[listenable] = null;
+    listenable.removeListener(_listener);
+    raw.dispose();
+  }
 
-    return delegated;
+  /// Whether this bridge has been disposed.
+  bool get isDisposed => _isDisposed;
+
+  @override
+  T get peek => _isDisposed ? _disposedValue : listenable.value;
+
+  @override
+  T get value {
+    if (_isDisposed) return _disposedValue;
+    return raw.get();
+  }
+
+  void _listener() {
+    raw.set(listenable.value);
   }
 }

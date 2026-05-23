@@ -1,79 +1,51 @@
 import 'package:flutter/widgets.dart';
-import 'package:jolt/core.dart' as reactive;
-import 'package:jolt_flutter/core.dart';
+import 'package:jolt/core.dart';
 
 import '../effect/flutter_effect.dart';
 
-/// A widget that automatically rebuilds when any signal accessed in its builder changes.
+/// A [StatelessWidget] that rebuilds when reactive values read in [builder] change.
 ///
-/// [JoltBuilder] creates a reactive scope where any signal access is tracked.
-/// When tracked signals change, the widget automatically rebuilds with the new values.
+/// During each build, [builder] runs inside a reactive scope. Any [Readable]
+/// accessed there becomes a dependency. When a dependency changes,
+/// [FlutterEffect] schedules a rebuild at the end of the current frame, so
+/// multiple updates in one frame coalesce into a single rebuild.
 ///
-/// This is the primary widget for creating reactive UIs with Jolt signals.
-///
-/// ## Usage
-///
-/// Any signal, computed value, or reactive collection accessed within the [builder]
-/// will be automatically tracked. When these reactive values change, the widget
-/// rebuilds to reflect the new state.
-///
-/// Multiple signals accessed in the same builder will trigger a single rebuild
-/// when any of them change. Batch updates are handled automatically, ensuring
-/// only one rebuild occurs per frame.
-///
-/// ## Parameters
-///
-/// - [builder]: Function that builds the widget tree and can access signals.
-///   This builder runs in a reactive scope, automatically tracking dependencies.
-///
-/// ## Example
+/// For explicit dependencies only, use [JoltBuilder.manual].
 ///
 /// ```dart
 /// final counter = Signal(0);
-/// final name = Signal('Flutter');
 ///
 /// JoltBuilder(
-///   builder: (context) => Column(
-///     children: [
-///       Text('Hello ${name.value}'),
-///       Text('Count: ${counter.value}'),
-///       ElevatedButton(
-///         onPressed: () => counter.value++,
-///         child: Text('Increment'),
-///       ),
-///     ],
-///   ),
+///   builder: (context) => Text('${counter.value}'),
 /// )
 /// ```
 class JoltBuilder extends StatelessWidget {
+  /// Creates a builder that tracks reactive reads inside [builder].
   const JoltBuilder({super.key, required this.builder});
 
-  /// Function that builds the widget tree and can access reactive signals.
+  /// Creates a builder that rebuilds only when a [Readable] in [deps] changes.
   ///
-  /// Any signal, computed value, or reactive collection accessed within this
-  /// builder will be automatically tracked, and the widget will rebuild when
-  /// any of them change.
+  /// Reactive values read inside [builder] are not tracked. Use this when the
+  /// build function must read signals for display without subscribing to them,
+  /// or when dependencies should be declared explicitly.
+  const factory JoltBuilder.manual({
+    Key? key,
+    required Widget Function(BuildContext context) builder,
+    List<Readable> deps,
+  }) = _JoltBuilderManual;
+
+  /// Builds the widget subtree; reactive reads here establish dependencies.
   final Widget Function(BuildContext context) builder;
 
-  @pragma('vm:prefer-inline')
-  @pragma('wasm:prefer-inline')
-  @pragma('dart2js:prefer-inline')
   @override
-  Widget build(
-    BuildContext context,
-  ) =>
-      builder(context);
+  Widget build(BuildContext context) => builder(context);
 
   @override
-  JoltBuilderElement createElement() => JoltBuilderElement(this);
+  StatelessElement createElement() => _JoltBuilderElement(this);
 }
 
-/// Element for [JoltBuilder] that manages reactive rebuilds.
-///
-/// This element creates an [EffectScope] to track dependencies and automatically
-/// triggers rebuilds when tracked signals change.
-class JoltBuilderElement extends StatelessElement {
-  JoltBuilderElement(JoltBuilder super.widget);
+class _JoltBuilderElement extends StatelessElement {
+  _JoltBuilderElement(JoltBuilder super.widget);
 
   @override
   JoltBuilder get widget => super.widget as JoltBuilder;
@@ -82,8 +54,8 @@ class JoltBuilderElement extends StatelessElement {
 
   @override
   void mount(Element? parent, Object? newSlot) {
-    _effect = FlutterEffect.lazy(markNeedsBuild,
-        debug: const JoltDebugOption.type('JoltBuilder'));
+    _effect = FlutterEffect(markNeedsBuild,
+        lazy: true, debug: const JoltDebugOption.type('JoltBuilder'));
 
     super.mount(parent, newSlot);
   }
@@ -98,11 +70,63 @@ class JoltBuilderElement extends StatelessElement {
 
   @override
   Widget build() {
-    final prevSub = reactive.setActiveSub(_effect as ReactiveNode);
+    final prevSub = setActiveSub((_effect as EffectImpl).raw);
     try {
       return widget.build(this);
     } finally {
-      reactive.setActiveSub(prevSub);
+      setActiveSub(prevSub);
     }
+  }
+}
+
+class _JoltBuilderManual extends StatelessWidget implements JoltBuilder {
+  const _JoltBuilderManual(
+      {super.key, required this.builder, this.deps = const []});
+
+  @override
+  final Widget Function(BuildContext context) builder;
+  final List<Readable> deps;
+
+  @override
+  Widget build(BuildContext context) => builder(context);
+
+  @override
+  StatelessElement createElement() => _JoltBuilderManualElement(this);
+}
+
+class _JoltBuilderManualElement extends StatelessElement {
+  _JoltBuilderManualElement(_JoltBuilderManual super.widget);
+
+  @override
+  _JoltBuilderManual get widget => super.widget as _JoltBuilderManual;
+
+  FlutterEffect? _effect;
+
+  @override
+  void mount(Element? parent, Object? newSlot) {
+    _effect = FlutterEffect(markNeedsBuild,
+        debug: const JoltDebugOption.type('JoltBuilder'));
+
+    super.mount(parent, newSlot);
+  }
+
+  @override
+  void unmount() {
+    _effect?.dispose();
+    _effect = null;
+    super.unmount();
+  }
+
+  @override
+  Widget build() {
+    final prevSub = setActiveSub((_effect as EffectImpl).raw);
+    try {
+      for (final dep in widget.deps) {
+        dep.value;
+      }
+    } finally {
+      setActiveSub(prevSub);
+    }
+    return widget.build(this);
   }
 }

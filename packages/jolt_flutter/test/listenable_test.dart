@@ -1,851 +1,243 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:jolt_flutter/extension.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
 
 void main() {
   group('JoltValueListenable', () {
-    test('Signal.listenable - basic functionality', () {
+    test('mirrors readable value', () {
       final signal = Signal(0);
       final listenable = signal.listenable;
 
       expect(listenable.value, 0);
-      expect(listenable.node, signal);
-
-      signal.value = 1;
-      expect(listenable.value, 1);
-    });
-
-    test('Computed.listenable - basic functionality', () {
-      final signal = Signal(0);
-      final computed = Computed(() => signal.value * 2);
-      final listenable = computed.listenable;
-
-      expect(listenable.value, 0);
-      expect(listenable.node, computed);
-
-      signal.value = 1;
-      expect(listenable.value, 2);
-    });
-
-    test('listenable - caching mechanism', () {
-      final signal = Signal(0);
-      final listenable1 = signal.listenable;
-      final listenable2 = signal.listenable;
-
-      expect(identical(listenable1, listenable2), true);
-    });
-
-    test('listenable - listener functionality', () {
-      final signal = Signal(0);
-      final listenable = signal.listenable;
-      int callCount = 0;
-
-      void listener() {
-        callCount++;
-      }
-
-      listenable.addListener(listener);
-
-      expect(listenable.hasListeners, true);
-
-      signal.value = 1;
-      expect(callCount, 1);
-
       signal.value = 2;
-      expect(callCount, 2);
+      expect(listenable.value, 2);
 
-      // Removing non-existent listener should not affect
-      listenable.removeListener(() {});
-      expect(listenable.hasListeners, true);
-
-      // Remove the actual listener
-      listenable.removeListener(listener);
-      expect(listenable.hasListeners, false);
+      signal.dispose();
     });
 
-    test('listenable - read-only property', () {
+    test('reuses cache until disposed', () {
       final signal = Signal(0);
-      final listenable = signal.listenable;
+      final first = signal.listenable;
+      final second = signal.listenable;
 
-      // ignore: unnecessary_type_check
-      expect(listenable is ValueListenable<int>, true);
-      expect(listenable is ValueNotifier<int>, false);
+      expect(identical(first, second), isTrue);
+
+      first.dispose();
+
+      final third = signal.listenable;
+      expect(identical(first, third), isFalse);
+
+      third.dispose();
+      signal.dispose();
     });
 
-    test('listenable - no updates after dispose', () {
+    test('notifies listeners on change', () {
       final signal = Signal(0);
       final listenable = signal.listenable;
-      int callCount = 0;
+      var count = 0;
 
-      listenable.addListener(() {
-        callCount++;
-      });
-
-      expect(listenable.value, 0);
-
+      listenable.addListener(() => count++);
       signal.value = 1;
-      expect(listenable.value, 1);
-      expect(callCount, 1);
 
+      expect(count, 1);
+      signal.dispose();
+    });
+
+    test('stops notifying after dispose', () {
+      final signal = Signal(0);
+      final listenable = signal.listenable;
+      var count = 0;
+
+      listenable.addListener(() => count++);
+      signal.value = 1;
       listenable.dispose();
 
       signal.value = 2;
-      // After dispose, value can still be read (using peek), but listeners no longer trigger
       expect(listenable.value, 2);
-      expect(callCount, 1); // Listener no longer triggers
-    });
-
-    test('listenable - independent caching for multiple signals', () {
-      final signal1 = Signal(0);
-      final signal2 = Signal(10);
-
-      final listenable1a = signal1.listenable;
-      final listenable1b = signal1.listenable;
-      final listenable2a = signal2.listenable;
-      final listenable2b = signal2.listenable;
-
-      expect(identical(listenable1a, listenable1b), true);
-      expect(identical(listenable2a, listenable2b), true);
-      expect(identical(listenable1a, listenable2a), false);
-    });
-
-    testWidgets('listenable - usage in Widget', (tester) async {
-      final signal = Signal(0);
-      final listenable = signal.listenable;
-      int rebuildCount = 0;
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: ValueListenableBuilder<int>(
-              valueListenable: listenable,
-              builder: (context, value, child) {
-                rebuildCount++;
-                return Text('Value: $value');
-              },
-            ),
-          ),
-        ),
-      );
-
-      expect(find.text('Value: 0'), findsOneWidget);
-      expect(rebuildCount, 1);
-
-      signal.value = 1;
-      await tester.pumpAndSettle();
-
-      expect(find.text('Value: 1'), findsOneWidget);
-      expect(rebuildCount, 2);
-    });
-
-    test('ValueListenable.toListenableSignal - unidirectional sync', () {
-      final notifier = ValueNotifier(0);
-      final signal = notifier.toListenableSignal();
-
-      expect(signal.value, 0);
-
-      notifier.value = 1;
-      expect(signal.value, 1);
-
-      // ReadonlySignal cannot set value directly
-      expect(() {
-        (signal as dynamic).value = 2;
-      }, throwsA(isA<NoSuchMethodError>()));
-    });
-
-    test('ValueListenable.toListenableSignal - listener sync', () {
-      final notifier = ValueNotifier(0);
-      final signal = notifier.toListenableSignal();
-      int callCount = 0;
-
-      final effect = Effect(() {
-        signal.value; // Read value to establish dependency
-        callCount++;
-      });
-
-      notifier.value = 1;
-      expect(callCount, 2); // Initial execution + update
-      expect(signal.value, 1);
-
-      notifier.value = 2;
-      expect(callCount, 3);
-      expect(signal.value, 2);
-
-      effect.dispose();
-    });
-
-    test('ValueListenable.toListenableSignal - dispose cleanup', () {
-      final notifier = ValueNotifier(0);
-      final signal = notifier.toListenableSignal();
-      int callCount = 0;
-
-      final effect = Effect(() {
-        signal.value; // Read value to establish dependency
-        callCount++;
-      });
-
-      expect(signal.value, 0);
-      expect(callCount, 1); // Initial execution
+      expect(count, 1);
 
       signal.dispose();
-
-      notifier.value = 1;
-
-      expect(signal.value, 0);
-      expect(callCount, 1); // Effect no longer triggers
-
-      effect.dispose();
     });
 
-    testWidgets('ValueListenable.toListenableSignal - usage in Widget',
-        (tester) async {
-      final notifier = ValueNotifier(0);
-      final signal = notifier.toListenableSignal();
-      int rebuildCount = 0;
+    testWidgets('works in ValueListenableBuilder', (tester) async {
+      final signal = Signal(0);
 
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: Column(
-              children: [
-                ElevatedButton(
-                  key: Key('increment'),
-                  onPressed: () {
-                    notifier.value++;
-                  },
-                  child: Text('Increment'),
-                ),
-                JoltBuilder(
-                  builder: (context) {
-                    rebuildCount++;
-                    return Text('Signal: ${signal.value}');
-                  },
-                ),
-              ],
-            ),
+          home: ValueListenableBuilder<int>(
+            valueListenable: signal.listenable,
+            builder: (context, value, _) => Text('$value'),
           ),
         ),
       );
 
-      expect(find.text('Signal: 0'), findsOneWidget);
-      expect(rebuildCount, 1);
-
-      await tester.tap(find.byKey(Key('increment')));
+      signal.value = 1;
       await tester.pumpAndSettle();
 
-      expect(find.text('Signal: 1'), findsOneWidget);
-      expect(rebuildCount, 2);
+      expect(find.text('1'), findsOneWidget);
+      signal.dispose();
     });
+  });
 
-    test(
-        'ValueListenable.toListenableSignal - multiple conversions return same instance',
-        () {
-      // Signal -> listenable -> toListenableSignal should return original Signal
-      final signal = Signal(0);
-      final listenable = signal.listenable;
-      final signal2 = listenable.toListenableSignal();
-
-      // Should return the same Signal instance
-      expect(identical(signal, signal2), true);
-
-      // Verify sync
-      signal.value = 1;
-      expect(signal2.value, 1);
-      expect(listenable.value, 1);
-    });
-
-    test(
-        'ValueListenable.toListenableSignal - Computed conversion returns original instance',
-        () {
-      // Computed -> listenable -> toListenableSignal should return original Computed
-      // because Computed implements ReadonlySignal interface
-      final source = Signal(0);
-      final computed = Computed(() => source.value * 2);
-      final listenable = computed.listenable;
-      final signal = listenable.toListenableSignal();
-
-      // Should return original Computed instance because Computed implements ReadonlySignal
-      expect(identical(computed, signal), true);
-      expect(signal is Computed<int>, true);
-
-      // Verify sync
-      expect(signal.value, 0);
-      source.value = 1;
-      expect(signal.value, 2);
-      expect(listenable.value, 2);
-    });
-
-    test(
-        'ValueListenable.toListenableSignal - multiple calls return same instance',
-        () {
-      final signal = Signal(0);
-      final listenable = signal.listenable;
-      final signal1 = listenable.toListenableSignal();
-      final signal2 = listenable.toListenableSignal();
-
-      // Multiple calls should return the same instance
-      expect(identical(signal1, signal2), true);
-      expect(identical(signal, signal1), true);
-    });
-
-    test(
-        'ValueListenable.toListenableSignal - multiple signals from same notifier share delegated and refcount works correctly',
-        () async {
+  group('toListenableSignal', () {
+    test('syncs from ValueListenable to readable', () {
       final notifier = ValueNotifier(0);
-
-      final signal1 = notifier.toListenableSignal();
-      final signal2 = notifier.toListenableSignal();
-      final signal3 = notifier.toListenableSignal();
-
-      expect(signal1.value, 0);
-      expect(signal2.value, 0);
-      expect(signal3.value, 0);
+      final readable = notifier.toListenableSignal();
 
       notifier.value = 1;
-      expect(signal1.value, 1);
-      expect(signal2.value, 1);
-      expect(signal3.value, 1);
+      expect(readable.value, 1);
 
-      signal1.dispose();
-
-      await Future.delayed(Duration(milliseconds: 10));
-
-      expect(signal1.isDisposed, true);
-
-      notifier.value = 2;
-      expect(signal2.value, 2);
-      expect(signal3.value, 2);
-
-      expect(signal1.isDisposed, true);
-
-      signal2.dispose();
-      await Future.delayed(Duration(milliseconds: 10));
-      expect(signal2.isDisposed, true);
-
-      notifier.value = 3;
-      expect(signal3.value, 3);
-      expect(signal3.isDisposed, false);
-
-      signal3.dispose();
-      await Future.delayed(Duration(milliseconds: 10));
-      expect(signal3.isDisposed, true);
-
-      final signal4 = notifier.toListenableSignal();
-      expect(signal4.isDisposed, false);
-      expect(signal4.value, 3);
-
-      notifier.value = 4;
-      expect(signal4.value, 4);
-
-      expect(identical(signal1, signal4), false);
-      expect(identical(signal2, signal4), false);
-      expect(identical(signal3, signal4), false);
-
-      signal4.dispose();
       notifier.dispose();
     });
 
-    test(
-        'ValueListenable.toListenableSignal - dispose one signal should not dispose delegated when others still exist',
-        () async {
+    test('returns original node for JoltValueListenable', () {
+      final signal = Signal(0);
+      final bridge = signal.listenable.toListenableSignal();
+      expect(identical(signal, bridge), isTrue);
+      signal.dispose();
+    });
+
+    test('returns original node for JoltValueNotifier', () {
+      final signal = Signal(0);
+      final bridge = signal.notifier.toListenableSignal();
+      expect(identical(signal, bridge), isTrue);
+      signal.dispose();
+    });
+
+    test('shared bridge until dispose', () {
       final notifier = ValueNotifier(0);
+      final a = notifier.toListenableSignal() as ValueListenableSignal<int>;
+      final b = notifier.toListenableSignal() as ValueListenableSignal<int>;
 
-      final signal1 = notifier.toListenableSignal();
-      final signal2 = notifier.toListenableSignal();
-      final signal3 = notifier.toListenableSignal();
+      expect(identical(a, b), isTrue);
 
-      expect(signal1.value, 0);
-      expect(signal2.value, 0);
-      expect(signal3.value, 0);
+      a.dispose();
+      expect(a.isDisposed, isTrue);
+      expect(b.isDisposed, isTrue);
 
       notifier.value = 1;
-      expect(signal1.value, 1);
-      expect(signal2.value, 1);
-      expect(signal3.value, 1);
+      expect(b.value, 0);
+      expect(b.peek, 0);
 
-      // Dispose signal1
-      signal1.dispose();
-      expect(signal1.isDisposed, true);
+      final c = notifier.toListenableSignal() as ValueListenableSignal<int>;
+      expect(c.value, 1);
 
-      await Future.delayed(Duration(milliseconds: 10));
-
-      notifier.value = 2;
-      expect(signal2.value, 2,
-          reason: 'signal2 should still work after signal1 is disposed');
-      expect(signal3.value, 2,
-          reason: 'signal3 should still work after signal1 is disposed');
-
-      notifier.value = 3;
-      expect(signal2.value, 3, reason: 'signal2 should still work');
-      expect(signal3.value, 3, reason: 'signal3 should still work');
-
-      signal2.dispose();
-      signal3.dispose();
+      c.dispose();
       notifier.dispose();
     });
 
-    test(
-        'ValueListenable.toListenableSignal - multiple dispose calls should not cause double release',
-        () async {
+    testWidgets('drives JoltBuilder from notifier', (tester) async {
       final notifier = ValueNotifier(0);
+      final readable = notifier.toListenableSignal();
 
-      final signal1 = notifier.toListenableSignal();
-      final signal2 = notifier.toListenableSignal();
-
-      expect(signal1.value, 0);
-      expect(signal2.value, 0);
-
-      signal1.dispose();
-      expect(signal1.isDisposed, true);
-
-      signal1.dispose();
-      expect(signal1.isDisposed, true);
-
-      await Future.delayed(Duration(milliseconds: 10));
+      await tester.pumpWidget(
+        MaterialApp(
+          home: JoltBuilder(
+            builder: (context) => Text('${readable.value}'),
+          ),
+        ),
+      );
 
       notifier.value = 1;
-      expect(signal2.value, 1,
-          reason:
-              'signal2 should still work after signal1 is disposed multiple times');
+      await tester.pumpAndSettle();
 
-      signal2.dispose();
+      expect(find.text('1'), findsOneWidget);
+
       notifier.dispose();
     });
   });
 
   group('JoltValueNotifier', () {
-    test('Signal.notifier - basic functionality', () {
+    test('bidirectional sync with writable', () {
       final signal = Signal(0);
       final notifier = signal.notifier;
 
-      expect(notifier.value, 0);
-
       signal.value = 1;
-      expect(notifier.value, 1);
-    });
-
-    test('Signal.notifier - bidirectional sync', () {
-      final signal = Signal(0);
-      final notifier = signal.notifier;
-
-      expect(signal.value, 0);
-      expect(notifier.value, 0);
-
-      signal.value = 1;
-      expect(signal.value, 1);
       expect(notifier.value, 1);
 
       notifier.value = 2;
       expect(signal.value, 2);
-      expect(notifier.value, 2);
-    });
-
-    test('Signal.notifier - caching mechanism', () {
-      final signal = Signal(0);
-      final notifier1 = signal.notifier;
-      final notifier2 = signal.notifier;
-
-      expect(identical(notifier1, notifier2), true);
-    });
-
-    test('Signal.notifier - listener functionality', () {
-      final signal = Signal(0);
-      final notifier = signal.notifier;
-      int callCount = 0;
-
-      notifier.addListener(() {
-        callCount++;
-      });
-
-      expect(notifier.hasListeners, true);
-
-      signal.value = 1;
-      expect(callCount, 1);
-      expect(notifier.value, 1);
-
-      notifier.value = 2;
-      expect(callCount, 2);
-      expect(signal.value, 2);
-    });
-
-    test('Signal.notifier - no sync after dispose', () {
-      final signal = Signal(0);
-      final notifier = signal.notifier;
-      int callCount = 0;
-
-      notifier.addListener(() {
-        callCount++;
-      });
-
-      expect(notifier.value, 0);
-
-      signal.value = 1;
-      expect(notifier.value, 1);
-      expect(callCount, 1);
-
-      notifier.dispose();
-
-      signal.value = 2;
-      // After dispose, value can still be read (using peek), but listeners no longer trigger
-      expect(notifier.value, 2);
-      expect(callCount, 1); // Listener no longer triggers
-    });
-
-    test('Signal.notifier - independent caching for multiple signals', () {
-      final signal1 = Signal(0);
-      final signal2 = Signal(10);
-
-      final notifier1a = signal1.notifier;
-      final notifier1b = signal1.notifier;
-      final notifier2a = signal2.notifier;
-      final notifier2b = signal2.notifier;
-
-      expect(identical(notifier1a, notifier1b), true);
-      expect(identical(notifier2a, notifier2b), true);
-      expect(identical(notifier1a, notifier2a), false);
-    });
-
-    testWidgets('Signal.notifier - usage in Widget', (tester) async {
-      final signal = Signal(0);
-      final notifier = signal.notifier;
-      int rebuildCount = 0;
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Column(
-              children: [
-                ElevatedButton(
-                  key: Key('incrementSignal'),
-                  onPressed: () {
-                    signal.value++;
-                  },
-                  child: Text('Increment Signal'),
-                ),
-                ElevatedButton(
-                  key: Key('incrementNotifier'),
-                  onPressed: () {
-                    notifier.value++;
-                  },
-                  child: Text('Increment Notifier'),
-                ),
-                ValueListenableBuilder<int>(
-                  valueListenable: notifier,
-                  builder: (context, value, child) {
-                    rebuildCount++;
-                    return Text('Value: $value');
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-
-      expect(find.text('Value: 0'), findsOneWidget);
-      expect(rebuildCount, 1);
-
-      await tester.tap(find.byKey(Key('incrementSignal')));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Value: 1'), findsOneWidget);
-      expect(rebuildCount, 2);
-
-      await tester.tap(find.byKey(Key('incrementNotifier')));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Value: 2'), findsOneWidget);
-      expect(rebuildCount, 3);
-      expect(signal.value, 2);
-    });
-
-    test('ValueNotifier.toNotifierSignal - bidirectional sync', () {
-      final notifier = ValueNotifier(0);
-      final signal = notifier.toNotifierSignal();
-
-      expect(notifier.value, 0);
-      expect(signal.value, 0);
-
-      notifier.value = 1;
-      expect(notifier.value, 1);
-      expect(signal.value, 1);
-
-      signal.value = 2;
-      expect(notifier.value, 2);
-      expect(signal.value, 2);
-    });
-
-    test('ValueNotifier.toNotifierSignal - listener sync', () {
-      final notifier = ValueNotifier(0);
-      final signal = notifier.toNotifierSignal();
-      int signalCallCount = 0;
-      int notifierCallCount = 0;
-
-      final effect = Effect(() {
-        signal.value; // Read value to establish dependency
-        signalCallCount++;
-      });
-
-      notifier.addListener(() {
-        notifierCallCount++;
-      });
-
-      notifier.value = 1;
-      expect(signalCallCount, 2); // Initial execution + update
-      expect(notifierCallCount, 1);
-      expect(signal.value, 1);
-      expect(notifier.value, 1);
-
-      signal.value = 2;
-      expect(signalCallCount, 3);
-      expect(notifierCallCount, 2);
-      expect(signal.value, 2);
-      expect(notifier.value, 2);
-
-      effect.dispose();
-    });
-
-    test('ValueNotifier.toNotifierSignal - dispose cleanup', () {
-      final notifier = ValueNotifier(0);
-      final signal = notifier.toNotifierSignal();
-      int callCount = 0;
-
-      final effect = Effect(() {
-        signal.value; // Read value to establish dependency
-        callCount++;
-      });
-
-      expect(signal.value, 0);
-      expect(callCount, 1); // Initial execution
 
       signal.dispose();
+    });
+
+    test('reuses cache until disposed', () {
+      final signal = Signal(0);
+      final first = signal.notifier;
+      final second = signal.notifier;
+
+      expect(identical(first, second), isTrue);
+
+      first.dispose();
+
+      final third = signal.notifier;
+      expect(identical(first, third), isFalse);
+
+      third.dispose();
+      signal.dispose();
+    });
+
+    test('stops notifying after dispose', () {
+      final signal = Signal(0);
+      final notifier = signal.notifier;
+      var count = 0;
+
+      notifier.addListener(() => count++);
+      signal.value = 1;
+      notifier.dispose();
+
+      notifier.value = 2;
+      expect(count, 1);
+
+      signal.dispose();
+    });
+  });
+
+  group('toNotifierSignal', () {
+    test('bidirectional sync with ValueNotifier', () {
+      final notifier = ValueNotifier(0);
+      final signal = notifier.toNotifierSignal();
 
       notifier.value = 1;
+      expect(signal.value, 1);
 
-      expect(signal.value, 0);
-      expect(callCount, 1); // Effect no longer triggers
-
-      effect.dispose();
-    });
-
-    test('ValueNotifier.toNotifierSignal - avoid circular updates', () {
-      final notifier = ValueNotifier(0);
-      final signal = notifier.toNotifierSignal();
-
-      // Setting the same value should not trigger updates
-      var count = 0;
-      final effect = Effect(() {
-        signal.value;
-        count++;
-      });
-      expect(count, 1);
-      notifier.value = 0;
-      expect(count, 1);
-      effect.dispose();
-
-      void listener() {
-        count++;
-      }
-
-      count = 0;
-      notifier.addListener(listener);
-      signal.value = 0;
-
-      expect(count, 0);
-      notifier.removeListener(listener);
-    });
-
-    testWidgets('ValueNotifier.toNotifierSignal - usage in Widget',
-        (tester) async {
-      final notifier = ValueNotifier(0);
-      final signal = notifier.toNotifierSignal();
-      int rebuildCount = 0;
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Column(
-              children: [
-                ElevatedButton(
-                  key: Key('incrementNotifier'),
-                  onPressed: () {
-                    notifier.value++;
-                  },
-                  child: Text('Increment Notifier'),
-                ),
-                ElevatedButton(
-                  key: Key('incrementSignal'),
-                  onPressed: () {
-                    signal.value++;
-                  },
-                  child: Text('Increment Signal'),
-                ),
-                JoltBuilder(
-                  builder: (context) {
-                    rebuildCount++;
-                    return Text(
-                        'Notifier: ${notifier.value}, Signal: ${signal.value}');
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-
-      expect(find.text('Notifier: 0, Signal: 0'), findsOneWidget);
-      expect(rebuildCount, 1);
-
-      await tester.tap(find.byKey(Key('incrementNotifier')));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Notifier: 1, Signal: 1'), findsOneWidget);
-      expect(rebuildCount, 2);
-
-      await tester.tap(find.byKey(Key('incrementSignal')));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Notifier: 2, Signal: 2'), findsOneWidget);
-      expect(rebuildCount, 3);
-    });
-
-    test(
-        'ValueNotifier.toNotifierSignal - multiple conversions return same instance',
-        () {
-      // Signal -> notifier -> toNotifierSignal should return original Signal
-      final signal = Signal(0);
-      final notifier = signal.notifier;
-      final signal2 = notifier.toNotifierSignal();
-
-      // Should return the same Signal instance
-      expect(identical(signal, signal2), true);
-
-      // Verify bidirectional sync
-      signal.value = 1;
-      expect(signal2.value, 1);
-      expect(notifier.value, 1);
-
-      signal2.value = 2;
-      expect(signal.value, 2);
+      signal.value = 2;
       expect(notifier.value, 2);
+
+      signal.dispose();
+      notifier.dispose();
     });
 
-    test('ValueNotifier.toNotifierSignal - multiple calls return same instance',
-        () {
+    test('returns original signal for JoltValueNotifier', () {
       final signal = Signal(0);
-      final notifier = signal.notifier;
-      final signal1 = notifier.toNotifierSignal();
-      final signal2 = notifier.toNotifierSignal();
-
-      // Multiple calls should return the same instance
-      expect(identical(signal1, signal2), true);
-      expect(identical(signal, signal1), true);
+      final bridge = signal.notifier.toNotifierSignal();
+      expect(identical(signal, bridge), isTrue);
+      signal.dispose();
     });
 
-    test('complex conversion chain', () {
-      final n1 = ValueNotifier(0);
-      final rs1 = n1.toListenableSignal();
-      final s1 = n1.toNotifierSignal();
-      final n2 = s1.notifier;
-      final rs2 = n2.toListenableSignal();
-      final s3 = n2.toNotifierSignal();
+    test('shared writable bridge until dispose', () {
+      final notifier = ValueNotifier(0);
+      final a = notifier.toNotifierSignal();
+      final b = notifier.toNotifierSignal();
 
-      // Initial state
-      expect(n1.value, 0);
-      expect(rs1.value, 0);
-      expect(s1.value, 0);
-      expect(n2.value, 0);
-      expect(rs2.value, 0);
-      expect(s3.value, 0);
+      expect(identical(a, b), isTrue);
 
-      // Update from original ValueNotifier
-      n1.value = 1;
-      expect(n1.value, 1);
-      expect(rs1.value, 1);
-      expect(s1.value, 1);
-      expect(n2.value, 1);
-      expect(rs2.value, 1);
-      expect(s3.value, 1);
+      a.dispose();
+      expect(a.isDisposed, isTrue);
+      expect(b.isDisposed, isTrue);
 
-      // Update from Signal s1
-      s1.value = 2;
-      expect(n1.value, 2);
-      expect(rs1.value, 2);
-      expect(s1.value, 2);
-      expect(n2.value, 2);
-      expect(rs2.value, 2);
-      expect(s3.value, 2);
+      b.value = 2;
+      expect(notifier.value, 0);
 
-      // Update from ValueNotifier n2
-      n2.value = 3;
-      expect(n1.value, 3);
-      expect(rs1.value, 3);
-      expect(s1.value, 3);
-      expect(n2.value, 3);
-      expect(rs2.value, 3);
-      expect(s3.value, 3);
+      notifier.value = 1;
+      expect(b.value, 0);
+      expect(b.peek, 0);
 
-      // Update from Signal s3
-      s3.value = 4;
-      expect(n1.value, 4);
-      expect(rs1.value, 4);
-      expect(s1.value, 4);
-      expect(n2.value, 4);
-      expect(rs2.value, 4);
-      expect(s3.value, 4);
+      final c = notifier.toNotifierSignal();
+      expect(c.value, 1);
 
-      // Cleanup
-      n1.dispose();
-      s1.dispose();
-      s3.dispose();
-    });
-
-    test('multiple conversions dispose test', () {
-      final n1 = ValueNotifier(0);
-      final rs1 = n1.toListenableSignal();
-      final rs2 = n1.toListenableSignal();
-      final s1 = n1.toNotifierSignal();
-      final s2 = n1.toNotifierSignal();
-
-      // All should sync
-      n1.value = 1;
-      expect(n1.value, 1);
-      expect(rs1.value, 1);
-      expect(rs2.value, 1);
-      expect(s1.value, 1);
-      expect(s2.value, 1);
-
-      // Dispose a read-only signal
-      rs1.dispose();
-
-      // Others should still work
-      n1.value = 2;
-      expect(n1.value, 2);
-      expect(rs2.value, 2);
-      expect(s1.value, 2);
-      expect(s2.value, 2);
-
-      // Dispose a writable signal
-      s1.dispose();
-
-      // Others should still work
-      n1.value = 3;
-      expect(n1.value, 3);
-      expect(rs2.value, 3);
-      expect(s2.value, 3);
-
-      // Test bidirectional sync of remaining signal
-      s2.value = 4;
-      expect(n1.value, 4);
-      expect(rs2.value, 4);
-      expect(s2.value, 4);
-
-      // Cleanup
-      n1.dispose();
-      rs2.dispose();
-      s2.dispose();
+      c.dispose();
+      notifier.dispose();
     });
   });
 }

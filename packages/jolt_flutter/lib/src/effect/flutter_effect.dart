@@ -1,276 +1,50 @@
 import 'package:flutter/scheduler.dart';
 import 'package:jolt/core.dart';
 import 'package:jolt/jolt.dart';
-import 'package:meta/meta.dart';
-import 'package:shared_interfaces/shared_interfaces.dart';
 
-/// Implementation of [FlutterEffect] that schedules execution at the end of the current Flutter frame.
+/// An [Effect] that runs reactive callbacks at the end of the current frame.
 ///
-/// This effect batches multiple triggers within the same frame and executes only once
-/// at the end of the frame, avoiding unnecessary repeated executions during frame rendering.
+/// Multiple dependency notifications in the same frame are coalesced into one
+/// execution scheduled via [SchedulerBinding.endOfFrame]. Use this for UI work
+/// that should not run synchronously during layout or paint.
 ///
-/// Example:
-/// ```dart
-/// final count = Signal(0);
-///
-/// // Effect runs once at end of frame, even if count changes multiple times
-/// final effect = FlutterEffect(() {
-///   print('Count is: ${count.value}');
-/// });
-///
-/// count.value = 1;
-/// count.value = 2;
-/// count.value = 3;
-/// // Effect executes once at end of frame with count.value = 3
-/// ```
-class FlutterEffectImpl extends EffectReactiveNode
-    with DisposableNodeMixin, EffectCleanupMixin
-    implements FlutterEffect, EffectScheduler, EffectNode {
-  /// {@template flutter_effect_impl}
-  /// Creates a new Flutter effect with the given function.
-  ///
-  /// Parameters:
-  /// - [fn]: The effect function to execute
-  /// - [lazy]: Whether to defer running the effect on creation.
-  ///   If `true`, the effect will NOT run immediately and will not track
-  ///   dependencies until you call [run]. If `false` (default), the effect
-  ///   runs immediately on creation and then re-runs at frame end whenever
-  ///   its reactive dependencies change.
-  /// - [detach]: Whether to detach this effect from the current effect scope.
-  ///   If true, the effect will not be automatically disposed when its parent
-  ///   scope is disposed.
-  /// - [debug]: Optional debug options
-  ///
-  /// The effect function will be called at the end of the current Flutter frame,
-  /// batching multiple triggers within the same frame into a single execution.
-  ///
-  /// Example:
-  /// ```dart
-  /// final signal = Signal(0);
-  ///
-  /// // Effect runs at end of frame when signal changes
-  /// final effect = FlutterEffect(() {
-  ///   print('Signal value: ${signal.value}');
-  /// });
-  ///
-  /// signal.value = 1;
-  /// signal.value = 2;
-  /// // Effect executes once at end of frame with signal.value = 2
-  /// ```
-  /// {@endtemplate}
-  FlutterEffectImpl(this.fn, {bool lazy = false, bool? detach, JoltDebugOption? debug})
-      : super(flags: ReactiveFlags.watching | ReactiveFlags.recursedCheck) {
-    JoltDebug.create(this, debug);
-
-    if (!(detach ?? false)) {
-      final prevSub = getActiveSub();
-      if (prevSub != null) {
-        link(this, prevSub, 0);
-      }
-    }
-
-    if (!lazy) {
-      final prevSub = setActiveSub(this);
-      try {
-        _effectFn();
-      } finally {
-        setActiveSub(prevSub);
-        flags &= ~ReactiveFlags.recursedCheck;
-      }
-    } else {
-      flags &= ~ReactiveFlags.recursedCheck;
-    }
-  }
-
-  /// {@template flutter_effect_impl.lazy}
-  /// Creates a new Flutter effect that does not run automatically upon creation.
-  ///
-  /// This factory method is a convenience constructor for creating an effect
-  /// with [lazy] set to `true`. The effect will not execute until you call
-  /// [run]. After the first manual run, it will track dependencies and re-run
-  /// at the end of frames whenever those dependencies change.
-  ///
-  /// Parameters:
-  /// - [fn]: The effect function to execute
-  /// - [detach]: Whether to detach this effect from the current effect scope
-  /// - [debug]: Optional debug options
-  ///
-  /// Returns: A new [FlutterEffect] instance that starts in deferred mode
-  ///
-  /// Example:
-  /// ```dart
-  /// final signal = Signal(10);
-  /// final values = <int>[];
-  ///
-  /// FlutterEffect.lazy(() {
-  ///   values.add(signal.value);
-  /// });
-  ///
-  /// // Effect has not run yet
-  /// expect(values, isEmpty);
-  ///
-  /// effect.run(); // Start tracking and run once
-  /// expect(values, equals([10]));
-  ///
-  /// signal.value = 20; // Effect schedules for end of frame
-  /// ```
-  /// {@endtemplate}
-  factory FlutterEffectImpl.lazy(void Function() fn,
-      {bool? detach, JoltDebugOption? debug}) {
-    return FlutterEffectImpl(fn, lazy: true, detach: detach, debug: debug);
-  }
-
-  /// The function that defines the effect's behavior.
-  @protected
-  final void Function() fn;
-
-  /// Whether a frame-end schedule is pending.
-  bool _isScheduled = false;
-
-  @pragma("vm:prefer-inline")
-  @pragma("wasm:prefer-inline")
-  @pragma("dart2js:prefer-inline")
-  void _effectFn() {
-    doCleanup();
-    wrappedFn();
-    JoltDebug.effect(this);
-  }
-
-  @pragma("vm:prefer-inline")
-  @pragma("wasm:prefer-inline")
-  @pragma("dart2js:prefer-inline")
-  @protected
-  void wrappedFn() => fn();
-
-  /// Schedules this effect to run at the end of the current Flutter frame.
-  ///
-  /// This method implements the [EffectScheduler] interface, allowing custom
-  /// scheduling behavior. Multiple calls within the same frame will only
-  /// result in a single execution at frame end (batch processing).
-  ///
-  /// Returns: `true` to indicate custom scheduling was handled
-  @override
-  bool schedule() {
-    // If already scheduled for this frame, skip
-    if (_isScheduled) {
-      return true;
-    }
-
-    // Mark as scheduled
-    _isScheduled = true;
-
-    // Schedule for end of frame
-    SchedulerBinding.instance.endOfFrame.then((_) {
-      _isScheduled = false;
-      _executeEffect();
-    });
-
-    return true;
-  }
-
-  /// Executes the effect function.
-  ///
-  /// This is called at the end of the frame after scheduling.
-  @pragma("vm:prefer-inline")
-  @pragma("wasm:prefer-inline")
-  @pragma("dart2js:prefer-inline")
-  void _executeEffect() {
-    if (isDisposed) return;
-
-    // Mark as dirty to trigger execution
-    flags |= ReactiveFlags.dirty;
-    runEffect();
-  }
-
-  /// Manually runs the effect function immediately, bypassing frame scheduling.
-  ///
-  /// This establishes the effect as the current reactive context,
-  /// allowing it to track dependencies accessed during execution.
-  ///
-  /// Example:
-  /// ```dart
-  /// final effect = FlutterEffect(() => print('Hello'), lazy: false);
-  /// effect.run(); // Prints: "Hello" immediately
-  /// ```
-  @override
-  void run() {
-    if (!isDisposed) {
-      flags |= ReactiveFlags.dirty;
-      runEffect();
-    } else {
-      untracked(_effectFn);
-    }
-  }
-
-  @override
-  @protected
-  void onDispose() {
-    // Mark as scheduled so schedule() returns early and no new frame callback
-    // is queued. Any pending callback will see isDisposed and skip execution.
-    _isScheduled = true;
-    doCleanup();
-    disposeNode(this);
-  }
-
-  @pragma("vm:prefer-inline")
-  @pragma("wasm:prefer-inline")
-  @pragma("dart2js:prefer-inline")
-  @override
-  @protected
-  void runEffect() {
-    // Clear the scheduled flag when effect runs
-    _isScheduled = false;
-    defaultRunEffect(this, _effectFn);
-  }
-}
-
-/// Interface for Flutter effects that schedule execution at frame end.
-///
-/// FlutterEffect is similar to [Effect] but schedules execution at the end of
-/// the current Flutter frame, batching multiple triggers within the same frame
-/// into a single execution. This is useful for UI-related side effects that
-/// should not interfere with frame rendering.
-///
-/// Example:
-/// ```dart
-/// FlutterEffect effect = FlutterEffect(() {
-///   print('Count: ${count.value}');
-/// });
-/// effect.run(); // Manually trigger
-/// effect.dispose(); // Stop the effect
-/// ```
-abstract class FlutterEffect implements EffectNode {
-  /// {@macro flutter_effect_impl}
+/// When [lazy] is `false` (the default), the callback runs once when created.
+/// When [lazy] is `true`, call [run] to execute. When [detach] is `true`, the
+/// effect does not keep its scope alive.
+abstract class FlutterEffect implements Effect {
+  /// Creates a frame-aligned effect for [fn].
   factory FlutterEffect(
     void Function() fn, {
     bool lazy,
-    bool? detach,
+    bool detach,
     JoltDebugOption? debug,
-  }) = FlutterEffectImpl;
+  }) = _FlutterEffectImpl;
+}
 
-  /// {@macro flutter_effect_impl.lazy}
-  factory FlutterEffect.lazy(void Function() fn,
-      {bool? detach, JoltDebugOption? debug}) = FlutterEffectImpl.lazy;
+class _FlutterEffectNode extends EffectNode {
+  _FlutterEffectNode(super.fn, {super.lazy, super.detach, super.debug});
 
-  /// Manually runs the effect function immediately, bypassing frame scheduling.
-  ///
-  /// This establishes the effect as the current reactive context,
-  /// allowing it to track dependencies accessed during execution.
-  ///
-  /// Example:
-  /// ```dart
-  /// effect.run(); // Triggers the effect immediately
-  /// ```
-  void run();
+  bool _isScheduled = false;
 
-  /// Registers a cleanup function to be called when the effect is disposed or re-run.
-  ///
-  /// Parameters:
-  /// - [fn]: The cleanup function to register
-  ///
-  /// Example:
-  /// ```dart
-  /// effect.onCleanUp(() => subscription.cancel());
-  /// ```
-  void onCleanUp(Disposer fn);
+  @override
+  void notifyEffect() {
+    if (_isScheduled) {
+      return;
+    }
+
+    _isScheduled = true;
+
+    SchedulerBinding.instance.endOfFrame.then((_) {
+      _isScheduled = false;
+      run();
+    });
+  }
+}
+
+class _FlutterEffectImpl extends EffectImpl implements FlutterEffect {
+  _FlutterEffectImpl(super.fn,
+      {bool lazy = false, bool detach = false, JoltDebugOption? debug})
+      : super.custom(
+            node: _FlutterEffectNode(fn,
+                lazy: lazy, detach: detach, debug: debug));
 }

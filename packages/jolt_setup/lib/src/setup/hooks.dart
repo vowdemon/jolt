@@ -130,7 +130,7 @@ extension JoltSetupOnDidUpdateWidget<T extends SetupWidget<T>>
   ///
   /// ```dart
   /// setup(context, props) {
-  ///   onDidUpdateWidget((oldWidget, newWidget) {
+  ///   onDidUpdateWidgetAt((oldWidget, newWidget) {
   ///     debugPrint('${oldWidget.key} -> ${newWidget.key}');
   ///   });
   ///
@@ -138,7 +138,7 @@ extension JoltSetupOnDidUpdateWidget<T extends SetupWidget<T>>
   /// }
   /// ```
   @defineHook
-  void onDidUpdateWidget(void Function(T, T) callback) {
+  void onDidUpdateWidgetAt(void Function(T oldWidget, T newWidget) callback) {
     useHook(_OnDidUpdateWidgetHook(callback));
   }
 }
@@ -150,7 +150,7 @@ extension JoltSetupMixinOnDidUpdateWidget<T extends StatefulWidget>
   ///
   /// ```dart
   /// setup(context) {
-  ///   onDidUpdateWidget((oldWidget, newWidget) {
+  ///   onDidUpdateWidgetAt((oldWidget, newWidget) {
   ///     debugPrint('${oldWidget.key} -> ${newWidget.key}');
   ///   });
   ///
@@ -158,7 +158,7 @@ extension JoltSetupMixinOnDidUpdateWidget<T extends StatefulWidget>
   /// }
   /// ```
   @defineHook
-  void onDidUpdateWidget(void Function(T, T) callback) {
+  void onDidUpdateWidgetAt(void Function(T oldWidget, T newWidget) callback) {
     useHook(_OnDidUpdateWidgetHook(callback));
   }
 }

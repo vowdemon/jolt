@@ -133,7 +133,8 @@ These mirror Flutter element lifecycle, registered against the setup runtime.
 | --- | --- |
 | `onMounted(fn)` | After the current setup pass is mounted (all hooks created). |
 | `onUnmounted(fn)` | When the setup scope unmounts. |
-| `onDidUpdateWidget<T>((oldW, newW) => ...)` | Parent rebuilt with a new widget instance. Generic top-level form; the typed extension methods on `SetupWidget` / `SetupMixin` infer `T`. |
+| `onDidUpdateWidget<T>((oldW, newW) => ...)` | Parent rebuilt with a new widget instance. Generic top-level form. |
+| `onDidUpdateWidgetAt((oldW, newW) => ...)` | Same as above, on `SetupWidget` / `SetupMixin` where `T` is inferred. |
 | `onDidChangeDependencies(fn)` | Inherited widget dependencies changed. |
 | `onActivated(fn)` | Widget was reactivated after `deactivate`. |
 | `onDeactivated(fn)` | Widget was temporarily removed from the tree. |
@@ -151,7 +152,7 @@ setup(context, props) {
 }
 ```
 
-Inside a `SetupWidget<T>`, `onDidUpdateWidget` is also exposed as a typed extension (`onDidUpdateWidget((T oldW, T newW) {...})`); same for `SetupMixin`.
+Inside a `SetupWidget<T>` or `SetupMixin<T>`, use `onDidUpdateWidgetAt((T oldW, T newW) {...})` for inferred widget typing.
 
 ---
 

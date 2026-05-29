@@ -771,7 +771,7 @@ void main() {
     });
   });
 
-  group('Extension onDidUpdateWidget', () {
+  group('Extension onDidUpdateWidgetAt', () {
     testWidgets('JoltSetupOnDidUpdateWidget extension works on SetupWidget',
         (tester) async {
       int updateCount = 0;
@@ -847,7 +847,7 @@ class _TestSetupWidget extends SetupWidget<_TestSetupWidget> {
   @override
   setup(context, props) {
     // Use extension method on SetupWidget
-    onDidUpdateWidget(onUpdate);
+    onDidUpdateWidgetAt(onUpdate);
     return () => Text(props().title);
   }
 }
@@ -892,7 +892,7 @@ class _TestStatefulWidgetForExtensionState
   @override
   setup(context) {
     // Use extension method on SetupMixin
-    onDidUpdateWidget(widget.onUpdate);
+    onDidUpdateWidgetAt(widget.onUpdate);
     return () => Text(props.title);
   }
 }

@@ -17,10 +17,6 @@ class EffectImpl implements Effect {
     return EffectImpl(fn, lazy: true, detach: detach, debug: debug);
   }
 
-  @pragma("vm:prefer-inline")
-  @pragma("wasm:prefer-inline")
-  @pragma("dart2js:prefer-inline")
-
   /// The function that defines the effect's behavior.
   @protected
   final void Function() fn;

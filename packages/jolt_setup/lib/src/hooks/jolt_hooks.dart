@@ -341,7 +341,7 @@ class _UseWatcherHook<T> extends SetupHook<WatcherImpl<T>> {
     state.fn = fn;
     state.when = when;
 
-    state.currentValues = state.previosValues = untracked(state.sourcesFn);
+    state.currentValues = state.previousValues = untracked(state.sourcesFn);
 
     if (!wasPaused) {
       state.pause();

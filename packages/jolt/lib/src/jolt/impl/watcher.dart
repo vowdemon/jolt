@@ -13,7 +13,7 @@ class WatcherImpl<T> implements Watcher<T> {
       JoltDebugOption? debug}) {
     raw = EffectNode(_effectFn, lazy: true, detach: detach, debug: debug);
 
-    previosValues = currentValues = raw.track(sourcesFn);
+    previousValues = currentValues = raw.track(sourcesFn);
     if (immediately) {
       untracked(() {
         final prevWatcher = Watcher.activeWatcher;
@@ -58,13 +58,13 @@ class WatcherImpl<T> implements Watcher<T> {
   late T currentValues;
 
   /// The previous source value snapshot used for comparisons.
-  late T previosValues;
+  late T previousValues;
 
   @visibleForTesting
   T get testCachedSources => currentValues;
 
   void _effectFn() {
-    previosValues = currentValues;
+    previousValues = currentValues;
     currentValues = sourcesFn();
 
     if (_isPaused) {
@@ -72,8 +72,8 @@ class WatcherImpl<T> implements Watcher<T> {
     }
 
     final shouldTrigger = when == null
-        ? currentValues != previosValues
-        : when!(currentValues, previosValues);
+        ? currentValues != previousValues
+        : when!(currentValues, previousValues);
 
     if (shouldTrigger) {
       trigger();
@@ -89,7 +89,7 @@ class WatcherImpl<T> implements Watcher<T> {
       final prevWatcher = Watcher.activeWatcher;
       Watcher.activeWatcher = this;
       try {
-        fn(currentValues, previosValues);
+        fn(currentValues, previousValues);
       } finally {
         assert(() {
           JoltDevTools.effect(raw);

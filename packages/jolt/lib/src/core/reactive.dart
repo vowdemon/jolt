@@ -167,9 +167,6 @@ T trigger<T>(T Function() fn) {
     while (link != null) {
       final dep = link.dep;
       link = unlink(link, sub);
-      if (dep == null) {
-        continue;
-      }
       final subs = dep.subs;
       if (subs != null) {
         propagate(subs, runDepth > 0);

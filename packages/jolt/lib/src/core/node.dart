@@ -301,6 +301,8 @@ class ComputedNode<T> extends ReactiveNode {
       final sub = activeSub;
       if (sub != null) {
         link(this, sub, cycle);
+      } else if (subs == null) {
+        unwatched();
       }
     }
 
@@ -371,7 +373,7 @@ class ComputedNode<T> extends ReactiveNode {
       var subs = this.subs;
 
       while (subs != null) {
-        subs.sub?.flags |= ReactiveFlags.pending;
+        subs.sub.flags |= ReactiveFlags.pending;
         shallowPropagate(subs);
         subs = subs.nextSub;
       }
@@ -404,7 +406,7 @@ class ComputedNode<T> extends ReactiveNode {
       var subs = this.subs;
 
       while (subs != null) {
-        subs.sub?.flags |= ReactiveFlags.pending;
+        subs.sub.flags |= ReactiveFlags.pending;
         shallowPropagate(subs);
         subs = subs.nextSub;
       }
@@ -496,8 +498,6 @@ mixin CleanableNode {
   }
 }
 
-final Set<BaseEffectNode> _retainedEffects = {};
-
 /// Base graph node for effects and effect scopes.
 ///
 /// Extends [ReactiveNode] with [CleanableNode] so nested resources can register
@@ -510,7 +510,6 @@ abstract class BaseEffectNode extends ReactiveNode with CleanableNode {
   ///
   /// Registered cleanups run after dependency teardown and subscriber unlinking.
   void dispose() {
-    _retainedEffects.remove(this);
     flags = ReactiveFlags.none;
     _disposeDepsInReverse(this);
 
@@ -545,17 +544,14 @@ abstract class BaseEffectNode extends ReactiveNode with CleanableNode {
 class EffectScopeNode extends BaseEffectNode {
   /// Creates a scope node.
   ///
-  /// When [detach] is `false`, this scope is retained and linked to the active
-  /// subscriber so it disposes with its parent.
+  /// When [detach] is `false`, this scope is linked to the active subscriber
+  /// so it disposes with its parent.
   EffectScopeNode({bool detach = false, JoltDebugOption? debug})
       : super(flags: ReactiveFlags.mutable) {
     assert(() {
       JoltDevTools.create(this, debug);
       return true;
     }());
-    if (!detach) {
-      _retainedEffects.add(this);
-    }
     if (!detach) {
       final prevSub = getActiveSub();
       if (prevSub != null) {
@@ -627,9 +623,6 @@ class EffectNode extends BaseEffectNode {
       JoltDevTools.create(this, debug);
       return true;
     }());
-    if (!detach) {
-      _retainedEffects.add(this);
-    }
     final prevSub = setActiveSub(this);
     if (prevSub != null && !detach) {
       link(this, prevSub, 0);

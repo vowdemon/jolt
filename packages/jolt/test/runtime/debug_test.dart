@@ -179,6 +179,9 @@ void main() {
           () => source.value + 1,
           debug: const JoltDebugOption.of("debug-computed", null),
         );
+        final effect = Effect(() {
+          derived.value;
+        });
 
         expect(derived.value, equals(2));
 
@@ -201,6 +204,7 @@ void main() {
         expect(derivedNode["dependencies"], contains(sourceNode["id"]));
         expect(sourceNode["subscribers"], contains(derivedNode["id"]));
 
+        effect.dispose();
         derived.dispose();
         source.dispose();
 

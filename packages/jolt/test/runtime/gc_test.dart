@@ -41,6 +41,23 @@ WeakReference<EffectNode> createDisposedEffectRawRef(Signal<int> s) {
 }
 
 @pragma('vm:never-inline')
+WeakReference<EffectNode> createUnsubscribedEffectRawRef() {
+  final effect = Effect(() {});
+  return WeakReference((effect as EffectImpl).raw);
+}
+
+@pragma('vm:never-inline')
+WeakReference<EffectNode> createDetachedEffectRawRef(
+  Signal<int> s,
+  List<int> values,
+) {
+  final effect = Effect(() {
+    values.add(s.value);
+  }, detach: true);
+  return WeakReference((effect as EffectImpl).raw);
+}
+
+@pragma('vm:never-inline')
 WeakReference<EffectNode> createDisposedWatcherRawRef(Signal<int> s) {
   final watcher = Watcher(() => s.value, (newValue, oldValue) {});
   final rawRef = WeakReference((watcher as WatcherImpl<int>).raw);
@@ -75,6 +92,20 @@ bool weakTargetIsNotNull<T extends Object>(WeakReference<T> ref) {
 }
 
 void main() {
+  test('unobserved computed drops dependencies after a standalone read', () {
+    final s = Signal(1);
+    final sRaw = (s as SignalImpl<int>).raw;
+
+    () {
+      final computed = Computed(() => s.value * 2);
+      expect(computed.value, 2);
+    }();
+
+    expect(sRaw.subs, isNull);
+
+    s.dispose();
+  });
+
   test('source drops stale computed sibling subscriptions after GC', () async {
     final s = Signal(1);
     final sRaw = (s as SignalImpl<int>).raw;
@@ -160,6 +191,26 @@ void main() {
     s.dispose();
   });
 
+  test('effect keeps transient computed dependency alive across GC', () async {
+    final s = Signal(1);
+    final values = <int>[];
+
+    final effect = Effect(() {
+      final computed = Computed(() => s.value * 2);
+      values.add(computed.value);
+    });
+
+    expect(values, [2]);
+
+    await encourageGc();
+
+    s.value = 2;
+    expect(values, [2, 4]);
+
+    effect.dispose();
+    s.dispose();
+  });
+
   test('retained effect raw is not GCed while still subscribed', () async {
     final s = Signal(1);
     final values = <int>[];
@@ -179,9 +230,41 @@ void main() {
     expect(effectRef.target, isNotNull);
     expectWeakTargetNotNull(effectRawRef);
 
-    await waitForGc('effect wrapper can be collected while raw is retained', () {
+    await waitForGc('effect wrapper can be collected while raw is retained',
+        () {
       return weakTargetIsNull(effectRef) && weakTargetIsNotNull(effectRawRef);
     });
+
+    expectWeakTargetNotNull(effectRawRef);
+
+    s.value = 2;
+    expect(values, [1, 2]);
+
+    disposeWeakEffectNode(effectRawRef);
+    s.dispose();
+  });
+
+  test('effect without dependencies is collected when wrapper is lost',
+      () async {
+    final effectRawRef = createUnsubscribedEffectRawRef();
+
+    expectWeakTargetNotNull(effectRawRef);
+
+    await waitForGc('unsubscribed effect raw should be collected', () {
+      return weakTargetIsNull(effectRawRef);
+    });
+  });
+
+  test('detached effect raw is retained while subscribed', () async {
+    final s = Signal(1);
+    final values = <int>[];
+
+    final effectRawRef = createDetachedEffectRawRef(s, values);
+
+    expect(values, [1]);
+    expectWeakTargetNotNull(effectRawRef);
+
+    await encourageGc();
 
     expectWeakTargetNotNull(effectRawRef);
 
@@ -205,7 +288,8 @@ void main() {
     s.dispose();
   });
 
-  test('effect scope keeps child effect raw alive until scope dispose', () async {
+  test('effect scope keeps child effect raw alive until scope dispose',
+      () async {
     final s = Signal(1);
     final scope = EffectScope();
     final values = <int>[];
@@ -293,6 +377,25 @@ void main() {
     await waitForGc('disposed watcher raw should be collected', () {
       return weakTargetIsNull(watcherRawRef);
     });
+
+    s.dispose();
+  });
+
+  test('until completes after the returned future wrapper is collected',
+      () async {
+    final s = Signal(0);
+    final values = <int>[];
+
+    () {
+      s.until((value) => value >= 5).then(values.add);
+    }();
+
+    await encourageGc();
+
+    s.value = 5;
+    await Future<void>.delayed(Duration.zero);
+
+    expect(values, [5]);
 
     s.dispose();
   });

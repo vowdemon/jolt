@@ -264,8 +264,8 @@ abstract final class JoltDevTools {
 
   @internal
   static void notifyLinkUpdate(
-      String operation, ReactiveNode? dep, ReactiveNode? sub) {
-    if (!_enabled || dep == null || sub == null) return;
+      String operation, ReactiveNode dep, ReactiveNode sub) {
+    if (!_enabled) return;
 
     final depId = _debugInfo[dep]?.id;
     final subId = _debugInfo[sub]?.id;
@@ -472,8 +472,7 @@ abstract final class JoltDevTools {
     final deps = <int>{};
     var link = node.deps;
     while (link != null) {
-      final dep = link.dep;
-      final depId = dep != null ? _debugInfo[dep]?.id : null;
+      final depId = _debugInfo[link.dep]?.id;
       if (depId != null) {
         deps.add(depId);
       }
@@ -486,8 +485,7 @@ abstract final class JoltDevTools {
     final subs = <int>{};
     var link = node.subs;
     while (link != null) {
-      final sub = link.sub;
-      final subId = sub != null ? _debugInfo[sub]?.id : null;
+      final subId = _debugInfo[link.sub]?.id;
       if (subId != null) {
         subs.add(subId);
       }

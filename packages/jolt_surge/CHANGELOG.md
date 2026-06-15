@@ -1,3 +1,12 @@
+## 4.0.0-dev.1
+
+ - Updated Surge widgets to use the v4 `jolt_flutter` widget APIs.
+ - Kept the public Surge API focused on `Surge`, providers, builders, listeners,
+   consumers, selectors, and observers from `package:jolt_surge/jolt_surge.dart`.
+ - Updated providers, builders, listeners, consumers, selectors, observers, and
+   examples for the v4 package set.
+ - Updated dependency constraints for the v4 prerelease packages.
+
 ## 3.1.1
 
  - Update a dependency to the latest release.

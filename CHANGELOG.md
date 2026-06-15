@@ -3,6 +3,126 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-06-15
+
+### 4.0.0-dev.1
+
+This is the first v4 prerelease after the last 3.x publish
+(`60bc53d chore(release): publish packages`). The release is mostly about making
+Jolt easier to use: better pub.dev docs, one normal import for the core package,
+agent skills for Jolt code, and a more useful DevTools inspector.
+
+New in this prerelease:
+
+ - The core package now includes pub.dev guides for quick start, state, computed
+   values, effects, lifecycle, advanced usage, and how the Jolt packages fit
+   together.
+ - The repo now includes agent skills for Jolt core, Jolt Flutter, and Jolt
+   Setup under `skills/`.
+ - `package:jolt/jolt.dart` is now the one import for normal app code. Helpers
+   from the old `extension.dart` and `tricks.dart` entrypoints are exported
+   there now.
+ - Low-level APIs moved to `package:jolt/core.dart`, so the main import stays
+   focused on the APIs most people use day to day.
+ - DevTools is easier to use: better search, filter autocomplete, watch lists,
+   selection history, and clearer value inspection.
+
+Breaking changes:
+
+ - `jolt_flutter`: `FlutterEffect` has been renamed to `PostFrameEffect`.
+   Update direct imports, type names, and tests that refer to the old name.
+ - `jolt`: import `package:jolt/jolt.dart` instead of the old
+   `package:jolt/extension.dart` or `package:jolt/tricks.dart` entrypoints.
+   Code that imports low-level APIs may need to switch to `package:jolt/core.dart`.
+
+Changed packages:
+
+ - [`jolt` - `v4.0.0-dev.1`](#jolt---v400-dev1)
+ - [`jolt_flutter` - `v4.0.0-dev.1`](#jolt_flutter---v400-dev1)
+ - [`jolt_hooks` - `v4.0.0-dev.1`](#jolt_hooks---v400-dev1)
+ - [`jolt_surge` - `v4.0.0-dev.1`](#jolt_surge---v400-dev1)
+ - [`jolt_setup` - `v4.0.0-dev.1`](#jolt_setup---v400-dev1)
+ - [`jolt_devtools_extension` - `v4.0.0-dev.1`](#jolt_devtools_extension---v400-dev1)
+ - [`jolt_lint` - `v4.0.0-dev.1`](#jolt_lint---v400-dev1)
+
+#### `jolt` - `v4.0.0-dev.1`
+
+ - Added guides that show up on pub.dev: quick start, state, computed values,
+   effects, lifecycle, advanced usage, and how the Jolt packages fit together.
+ - `package:jolt/jolt.dart` is now the one import for normal use. It also exports
+   the helpers that used to live behind `extension.dart` and `tricks.dart`.
+ - If you use low-level APIs, import `package:jolt/core.dart`. If you only use
+   `Signal`, `Computed`, `Effect`, `Watcher`, collections, async state, or helper
+   extensions, stay on `package:jolt/jolt.dart`.
+ - Cleaned up the API docs so the main concepts are easier to find, without
+   mixing everyday APIs and low-level APIs together.
+ - Updated the README for the v4 import style.
+
+#### `jolt_flutter` - `v4.0.0-dev.1`
+
+ - Renamed `FlutterEffect` to `PostFrameEffect`.
+ - `package:jolt_flutter/jolt_flutter.dart` now re-exports
+   `package:jolt/jolt.dart`, so Flutter code usually only needs one Jolt import.
+ - Replaced the older watch-builder/provider entrypoints with the smaller
+   `JoltBuilder`, `JoltWatcher`, and `JoltSelector` set.
+ - Updated Listenable and ValueNotifier bridges for the v4 core package.
+ - Raised the Flutter package support floor to Flutter 3.32.
+
+#### `jolt_hooks` - `v4.0.0-dev.1`
+
+ - Added hooks for post-frame effects and `Until` waiting helpers.
+ - Updated the hook API to use `PostFrameEffect` instead of the old
+   `FlutterEffect` name.
+ - Updated the README, examples, and dependency constraints for the v4 package
+   set.
+
+#### `jolt_surge` - `v4.0.0-dev.1`
+
+ - Updated Surge widgets to use the v4 `jolt_flutter` widget APIs.
+ - Kept the public Surge API focused on `Surge`, providers, builders, listeners,
+   consumers, selectors, and observers from `package:jolt_surge/jolt_surge.dart`.
+ - Updated providers, builders, listeners, consumers, selectors, observers, and
+   examples for the v4 package set.
+ - Updated dependency constraints for the v4 prerelease packages.
+
+#### `jolt_setup` - `v4.0.0-dev.1`
+
+ - `package:jolt_setup/jolt_setup.dart` now re-exports `jolt_flutter`, so setup
+   widgets get the core and Flutter Jolt APIs from one import.
+ - Consolidated hook exports under the main setup package instead of the old
+   extra hook/annotation entrypoints.
+ - Added setup hooks for post-frame effects and `Until` helpers, matching the v4
+   core and Flutter APIs.
+ - Fixed `onDidUpdateWidgetAt` for typed setup extensions.
+ - Updated setup hooks across controller, focus, lifecycle, listenable, async,
+   timer, reset, and keep-alive use cases for the v4 behavior.
+ - Raised the Flutter package support floor to Flutter 3.32.
+
+#### `jolt_devtools_extension` - `v4.0.0-dev.1`
+
+ - Added a Watch panel, so important nodes can stay visible while you inspect
+   other parts of the graph.
+ - Improved search with field suggestions, filter autocomplete, and a clearer
+   query help dialog.
+ - Added back/forward selection history for moving between recently inspected nodes.
+ - Made VM value inspection more stable: expanded rows survive refreshes when
+   the value path is still valid, and loading/stale/error states are shown
+   explicitly.
+ - Kept root scalar `Signal` values editable from the inspector.
+ - Updated the extension for the current Flutter DevTools service APIs and refreshed the example app.
+
+#### `jolt_lint` - `v4.0.0-dev.1`
+
+ - Fixed `no_mutable_collection_value_operation` for the v4 collection signal
+   types.
+ - The rule now catches unsafe `.value`, `.get()`, and callable reads on
+   `ListSignal`, `MapSignal`, and `SetSignal` values more reliably.
+ - Updated the lint example to use the local v4 packages during prerelease
+   development.
+ - Made `jolt_lint` easier to resolve outside the root workspace by relaxing its
+   SDK and test dependency constraints.
+
+
 ## 2026-04-23
 
 ### Changes
@@ -1139,4 +1259,3 @@ Packages with other changes:
  - **FEAT**: add cleanup function support for Effect, Watcher and EffectScope. ([d0e8b367](https://github.com/vowdemon/jolt/commit/d0e8b367326da88a3797fda0e7670ebb3d46af64))
  - **FEAT**: add useJoltWidget hook. ([e5d5addb](https://github.com/vowdemon/jolt/commit/e5d5addbc482d9a46f954ec86c26482a72801940))
  - **DOCS**: improve code documentation. ([c152870a](https://github.com/vowdemon/jolt/commit/c152870a09809628ddc21e4d9d60c65fab563734))
-

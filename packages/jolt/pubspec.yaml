@@ -1,9 +1,8 @@
 name: jolt
 description: A lightweight, high-performance reactive signals library for Dart/Flutter with fine-grained updates and intelligent resource management.
-version: 3.2.2
+version: 4.0.0-dev.1
 
 repository: https://github.com/vowdemon/jolt
-homepage: https://jolt.vowdemon.com
 
 topics:
   - jolt

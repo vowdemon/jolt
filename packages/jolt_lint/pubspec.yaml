@@ -3,7 +3,7 @@ description: Lint tool for the Jolt reactive state management ecosystem, providi
 
 repository: https://github.com/vowdemon/jolt
 
-version: 3.0.3
+version: 4.0.0-dev.1
 
 topics:
   - jolt

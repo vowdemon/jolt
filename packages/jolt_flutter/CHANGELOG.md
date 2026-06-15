@@ -1,3 +1,15 @@
+## 4.0.0-dev.1
+
+> Note: This release has breaking changes.
+
+ - **BREAKING**: rename `FlutterEffect` to `PostFrameEffect`.
+ - `package:jolt_flutter/jolt_flutter.dart` now re-exports
+   `package:jolt/jolt.dart`, so Flutter code usually only needs one Jolt import.
+ - Replaced the older watch-builder/provider entrypoints with the smaller
+   `JoltBuilder`, `JoltWatcher`, and `JoltSelector` set.
+ - Updated Listenable and ValueNotifier bridges for the v4 core package.
+ - Raised the Flutter support floor to Flutter 3.32.
+
 ## 3.1.1
 
  - Update a dependency to the latest release.

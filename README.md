@@ -12,10 +12,6 @@
 
 Reactive state management for Dart and Flutter using signals, computed values, effects, and reactive collections. Built on alien_signals.
 
-## Documentation
-
-[Official Documentation](https://jolt.vowdemon.com)
-
 ## Packages
 
 The Jolt ecosystem consists of six packages:
@@ -89,9 +85,28 @@ void main() {
 }
 ```
 
+## Agent Skills
+
+This repository includes Codex agent skills for working with Jolt APIs. The
+source lives in [`skills/`](https://github.com/vowdemon/jolt/tree/main/skills):
+
+- `use-jolt` - core Dart signals, computed values, effects, watchers, scopes,
+  async state, collections, and utility helpers
+- `use-jolt-flutter` - Flutter widgets, `JoltBuilder`, `JoltSelector`,
+  `PostFrameEffect`, and Listenable / ValueNotifier bridges
+- `use-jolt-setup` - `SetupWidget`, `SetupMixin`, `SetupBuilder`, hooks,
+  lifecycle, controllers, and custom hooks
+
+Install them with the Skills CLI:
+
+```bash
+npx skills add vowdemon/jolt
+```
+
+Restart Codex after installing skills.
+
 ## Related Links
 
-- [Official Documentation](https://jolt.vowdemon.com) - Complete guides and API reference
 - [BLoC's Cubit](https://bloclibrary.dev/#/coreconcepts?id=cubit) - Design pattern inspiration for jolt_surge
 - [alien_signals](https://github.com/stackblitz/alien-signals) - Underlying reactive engine
 - [Flutter Hooks](https://pub.dev/packages/flutter_hooks) - Flutter Hooks system

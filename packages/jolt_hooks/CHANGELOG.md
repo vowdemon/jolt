@@ -1,3 +1,11 @@
+## 4.0.0-dev.1
+
+ - Added hooks for post-frame effects and `Until` waiting helpers.
+ - Updated the hook API to use `PostFrameEffect` instead of the old
+   `FlutterEffect` name.
+ - Updated the README, examples, and dependency constraints for the v4 package
+   set.
+
 ## 3.1.1
 
  - Update a dependency to the latest release.

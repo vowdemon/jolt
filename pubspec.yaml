@@ -37,12 +37,6 @@ melos:
       dependencies:
         meta: ^1.0.0
 
-    version:
-      branch: main
-      releaseUrl: true
-      includeCommitId: true
-      linkToCommits: true
-
   scripts:
     test:
       run: |

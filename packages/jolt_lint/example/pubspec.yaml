@@ -34,9 +34,12 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
-  jolt_flutter: ^3.0.0
-  jolt: ^3.0.0
-  jolt_setup: ^3.0.0
+  jolt_flutter:
+    path: ../../jolt_flutter
+  jolt:
+    path: ../../jolt
+  jolt_setup:
+    path: ../../jolt_setup
 
 dev_dependencies:
   flutter_test:
@@ -89,3 +92,11 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+dependency_overrides:
+  jolt:
+    path: ../../jolt
+  jolt_flutter:
+    path: ../../jolt_flutter
+  jolt_setup:
+    path: ../../jolt_setup

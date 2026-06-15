@@ -1,3 +1,14 @@
+## 4.0.0-dev.1
+
+ - Fixed `no_mutable_collection_value_operation` for the v4 collection signal
+   types.
+ - The rule now catches unsafe `.value`, `.get()`, and callable reads on
+   `ListSignal`, `MapSignal`, and `SetSignal` values more reliably.
+ - Updated the lint example to use the local v4 packages during prerelease
+   development.
+ - Made `jolt_lint` easier to resolve outside the root workspace by relaxing its
+   SDK and test dependency constraints.
+
 ## 3.0.3
 
  - **FIX**(jolt_lint): fix no_invalid_hook_call and add rule tests. ([a37f43a3](https://github.com/vowdemon/jolt/commit/a37f43a3ce508bc0d6ee038be476e45982ecb4f3))

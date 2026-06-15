@@ -2,7 +2,7 @@ name: jolt_devtools_extension
 description: DevTools extension for Jolt - inspect and debug reactive signals in your Flutter app
 publish_to: "none"
 
-version: 1.1.0
+version: 4.0.0-dev.1
 
 repository: https://github.com/vowdemon/jolt
 
@@ -27,9 +27,9 @@ dependencies:
   cupertino_icons: ^1.0.8
   devtools_extensions: ^0.4.0
   devtools_app_shared: ^0.4.0
-  jolt: ^3.2.2
-  jolt_flutter: ^3.1.1
-  jolt_setup: ^3.2.3
+  jolt: ^4.0.0-dev.1
+  jolt_flutter: ^4.0.0-dev.1
+  jolt_setup: ^4.0.0-dev.1
   provider: ^6.1.5+1
   vm_service: ^15.0.0
 

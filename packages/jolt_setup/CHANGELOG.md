@@ -1,3 +1,15 @@
+## 4.0.0-dev.1
+
+ - `package:jolt_setup/jolt_setup.dart` now re-exports `jolt_flutter`, so setup
+   widgets get the core and Flutter Jolt APIs from one import.
+ - Consolidated hook exports under the main setup package instead of the old
+   extra hook/annotation entrypoints.
+ - Added setup hooks for post-frame effects and `Until` helpers, matching the v4
+   core and Flutter APIs.
+ - Updated setup hooks across controller, focus, lifecycle, listenable, async,
+   timer, reset, and keep-alive use cases for the v4 behavior.
+ - Raised the Flutter support floor to Flutter 3.32.
+
 ## 3.2.3
 
  - **FIX**(jolt_setup): fix useMemoized doc comment example ([#9](https://github.com/vowdemon/jolt/issues/9)). ([a98a8be3](https://github.com/vowdemon/jolt/commit/a98a8be32247c370a77243018c22754d51c22ff1))

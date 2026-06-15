@@ -1,3 +1,13 @@
+## 4.0.0-dev.1
+
+> Note: This release has breaking changes for low-level imports.
+
+ - Added guides that show up on pub.dev: quick start, state, computed values, effects, lifecycle, advanced usage, and how the Jolt packages fit together.
+ - `package:jolt/jolt.dart` is now the one import for normal use. It also exports the helpers that used to live behind `extension.dart` and `tricks.dart`.
+ - If you use low-level APIs, import `package:jolt/core.dart`. If you only use `Signal`, `Computed`, `Effect`, `Watcher`, collections, async state, or helper extensions, stay on `package:jolt/jolt.dart`.
+ - Cleaned up the API docs so the main concepts are easier to find, without mixing everyday APIs and low-level APIs together.
+ - Updated the README for the v4 import style.
+
 ## 3.2.2
 
  - **FIX**(jolt): expose AsyncSignal fetch and state helpers ([#11](https://github.com/vowdemon/jolt/issues/11)). ([38f29a09](https://github.com/vowdemon/jolt/commit/38f29a09412415b0c5e194cba9aa0dc3ca1bba5c))

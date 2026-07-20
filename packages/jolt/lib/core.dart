@@ -8,7 +8,16 @@ library;
 
 export 'package:shared_interfaces/shared_interfaces.dart' show Disposable;
 
-export 'src/core/reactive.dart';
+export 'src/core/reactive.dart'
+    hide
+        batchDepth,
+        cycle,
+        notifyIndex,
+        queued,
+        queuedLength,
+        runDepth,
+        activeSub,
+        activeScope;
 export 'src/core/interface.dart';
 export 'src/core/node.dart';
 export 'src/core/debug.dart';

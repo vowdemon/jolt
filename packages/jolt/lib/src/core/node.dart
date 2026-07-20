@@ -1,5 +1,6 @@
 import 'package:jolt/core.dart';
 import 'package:jolt/jolt.dart';
+import 'package:jolt/src/core/reactive.dart';
 import 'package:jolt/src/core/system.dart';
 import 'package:shared_interfaces/shared_interfaces.dart' show Disposer;
 

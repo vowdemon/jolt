@@ -225,6 +225,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.3.3"
+  fast_immutable_collections:
+    dependency: transitive
+    description:
+      name: fast_immutable_collections
+      sha256: "58cec99fc068427c71901e82d4b31b232240ebe6e61200993c2cb91bcada0ff6"
+      url: "https://pub.dev"
+    source: hosted
+    version: "11.2.0"
   file:
     dependency: transitive
     description:
@@ -568,6 +576,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.5.0"
+  retry_plus:
+    dependency: transitive
+    description:
+      name: retry_plus
+      sha256: "79e314f2d4ccc6b61a9c418563854d1d39d8305793ae87895b22ab48a45238cb"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.1"
   shared_interfaces:
     dependency: transitive
     description:

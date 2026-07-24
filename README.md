@@ -3,6 +3,7 @@
 [![CI/CD](https://github.com/vowdemon/jolt/actions/workflows/cicd.yml/badge.svg)](https://github.com/vowdemon/jolt/actions/workflows/cicd.yml)
 [![codecov](https://codecov.io/gh/vowdemon/jolt/graph/badge.svg?token=CBL7C4ZRZD)](https://codecov.io/gh/vowdemon/jolt)
 [![jolt](https://img.shields.io/pub/v/jolt?label=jolt)](https://pub.dev/packages/jolt)
+[![jolt_query](https://img.shields.io/pub/v/jolt_query?label=jolt_query)](https://pub.dev/packages/jolt_query)
 [![jolt_flutter](https://img.shields.io/pub/v/jolt_flutter?label=jolt_flutter)](https://pub.dev/packages/jolt_flutter)
 [![jolt_setup](https://img.shields.io/pub/v/jolt_setup?label=jolt_setup)](https://pub.dev/packages/jolt_setup)
 [![jolt_hooks](https://img.shields.io/pub/v/jolt_hooks?label=jolt_hooks)](https://pub.dev/packages/jolt_hooks)
@@ -14,7 +15,7 @@ Reactive state management for Dart and Flutter using signals, computed values, e
 
 ## Packages
 
-The Jolt ecosystem consists of six packages:
+The Jolt ecosystem consists of seven packages:
 
 ### [jolt](packages/jolt/) - Core Library
 
@@ -31,6 +32,21 @@ Flutter-specific widgets and utilities for reactive UI:
 - `JoltBuilder` - Automatic reactive UI updates
 - `JoltSelector` - Fine-grained selector updates
 - `JoltValueNotifier` - Integration with Flutter's ValueNotifier system
+
+### [jolt_query](packages/jolt_query/) - Server State & Query Widgets
+
+A Flutter server-state cache inspired by TanStack Query:
+- Structural query keys, shared caching, stale and retention policies
+- Class-first and inline queries, selection, fixed/state-derived polling,
+  cancellation, and retry
+- Typed mutations, optimistic lifecycle composition, infinite queries, and streamed queries
+- Post-commit `QueryCacheCallbacks` and TanStack-aligned invalidation,
+  static-query, mutation-settlement, and streamed-reset semantics
+- Deterministic runtime providers for tests and specialized hosts
+- `QueryWidget<T>`, `InfiniteQueryWidget<T>`, and
+  `MutationWidget<V, D, R>` own their observers for a widget lifetime
+- Stable same-client retargeting across query-key and configuration changes
+- Whole-result rebuilds without implicitly tracking unrelated Jolt reads
 
 ### [jolt_setup](packages/jolt_setup/) - Setup Widget & Composition API
 

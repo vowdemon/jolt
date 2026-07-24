@@ -8,6 +8,8 @@ environment:
 
 workspace:
   - packages/jolt
+  - packages/jolt_query
+  - packages/jolt_query/example
   - packages/jolt_flutter
   - packages/jolt_hooks
   - packages/jolt_surge
@@ -25,6 +27,7 @@ melos:
       - examples/*
     testable:
       - packages/jolt
+      - packages/jolt_query
       - packages/jolt_flutter
       - packages/jolt_hooks
       - packages/jolt_surge

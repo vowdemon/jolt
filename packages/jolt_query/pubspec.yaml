@@ -1,0 +1,35 @@
+name: jolt_query
+description: A Flutter server-state cache for Jolt with typed queries, mutations, pagination, stream-backed fetching, and reactive widgets.
+version: 0.1.0-dev.1
+
+repository: https://github.com/vowdemon/jolt
+
+topics:
+  - jolt
+  - state-management
+  - caching
+  - query
+  - signals
+
+resolution: workspace
+
+environment:
+  sdk: ">=3.6.0 <4.0.0"
+  flutter: ">=3.32.0"
+
+dependencies:
+  fast_immutable_collections: ^11.2.0
+  flutter:
+    sdk: flutter
+  jolt: ^4.0.0-dev.1
+  jolt_flutter: ^4.0.0-dev.1
+  meta: ^1.0.0
+  retry_plus: 0.1.1
+  shared_interfaces: ^0.0.2
+
+dev_dependencies:
+  fake_async: ^1.3.3
+  flutter_test:
+    sdk: flutter
+  lints: ^5.0.0
+  test: ^1.25.0

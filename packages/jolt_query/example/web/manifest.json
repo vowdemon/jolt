@@ -1,0 +1,11 @@
+{
+  "name": "Jolt Query Lab",
+  "short_name": "Jolt Query",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#08141b",
+  "theme_color": "#08141b",
+  "description": "Interactive Flutter Web feature tour for jolt_query.",
+  "orientation": "any",
+  "prefer_related_applications": false
+}

@@ -1,0 +1,22 @@
+name: jolt_query_example
+description: Interactive Flutter Web feature tour for jolt_query.
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ">=3.6.0 <4.0.0"
+  flutter: ">=3.32.0"
+
+dependencies:
+  cupertino_icons: ^1.0.8
+  flutter:
+    sdk: flutter
+  jolt_flutter: ^4.0.0-dev.1
+  jolt_query: ^0.1.0-dev.1
+  retry_plus: 0.1.1
+
+dev_dependencies:
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true

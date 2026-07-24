@@ -1,5 +1,7 @@
 # Custom rules
 
+/.tmp/
+
 examples/**/android/
 examples/**/ios/
 examples/**/linux/
@@ -15,6 +17,8 @@ packages/**/example/ios/
 packages/**/example/linux/
 packages/**/example/macos/
 packages/**/example/web/
+!packages/jolt_query/example/web/
+!packages/jolt_query/example/web/**
 packages/**/example/windows/
 packages/**/example/test/
 packages/**/example/build/

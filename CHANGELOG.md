@@ -19,6 +19,9 @@ New in this prerelease:
    together.
  - The repo now includes agent skills for Jolt core, Jolt Flutter, and Jolt
    Setup under `skills/`.
+ - Added `jolt_query`, a TanStack Query-inspired Flutter server-state cache with
+   typed query, mutation, infinite, streamed, and provider-free observer-widget
+   APIs.
  - `package:jolt/jolt.dart` is now the one import for normal app code. Helpers
    from the old `extension.dart` and `tricks.dart` entrypoints are exported
    there now.
@@ -39,6 +42,7 @@ Changed packages:
 
  - [`jolt` - `v4.0.0-dev.1`](#jolt---v400-dev1)
  - [`jolt_flutter` - `v4.0.0-dev.1`](#jolt_flutter---v400-dev1)
+ - [`jolt_query` - `v0.1.0-dev.1`](#jolt_query---v010-dev1)
  - [`jolt_hooks` - `v4.0.0-dev.1`](#jolt_hooks---v400-dev1)
  - [`jolt_surge` - `v4.0.0-dev.1`](#jolt_surge---v400-dev1)
  - [`jolt_setup` - `v4.0.0-dev.1`](#jolt_setup---v400-dev1)
@@ -67,6 +71,19 @@ Changed packages:
    `JoltBuilder`, `JoltWatcher`, and `JoltSelector` set.
  - Updated Listenable and ValueNotifier bridges for the v4 core package.
  - Raised the Flutter package support floor to Flutter 3.32.
+
+#### `jolt_query` - `v0.1.0-dev.1`
+
+ - Added structural query keys, shared caching, typed observers, query and
+   mutation defaults, cancellation, retry, fixed/state-derived polling,
+   infinite queries, and streamed query reducers.
+ - Added provider-free `QueryWidget`, `InfiniteQueryWidget`, and
+   `MutationWidget` integrations in the same package.
+ - Added post-commit `QueryCacheCallbacks` and TanStack-aligned query-wide
+   disabled/static eligibility, invalidation replacement, mutation terminal
+   ordering, infinite observer lifecycle, and streamed reset retry behavior.
+ - Added a runnable Flutter Web feature tour covering the primary query,
+   mutation, infinite, stream, cache, and runtime semantics.
 
 #### `jolt_hooks` - `v4.0.0-dev.1`
 

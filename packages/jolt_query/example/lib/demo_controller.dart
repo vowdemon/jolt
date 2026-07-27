@@ -93,21 +93,21 @@ final class DemoController extends ChangeNotifier {
 
     todosQuery = TodosQuery(api);
     todosObserver = client.observeQuery(
-      todosQuery.withObserver(enabled: false),
+      todosQuery.observer(enabled: false),
     );
     todoCountObserver = client.observeQuery(
       todosQuery
           .select((collection) => collection.items.length)
-          .withObserver(enabled: false),
+          .observer(enabled: false),
     );
 
     pollingQuery = query<int>(
-      QueryKey(<Object?>['demo', 'polling']),
-      (_) => api.nextPoll(),
+      key: QueryKey(<Object?>['demo', 'polling']),
+      fetch: (_) => api.nextPoll(),
       retry: RetryPolicy.none,
     );
     pollingObserver = client.observeQuery(
-      pollingQuery.withInitialData(0).withObserver(
+      pollingQuery.initialData(0).observer(
             refetchOnMount: RefetchPolicy.never,
             refetchOnFocus: RefetchPolicy.never,
             pollingIntervalResolver: _pollingIntervalFor,
@@ -117,9 +117,9 @@ final class DemoController extends ChangeNotifier {
     );
 
     greetingQuery = query<String>(
-      QueryKey(<Object?>['demo', 'greeting']),
-      (_) => api.loadUnstableGreeting(),
-    ).withRetry(
+      key: QueryKey(<Object?>['demo', 'greeting']),
+      fetch: (_) => api.loadUnstableGreeting(),
+    ).retry(
       (retry) => retry.strategy(
         name: 'greeting',
         retryIf: retry.exceptions & retry.maxRetries(2),
@@ -138,14 +138,14 @@ final class DemoController extends ChangeNotifier {
     );
 
     counterQuery = query<int>(
-      QueryKey(<Object?>['counter']),
-      (_) => api.counter,
+      key: QueryKey(<Object?>['counter']),
+      fetch: (_) => api.counter,
       retry: RetryPolicy.none,
       staleTime: StalePolicy.untilInvalidated,
     );
     client.setQueryData(counterQuery, api.counter);
     counterObserver = client.observeQuery(
-      counterQuery.withObserver(enabled: false),
+      counterQuery.observer(enabled: false),
     );
     incrementMutation = mutation<int, int, CounterRollback>(
       key: MutationKey(<Object?>['counter', 'increment']),
@@ -174,7 +174,7 @@ final class DemoController extends ChangeNotifier {
         );
         _record('Counter rollback restored=$restored.');
       },
-    ).withRetry(
+    ).retry(
       (retry) => retry.strategy(
         name: 'idempotent-counter',
         retryIf: retry.exceptions & retry.maxRetries(1),
@@ -186,14 +186,14 @@ final class DemoController extends ChangeNotifier {
     );
 
     dataLaneQuery = query<int>(
-      QueryKey(<Object?>['demo', 'data-lane']),
-      (_) => api.loadDataLaneValue(),
+      key: QueryKey(<Object?>['demo', 'data-lane']),
+      fetch: (_) => api.loadDataLaneValue(),
       retry: RetryPolicy.none,
       staleTime: StalePolicy.immediate,
     );
     client.setQueryData(dataLaneQuery, 0);
     dataLaneObserver = client.observeQuery(
-      dataLaneQuery.withObserver(enabled: false),
+      dataLaneQuery.observer(enabled: false),
     );
 
     feedQuery = infiniteQuery<String, int>(
@@ -214,12 +214,12 @@ final class DemoController extends ChangeNotifier {
     streamQueries = <StreamRefetchMode, Query<IList<int>>>{
       for (final mode in StreamRefetchMode.values)
         mode: query<IList<int>>(
-          QueryKey(<Object?>['stream', mode.name]),
-          streamedListQuery<int>(
+          key: QueryKey(<Object?>['stream', mode.name]),
+          fetch: streamedListQuery<int>(
             stream: (_) => api.numberStream(mode),
             mode: mode,
           ),
-        ).withRetry(
+        ).retry(
           (retry) => retry.strategy(
             name: 'stream-${mode.name}',
             retryIf: retry.exceptions & retry.maxRetries(1),
@@ -236,9 +236,7 @@ final class DemoController extends ChangeNotifier {
     streamObservers = <StreamRefetchMode, QueryObserver<IList<int>>>{
       for (final entry in streamQueries.entries)
         entry.key: client.observeQuery(
-          entry.value
-              .withObserver(enabled: false)
-              .withPlaceholderData(IList<int>()),
+          entry.value.observer(enabled: false).placeholderData(IList<int>()),
         ),
     };
 
@@ -690,8 +688,8 @@ final class DemoController extends ChangeNotifier {
   Future<void> runCancellationDemo() {
     return _guard('cancel', () async {
       final cancellable = query<int>(
-        QueryKey(<Object?>['demo', 'cancellable']),
-        (context) async {
+        key: QueryKey(<Object?>['demo', 'cancellable']),
+        fetch: (context) async {
           await context.cancellationToken.whenCancelled;
           context.cancellationToken.throwIfCancelled();
           return 1;

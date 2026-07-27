@@ -12,8 +12,8 @@ void main() {
     final retry = Completer<int>();
     var attempts = 0;
     final source = query<int>(
-      QueryKey(<Object?>['data-lane', 'loading-retry']),
-      (_) {
+      key: QueryKey(<Object?>['data-lane', 'loading-retry']),
+      fetch: (_) {
         attempts += 1;
         if (attempts == 1) throw StateError('first');
         return retry.future;
@@ -56,8 +56,8 @@ void main() {
       () async {
     final transport = Completer<int>();
     final source = query<int>(
-      QueryKey(<Object?>['data-lane', 'rebase-exact']),
-      (_) => transport.future,
+      key: QueryKey(<Object?>['data-lane', 'rebase-exact']),
+      fetch: (_) => transport.future,
       retry: RetryPolicy.none,
     );
     final client = QueryClient()..setQueryData(source, 1);
@@ -86,8 +86,8 @@ void main() {
   test('conditional restore rebases cancellation rollback', () async {
     final transport = Completer<int>();
     final source = query<int>(
-      QueryKey(<Object?>['data-lane', 'rebase-restore']),
-      (_) => transport.future,
+      key: QueryKey(<Object?>['data-lane', 'rebase-restore']),
+      fetch: (_) => transport.future,
       retry: RetryPolicy.none,
     );
     final client = QueryClient()..setQueryData(source, 1);
@@ -125,13 +125,13 @@ void main() {
     final firstTransport = Completer<int>();
     final secondTransport = Completer<int>();
     final first = query<int>(
-      QueryKey(<Object?>['data-lane', 'rebase-bulk', 1]),
-      (_) => firstTransport.future,
+      key: QueryKey(<Object?>['data-lane', 'rebase-bulk', 1]),
+      fetch: (_) => firstTransport.future,
       retry: RetryPolicy.none,
     );
     final second = query<int>(
-      QueryKey(<Object?>['data-lane', 'rebase-bulk', 2]),
-      (_) => secondTransport.future,
+      key: QueryKey(<Object?>['data-lane', 'rebase-bulk', 2]),
+      fetch: (_) => secondTransport.future,
       retry: RetryPolicy.none,
     );
     final client = QueryClient()
@@ -180,8 +180,8 @@ void main() {
     final transport = Completer<int>();
     late QueryCancellationToken token;
     final source = query<int>(
-      QueryKey(<Object?>['data-lane', 'exact']),
-      (context) {
+      key: QueryKey(<Object?>['data-lane', 'exact']),
+      fetch: (context) {
         token = context.cancellationToken;
         return transport.future;
       },
@@ -208,8 +208,8 @@ void main() {
   test('manual value remains when the retained active fetch fails', () async {
     final transport = Completer<int>();
     final source = query<int>(
-      QueryKey(<Object?>['data-lane', 'failure']),
-      (_) => transport.future,
+      key: QueryKey(<Object?>['data-lane', 'failure']),
+      fetch: (_) => transport.future,
       retry: RetryPolicy.none,
     );
     final client = QueryClient()..setQueryData(source, 1);
@@ -242,14 +242,14 @@ void main() {
     final secondAttempt = Completer<int>();
     var attempts = 0;
     final source = query<int>(
-      QueryKey(<Object?>['data-lane', 'retry-progress']),
-      (_) {
+      key: QueryKey(<Object?>['data-lane', 'retry-progress']),
+      fetch: (_) {
         attempts += 1;
         if (attempts == 1) throw StateError('retry');
         return secondAttempt.future;
       },
       retry: RetryPolicy.none,
-    ).withRetry(
+    ).retry(
       (retry) => retry.strategy(
         retryIf: retry.exceptions & retry.maxRetries(1),
         delay: DelayPolicy.fixed(const Duration(seconds: 5)),
@@ -282,8 +282,8 @@ void main() {
   test('write preserves an offline-paused operation and its continuation',
       () async {
     final source = query<int>(
-      QueryKey(<Object?>['data-lane', 'offline-pause']),
-      (_) => 10,
+      key: QueryKey(<Object?>['data-lane', 'offline-pause']),
+      fetch: (_) => 10,
       retry: RetryPolicy.none,
       networkMode: NetworkMode.online,
     );
@@ -312,8 +312,8 @@ void main() {
     };
     final tokens = <String, QueryCancellationToken>{};
     Query<int> source(String name) => query<int>(
-          QueryKey(<Object?>['data-lane', 'bulk', name]),
-          (context) {
+          key: QueryKey(<Object?>['data-lane', 'bulk', name]),
+          fetch: (context) {
             tokens[name] = context.cancellationToken;
             return transports[name]!.future;
           },
@@ -351,8 +351,8 @@ void main() {
       () async {
     final transport = Completer<int>();
     final source = query<int>(
-      QueryKey(<Object?>['data-lane', 'restore-absent']),
-      (_) => transport.future,
+      key: QueryKey(<Object?>['data-lane', 'restore-absent']),
+      fetch: (_) => transport.future,
       retry: RetryPolicy.none,
     );
     final client = QueryClient();
@@ -382,8 +382,8 @@ void main() {
 
   test('absent checkpoint to a missing entry is a lineage-guarded no-op', () {
     final source = query<int>(
-      QueryKey(<Object?>['data-lane', 'missing-checkpoint']),
-      (_) => 1,
+      key: QueryKey(<Object?>['data-lane', 'missing-checkpoint']),
+      fetch: (_) => 1,
     );
     final client = QueryClient();
     final absent = client.snapshotQueryData(source);
@@ -407,8 +407,8 @@ void main() {
       () async {
     final transport = Completer<int>();
     final source = query<int>(
-      QueryKey(<Object?>['data-lane', 'cancel-before-write']),
-      (_) => transport.future,
+      key: QueryKey(<Object?>['data-lane', 'cancel-before-write']),
+      fetch: (_) => transport.future,
       retry: RetryPolicy.none,
     );
     final client = QueryClient()..setQueryData(source, 1);
@@ -436,8 +436,8 @@ void main() {
     final queryTransport = Completer<int>();
     final mutationTransport = Completer<int>();
     final source = query<int>(
-      QueryKey(<Object?>['cache-isolation', 'query']),
-      (_) => queryTransport.future,
+      key: QueryKey(<Object?>['cache-isolation', 'query']),
+      fetch: (_) => queryTransport.future,
       retry: RetryPolicy.none,
     );
     final command = mutation<int, int, void>(

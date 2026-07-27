@@ -71,8 +71,8 @@ void main() {
   test('disposed clients reject public reads fetches and observers', () async {
     final client = QueryClient()..dispose();
     final source = query<int>(
-      QueryKey(<Object?>['disposed-public-operation']),
-      (_) => 1,
+      key: QueryKey(<Object?>['disposed-public-operation']),
+      fetch: (_) => 1,
     );
 
     expect(

@@ -525,7 +525,7 @@ sealed class InfiniteQueryTarget<TView> implements AnyQueryTarget {
   QueryKey get key => resolved.plan.key;
 
   /// Applies observer-local behavior and returns a terminal infinite target.
-  InfiniteQueryTarget<TView> withObserver({
+  InfiniteQueryTarget<TView> observer({
     bool? enabled,
     StalePolicy? staleTime,
     RefetchPolicy? refetchOnMount,
@@ -541,7 +541,7 @@ sealed class InfiniteQueryTarget<TView> implements AnyQueryTarget {
     final current = _bundle;
     return _TerminalInfiniteQueryTarget<TView>(
       _InfiniteTargetBundle<TView>(
-        target: current.target.withObserver(
+        target: current.target.observer(
           enabled: enabled,
           staleTime: staleTime,
           refetchOnMount: refetchOnMount,
@@ -561,18 +561,18 @@ sealed class InfiniteQueryTarget<TView> implements AnyQueryTarget {
   }
 
   /// Uses an explicit observer-local placeholder value.
-  InfiniteQueryTarget<TView> withPlaceholderData(TView data) {
-    return withPlaceholder((previous) => QueryValue<TView>.present(data));
+  InfiniteQueryTarget<TView> placeholderData(TView data) {
+    return placeholder((previous) => QueryValue<TView>.present(data));
   }
 
   /// Derives observer-local placeholder presence.
-  InfiniteQueryTarget<TView> withPlaceholder(
+  InfiniteQueryTarget<TView> placeholder(
     QueryPlaceholderResolver<TView> resolve,
   ) {
     final current = _bundle;
     return _TerminalInfiniteQueryTarget<TView>(
       _InfiniteTargetBundle<TView>(
-        target: current.target.withPlaceholder(resolve),
+        target: current.target.placeholder(resolve),
         infinitePlan: current.infinitePlan,
       ),
       client: _configuredClient,
@@ -700,7 +700,7 @@ abstract base class InfiniteQuery<Page, PageParam>
       _defaultInfiniteDataReconciler<Page, PageParam>();
 
   /// Replaces whole-data retry behavior while Page types remain inferred.
-  InfiniteQuery<Page, PageParam> withRetry(
+  InfiniteQuery<Page, PageParam> retry(
     RetryStrategy<InfiniteData<Page, PageParam>> Function(
       RetryBuilder<InfiniteData<Page, PageParam>> retry,
     ) create,
@@ -712,14 +712,14 @@ abstract base class InfiniteQuery<Page, PageParam>
   }
 
   /// Seeds raw aligned data before selection is applied.
-  InfiniteQueryView<InfiniteData<Page, PageParam>> withInitialData(
+  InfiniteQueryView<InfiniteData<Page, PageParam>> initialData(
     InfiniteData<Page, PageParam> data, {
     DateTime? updatedAt,
   }) {
     final current = _resolveRaw();
     return _InitialInfiniteQueryView<Page, PageParam>(
       _InfiniteViewBundle<InfiniteData<Page, PageParam>>(
-        view: current.query.withInitialData(data, updatedAt: updatedAt),
+        view: current.query.initialData(data, updatedAt: updatedAt),
         infinitePlan: current.infinitePlan,
       ),
       client: _configuredClient,
@@ -797,7 +797,7 @@ RetryPolicy<InfiniteData<Page, PageParam>>?
       marker,
       'retry',
       'Marker retry slots accept only RetryPolicy.none or '
-          'RetryPolicy.standard. Apply typed custom retry with withRetry().',
+          'RetryPolicy.standard. Apply typed custom retry with retry().',
     );
   }
   return marker;

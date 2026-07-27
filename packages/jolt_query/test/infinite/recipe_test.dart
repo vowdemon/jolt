@@ -233,7 +233,7 @@ void main() {
         pages: const <_User>[_User(-1, 'loading')],
         pageParams: <int>[-1],
       );
-      final initialized = raw.withInitialData(
+      final initialized = raw.initialData(
         initialData,
         updatedAt: DateTime.utc(2025),
       );
@@ -241,14 +241,14 @@ void main() {
           .select((data) => data.pages.single.name)
           .select((name) => name.length);
       final terminal = selected
-          .withObserver(
+          .observer(
             enabled: false,
             staleTime: StalePolicy.untilInvalidated,
             refetchOnMount: RefetchPolicy.always,
             pollingInterval: const Duration(seconds: 30),
             equality: (previous, next) => previous == next,
           )
-          .withPlaceholderData(-1);
+          .placeholderData(-1);
 
       _expectStaticType<InfiniteQueryView<InfiniteData<_User, int>>>(
           initialized);
@@ -312,13 +312,13 @@ void main() {
   });
 
   group('whole-data retry typing', () {
-    test('withRetry is typed to complete InfiniteData after inference', () {
+    test('retry is typed to complete InfiniteData after inference', () {
       final recipe = infiniteQuery(
         QueryKey(<Object?>['typed-retry']),
         (context) => _User(context.pageParam, 'user'),
         initialPageParam: 0,
         getNextPageParam: (data) => PageCursor.end,
-      ).withRetry((retry) {
+      ).retry((retry) {
         final RetryIf<InfiniteData<_User, int>> wholeResults = retry.result(
           (data) {
             _expectStaticType<InfiniteData<_User, int>>(data);
@@ -347,7 +347,7 @@ void main() {
         },
         initialPageParam: 7,
         getNextPageParam: (data) => PageCursor.end,
-      ).withRetry(
+      ).retry(
         (retry) => retry.strategy(
           retryIf: retry.exceptions & retry.maxRetries(1),
           delay: DelayPolicy.none(),
@@ -377,7 +377,7 @@ void main() {
         getNextPageParam: (data) => data.pageParams.last < 2
             ? PageCursor.more(data.pageParams.last + 1)
             : PageCursor.end,
-      ).withRetry(
+      ).retry(
         (retry) => retry.strategy(
           retryIf: retry.exceptions & retry.maxRetries(1),
           delay: DelayPolicy.none(),
@@ -404,7 +404,7 @@ void main() {
         },
         initialPageParam: 0,
         getNextPageParam: (data) => PageCursor.end,
-      ).withRetry(
+      ).retry(
         (retry) => retry.strategy(
           retryIf: retry.result((data) {
                 seen.add(data);
@@ -438,7 +438,7 @@ void main() {
         initialPageParam: 0,
         getNextPageParam: (data) =>
             data.length == 1 ? const PageCursor<int>.more(1) : PageCursor.end,
-      ).withRetry(
+      ).retry(
         (retry) => retry.strategy(
           retryIf: retry.result((data) {
                 examinedResults += 1;

@@ -8,8 +8,8 @@ void main() {
     final transports = <Completer<int>>[];
     var calls = 0;
     final raw = query<int>(
-      QueryKey(<Object?>['bulk-parity', 'invalidate-replace']),
-      (_) {
+      key: QueryKey(<Object?>['bulk-parity', 'invalidate-replace']),
+      fetch: (_) {
         calls += 1;
         if (calls == 1) return 1;
         final transport = Completer<int>();
@@ -54,8 +54,8 @@ void main() {
     final refresh = Completer<int>();
     var calls = 0;
     final raw = query<int>(
-      QueryKey(<Object?>['bulk-parity', 'invalidate-join']),
-      (_) {
+      key: QueryKey(<Object?>['bulk-parity', 'invalidate-join']),
+      fetch: (_) {
         calls += 1;
         return calls == 1 ? 1 : refresh.future;
       },
@@ -121,8 +121,8 @@ Future<void> _verifyPausedBatch(
 }) async {
   var calls = 0;
   final raw = query<int>(
-    QueryKey(<Object?>['bulk-parity', 'paused', name]),
-    (_) {
+    key: QueryKey(<Object?>['bulk-parity', 'paused', name]),
+    fetch: (_) {
       calls += 1;
       if (calls == 2 && failAfterResume) {
         throw StateError('resumed failure');
@@ -135,7 +135,7 @@ Future<void> _verifyPausedBatch(
   );
   final client = QueryClient();
   final observer = client.observeQuery(
-    raw.withObserver(refetchOnMount: RefetchPolicy.never),
+    raw.observer(refetchOnMount: RefetchPolicy.never),
   );
   try {
     expect(await client.fetchQuery(raw), 1);

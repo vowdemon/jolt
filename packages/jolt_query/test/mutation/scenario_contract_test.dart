@@ -14,7 +14,7 @@ void main() {
       var attempts = 0;
       final definition = mutation<int, int, void>(
         mutate: (variables, context) => ++attempts == 1 ? 0 : variables,
-      ).withRetry(
+      ).retry(
         (retry) => retry.strategy(
           delay: DelayPolicy.fixed(const Duration(seconds: 1)),
           retryIf: retry.result((result) => result == 0) & retry.maxRetries(1),
@@ -254,8 +254,8 @@ void main() {
       final harness = _MutationScenarioHarness();
       addTearDown(harness.dispose);
       final counter = query<int>(
-        QueryKey(<Object?>['scenario', 'counter']),
-        (context) => 0,
+        key: QueryKey(<Object?>['scenario', 'counter']),
+        fetch: (context) => 0,
       );
       harness.client.setQueryData(counter, 1);
       final definition = mutation<int, int, QueryDataSnapshot<int>>(
@@ -284,8 +284,8 @@ void main() {
       final harness = _MutationScenarioHarness();
       addTearDown(harness.dispose);
       final counter = query<int>(
-        QueryKey(<Object?>['scenario', 'rollback']),
-        (context) => 0,
+        key: QueryKey(<Object?>['scenario', 'rollback']),
+        fetch: (context) => 0,
       );
       harness.client.setQueryData(counter, 1);
       final transport = Completer<int>();
@@ -325,8 +325,8 @@ void main() {
       addTearDown(harness.dispose);
       var fetchCalls = 0;
       final item = query<_CanonicalItem>(
-        QueryKey(<Object?>['scenario', 'item', 1]),
-        (context) {
+        key: QueryKey(<Object?>['scenario', 'item', 1]),
+        fetch: (context) {
           fetchCalls += 1;
           return (id: 1, revision: 999, title: 'refetched');
         },

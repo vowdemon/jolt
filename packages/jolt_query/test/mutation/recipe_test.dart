@@ -101,7 +101,7 @@ void main() {
         calls.add('success:$data');
       },
     );
-    final Mutation<_Variables, int, void> transformed = original.withRetry(
+    final Mutation<_Variables, int, void> transformed = original.retry(
       (retry) => retry.strategy(
         retryIf: retry.result((int result) => result == 0),
       ),

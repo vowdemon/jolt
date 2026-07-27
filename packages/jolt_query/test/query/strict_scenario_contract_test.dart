@@ -15,8 +15,8 @@ void main() {
       QueryCancellationToken? operationToken;
       var queryCalls = 0;
       final source = query<int>(
-        QueryKey(<Object?>['strict-data-lane', 'update']),
-        (context) {
+        key: QueryKey(<Object?>['strict-data-lane', 'update']),
+        fetch: (context) {
           queryCalls += 1;
           operationToken = context.cancellationToken;
           return transport.future;
@@ -65,8 +65,8 @@ void main() {
       final transport = Completer<int>();
       QueryCancellationToken? operationToken;
       final source = query<int>(
-        QueryKey(<Object?>['strict-data-lane', 'restore']),
-        (context) {
+        key: QueryKey(<Object?>['strict-data-lane', 'restore']),
+        fetch: (context) {
           operationToken = context.cancellationToken;
           return transport.future;
         },
@@ -118,8 +118,8 @@ void main() {
       final harness = _QueryContractHarness();
       addTearDown(harness.dispose);
       final source = query<int>(
-        QueryKey(<Object?>['strict-restore', 'newer-write']),
-        (_) => 0,
+        key: QueryKey(<Object?>['strict-restore', 'newer-write']),
+        fetch: (_) => 0,
       );
       harness.client.setQueryData(
         source,
@@ -167,12 +167,12 @@ void main() {
       addTearDown(first.dispose);
       addTearDown(second.dispose);
       final origin = query<int>(
-        QueryKey(<Object?>['strict-restore', 'origin']),
-        (_) => 0,
+        key: QueryKey(<Object?>['strict-restore', 'origin']),
+        fetch: (_) => 0,
       );
       final otherKey = query<int>(
-        QueryKey(<Object?>['strict-restore', 'other-key']),
-        (_) => 0,
+        key: QueryKey(<Object?>['strict-restore', 'other-key']),
+        fetch: (_) => 0,
       );
       first.client.setQueryData(origin, 1);
       final checkpoint = first.client.snapshotQueryData(origin);
@@ -243,8 +243,8 @@ void main() {
       final harness = _QueryContractHarness();
       addTearDown(harness.dispose);
       final source = query<int>(
-        QueryKey(<Object?>['strict-restore', 'lineage']),
-        (_) => 0,
+        key: QueryKey(<Object?>['strict-restore', 'lineage']),
+        fetch: (_) => 0,
       );
       harness.client.setQueryData(source, 1);
       final oldCheckpoint = harness.client.snapshotQueryData(source);
@@ -296,8 +296,8 @@ void main() {
       final mutationTransport = Completer<int>();
       var queryCalls = 0;
       final source = query<int>(
-        QueryKey(<Object?>['strict-clear', 'query']),
-        (_) {
+        key: QueryKey(<Object?>['strict-clear', 'query']),
+        fetch: (_) {
           queryCalls += 1;
           return queryCalls == 1 ? queryTransport.future : 12;
         },
@@ -361,8 +361,8 @@ void main() {
       addTearDown(harness.dispose);
       var calls = 0;
       final source = query<int>(
-        QueryKey(<Object?>['strict-clear', 'later-execute']),
-        (_) => ++calls,
+        key: QueryKey(<Object?>['strict-clear', 'later-execute']),
+        fetch: (_) => ++calls,
         retry: RetryPolicy.none,
       );
       final events = <QueryCacheEvent>[];
@@ -404,8 +404,8 @@ void main() {
       QueryCancellationToken? token;
       var queryCalls = 0;
       final source = query<int>(
-        QueryKey(<Object?>['strict-dispose', 'active-query']),
-        (context) {
+        key: QueryKey(<Object?>['strict-dispose', 'active-query']),
+        fetch: (context) {
           queryCalls += 1;
           token = context.cancellationToken;
           return transport.future;

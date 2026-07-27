@@ -12,8 +12,8 @@ void main() {
     addTearDown(client.dispose);
     final completion = Completer<int>();
     final target = query<int>(
-      QueryKey(<Object?>['result-transition']),
-      (_) => completion.future,
+      key: QueryKey(<Object?>['result-transition']),
+      fetch: (_) => completion.future,
       client: client,
       retry: RetryPolicy.none,
       retention: RetentionPolicy.forever,
@@ -54,17 +54,17 @@ void main() {
     final client = QueryClient();
     addTearDown(client.dispose);
     final first = query<int>(
-      QueryKey(<Object?>['stable-observer', 1]),
-      (_) => 1,
+      key: QueryKey(<Object?>['stable-observer', 1]),
+      fetch: (_) => 1,
       client: client,
       retention: RetentionPolicy.forever,
-    ).withInitialData(1).withObserver(enabled: false);
+    ).initialData(1).observer(enabled: false);
     final second = query<int>(
-      QueryKey(<Object?>['stable-observer', 2]),
-      (_) => 2,
+      key: QueryKey(<Object?>['stable-observer', 2]),
+      fetch: (_) => 2,
       client: client,
       retention: RetentionPolicy.forever,
-    ).withInitialData(2).withObserver(enabled: false);
+    ).initialData(2).observer(enabled: false);
     final observed = <QueryObserver<int>>[];
 
     Widget build(QueryTarget<int> target) {
@@ -101,12 +101,12 @@ void main() {
 
     QueryTarget<int> createTarget() {
       return query<int>(
-        key,
-        (_) => ++fetches,
+        key: key,
+        fetch: (_) => ++fetches,
         client: client,
         retry: RetryPolicy.none,
         retention: RetentionPolicy.forever,
-      ).withObserver(
+      ).observer(
         staleTime: StalePolicy.immediate,
         refetchOnMount: RefetchPolicy.always,
       );
@@ -144,19 +144,19 @@ void main() {
     addTearDown(client.dispose);
     final completion = Completer<String>();
     final first = query<String>(
-      QueryKey(<Object?>['placeholder-switch', 1]),
-      (_) => 'first',
+      key: QueryKey(<Object?>['placeholder-switch', 1]),
+      fetch: (_) => 'first',
       client: client,
       retry: RetryPolicy.none,
       retention: RetentionPolicy.forever,
-    ).withInitialData('first').withObserver(enabled: false);
+    ).initialData('first').observer(enabled: false);
     final second = query<String>(
-      QueryKey(<Object?>['placeholder-switch', 2]),
-      (_) => completion.future,
+      key: QueryKey(<Object?>['placeholder-switch', 2]),
+      fetch: (_) => completion.future,
       client: client,
       retry: RetryPolicy.none,
       retention: RetentionPolicy.forever,
-    ).withPlaceholder((previous) => previous);
+    ).placeholder((previous) => previous);
     late QueryObserver<String> current;
 
     Widget build(QueryTarget<String> target) {
@@ -195,17 +195,17 @@ void main() {
     addTearDown(firstClient.dispose);
     addTearDown(secondClient.dispose);
     final first = query<int>(
-      QueryKey(<Object?>['client-change']),
-      (_) => 1,
+      key: QueryKey(<Object?>['client-change']),
+      fetch: (_) => 1,
       client: firstClient,
       retention: RetentionPolicy.forever,
-    ).withInitialData(1).withObserver(enabled: false);
+    ).initialData(1).observer(enabled: false);
     final second = query<int>(
-      QueryKey(<Object?>['client-change']),
-      (_) => 2,
+      key: QueryKey(<Object?>['client-change']),
+      fetch: (_) => 2,
       client: secondClient,
       retention: RetentionPolicy.forever,
-    ).withInitialData(2).withObserver(enabled: false);
+    ).initialData(2).observer(enabled: false);
     late QueryObserver<int> current;
 
     Widget build(QueryTarget<int> target) {
@@ -241,12 +241,12 @@ void main() {
     final unrelated = Signal<int>(0);
     addTearDown(unrelated.dispose);
     final raw = query<int>(
-      QueryKey(<Object?>['whole-only']),
-      (_) => 1,
+      key: QueryKey(<Object?>['whole-only']),
+      fetch: (_) => 1,
       client: client,
       retention: RetentionPolicy.forever,
     );
-    final target = raw.withInitialData(1).withObserver(enabled: false);
+    final target = raw.initialData(1).observer(enabled: false);
     var builds = 0;
 
     await tester.pumpWidget(
@@ -278,21 +278,20 @@ void main() {
     final client = QueryClient();
     addTearDown(client.dispose);
     final displayedRaw = query<int>(
-      QueryKey(<Object?>['cache-isolation', 'displayed']),
-      (_) => 1,
+      key: QueryKey(<Object?>['cache-isolation', 'displayed']),
+      fetch: (_) => 1,
       client: client,
       retention: RetentionPolicy.forever,
     );
-    final displayed =
-        displayedRaw.withInitialData(1).withObserver(enabled: false);
+    final displayed = displayedRaw.initialData(1).observer(enabled: false);
     final unrelated = query<int>(
-      QueryKey(<Object?>['cache-isolation', 'unrelated']),
-      (_) => 2,
+      key: QueryKey(<Object?>['cache-isolation', 'unrelated']),
+      fetch: (_) => 2,
       client: client,
       retention: RetentionPolicy.forever,
     );
     final unrelatedObserver = client.observeQuery(
-      unrelated.withObserver(enabled: false),
+      unrelated.observer(enabled: false),
     );
     addTearDown(unrelatedObserver.dispose);
     var builds = 0;

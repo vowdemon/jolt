@@ -14,7 +14,7 @@ void main() {
       expect(fetched, const _User(1, 'Ada'));
 
       final QueryObserver<_User> observer = client.observeQuery(
-        source.withObserver(enabled: false),
+        source.observer(enabled: false),
       );
       addTearDown(observer.dispose);
 
@@ -37,7 +37,7 @@ void main() {
 
       final InfiniteQueryObserver<InfiniteData<_User, int>> observer =
           client.observeInfiniteQuery(
-        source.withObserver(enabled: false),
+        source.observer(enabled: false),
       );
       addTearDown(observer.dispose);
 
@@ -55,17 +55,17 @@ void main() {
     final client = QueryClient();
     addTearDown(client.dispose);
     final target = query(
-      QueryKey(<Object?>['public-staged-query']),
-      (_) => const _User(1, 'Ada'),
+      key: QueryKey(<Object?>['public-staged-query']),
+      fetch: (_) => const _User(1, 'Ada'),
     )
-        .withRetry(
+        .retry(
           (retry) => retry.strategy(retryIf: retry.never),
         )
-        .withInitialData(const _User(0, 'Loading'))
+        .initialData(const _User(0, 'Loading'))
         .select((user) => user.name)
         .select((name) => name.length)
-        .withPlaceholderData(-1)
-        .withObserver(enabled: false);
+        .placeholderData(-1)
+        .observer(enabled: false);
 
     _expectStaticType<QueryTarget<int>>(target);
 
@@ -82,13 +82,13 @@ void main() {
     final client = QueryClient();
     addTearDown(client.dispose);
     final none = query(
-      QueryKey(<Object?>['public-marker-none']),
-      (_) => const _User(1, 'None'),
+      key: QueryKey(<Object?>['public-marker-none']),
+      fetch: (_) => const _User(1, 'None'),
       retry: RetryPolicy.none,
     );
     final standard = query(
-      QueryKey(<Object?>['public-marker-standard']),
-      (_) => const _User(2, 'Standard'),
+      key: QueryKey(<Object?>['public-marker-standard']),
+      fetch: (_) => const _User(2, 'Standard'),
       retry: RetryPolicy.standard,
     );
 
@@ -108,15 +108,15 @@ void main() {
     addTearDown(client.dispose);
     var attempts = 0;
     final source = query(
-      QueryKey(<Object?>['public-custom-retry']),
-      (_) {
+      key: QueryKey(<Object?>['public-custom-retry']),
+      fetch: (_) {
         attempts += 1;
         if (attempts == 1) {
           throw StateError('retry once');
         }
         return const _User(1, 'Retried');
       },
-    ).withRetry(
+    ).retry(
       (retry) => retry.strategy(
         retryIf: retry.exceptionType<StateError>() & retry.maxRetries(1),
       ),

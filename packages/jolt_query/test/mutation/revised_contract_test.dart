@@ -187,7 +187,7 @@ void main() {
           }
           return variables;
         },
-      ).withRetry(
+      ).retry(
         (retry) => retry.strategy(
           delay: DelayPolicy.fixed(const Duration(seconds: 1)),
           retryIf: retry.exceptionType<QueryCancelledException>() &
@@ -560,7 +560,7 @@ void main() {
       var attempts = 0;
       final definition = mutation<int, int, void>(
         mutate: (variables, context) => ++attempts,
-      ).withRetry(
+      ).retry(
         (retry) => retry.strategy(
           delay: DelayPolicy.fixed(const Duration(seconds: 1)),
           retryIf: retry.result((result) => result > 0) & retry.maxRetries(1),
@@ -593,8 +593,8 @@ void main() {
       final harness = _MutationContractHarness();
       addTearDown(harness.dispose);
       final counter = query<int>(
-        QueryKey(<Object?>['contract', 'restore']),
-        (context) => 0,
+        key: QueryKey(<Object?>['contract', 'restore']),
+        fetch: (context) => 0,
       );
       final baselineTime = DateTime.utc(2024, 5, 6);
       harness.client.setQueryData(counter, 0, updatedAt: baselineTime);
@@ -631,8 +631,8 @@ void main() {
       final harness = _MutationContractHarness();
       addTearDown(harness.dispose);
       final counter = query<int>(
-        QueryKey(<Object?>['contract', 'overlap']),
-        (context) => 0,
+        key: QueryKey(<Object?>['contract', 'overlap']),
+        fetch: (context) => 0,
       );
       harness.client.setQueryData(counter, 0);
       final transports = <int, Completer<int>>{

@@ -46,8 +46,8 @@ void main() {
 
     test('inline factory infers raw data from fetch', () {
       final recipe = query(
-        QueryKey(<Object?>['user', 2]),
-        (context) async => const _User(2, 'Grace'),
+        key: QueryKey(<Object?>['user', 2]),
+        fetch: (context) async => const _User(2, 'Grace'),
       );
 
       _expectStaticType<Query<_User>>(recipe);
@@ -57,17 +57,17 @@ void main() {
 
     test('explicit marker remains distinct from execution default', () {
       final inherited = query(
-        QueryKey(<Object?>['inherited']),
-        (context) => 1,
+        key: QueryKey(<Object?>['inherited']),
+        fetch: (context) => 1,
       );
       final explicitNone = query(
-        QueryKey(<Object?>['none']),
-        (context) => 1,
+        key: QueryKey(<Object?>['none']),
+        fetch: (context) => 1,
         retry: RetryPolicy.none,
       );
       final explicitStandard = query(
-        QueryKey(<Object?>['standard']),
-        (context) => 1,
+        key: QueryKey(<Object?>['standard']),
+        fetch: (context) => 1,
         retry: RetryPolicy.standard,
       );
 
@@ -89,8 +89,8 @@ void main() {
 
       expect(
         () => query<int>(
-          QueryKey(<Object?>['invalid-marker']),
-          (context) => 1,
+          key: QueryKey(<Object?>['invalid-marker']),
+          fetch: (context) => 1,
           retry: customMarker,
         ),
         throwsArgumentError,
@@ -99,9 +99,9 @@ void main() {
 
     test('typed retry is added after inference without widening data', () {
       final recipe = query(
-        QueryKey(<Object?>['user']),
-        (context) => const _User(1, 'Ada'),
-      ).withRetry(
+        key: QueryKey(<Object?>['user']),
+        fetch: (context) => const _User(1, 'Ada'),
+      ).retry(
         (retry) => retry.strategy(retryIf: retry.maxRetries(2)),
       );
 
@@ -113,13 +113,13 @@ void main() {
     });
 
     test('legal transformations retain raw plan and exact view types', () {
-      final raw = _UserQuery().withRetry(
+      final raw = _UserQuery().retry(
         (retry) => retry.strategy(retryIf: retry.maxRetries(2)),
       );
-      final initialized = raw.withInitialData(const _User(0, 'Loading'));
+      final initialized = raw.initialData(const _User(0, 'Loading'));
       final selected =
           initialized.select((user) => user.name).select((name) => name.length);
-      final terminal = selected.withObserver(
+      final terminal = selected.observer(
         enabled: false,
         staleTime: StalePolicy.untilInvalidated,
         refetchOnMount: RefetchPolicy.always,
@@ -152,11 +152,11 @@ void main() {
 
     test('raw nullable initial and final placeholder preserve presence', () {
       final raw = query<String?>(
-        QueryKey(<Object?>['nullable']),
-        (context) => null,
+        key: QueryKey(<Object?>['nullable']),
+        fetch: (context) => null,
       );
-      final initialized = raw.withInitialData(null);
-      final placeholder = initialized.withPlaceholderData(null);
+      final initialized = raw.initialData(null);
+      final placeholder = initialized.placeholderData(null);
 
       expect(initialized.resolved.initialData, isNotNull);
       expect(initialized.resolved.initialData?.data, isNull);
@@ -170,9 +170,9 @@ void main() {
     test('placeholder resolver receives exact previous presence', () {
       final previous = QueryValue<String>.present('old');
       final target = query(
-        QueryKey(<Object?>['value']),
-        (context) => 'new',
-      ).withPlaceholder((value) => value);
+        key: QueryKey(<Object?>['value']),
+        fetch: (context) => 'new',
+      ).placeholder((value) => value);
 
       expect(target.resolved.resolvePlaceholder(previous), same(previous));
       expect(
@@ -186,8 +186,8 @@ void main() {
       final sourceMetadata = <String, Object?>{'source': 'test'};
       QueryContext? seenContext;
       final recipe = query(
-        QueryKey(<Object?>['user']),
-        (context) {
+        key: QueryKey(<Object?>['user']),
+        fetch: (context) {
           seenContext = context;
           return const _User(1, 'Ada');
         },
@@ -233,14 +233,14 @@ void main() {
 
     test('heterogeneous targets expose only non-generic base', () {
       final targets = <AnyQueryTarget>[
-        query(QueryKey(<Object?>['number']), (context) => 1),
-        query(QueryKey(<Object?>['text']), (context) => 'value')
+        query(key: QueryKey(<Object?>['number']), fetch: (context) => 1),
+        query(key: QueryKey(<Object?>['text']), fetch: (context) => 'value')
             .select((value) => value.length)
-            .withObserver(
+            .observer(
               enabled: false,
               equality: (previous, next) => previous.abs() == next.abs(),
             )
-            .withPlaceholderData(-1),
+            .placeholderData(-1),
       ];
 
       expect(targets.map((target) => target.key).toList(), <QueryKey>[
@@ -267,14 +267,14 @@ void main() {
       final dependency = Signal<int>(1);
       var runs = 0;
       final target = query(
-        QueryKey(<Object?>['untracked']),
-        (context) => 1,
-      ).select((value) => value + dependency.value).withObserver(
+        key: QueryKey(<Object?>['untracked']),
+        fetch: (context) => 1,
+      ).select((value) => value + dependency.value).observer(
         equality: (previous, next) {
           dependency.value;
           return previous == next;
         },
-      ).withPlaceholder((previous) {
+      ).placeholder((previous) {
         dependency.value;
         return previous;
       });
@@ -345,12 +345,12 @@ void main() {
 
     test('observer rejects non-positive polling intervals', () {
       final target = query(
-        QueryKey(<Object?>['poll']),
-        (context) => 1,
+        key: QueryKey(<Object?>['poll']),
+        fetch: (context) => 1,
       );
 
       expect(
-        () => target.withObserver(pollingInterval: Duration.zero),
+        () => target.observer(pollingInterval: Duration.zero),
         throwsArgumentError,
       );
     });

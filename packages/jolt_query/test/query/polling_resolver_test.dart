@@ -10,12 +10,12 @@ void main() {
   group('state-derived polling', () {
     test('fixed and resolved intervals are rejected in one configuration', () {
       final source = query(
-        QueryKey(const <Object?>['polling-conflict']),
-        (_) => 1,
+        key: QueryKey(const <Object?>['polling-conflict']),
+        fetch: (_) => 1,
       );
 
       expect(
-        () => source.withObserver(
+        () => source.observer(
           pollingInterval: const Duration(seconds: 1),
           pollingIntervalResolver: (_) => const Duration(seconds: 2),
         ),
@@ -30,10 +30,10 @@ void main() {
       var calls = 0;
       final observer = harness.client.observeQuery(
         query(
-          QueryKey(const <Object?>['state-derived-polling']),
-          (_) => ++calls,
+          key: QueryKey(const <Object?>['state-derived-polling']),
+          fetch: (_) => ++calls,
           retry: RetryPolicy.none,
-        ).withInitialData(0).withObserver(
+        ).initialData(0).observer(
               refetchOnMount: RefetchPolicy.never,
               pollingIntervalResolver: (result) {
                 final value = result.data.requireValue();
@@ -75,10 +75,10 @@ void main() {
       harness.client.watchQuery(() {
         targetBuilds += 1;
         return query(
-          QueryKey(const <Object?>['untracked-polling-resolver']),
-          (_) => ++calls,
+          key: QueryKey(const <Object?>['untracked-polling-resolver']),
+          fetch: (_) => ++calls,
           retry: RetryPolicy.none,
-        ).withInitialData(0).withObserver(
+        ).initialData(0).observer(
               refetchOnMount: RefetchPolicy.never,
               pollingIntervalResolver: (_) => externalInterval.value,
             );
@@ -103,10 +103,10 @@ void main() {
       harness.client.watchQuery(() {
         final seconds = intervalSeconds.value;
         return query(
-          QueryKey(const <Object?>['retarget-polling-resolver']),
-          (_) => ++calls,
+          key: QueryKey(const <Object?>['retarget-polling-resolver']),
+          fetch: (_) => ++calls,
           retry: RetryPolicy.none,
-        ).withInitialData(0).withObserver(
+        ).initialData(0).observer(
               refetchOnMount: RefetchPolicy.never,
               pollingIntervalResolver: (_) => Duration(seconds: seconds),
             );
@@ -134,13 +134,13 @@ void main() {
       final observer = harness.client.watchQuery(() {
         final id = selected.value;
         return query(
-          QueryKey(<Object?>['reentrant-polling-resolver', id]),
-          (_) {
+          key: QueryKey(<Object?>['reentrant-polling-resolver', id]),
+          fetch: (_) {
             calls.add(id);
             return '$id-fetched';
           },
           retry: RetryPolicy.none,
-        ).withInitialData('$id-initial').withObserver(
+        ).initialData('$id-initial').observer(
               refetchOnMount: RefetchPolicy.never,
               pollingIntervalResolver: (_) {
                 if (id == 'new') return null;
@@ -152,12 +152,12 @@ void main() {
       });
 
       final oldQuery = query(
-        QueryKey(const <Object?>['reentrant-polling-resolver', 'old']),
-        (_) => 'unused',
+        key: QueryKey(const <Object?>['reentrant-polling-resolver', 'old']),
+        fetch: (_) => 'unused',
       );
       final newQuery = query(
-        QueryKey(const <Object?>['reentrant-polling-resolver', 'new']),
-        (_) => 'unused',
+        key: QueryKey(const <Object?>['reentrant-polling-resolver', 'new']),
+        fetch: (_) => 'unused',
       );
 
       expect(observer.key, oldQuery.key);
@@ -186,15 +186,15 @@ void main() {
       var calls = 0;
       harness.client.observeQuery(
         query(
-          QueryKey(const <Object?>['non-overlapping-polling-resolver']),
-          (_) {
+          key: QueryKey(const <Object?>['non-overlapping-polling-resolver']),
+          fetch: (_) {
             calls += 1;
             final completion = Completer<int>();
             completions.add(completion);
             return completion.future;
           },
           retry: RetryPolicy.none,
-        ).withInitialData(0).withObserver(
+        ).initialData(0).observer(
               refetchOnMount: RefetchPolicy.never,
               pollingIntervalResolver: (_) => const Duration(seconds: 1),
             ),
@@ -221,10 +221,10 @@ void main() {
       var calls = 0;
       harness.client.observeQuery(
         query(
-          QueryKey(const <Object?>['disabled-polling-resolver']),
-          (_) => ++calls,
+          key: QueryKey(const <Object?>['disabled-polling-resolver']),
+          fetch: (_) => ++calls,
           retry: RetryPolicy.none,
-        ).withInitialData(0).withObserver(
+        ).initialData(0).observer(
               refetchOnMount: RefetchPolicy.never,
               pollingIntervalResolver: (_) => const Duration(seconds: 1),
               pollingEnabled: false,
@@ -246,8 +246,8 @@ void main() {
       const QueryDefaults(enabled: false),
       key: key,
     );
-    final source =
-        query(key, (_) => 1, retry: RetryPolicy.none).withInitialData(0);
+    final source = query(key: key, fetch: (_) => 1, retry: RetryPolicy.none)
+        .initialData(0);
     final inherited = harness.client.observeQuery(source);
 
     expect(inherited.isEnabled, isFalse);
@@ -255,7 +255,7 @@ void main() {
 
     final enabled = Signal<bool>(false);
     final watched = harness.client.watchQuery(
-      () => source.withObserver(enabled: enabled.value),
+      () => source.observer(enabled: enabled.value),
     );
     final states = <bool>[];
     final effect = Effect(() => states.add(watched.isEnabled));

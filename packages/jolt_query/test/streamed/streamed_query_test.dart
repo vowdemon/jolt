@@ -13,8 +13,8 @@ void main() {
       stream: (_) => Stream<int>.fromIterable(<int>[1, 2, 3]),
     );
     final raw = query<IList<int>>(
-      QueryKey(<Object?>['stream', 'list-helper']),
-      fetch,
+      key: QueryKey(<Object?>['stream', 'list-helper']),
+      fetch: fetch,
       retry: RetryPolicy.none,
     );
     final client = QueryClient();
@@ -27,8 +27,8 @@ void main() {
   test('ordinary query recipe reuses the streamed cache identity', () async {
     final key = QueryKey(<Object?>['stream', 'ordinary-reuse']);
     final streamed = query<List<int>>(
-      key,
-      streamedQuery<int, List<int>>(
+      key: key,
+      fetch: streamedQuery<int, List<int>>(
         stream: (_) => Stream<int>.value(1),
         initial: () => <int>[],
         reduce: (current, chunk) => <int>[...current, chunk],
@@ -37,8 +37,8 @@ void main() {
     );
     var ordinaryCalls = 0;
     final ordinary = query<List<int>>(
-      QueryKey(<Object?>['stream', 'ordinary-reuse']),
-      (_) => <int>[++ordinaryCalls + 8],
+      key: QueryKey(<Object?>['stream', 'ordinary-reuse']),
+      fetch: (_) => <int>[++ordinaryCalls + 8],
       retry: RetryPolicy.none,
     );
     final client = QueryClient();
@@ -59,8 +59,8 @@ void main() {
     var streamCalls = 0;
     final key = QueryKey(<Object?>['stream', 'cancel-in-initial']);
     final raw = query<List<int>>(
-      key,
-      streamedQuery<int, List<int>>(
+      key: key,
+      fetch: streamedQuery<int, List<int>>(
         stream: (_) {
           streamCalls += 1;
           return const Stream<int>.empty();
@@ -93,8 +93,8 @@ void main() {
     late _AdversarialStream<int> returnedSource;
     final key = QueryKey(<Object?>['stream', 'cancel-in-factory']);
     final raw = query<List<int>>(
-      key,
-      streamedQuery<int, List<int>>(
+      key: key,
+      fetch: streamedQuery<int, List<int>>(
         stream: (_) {
           returnedSource = _AdversarialStream<int>();
           unawaited(
@@ -130,8 +130,8 @@ void main() {
     final key = QueryKey(<Object?>['stream', 'replace-in-reconciler']);
     var didReplace = false;
     final raw = query<List<int>>(
-      key,
-      streamedQuery<int, List<int>>(
+      key: key,
+      fetch: streamedQuery<int, List<int>>(
         stream: (_) => source.stream,
         initial: () => <int>[],
         reduce: (current, chunk) => <int>[...current, chunk],
@@ -150,8 +150,8 @@ void main() {
       }),
     );
     replacement = query<List<int>>(
-      key,
-      (_) => replacementTransport.future,
+      key: key,
+      fetch: (_) => replacementTransport.future,
       retry: RetryPolicy.none,
     );
     client = QueryClient()..setQueryData(raw, <int>[0]);
@@ -177,8 +177,8 @@ void main() {
     var initialCalls = 0;
     var streamCalls = 0;
     final raw = query<List<int>>(
-      QueryKey(<Object?>['stream', 'reset']),
-      streamedQuery<int, List<int>>(
+      key: QueryKey(<Object?>['stream', 'reset']),
+      fetch: streamedQuery<int, List<int>>(
         stream: (_) {
           streamCalls += 1;
           return source.stream;
@@ -217,8 +217,8 @@ void main() {
   test('reset start does not count an initial-data seed as fetched', () async {
     final source = StreamController<int>(sync: true);
     final raw = query<List<int>>(
-      QueryKey(<Object?>['stream', 'initial-seed-completion']),
-      streamedQuery<int, List<int>>(
+      key: QueryKey(<Object?>['stream', 'initial-seed-completion']),
+      fetch: streamedQuery<int, List<int>>(
         stream: (_) => source.stream,
         initial: () => <int>[],
         reduce: (current, chunk) => <int>[...current, chunk],
@@ -226,7 +226,7 @@ void main() {
       retry: RetryPolicy.none,
     );
     final client = QueryClient();
-    final observer = client.observeQuery(raw.withInitialData(<int>[0]));
+    final observer = client.observeQuery(raw.initialData(<int>[0]));
     await _pump();
 
     expect(observer.data.requireValue(), <int>[0]);
@@ -248,8 +248,8 @@ void main() {
       () async {
     final streams = <StreamController<int>>[];
     final raw = query<List<int>>(
-      QueryKey(<Object?>['stream', 'reset-configured-initial']),
-      streamedQuery<int, List<int>>(
+      key: QueryKey(<Object?>['stream', 'reset-configured-initial']),
+      fetch: streamedQuery<int, List<int>>(
         stream: (_) {
           final source = StreamController<int>(sync: true);
           streams.add(source);
@@ -262,7 +262,7 @@ void main() {
     );
     final client = QueryClient();
     final observer = client.observeQuery(
-      raw.withInitialData(<int>[0]).withObserver(enabled: false),
+      raw.initialData(<int>[0]).observer(enabled: false),
     );
 
     final first = observer.refetch();
@@ -294,8 +294,8 @@ void main() {
   test('configured initial data classifies an empty reset failure as refetch',
       () async {
     final raw = query<List<int>>(
-      QueryKey(<Object?>['stream', 'reset-initial-error']),
-      streamedQuery<int, List<int>>(
+      key: QueryKey(<Object?>['stream', 'reset-initial-error']),
+      fetch: streamedQuery<int, List<int>>(
         stream: (_) => Stream<int>.error(StateError('stream')),
         initial: () => <int>[99],
         reduce: (current, chunk) => <int>[...current, chunk],
@@ -304,7 +304,7 @@ void main() {
     );
     final client = QueryClient();
     final observer = client.observeQuery(
-      raw.withInitialData(<int>[0]).withObserver(enabled: false),
+      raw.initialData(<int>[0]).observer(enabled: false),
     );
 
     final result = await observer.refetch();
@@ -322,8 +322,8 @@ void main() {
     final streams = <StreamController<int>>[];
     var initialCalls = 0;
     final raw = query<List<int>>(
-      QueryKey(<Object?>['stream', 'append-retry']),
-      streamedQuery<int, List<int>>(
+      key: QueryKey(<Object?>['stream', 'append-retry']),
+      fetch: streamedQuery<int, List<int>>(
         stream: (_) {
           final source = StreamController<int>(sync: true);
           streams.add(source);
@@ -337,7 +337,7 @@ void main() {
         mode: StreamRefetchMode.append,
       ),
       retry: RetryPolicy.none,
-    ).withRetry(
+    ).retry(
       (retry) => retry.strategy(
         delay: DelayPolicy.none(),
         retryIf: retry.exceptions & retry.maxRetries(1),
@@ -345,7 +345,7 @@ void main() {
     );
     final client = QueryClient()..setQueryData(raw, <int>[0]);
     final observer = client.observeQuery(
-      raw.withObserver(enabled: false),
+      raw.observer(enabled: false),
     );
     final pending = observer.refetch();
     await _pump();
@@ -373,8 +373,8 @@ void main() {
       () async {
     final source = StreamController<int>(sync: true);
     final raw = query<List<int>>(
-      QueryKey(<Object?>['stream', 'append-multiple']),
-      streamedQuery<int, List<int>>(
+      key: QueryKey(<Object?>['stream', 'append-multiple']),
+      fetch: streamedQuery<int, List<int>>(
         stream: (_) => source.stream,
         initial: () => <int>[],
         reduce: (current, chunk) => <int>[...current, chunk],
@@ -383,7 +383,7 @@ void main() {
       retry: RetryPolicy.none,
     );
     final client = QueryClient()..setQueryData(raw, <int>[0]);
-    final observer = client.observeQuery(raw.withObserver(enabled: false));
+    final observer = client.observeQuery(raw.observer(enabled: false));
     final pending = observer.refetch();
     await _pump();
 
@@ -404,8 +404,8 @@ void main() {
       () async {
     var attempts = 0;
     final raw = query<List<int>>(
-      QueryKey(<Object?>['stream', 'reducer-retry']),
-      streamedQuery<int, List<int>>(
+      key: QueryKey(<Object?>['stream', 'reducer-retry']),
+      fetch: streamedQuery<int, List<int>>(
         stream: (_) => Stream<int>.value(++attempts),
         initial: () => <int>[],
         reduce: (current, chunk) {
@@ -414,7 +414,7 @@ void main() {
         },
       ),
       retry: RetryPolicy.none,
-    ).withRetry(
+    ).retry(
       (retry) => retry.strategy(
         delay: DelayPolicy.none(),
         retryIf: retry.exceptions & retry.maxRetries(1),
@@ -433,8 +433,8 @@ void main() {
     final streams = <StreamController<int>>[];
     var initialCalls = 0;
     final raw = query<List<int>>(
-      QueryKey(<Object?>['stream', 'reset-retry']),
-      streamedQuery<int, List<int>>(
+      key: QueryKey(<Object?>['stream', 'reset-retry']),
+      fetch: streamedQuery<int, List<int>>(
         stream: (_) {
           final source = StreamController<int>(sync: true);
           streams.add(source);
@@ -444,14 +444,14 @@ void main() {
         reduce: (current, chunk) => <int>[...current, chunk],
       ),
       retry: RetryPolicy.none,
-    ).withRetry(
+    ).retry(
       (retry) => retry.strategy(
         delay: DelayPolicy.none(),
         retryIf: retry.exceptions & retry.maxRetries(1),
       ),
     );
     final client = QueryClient()..setQueryData(raw, <int>[0]);
-    final observer = client.observeQuery(raw.withObserver(enabled: false));
+    final observer = client.observeQuery(raw.observer(enabled: false));
     final pending = observer.refetch();
     await _pump();
 
@@ -481,8 +481,8 @@ void main() {
   test('replace accumulates privately and commits atomically', () async {
     final source = StreamController<int>(sync: true);
     final raw = query<List<int>>(
-      QueryKey(<Object?>['stream', 'replace']),
-      streamedQuery<int, List<int>>(
+      key: QueryKey(<Object?>['stream', 'replace']),
+      fetch: streamedQuery<int, List<int>>(
         stream: (_) => source.stream,
         initial: () => <int>[],
         reduce: (current, chunk) => <int>[...current, chunk],
@@ -491,7 +491,7 @@ void main() {
       retry: RetryPolicy.none,
     );
     final client = QueryClient()..setQueryData(raw, <int>[9]);
-    final observer = client.observeQuery(raw.withObserver(enabled: false));
+    final observer = client.observeQuery(raw.observer(enabled: false));
     final pending = observer.refetch();
     await _pump();
 
@@ -511,8 +511,8 @@ void main() {
     final streams = <StreamController<int>>[];
     var initialCalls = 0;
     final raw = query<List<int>>(
-      QueryKey(<Object?>['stream', 'replace-retry']),
-      streamedQuery<int, List<int>>(
+      key: QueryKey(<Object?>['stream', 'replace-retry']),
+      fetch: streamedQuery<int, List<int>>(
         stream: (_) {
           final source = StreamController<int>(sync: true);
           streams.add(source);
@@ -523,7 +523,7 @@ void main() {
         mode: StreamRefetchMode.replace,
       ),
       retry: RetryPolicy.none,
-    ).withRetry(
+    ).retry(
       (retry) => retry.strategy(
         delay: DelayPolicy.none(),
         retryIf: retry.exceptions & retry.maxRetries(1),
@@ -531,7 +531,7 @@ void main() {
     );
     final client = QueryClient()..setQueryData(raw, <int>[9]);
     final before = client.getQueryState(raw)!;
-    final observer = client.observeQuery(raw.withObserver(enabled: false));
+    final observer = client.observeQuery(raw.observer(enabled: false));
     final pending = observer.refetch();
     await _pump();
 
@@ -570,8 +570,8 @@ void main() {
       List<int>? baseline,
     }) async {
       final raw = query<List<int>>(
-        QueryKey(<Object?>['stream', 'empty', name]),
-        streamedQuery<int, List<int>>(
+        key: QueryKey(<Object?>['stream', 'empty', name]),
+        fetch: streamedQuery<int, List<int>>(
           stream: (_) => const Stream<int>.empty(),
           initial: () => <int>[7],
           reduce: (current, chunk) => <int>[...current, chunk],
@@ -604,8 +604,8 @@ void main() {
     var attempts = 0;
     var initialCalls = 0;
     final raw = query<List<int>>(
-      QueryKey(<Object?>['stream', 'result-retry']),
-      streamedQuery<int, List<int>>(
+      key: QueryKey(<Object?>['stream', 'result-retry']),
+      fetch: streamedQuery<int, List<int>>(
         stream: (_) {
           attempts += 1;
           return Stream<int>.fromIterable(<int>[1, 2]);
@@ -618,7 +618,7 @@ void main() {
         mode: StreamRefetchMode.replace,
       ),
       retry: RetryPolicy.none,
-    ).withRetry(
+    ).retry(
       (retry) => retry.strategy(
         delay: DelayPolicy.none(),
         retryIf: retry.result((data) {
@@ -642,8 +642,8 @@ void main() {
       () async {
     final source = _AdversarialStream<int>();
     final raw = query<List<int>>(
-      QueryKey(<Object?>['stream', 'external-write']),
-      streamedQuery<int, List<int>>(
+      key: QueryKey(<Object?>['stream', 'external-write']),
+      fetch: streamedQuery<int, List<int>>(
         stream: (_) => source,
         initial: () => <int>[],
         reduce: (current, chunk) => <int>[...current, chunk],
@@ -651,7 +651,7 @@ void main() {
       retry: RetryPolicy.none,
     );
     final client = QueryClient();
-    final observer = client.observeQuery(raw.withObserver(enabled: false));
+    final observer = client.observeQuery(raw.observer(enabled: false));
     final pending = observer.refetch();
     await _pump();
     source.emitData(1);
@@ -682,8 +682,8 @@ void main() {
       () async {
     final source = _AdversarialStream<int>();
     final raw = query<List<int>>(
-      QueryKey(<Object?>['stream', 'replace-external-write']),
-      streamedQuery<int, List<int>>(
+      key: QueryKey(<Object?>['stream', 'replace-external-write']),
+      fetch: streamedQuery<int, List<int>>(
         stream: (_) => source,
         initial: () => <int>[],
         reduce: (current, chunk) => <int>[...current, chunk],
@@ -692,7 +692,7 @@ void main() {
       retry: RetryPolicy.none,
     );
     final client = QueryClient()..setQueryData(raw, <int>[9]);
-    final observer = client.observeQuery(raw.withObserver(enabled: false));
+    final observer = client.observeQuery(raw.observer(enabled: false));
     final pending = observer.refetch();
     await _pump();
 
@@ -725,8 +725,8 @@ void main() {
     final source = _AdversarialStream<int>(cancelGate: cancelGate);
     late QueryCancellationToken cancellationToken;
     final raw = query<List<int>>(
-      QueryKey(<Object?>['stream', 'cancel']),
-      streamedQuery<int, List<int>>(
+      key: QueryKey(<Object?>['stream', 'cancel']),
+      fetch: streamedQuery<int, List<int>>(
         stream: (context) {
           cancellationToken = context.cancellationToken;
           return source;
@@ -737,7 +737,7 @@ void main() {
       retry: RetryPolicy.none,
     );
     final client = QueryClient()..setQueryData(raw, <int>[0]);
-    final observer = client.observeQuery(raw.withObserver(enabled: false));
+    final observer = client.observeQuery(raw.observer(enabled: false));
     final pending = observer.refetch();
     await _pump();
     source.emitData(1);
@@ -796,8 +796,8 @@ void main() {
     final cancelGate = Completer<void>();
     final streams = <_AdversarialStream<int>>[];
     final raw = query<List<int>>(
-      QueryKey(<Object?>['stream', 'detach-cancel-gate']),
-      streamedQuery<int, List<int>>(
+      key: QueryKey(<Object?>['stream', 'detach-cancel-gate']),
+      fetch: streamedQuery<int, List<int>>(
         stream: (_) {
           final source = _AdversarialStream<int>(
             cancelGate: streams.isEmpty ? cancelGate : null,
@@ -843,8 +843,8 @@ void main() {
     final source = _AdversarialStream<int>(cancelGate: cancelGate);
     final key = QueryKey(<Object?>['stream', 'reset-cancel-gate']);
     final streamed = query<List<int>>(
-      key,
-      streamedQuery<int, List<int>>(
+      key: key,
+      fetch: streamedQuery<int, List<int>>(
         stream: (_) => source,
         initial: () => <int>[],
         reduce: (current, chunk) => <int>[...current, chunk],
@@ -852,13 +852,13 @@ void main() {
       retry: RetryPolicy.none,
     );
     final replacement = query<List<int>>(
-      key,
-      (_) => <int>[9],
+      key: key,
+      fetch: (_) => <int>[9],
       retry: RetryPolicy.none,
     );
     final client = QueryClient()..setQueryData(streamed, <int>[0]);
     final observer = client.observeQuery(
-      streamed.withObserver(enabled: false),
+      streamed.observer(enabled: false),
     );
     final pending = observer.refetch();
     var pendingCompleted = false;
@@ -891,8 +891,8 @@ void main() {
       () async {
     final source = _AdversarialStream<int>();
     final raw = query<List<int>>(
-      QueryKey(<Object?>['stream', 'manual-before-exhaustion']),
-      streamedQuery<int, List<int>>(
+      key: QueryKey(<Object?>['stream', 'manual-before-exhaustion']),
+      fetch: streamedQuery<int, List<int>>(
         stream: (_) => source,
         initial: () => <int>[],
         reduce: (current, chunk) => <int>[...current, chunk],
@@ -900,7 +900,7 @@ void main() {
       retry: RetryPolicy.none,
     );
     final client = QueryClient();
-    final observer = client.observeQuery(raw.withObserver(enabled: false));
+    final observer = client.observeQuery(raw.observer(enabled: false));
     final pending = observer.refetch();
     await _pump();
 
@@ -925,8 +925,8 @@ void main() {
     final source = _AdversarialStream<int>(cancelGate: cancelGate);
     final key = QueryKey(<Object?>['stream', 'awaited-replacement']);
     final streamed = query<List<int>>(
-      key,
-      streamedQuery<int, List<int>>(
+      key: key,
+      fetch: streamedQuery<int, List<int>>(
         stream: (_) => source,
         initial: () => <int>[],
         reduce: (current, chunk) => <int>[...current, chunk],
@@ -934,8 +934,8 @@ void main() {
       retry: RetryPolicy.none,
     );
     final replacement = query<List<int>>(
-      key,
-      (_) => <int>[9],
+      key: key,
+      fetch: (_) => <int>[9],
       retry: RetryPolicy.none,
     );
     final client = QueryClient()..setQueryData(streamed, <int>[0]);
@@ -979,8 +979,8 @@ void main() {
   test('remove and recreate rejects every late stream event', () async {
     final source = _AdversarialStream<int>();
     final raw = query<List<int>>(
-      QueryKey(<Object?>['stream', 'recreate']),
-      streamedQuery<int, List<int>>(
+      key: QueryKey(<Object?>['stream', 'recreate']),
+      fetch: streamedQuery<int, List<int>>(
         stream: (_) => source,
         initial: () => <int>[],
         reduce: (current, chunk) => <int>[...current, chunk],
@@ -988,7 +988,7 @@ void main() {
       retry: RetryPolicy.none,
     );
     final client = QueryClient();
-    final observer = client.observeQuery(raw.withObserver(enabled: false));
+    final observer = client.observeQuery(raw.observer(enabled: false));
     final pending = observer.refetch();
     await _pump();
     source.emitData(1);
@@ -1024,8 +1024,8 @@ void main() {
       List<int>? baseline,
     }) async {
       final raw = query<List<int>>(
-        QueryKey(<Object?>['stream', 'failure', name]),
-        streamedQuery<int, List<int>>(
+        key: QueryKey(<Object?>['stream', 'failure', name]),
+        fetch: streamedQuery<int, List<int>>(
           stream: (_) => Stream<int>.error(StateError(name)),
           initial: () => <int>[7],
           reduce: (current, chunk) => <int>[...current, chunk],
@@ -1084,8 +1084,8 @@ void main() {
     ) async {
       final streams = <StreamController<int>>[];
       final raw = query<List<int>>(
-        QueryKey(<Object?>['stream', 'partial-exhausted', name]),
-        streamedQuery<int, List<int>>(
+        key: QueryKey(<Object?>['stream', 'partial-exhausted', name]),
+        fetch: streamedQuery<int, List<int>>(
           stream: (_) {
             final source = StreamController<int>(sync: true);
             streams.add(source);
@@ -1096,14 +1096,14 @@ void main() {
           mode: mode,
         ),
         retry: RetryPolicy.none,
-      ).withRetry(
+      ).retry(
         (retry) => retry.strategy(
           delay: DelayPolicy.none(),
           retryIf: retry.exceptions & retry.maxRetries(1),
         ),
       );
       final client = QueryClient()..setQueryData(raw, <int>[0]);
-      final observer = client.observeQuery(raw.withObserver(enabled: false));
+      final observer = client.observeQuery(raw.observer(enabled: false));
       final pending = observer.refetch();
       await _pump();
 
@@ -1144,8 +1144,8 @@ void main() {
     final source = StreamController<int>(sync: true);
     var subscriptions = 0;
     final raw = query<List<int>>(
-      QueryKey(<Object?>['stream', 'shared']),
-      streamedQuery<int, List<int>>(
+      key: QueryKey(<Object?>['stream', 'shared']),
+      fetch: streamedQuery<int, List<int>>(
         stream: (_) {
           subscriptions += 1;
           return source.stream;
@@ -1174,8 +1174,8 @@ void main() {
       () async {
     var streamCalls = 0;
     final raw = query<List<int>>(
-      QueryKey(<Object?>['stream', 'invalidate']),
-      streamedQuery<int, List<int>>(
+      key: QueryKey(<Object?>['stream', 'invalidate']),
+      fetch: streamedQuery<int, List<int>>(
         stream: (_) => Stream<int>.value(++streamCalls),
         initial: () => <int>[],
         reduce: (current, chunk) => <int>[...current, chunk],
@@ -1208,15 +1208,15 @@ void main() {
     final notifications = FakeQueryNotificationScheduler();
     var streamCalls = 0;
     final raw = query<List<int>>(
-      QueryKey(<Object?>['stream', 'ordinary-triggers']),
-      streamedQuery<int, List<int>>(
+      key: QueryKey(<Object?>['stream', 'ordinary-triggers']),
+      fetch: streamedQuery<int, List<int>>(
         stream: (_) => Stream<int>.value(++streamCalls),
         initial: () => <int>[],
         reduce: (current, chunk) => <int>[...current, chunk],
         mode: StreamRefetchMode.append,
       ),
       retry: RetryPolicy.none,
-    ).withInitialData(<int>[]).withObserver(
+    ).initialData(<int>[]).observer(
       refetchOnMount: RefetchPolicy.never,
       refetchOnFocus: RefetchPolicy.always,
       pollingInterval: const Duration(seconds: 5),
@@ -1255,8 +1255,8 @@ void main() {
     final notifications = FakeQueryNotificationScheduler();
     var streamCalls = 0;
     final raw = query<List<int>>(
-      QueryKey(<Object?>['stream', 'gc-reattach']),
-      streamedQuery<int, List<int>>(
+      key: QueryKey(<Object?>['stream', 'gc-reattach']),
+      fetch: streamedQuery<int, List<int>>(
         stream: (_) => Stream<int>.value(++streamCalls),
         initial: () => <int>[],
         reduce: (current, chunk) => <int>[...current, chunk],

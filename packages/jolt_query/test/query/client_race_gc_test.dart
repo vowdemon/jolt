@@ -12,8 +12,8 @@ void main() {
         () async {
       final transport = Completer<int>();
       final raw = query<int>(
-        QueryKey(<Object?>['cancel', 'revert']),
-        (_) => transport.future,
+        key: QueryKey(<Object?>['cancel', 'revert']),
+        fetch: (_) => transport.future,
         retry: RetryPolicy.none,
       );
       final client = QueryClient()..setQueryData(raw, 1);
@@ -45,8 +45,8 @@ void main() {
         () async {
       final transport = Completer<int>.sync();
       final raw = query<int>(
-        QueryKey(<Object?>['race', 'write']),
-        (_) => transport.future,
+        key: QueryKey(<Object?>['race', 'write']),
+        fetch: (_) => transport.future,
         retry: RetryPolicy.none,
       );
       final client = QueryClient();
@@ -66,8 +66,8 @@ void main() {
     test('retained-data refetch failure remains a refetch error', () async {
       var shouldFail = false;
       final raw = query<int>(
-        QueryKey(<Object?>['failure', 'retained']),
-        (_) {
+        key: QueryKey(<Object?>['failure', 'retained']),
+        fetch: (_) {
           if (shouldFail) throw StateError('refresh failed');
           return 1;
         },
@@ -75,7 +75,7 @@ void main() {
       );
       final client = QueryClient();
       expect(await client.fetchQuery(raw), 1);
-      final observer = client.observeQuery(raw.withObserver(enabled: false));
+      final observer = client.observeQuery(raw.observer(enabled: false));
       shouldFail = true;
 
       final result = await observer.refetch();
@@ -108,13 +108,13 @@ void main() {
 
       var retryAttempts = 0;
       final retrySource = query<int>(
-        QueryKey(<Object?>['dispose', 'retry']),
-        (_) {
+        key: QueryKey(<Object?>['dispose', 'retry']),
+        fetch: (_) {
           retryAttempts += 1;
           throw StateError('wait before retry');
         },
         retry: RetryPolicy.none,
-      ).withRetry(
+      ).retry(
         (retry) => retry.strategy(
           retryIf: retry.exceptions & retry.maxRetries(1),
           delay: DelayPolicy.fixed(retryDelay),
@@ -126,21 +126,21 @@ void main() {
 
       var pollingAttempts = 0;
       final pollingSource = query<int>(
-        QueryKey(<Object?>['dispose', 'polling']),
-        (_) => ++pollingAttempts,
+        key: QueryKey(<Object?>['dispose', 'polling']),
+        fetch: (_) => ++pollingAttempts,
         retry: RetryPolicy.none,
-      ).withInitialData(0).withObserver(
+      ).initialData(0).observer(
             refetchOnMount: RefetchPolicy.never,
             pollingInterval: pollingInterval,
           );
       final pollingObserver = client.observeQuery(pollingSource);
 
       final gcSource = query<int>(
-        QueryKey(<Object?>['dispose', 'gc']),
-        (_) => 0,
+        key: QueryKey(<Object?>['dispose', 'gc']),
+        fetch: (_) => 0,
         retry: RetryPolicy.none,
         retention: RetentionPolicy.duration(gcDelay),
-      ).withInitialData(0).withObserver(
+      ).initialData(0).observer(
             refetchOnMount: RefetchPolicy.never,
           );
       client.observeQuery(gcSource).dispose();
@@ -149,8 +149,8 @@ void main() {
       final transportStarted = Completer<void>();
       final transport = Completer<int>();
       final transportSource = query<int>(
-        QueryKey(<Object?>['dispose', 'transport']),
-        (_) {
+        key: QueryKey(<Object?>['dispose', 'transport']),
+        fetch: (_) {
           transportAttempts += 1;
           transportStarted.complete();
           return transport.future;
@@ -244,16 +244,16 @@ void main() {
       final key = QueryKey(<Object?>['cancel', 'reentrant-replacement']);
       final pendingTransport = Completer<int>();
       final reentrantQuery = query<int>(
-        key,
-        (_) {
+        key: key,
+        fetch: (_) {
           reentrantCalls += 1;
           return 3;
         },
         retry: RetryPolicy.none,
       );
       final firstQuery = query<int>(
-        key,
-        (context) {
+        key: key,
+        fetch: (context) {
           context.cancellationToken.addListener((_) {
             reentrant = client.fetchQuery(
               reentrantQuery,
@@ -265,8 +265,8 @@ void main() {
         retry: RetryPolicy.none,
       );
       final winnerQuery = query<int>(
-        key,
-        (_) => 2,
+        key: key,
+        fetch: (_) => 2,
         retry: RetryPolicy.none,
       );
       client = QueryClient()..setQueryData(firstQuery, 0);
@@ -292,8 +292,8 @@ void main() {
       final key = QueryKey(<Object?>['cancel', 'reentrant-reservation-cancel']);
       final pendingTransport = Completer<int>();
       final firstQuery = query<int>(
-        key,
-        (context) {
+        key: key,
+        fetch: (context) {
           context.cancellationToken.addListener((_) {
             nestedCancellation = client.cancelQueries(
               filter: QueryFilter(key: key, exact: true),
@@ -304,13 +304,13 @@ void main() {
         retry: RetryPolicy.none,
       );
       final replacedQuery = query<int>(
-        key,
-        (_) => 2,
+        key: key,
+        fetch: (_) => 2,
         retry: RetryPolicy.none,
       );
       final laterQuery = query<int>(
-        key,
-        (_) => 3,
+        key: key,
+        fetch: (_) => 3,
         retry: RetryPolicy.none,
       );
       client = QueryClient()..setQueryData(firstQuery, 0);
@@ -342,13 +342,13 @@ void main() {
       final key = QueryKey(<Object?>['cancel', 'remove-reentrant']);
       final pendingTransport = Completer<int>();
       final replacement = query<int>(
-        key,
-        (_) => 4,
+        key: key,
+        fetch: (_) => 4,
         retry: RetryPolicy.none,
       );
       final firstQuery = query<int>(
-        key,
-        (context) {
+        key: key,
+        fetch: (context) {
           context.cancellationToken.addListener((_) {
             reentrant = client.fetchQuery(replacement);
           });
@@ -386,8 +386,8 @@ void main() {
       final key = QueryKey(<Object?>['cancel', 'remove-event-order']);
       final transport = Completer<int>();
       final source = query<int>(
-        key,
-        (context) {
+        key: key,
+        fetch: (context) {
           context.cancellationToken.addListener((_) {
             client.removeQueries(
               QueryFilter(key: key, exact: true),
@@ -441,13 +441,13 @@ void main() {
       final key = QueryKey(<Object?>['dispose', 'reentrant']);
       final pendingTransport = Completer<int>();
       final later = query<int>(
-        key,
-        (_) => 2,
+        key: key,
+        fetch: (_) => 2,
         retry: RetryPolicy.none,
       );
       final firstQuery = query<int>(
-        key,
-        (context) {
+        key: key,
+        fetch: (context) {
           context.cancellationToken.addListener((_) {
             reentrantFailure = expectLater(
               client.fetchQuery(later),
@@ -480,14 +480,14 @@ void main() {
       final nextTransport = Completer<int>();
       final key = QueryKey(<Object?>['reset', 'reentrant']);
       final nextQuery = query<int>(
-        key,
-        (_) => nextTransport.future,
+        key: key,
+        fetch: (_) => nextTransport.future,
         retry: RetryPolicy.none,
       );
       final firstTransport = Completer<int>();
       final firstQuery = query<int>(
-        key,
-        (context) {
+        key: key,
+        fetch: (context) {
           context.cancellationToken.addListener((_) {
             reentrant = client.fetchQuery(nextQuery);
           });
@@ -523,8 +523,8 @@ void main() {
     test('consumed cancellation token cancels the active attempt', () async {
       final transport = Completer<int>();
       final raw = query<int>(
-        QueryKey(<Object?>['detach', 'consumed']),
-        (context) {
+        key: QueryKey(<Object?>['detach', 'consumed']),
+        fetch: (context) {
           unawaited(context.cancellationToken.whenCancelled);
           return transport.future;
         },
@@ -551,13 +551,13 @@ void main() {
       final transport = Completer<int>();
       var calls = 0;
       final raw = query<int>(
-        QueryKey(<Object?>['detach', 'stop-retries']),
-        (_) {
+        key: QueryKey(<Object?>['detach', 'stop-retries']),
+        fetch: (_) {
           calls += 1;
           return transport.future;
         },
         retry: RetryPolicy.none,
-      ).withRetry(
+      ).retry(
         (retry) => retry.strategy(
           delay: DelayPolicy.none(),
           retryIf: retry.exceptions,
@@ -581,8 +581,8 @@ void main() {
         () async {
       var calls = 0;
       final raw = query<int>(
-        QueryKey(<Object?>['detach', 'paused']),
-        (_) => ++calls,
+        key: QueryKey(<Object?>['detach', 'paused']),
+        fetch: (_) => ++calls,
         retry: RetryPolicy.none,
       );
       final client = QueryClient()..onlineManager.isOnline = false;
@@ -606,17 +606,17 @@ void main() {
       final runtime = _runtime(timers);
       final key = QueryKey(<Object?>['gc', 'longest']);
       final short = query<int>(
-        key,
-        (_) => 1,
+        key: key,
+        fetch: (_) => 1,
         retry: RetryPolicy.none,
         retention: RetentionPolicy.duration(const Duration(seconds: 5)),
-      ).withInitialData(1).withObserver(enabled: false);
+      ).initialData(1).observer(enabled: false);
       final long = query<int>(
-        key,
-        (_) => 2,
+        key: key,
+        fetch: (_) => 2,
         retry: RetryPolicy.none,
         retention: RetentionPolicy.duration(const Duration(seconds: 10)),
-      ).withInitialData(2).withObserver(enabled: false);
+      ).initialData(2).observer(enabled: false);
       final client = QueryClient(runtime: runtime);
       final first = client.observeQuery(short);
       final second = client.observeQuery(long);
@@ -638,11 +638,11 @@ void main() {
     test('forever retention schedules no GC handle', () {
       final timers = FakeQueryTimerScheduler();
       final raw = query<int>(
-        QueryKey(<Object?>['gc', 'forever']),
-        (_) => 1,
+        key: QueryKey(<Object?>['gc', 'forever']),
+        fetch: (_) => 1,
         retry: RetryPolicy.none,
         retention: RetentionPolicy.forever,
-      ).withInitialData(1).withObserver(enabled: false);
+      ).initialData(1).observer(enabled: false);
       final client = QueryClient(runtime: _runtime(timers));
 
       client.observeQuery(raw).dispose();
@@ -656,8 +656,8 @@ void main() {
       final timers = FakeQueryTimerScheduler();
       final transport = Completer<int>();
       final raw = query<int>(
-        QueryKey(<Object?>['gc', 'active']),
-        (_) => transport.future,
+        key: QueryKey(<Object?>['gc', 'active']),
+        fetch: (_) => transport.future,
         retry: RetryPolicy.none,
         retention: RetentionPolicy.duration(Duration.zero),
       );

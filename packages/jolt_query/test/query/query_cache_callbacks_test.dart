@@ -34,8 +34,8 @@ void main() {
     );
     addTearDown(client.dispose);
     final raw = query<int?>(
-      QueryKey(<Object?>['callbacks', 'present-null']),
-      (_) => null,
+      key: QueryKey(<Object?>['callbacks', 'present-null']),
+      fetch: (_) => null,
       retry: RetryPolicy.none,
     );
 
@@ -72,8 +72,8 @@ void main() {
     );
     addTearDown(client.dispose);
     final raw = query<int>(
-      QueryKey(<Object?>['callbacks', 'retained-error']),
-      (_) => throw StateError('transport'),
+      key: QueryKey(<Object?>['callbacks', 'retained-error']),
+      fetch: (_) => throw StateError('transport'),
       retry: RetryPolicy.none,
     );
 
@@ -105,14 +105,14 @@ void main() {
     );
     addTearDown(client.dispose);
     final raw = query<int>(
-      QueryKey(<Object?>['callbacks', 'retry']),
-      (_) {
+      key: QueryKey(<Object?>['callbacks', 'retry']),
+      fetch: (_) {
         attempts += 1;
         if (attempts == 1) throw StateError('transient');
         return 2;
       },
       retry: RetryPolicy.none,
-    ).withRetry(
+    ).retry(
       (retry) => retry.strategy(
         retryIf: retry.exceptions & retry.maxRetries(1),
         delay: DelayPolicy.none(),
@@ -139,19 +139,19 @@ void main() {
 
     final cancelledTransport = Completer<int>();
     final cancelled = query<int>(
-      QueryKey(<Object?>['callbacks', 'cancelled']),
-      (_) => cancelledTransport.future,
+      key: QueryKey(<Object?>['callbacks', 'cancelled']),
+      fetch: (_) => cancelledTransport.future,
       retry: RetryPolicy.none,
     );
     client.setQueryData(cancelled, 1);
     final seeded = query<int>(
-      QueryKey(<Object?>['callbacks', 'initial-data']),
-      (_) => 0,
+      key: QueryKey(<Object?>['callbacks', 'initial-data']),
+      fetch: (_) => 0,
       retry: RetryPolicy.none,
     );
     client
         .observeQuery(
-          seeded.withInitialData(0).withObserver(enabled: false),
+          seeded.initialData(0).observer(enabled: false),
         )
         .dispose();
     expect(order, isEmpty);
@@ -170,8 +170,8 @@ void main() {
 
     final source = StreamController<int>(sync: true);
     final streamed = query<List<int>>(
-      QueryKey(<Object?>['callbacks', 'stream']),
-      streamedQuery<int, List<int>>(
+      key: QueryKey(<Object?>['callbacks', 'stream']),
+      fetch: streamedQuery<int, List<int>>(
         stream: (_) => source.stream,
         initial: () => <int>[],
         reduce: (current, chunk) => <int>[...current, chunk],
@@ -204,8 +204,8 @@ void main() {
     );
     addTearDown(client.dispose);
     final raw = query<int>(
-      QueryKey(<Object?>['callbacks', 'superseded']),
-      (_) {
+      key: QueryKey(<Object?>['callbacks', 'superseded']),
+      fetch: (_) {
         calls += 1;
         return switch (calls) {
           1 => 1,
@@ -248,8 +248,8 @@ void main() {
     );
     addTearDown(client.dispose);
     final raw = query<int>(
-      QueryKey(<Object?>['callbacks', 'zone']),
-      (_) => transport.future,
+      key: QueryKey(<Object?>['callbacks', 'zone']),
+      fetch: (_) => transport.future,
       retry: RetryPolicy.none,
     );
     late Future<int> pending;

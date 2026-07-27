@@ -200,7 +200,7 @@ void main() {
 
       await client.fetchInfiniteQuery(source);
       final observer = client.observeInfiniteQuery(
-        source.withObserver(enabled: false),
+        source.observer(enabled: false),
       );
 
       expect(observer.hasNextPage, isTrue);
@@ -386,8 +386,7 @@ void main() {
       await client.fetchInfiniteQuery(second);
       final selected = Signal<int>(0);
       final observer = client.watchInfiniteQuery(
-        () =>
-            (selected.value == 0 ? first : second).withObserver(enabled: false),
+        () => (selected.value == 0 ? first : second).observer(enabled: false),
       );
       expect(observer.data.requireValue().pages, <int>[1]);
 
@@ -432,7 +431,7 @@ void main() {
         );
       final selected = Signal<int>(1);
       final observer = client.watchInfiniteQuery(
-        () => (selected.value == 1 ? first : second).withObserver(
+        () => (selected.value == 1 ? first : second).observer(
           refetchOnMount: RefetchPolicy.never,
         ),
       );
@@ -483,7 +482,7 @@ void main() {
         );
       final selected = Signal<int>(1);
       final observer = client.watchInfiniteQuery(
-        () => (selected.value == 1 ? first : second).withObserver(
+        () => (selected.value == 1 ? first : second).observer(
           refetchOnMount: RefetchPolicy.always,
         ),
       );
@@ -528,8 +527,8 @@ void main() {
       final selected = Signal<int>(1);
       final observer = client.watchInfiniteQuery(
         () => selected.value == 1
-            ? first.withObserver(enabled: false)
-            : second.withPlaceholder((previous) => previous),
+            ? first.observer(enabled: false)
+            : second.placeholder((previous) => previous),
       );
       expect(observer.data.requireValue().pages, <int>[1]);
 
@@ -580,7 +579,7 @@ void main() {
       await client.fetchInfiniteQuery(first);
       final useSecond = Signal<bool>(false);
       final observer = client.watchInfiniteQuery(
-        () => (useSecond.value ? second : first).withObserver(
+        () => (useSecond.value ? second : first).observer(
           enabled: true,
           staleTime: StalePolicy.immediate,
           refetchOnMount:
@@ -626,7 +625,7 @@ void main() {
       );
       final client = QueryClient();
       final observer = client.watchInfiniteQuery(
-        () => source.withObserver(
+        () => source.observer(
           enabled: enabled.value,
           staleTime: StalePolicy.immutable,
         ),
@@ -662,7 +661,7 @@ void main() {
       await client.fetchInfiniteQuery(source);
       final target = source
           .select((data) => data.pages.join('|'))
-          .withObserver(enabled: false);
+          .observer(enabled: false);
       final observer = client.observeInfiniteQuery(target);
 
       _expectStaticType<InfiniteQueryObserver<String>>(observer);
@@ -697,7 +696,7 @@ void main() {
       final client = QueryClient();
       await client.fetchInfiniteQuery(source);
       final observer = client.observeInfiniteQuery(
-        source.withObserver(enabled: false),
+        source.observer(enabled: false),
       );
       final before = observer.peek;
       final revision =
@@ -731,7 +730,7 @@ void main() {
       final client = QueryClient();
       await client.fetchInfiniteQuery(source);
       final observer = client.observeInfiniteQuery(
-        source.withObserver(enabled: false),
+        source.observer(enabled: false),
       );
       final before = client.getQueryState(source.ordinaryQueryInternal)!;
 
@@ -766,7 +765,7 @@ void main() {
       final client = QueryClient();
       await client.fetchInfiniteQuery(source);
       final observer = client.observeInfiniteQuery(
-        source.select((data) => data.pages.single).withObserver(enabled: false),
+        source.select((data) => data.pages.single).observer(enabled: false),
       );
 
       final result = await observer.fetchPreviousPage();
@@ -793,7 +792,7 @@ void main() {
         initialPageParam: 0,
         getNextPageParam: (data) => PageCursor.end,
         staleTime: StalePolicy.untilInvalidated,
-      ).withRetry(
+      ).retry(
         (retry) => retry.strategy(
           retryIf: retry.exceptions & retry.maxRetries(1),
           delay: DelayPolicy.none(),
@@ -802,7 +801,7 @@ void main() {
       final client = QueryClient();
       await client.fetchInfiniteQuery(source);
       final observer = client.observeInfiniteQuery(
-        source.withObserver(enabled: false),
+        source.observer(enabled: false),
       );
       refreshing = true;
 
@@ -834,7 +833,7 @@ void main() {
       final client = QueryClient();
       await client.fetchInfiniteQuery(source);
       final observer = client.observeInfiniteQuery(
-        source.withObserver(enabled: false),
+        source.observer(enabled: false),
       );
 
       final replaced = observer.fetchNextPage();
@@ -874,7 +873,7 @@ void main() {
       final client = QueryClient();
       await client.fetchInfiniteQuery(source);
       final observer = client.observeInfiniteQuery(
-        source.withObserver(enabled: false),
+        source.observer(enabled: false),
       );
 
       final first = observer.fetchNextPage(cancelRefetch: false);
@@ -935,7 +934,7 @@ void main() {
       final client = QueryClient();
       await client.fetchInfiniteQuery(source);
       final observer = client.observeInfiniteQuery(
-        source.withObserver(enabled: false),
+        source.observer(enabled: false),
       );
 
       final direction = observer.fetchNextPage();
@@ -974,7 +973,7 @@ void main() {
       final client = QueryClient();
       await client.fetchInfiniteQuery(source);
       final observer = client.observeInfiniteQuery(
-        source.withObserver(enabled: false),
+        source.observer(enabled: false),
       );
 
       final direction = observer.fetchNextPage(cancelRefetch: false);
@@ -1016,7 +1015,7 @@ void main() {
       final client = QueryClient();
       await client.prefetchInfiniteQuery(source, pages: 2);
       final observer = client.observeInfiniteQuery(
-        source.withObserver(
+        source.observer(
           enabled: true,
           refetchOnMount: RefetchPolicy.never,
         ),
@@ -1070,7 +1069,7 @@ void main() {
       final client = QueryClient();
       await client.fetchInfiniteQuery(source);
       final observer = client.observeInfiniteQuery(
-        source.withObserver(enabled: false),
+        source.observer(enabled: false),
       );
       final pending = observer.fetchNextPage();
       await Future<void>.delayed(Duration.zero);
@@ -1151,7 +1150,7 @@ void main() {
       final client = QueryClient();
       await client.prefetchInfiniteQuery(source, pages: 2);
       final observer = client.observeInfiniteQuery(
-        source.withObserver(enabled: false),
+        source.observer(enabled: false),
       );
       final before = client.getQueryState(source.ordinaryQueryInternal)!;
       refreshing = true;
@@ -1210,7 +1209,7 @@ void main() {
       final client = QueryClient();
       await client.prefetchInfiniteQuery(source, pages: 2);
       final observer = client.observeInfiniteQuery(
-        source.withObserver(enabled: false),
+        source.observer(enabled: false),
       );
       refreshing = true;
 
@@ -1247,7 +1246,7 @@ void main() {
       final client = QueryClient();
       await client.prefetchInfiniteQuery(source, pages: 3);
       final observer = client.observeInfiniteQuery(
-        source.withObserver(enabled: false),
+        source.observer(enabled: false),
       );
       refreshing = true;
 
@@ -1273,7 +1272,7 @@ void main() {
       final client = QueryClient();
       await client.prefetchInfiniteQuery(source, pages: 2);
       final observer = client.observeInfiniteQuery(
-        source.withObserver(
+        source.observer(
           enabled: true,
           refetchOnMount: RefetchPolicy.never,
         ),
@@ -1310,7 +1309,7 @@ void main() {
       final client = QueryClient();
       await client.fetchInfiniteQuery(source);
       final observer = client.observeInfiniteQuery(
-        source.withObserver(enabled: false),
+        source.observer(enabled: false),
       );
 
       await client.invalidateQueries(
@@ -1350,13 +1349,13 @@ void main() {
       );
       final observer = client.observeInfiniteQuery(
         source
-            .withInitialData(
+            .initialData(
               InfiniteData<int, int>(
                 pages: <int>[0],
                 pageParams: <int>[0],
               ),
             )
-            .withObserver(
+            .observer(
               refetchOnMount: RefetchPolicy.never,
               pollingEnabled: false,
             ),
@@ -1398,13 +1397,13 @@ void main() {
         initialPageParam: 0,
         getNextPageParam: (data) => PageCursor.end,
       )
-          .withInitialData(
+          .initialData(
             InfiniteData<int, int>(
               pages: <int>[0],
               pageParams: <int>[0],
             ),
           )
-          .withObserver(
+          .observer(
             staleTime: StalePolicy.resolve((_) => externallyStale),
             refetchOnMount: RefetchPolicy.never,
             refetchOnFocus: RefetchPolicy.never,
@@ -1499,7 +1498,7 @@ void main() {
             ? PageCursor.more(data.pageParams.last + 1)
             : PageCursor.end,
         staleTime: StalePolicy.untilInvalidated,
-      ).withRetry(
+      ).retry(
         (retry) => retry.strategy(
           retryIf: retry.exceptions & retry.maxRetries(1),
           delay: DelayPolicy.none(),
@@ -1508,7 +1507,7 @@ void main() {
       final client = QueryClient();
       await client.fetchInfiniteQuery(source, pages: 3);
       final observer = client.observeInfiniteQuery(
-        source.withObserver(
+        source.observer(
           enabled: true,
           refetchOnMount: RefetchPolicy.never,
         ),
@@ -1544,7 +1543,7 @@ void main() {
       final client = QueryClient();
       await client.prefetchInfiniteQuery(source, pages: 2);
       final observer = client.observeInfiniteQuery(
-        source.withObserver(enabled: false),
+        source.observer(enabled: false),
       );
 
       final next = await observer.fetchNextPage();
@@ -1570,7 +1569,7 @@ void main() {
       final client = QueryClient();
       await client.fetchInfiniteQuery(source);
       final observer = client.observeInfiniteQuery(
-        source.withObserver(enabled: false),
+        source.observer(enabled: false),
       );
       expect(client.queryCache.snapshots, hasLength(1));
 

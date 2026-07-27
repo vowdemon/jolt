@@ -20,7 +20,7 @@ void main() {
       retry: RetryPolicy.none,
     );
     final observer = client.observeInfiniteQuery(
-      source.withObserver(enabled: false),
+      source.observer(enabled: false),
     );
 
     final pending = observer.fetchNextPage();
@@ -50,7 +50,7 @@ void main() {
       retry: RetryPolicy.none,
     );
     final observer = client.observeInfiniteQuery(
-      source.withObserver(enabled: false),
+      source.observer(enabled: false),
     );
 
     final result = await observer.fetchPreviousPage();
@@ -80,13 +80,13 @@ void main() {
     );
     final observer = client.observeInfiniteQuery(
       source
-          .withInitialData(
+          .initialData(
             InfiniteData<int, int>(
               pages: <int>[1],
               pageParams: <int>[1],
             ),
           )
-          .withObserver(enabled: false),
+          .observer(enabled: false),
     );
 
     final result = await observer.fetchPreviousPage();
@@ -129,13 +129,13 @@ void main() {
       retry: RetryPolicy.none,
     );
     final target = source
-        .withInitialData(
+        .initialData(
           InfiniteData<int, int>(
             pages: <int>[0],
             pageParams: <int>[0],
           ),
         )
-        .withObserver(enabled: false);
+        .observer(enabled: false);
     final first = client.observeInfiniteQuery(target);
     final second = client.observeInfiniteQuery(target);
     final firstStates = <_DirectionalPresentation>[];
@@ -216,13 +216,13 @@ void main() {
       retry: RetryPolicy.none,
     );
     final target = source
-        .withInitialData(
+        .initialData(
           InfiniteData<int, int>(
             pages: <int>[0],
             pageParams: <int>[0],
           ),
         )
-        .withObserver(enabled: false);
+        .observer(enabled: false);
     final first = client.observeInfiniteQuery(target);
     final second = client.observeInfiniteQuery(target);
     final firstStates = <_DirectionalPresentation>[];
@@ -307,13 +307,13 @@ void main() {
       staleTime: StalePolicy.untilInvalidated,
     );
     final target = source
-        .withInitialData(
+        .initialData(
           InfiniteData<int, int>(
             pages: <int>[0],
             pageParams: <int>[0],
           ),
         )
-        .withObserver(
+        .observer(
           enabled: true,
           refetchOnMount: RefetchPolicy.never,
         );
@@ -393,21 +393,21 @@ void main() {
       retry: RetryPolicy.none,
     );
     final firstTarget = first
-        .withInitialData(
+        .initialData(
           InfiniteData<int, int>(
             pages: <int>[0],
             pageParams: <int>[0],
           ),
         )
-        .withObserver(enabled: false);
+        .observer(enabled: false);
     final secondTarget = second
-        .withInitialData(
+        .initialData(
           InfiniteData<int, int>(
             pages: <int>[10],
             pageParams: <int>[10],
           ),
         )
-        .withObserver(enabled: false);
+        .observer(enabled: false);
     final observer = client.watchInfiniteQuery(
       () => useSecond.value ? secondTarget : firstTarget,
     );
@@ -451,13 +451,13 @@ void main() {
     );
     final observer = client.observeInfiniteQuery(
       source
-          .withInitialData(
+          .initialData(
             InfiniteData<int, int>(
               pages: <int>[0],
               pageParams: <int>[0],
             ),
           )
-          .withObserver(
+          .observer(
             refetchOnMount: RefetchPolicy.never,
             pollingIntervalResolver: (result) {
               final data = result.data.valueOrNull;
@@ -507,7 +507,7 @@ void main() {
     );
     await client.prefetchInfiniteQuery(source, pages: 2);
     final observer = client.observeInfiniteQuery(
-      source.withObserver(
+      source.observer(
         refetchOnMount: RefetchPolicy.never,
       ),
     );
@@ -554,13 +554,13 @@ Future<void> _expectSharedDirectionalFailure(
     retry: RetryPolicy.none,
   );
   final target = source
-      .withInitialData(
+      .initialData(
         InfiniteData<int, int>(
           pages: <int>[initialPageParam],
           pageParams: <int>[initialPageParam],
         ),
       )
-      .withObserver(enabled: false);
+      .observer(enabled: false);
   final first = client.observeInfiniteQuery(target);
   final second = client.observeInfiniteQuery(target);
   final firstStates = <_DirectionalPresentation>[];

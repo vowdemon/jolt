@@ -51,10 +51,10 @@ void main() {
     );
 
     final inline = query(
-      QueryKey(const <Object?>['inline-client']),
-      (_) => 1,
+      key: QueryKey(const <Object?>['inline-client']),
+      fetch: (_) => 1,
       client: explicitClient,
-    ).select((value) => '$value').withObserver(enabled: false);
+    ).select((value) => '$value').observer(enabled: false);
     expect(inline.client, same(explicitClient));
   });
 
@@ -82,7 +82,7 @@ void main() {
       client: explicitClient,
       initialPageParam: 0,
       getNextPageParam: (_) => PageCursor.end,
-    ).select((data) => data.length).withPlaceholderData(0);
+    ).select((data) => data.length).placeholderData(0);
     expect(inline.client, same(explicitClient));
   });
 
@@ -94,8 +94,8 @@ void main() {
     addTearDown(receiver.dispose);
 
     final ordinary = query(
-      QueryKey(const <Object?>['receiver-ordinary']),
-      (_) => 7,
+      key: QueryKey(const <Object?>['receiver-ordinary']),
+      fetch: (_) => 7,
       client: boundClient,
     );
     await receiver.fetchQuery(ordinary);
@@ -118,13 +118,13 @@ void main() {
 }
 
 List<AnyQueryTarget> _ordinaryStages(Query<int> raw) {
-  final retry = raw.withRetry(
+  final retry = raw.retry(
     (builder) => builder.strategy(retryIf: builder.maxRetries(1)),
   );
-  final initial = retry.withInitialData(0);
+  final initial = retry.initialData(0);
   final selected = initial.select((value) => '$value');
-  final observed = selected.withObserver(enabled: false);
-  final placeholder = observed.withPlaceholderData('loading');
+  final observed = selected.observer(enabled: false);
+  final placeholder = observed.placeholderData('loading');
   return <AnyQueryTarget>[
     raw,
     retry,
@@ -136,15 +136,15 @@ List<AnyQueryTarget> _ordinaryStages(Query<int> raw) {
 }
 
 List<AnyQueryTarget> _infiniteStages(InfiniteQuery<int, int> raw) {
-  final retry = raw.withRetry(
+  final retry = raw.retry(
     (builder) => builder.strategy(retryIf: builder.maxRetries(1)),
   );
-  final initial = retry.withInitialData(
+  final initial = retry.initialData(
     InfiniteData<int, int>(pages: const <int>[0], pageParams: const <int>[0]),
   );
   final selected = initial.select((data) => data.length);
-  final observed = selected.withObserver(enabled: false);
-  final placeholder = observed.withPlaceholderData(0);
+  final observed = selected.observer(enabled: false);
+  final placeholder = observed.placeholderData(0);
   return <AnyQueryTarget>[
     raw,
     retry,

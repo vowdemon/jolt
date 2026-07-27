@@ -184,13 +184,13 @@ InfiniteQueryTarget<InfiniteData<int, int>> _infiniteTarget(
     retry: RetryPolicy.none,
     retention: RetentionPolicy.forever,
   )
-      .withInitialData(
+      .initialData(
         InfiniteData<int, int>(
           pages: <int>[0],
           pageParams: <int>[0],
         ),
       )
-      .withObserver(enabled: false);
+      .observer(enabled: false);
 }
 
 Widget _host(Widget child) {

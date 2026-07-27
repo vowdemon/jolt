@@ -14,21 +14,21 @@ void main() {
       var firstCalls = 0;
       var secondCalls = 0;
       final firstQuery = query<int>(
-        QueryKey(<Object?>[
+        key: QueryKey(<Object?>[
           'todos',
           <Object?>[1.0]
         ]),
-        (_) {
+        fetch: (_) {
           firstCalls += 1;
           return first.future;
         },
       );
       final equivalent = query<int>(
-        QueryKey(<Object?>[
+        key: QueryKey(<Object?>[
           'todos',
           <Object?>[1]
         ]),
-        (_) {
+        fetch: (_) {
           secondCalls += 1;
           return 99;
         },
@@ -57,14 +57,16 @@ void main() {
         () async {
       final slow = Completer<int>();
       var phase = 0;
-      final source = query<int>(QueryKey(<Object?>['replace']), (_) {
-        phase += 1;
-        return switch (phase) {
-          1 => 1,
-          2 => slow.future,
-          _ => 3,
-        };
-      });
+      final source = query<int>(
+          key: QueryKey(<Object?>['replace']),
+          fetch: (_) {
+            phase += 1;
+            return switch (phase) {
+              1 => 1,
+              2 => slow.future,
+              _ => 3,
+            };
+          });
       final client = QueryClient();
       expect(await client.fetchQuery(source), 1);
 
@@ -82,9 +84,12 @@ void main() {
 
     test('revision restore rejects newer writes, other clients, and recreation',
         () {
-      final queryA = query<int>(QueryKey(<Object?>['snapshot']), (_) => 1);
-      final sameKey = query<int>(QueryKey(<Object?>['snapshot']), (_) => 2);
-      final otherKey = query<int>(QueryKey(<Object?>['other']), (_) => 3);
+      final queryA =
+          query<int>(key: QueryKey(<Object?>['snapshot']), fetch: (_) => 1);
+      final sameKey =
+          query<int>(key: QueryKey(<Object?>['snapshot']), fetch: (_) => 2);
+      final otherKey =
+          query<int>(key: QueryKey(<Object?>['other']), fetch: (_) => 3);
       final client = QueryClient();
       final otherClient = QueryClient();
       final before = client.snapshotQueryData(queryA);
@@ -101,8 +106,8 @@ void main() {
       expect(client.getQueryData(queryA).isAbsent, isTrue);
 
       final timedQuery = query<int>(
-        QueryKey(<Object?>['snapshot', 'timed']),
-        (_) => 4,
+        key: QueryKey(<Object?>['snapshot', 'timed']),
+        fetch: (_) => 4,
       );
       final priorTime = DateTime.utc(2024, 1, 2, 3, 4, 5);
       client.setQueryData(timedQuery, 4, updatedAt: priorTime);
@@ -175,8 +180,8 @@ void main() {
       final failures = <String, Completer<int>>{};
       var shouldFail = false;
       Query<int> make(String name) => query<int>(
-            QueryKey(<Object?>[name]),
-            (_) {
+            key: QueryKey(<Object?>[name]),
+            fetch: (_) {
               if (!shouldFail) return 1;
               final completer = Completer<int>();
               failures[name] = completer;
@@ -217,10 +222,12 @@ void main() {
         () async {
       final first = Completer<int>();
       var calls = 0;
-      final source = query<int>(QueryKey(<Object?>['invalidate']), (_) {
-        calls += 1;
-        return calls == 1 ? first.future : 2;
-      });
+      final source = query<int>(
+          key: QueryKey(<Object?>['invalidate']),
+          fetch: (_) {
+            calls += 1;
+            return calls == 1 ? first.future : 2;
+          });
       final client = QueryClient();
       final fetching = client.fetchQuery(source);
       final invalidating = client.invalidateQueries(
@@ -239,9 +246,11 @@ void main() {
 
     test('reset restores first raw initial data and clear leaves client usable',
         () async {
-      final source = query<int>(QueryKey(<Object?>['initial']), (_) => 2)
-          .withInitialData(1);
-      final raw = query<int>(QueryKey(<Object?>['initial']), (_) => 2);
+      final source =
+          query<int>(key: QueryKey(<Object?>['initial']), fetch: (_) => 2)
+              .initialData(1);
+      final raw =
+          query<int>(key: QueryKey(<Object?>['initial']), fetch: (_) => 2);
       final client = QueryClient();
       final listener = _EntryListener();
       final entry = client.attachQueryObserverInternal(
@@ -278,14 +287,14 @@ void main() {
     );
     var calls = 0;
     final source = query<int>(
-      QueryKey(<Object?>[
+      key: QueryKey(<Object?>[
         'users',
         <String, Object?>{
           'filters': <String, Object?>{'active': true, 'team': 7},
           'page': 2,
         },
       ]),
-      (_) => ++calls,
+      fetch: (_) => ++calls,
     );
     final client = QueryClient(runtime: runtime)
       ..registerQueryDefaults(
@@ -332,8 +341,8 @@ void main() {
 
   test('prefetch commits failure without exposing a caller error', () async {
     final source = query<int>(
-      QueryKey(<Object?>['prefetch', 'failure']),
-      (_) => throw StateError('offline'),
+      key: QueryKey(<Object?>['prefetch', 'failure']),
+      fetch: (_) => throw StateError('offline'),
       retry: RetryPolicy.none,
     );
     final client = QueryClient();
@@ -351,8 +360,8 @@ void main() {
       () async {
     var calls = 0;
     final source = query<int>(
-      QueryKey(<Object?>['ensure', 'stale']),
-      (_) => ++calls,
+      key: QueryKey(<Object?>['ensure', 'stale']),
+      fetch: (_) => ++calls,
       retry: RetryPolicy.none,
     );
     final client = QueryClient();
@@ -374,16 +383,16 @@ void main() {
   test('typed bulk reads and writes preserve stable key order and presence',
       () {
     final first = query<int>(
-      QueryKey(<Object?>['bulk', 1]),
-      (_) => 0,
+      key: QueryKey(<Object?>['bulk', 1]),
+      fetch: (_) => 0,
     );
     final second = query<int>(
-      QueryKey(<Object?>['bulk', 2]),
-      (_) => 0,
+      key: QueryKey(<Object?>['bulk', 2]),
+      fetch: (_) => 0,
     );
     final outside = query<int>(
-      QueryKey(<Object?>['outside']),
-      (_) => 0,
+      key: QueryKey(<Object?>['outside']),
+      fetch: (_) => 0,
     );
     final filter = TypedQueryFilter<int>(
       key: QueryKey(<Object?>['bulk']),
@@ -424,8 +433,8 @@ void main() {
     );
     final completion = Completer<int>();
     final source = query<int>(
-      QueryKey(<Object?>['fetching-count']),
-      (_) => completion.future,
+      key: QueryKey(<Object?>['fetching-count']),
+      fetch: (_) => completion.future,
       retry: RetryPolicy.none,
     );
     final client = QueryClient(runtime: runtime);
@@ -456,12 +465,12 @@ void main() {
     );
     final completion = Completer<int>();
     final source = query<int>(
-      QueryKey(<Object?>['atomic-completion']),
-      (_) => completion.future,
+      key: QueryKey(<Object?>['atomic-completion']),
+      fetch: (_) => completion.future,
       retry: RetryPolicy.none,
     );
     final client = QueryClient(runtime: runtime);
-    final observer = client.observeQuery(source.withObserver(enabled: false));
+    final observer = client.observeQuery(source.observer(enabled: false));
     final cacheEvents = <QueryCacheEvent>[];
     final observerPublications = <QueryObserverResult<int>>[];
     final subscription = client.queryCache.events.listen(cacheEvents.add);
@@ -521,7 +530,8 @@ void main() {
       notifications: notifications,
     );
     final client = QueryClient(runtime: runtime);
-    final source = query<int>(QueryKey(<Object?>['events']), (_) => 1);
+    final source =
+        query<int>(key: QueryKey(<Object?>['events']), fetch: (_) => 1);
     final kinds = <QueryCacheEventKind>[];
     var isDone = false;
     final subscription = client.queryCache.events.listen(
@@ -565,8 +575,8 @@ void main() {
     final transports = <Completer<int>>[];
     var attempts = 0;
     final source = query<int>(
-      QueryKey(<Object?>['cache-clear-reattach']),
-      (_) {
+      key: QueryKey(<Object?>['cache-clear-reattach']),
+      fetch: (_) {
         attempts += 1;
         final transport = Completer<int>();
         transports.add(transport);

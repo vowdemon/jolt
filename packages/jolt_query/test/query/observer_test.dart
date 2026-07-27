@@ -26,8 +26,8 @@ void main() {
       final completion = Completer<int>();
       var calls = 0;
       final target = query(
-        QueryKey(<Object?>['fixed']),
-        (context) {
+        key: QueryKey(<Object?>['fixed']),
+        fetch: (context) {
           calls += 1;
           return completion.future;
         },
@@ -65,10 +65,10 @@ void main() {
       addTearDown(harness.dispose);
       var fetchCalls = 0;
       final target = query(
-        QueryKey(<Object?>['double-dispose-polling']),
-        (context) => ++fetchCalls,
+        key: QueryKey(<Object?>['double-dispose-polling']),
+        fetch: (context) => ++fetchCalls,
         retry: RetryPolicy.none,
-      ).withInitialData(0).withObserver(
+      ).initialData(0).observer(
             refetchOnMount: RefetchPolicy.never,
             pollingInterval: const Duration(seconds: 1),
           );
@@ -107,8 +107,8 @@ void main() {
       final selectedKey = Signal<int>(1);
       var selectorCalls = 0;
       final seeded = query(
-        QueryKey(<Object?>['watched', 1]),
-        (context) => 1,
+        key: QueryKey(<Object?>['watched', 1]),
+        fetch: (context) => 1,
         retry: RetryPolicy.none,
       );
       harness.client.setQueryData(seeded, 1);
@@ -116,16 +116,16 @@ void main() {
       final observer = harness.client.watchQuery(() {
         final id = selectedKey.value;
         return query(
-          QueryKey(<Object?>['watched', id]),
-          (context) => id,
+          key: QueryKey(<Object?>['watched', id]),
+          fetch: (context) => id,
           retry: RetryPolicy.none,
         )
             .select((value) {
               selectorCalls += 1;
               return 'value:$value';
             })
-            .withPlaceholder((previous) => previous)
-            .withObserver(enabled: false);
+            .placeholder((previous) => previous)
+            .observer(enabled: false);
       });
 
       expect(observer.data.requireValue(), 'value:1');
@@ -167,13 +167,13 @@ void main() {
       final observer = harness.client.watchQuery(() {
         final currentPage = page.value;
         return query(
-          QueryKey(<Object?>['projects', currentPage]),
-          (context) {
+          key: QueryKey(<Object?>['projects', currentPage]),
+          fetch: (context) {
             calls.update(currentPage, (count) => count + 1, ifAbsent: () => 1);
             return 'page-$currentPage';
           },
           retry: RetryPolicy.none,
-        ).withPlaceholder((previous) => previous).withObserver(
+        ).placeholder((previous) => previous).observer(
               staleTime: StalePolicy.duration(const Duration(minutes: 1)),
             );
       });
@@ -211,8 +211,8 @@ void main() {
       final selectedKey = Signal<int>(1);
       final calls = <int, int>{};
       Query<int> recipeFor(int id) => query(
-            QueryKey(<Object?>['optional-key-change', id]),
-            (_) {
+            key: QueryKey(<Object?>['optional-key-change', id]),
+            fetch: (_) {
               calls.update(id, (count) => count + 1, ifAbsent: () => 1);
               return id;
             },
@@ -229,15 +229,15 @@ void main() {
       final observer = harness.client.watchQuery(() {
         final id = selectedKey.value;
         return switch (id) {
-          1 => first.withObserver(
+          1 => first.observer(
               staleTime: StalePolicy.duration(const Duration(hours: 1)),
               refetchOnMount: RefetchPolicy.never,
             ),
-          2 => fresh.withObserver(
+          2 => fresh.observer(
               staleTime: StalePolicy.duration(const Duration(hours: 1)),
               refetchOnMount: RefetchPolicy.always,
             ),
-          _ => stale.withObserver(
+          _ => stale.observer(
               staleTime: StalePolicy.immediate,
               refetchOnMount: RefetchPolicy.never,
             ),
@@ -282,8 +282,8 @@ void main() {
       final observer = harness.client.watchQuery(() {
         final currentRevision = revision.value;
         return query<int>(
-          QueryKey(<Object?>['same-key-retarget']),
-          (_) {
+          key: QueryKey(<Object?>['same-key-retarget']),
+          fetch: (_) {
             if (currentRevision == 0) {
               firstPlanCalls += 1;
               return 1;
@@ -297,7 +297,7 @@ void main() {
               (value) =>
                   currentRevision == 0 ? 'first:$value' : 'second:$value',
             )
-            .withObserver(
+            .observer(
               staleTime: currentRevision == 0
                   ? StalePolicy.duration(const Duration(hours: 1))
                   : StalePolicy.immediate,
@@ -346,14 +346,14 @@ void main() {
       final enabled = Signal<bool>(false);
       var calls = 0;
       final raw = query(
-        QueryKey(<Object?>['same-key-enable']),
-        (_) => ++calls,
+        key: QueryKey(<Object?>['same-key-enable']),
+        fetch: (_) => ++calls,
         retry: RetryPolicy.none,
       );
       harness.client.setQueryData(raw, 0);
 
       final observer = harness.client.watchQuery(
-        () => raw.withObserver(
+        () => raw.observer(
           enabled: enabled.value,
           staleTime: StalePolicy.immediate,
           refetchOnMount: RefetchPolicy.never,
@@ -382,13 +382,13 @@ void main() {
       harness.client.watchQuery(() {
         final currentRevision = revision.value;
         return query(
-          QueryKey(<Object?>['same-key-polling']),
-          (_) {
+          key: QueryKey(<Object?>['same-key-polling']),
+          fetch: (_) {
             calls.add(currentRevision);
             return currentRevision;
           },
           retry: RetryPolicy.none,
-        ).withInitialData(0).withObserver(
+        ).initialData(0).observer(
               refetchOnMount: RefetchPolicy.never,
               pollingInterval: const Duration(seconds: 5),
             );
@@ -412,13 +412,13 @@ void main() {
         final observer = harness.client.watchQuery(() {
           final currentRevision = revision.value;
           return query<int>(
-            QueryKey(<Object?>['same-key-removal-race']),
-            (_) {
+            key: QueryKey(<Object?>['same-key-removal-race']),
+            fetch: (_) {
               if (currentRevision == 1) secondPlanCalls += 1;
               return currentRevision + 10;
             },
             retry: RetryPolicy.none,
-          ).select((value) => '$currentRevision:$value').withObserver(
+          ).select((value) => '$currentRevision:$value').observer(
                 enabled: false,
               );
         });
@@ -455,15 +455,15 @@ void main() {
       addTearDown(harness.dispose);
       var resolverCalls = 0;
       final raw = query<int>(
-        QueryKey(<Object?>['absent-placeholder']),
-        (context) => 1,
+        key: QueryKey(<Object?>['absent-placeholder']),
+        fetch: (context) => 1,
         retry: RetryPolicy.none,
       );
-      final target = raw.withPlaceholder((previous) {
+      final target = raw.placeholder((previous) {
         resolverCalls += 1;
         expect(previous, const QueryValue<int>.absent());
         return const QueryValue<int>.absent();
-      }).withObserver(enabled: false);
+      }).observer(enabled: false);
 
       final observer = harness.client.observeQuery(target);
 
@@ -483,17 +483,17 @@ void main() {
       final updatedAt = DateTime.utc(2024, 6, 1);
       var fetchCalls = 0;
       final raw = query<String?>(
-        QueryKey(<Object?>['nullable-initial']),
-        (context) {
+        key: QueryKey(<Object?>['nullable-initial']),
+        fetch: (context) {
           fetchCalls += 1;
           return 'network';
         },
         retry: RetryPolicy.none,
       );
       final target = raw
-          .withInitialData(null, updatedAt: updatedAt)
+          .initialData(null, updatedAt: updatedAt)
           .select((value) => value ?? 'selected-null')
-          .withObserver(enabled: false);
+          .observer(enabled: false);
 
       final observer = harness.client.observeQuery(target);
 
@@ -508,21 +508,21 @@ void main() {
       final harness = _ObserverHarness();
       addTearDown(harness.dispose);
       final first = query(
-        QueryKey(<Object?>['first-writer']),
-        (context) => 'network',
+        key: QueryKey(<Object?>['first-writer']),
+        fetch: (context) => 'network',
         retry: RetryPolicy.none,
       );
       final second = query(
-        QueryKey(<Object?>['first-writer']),
-        (context) => 'other',
+        key: QueryKey(<Object?>['first-writer']),
+        fetch: (context) => 'other',
         retry: RetryPolicy.none,
       );
 
       harness.client.observeQuery(
-        first.withInitialData('first').withObserver(enabled: false),
+        first.initialData('first').observer(enabled: false),
       );
       harness.client.observeQuery(
-        second.withInitialData('second').withObserver(enabled: false),
+        second.initialData('second').observer(enabled: false),
       );
 
       expect(harness.client.getQueryData(first).requireValue(), 'first');
@@ -535,8 +535,8 @@ void main() {
       addTearDown(harness.dispose);
       var selectorCalls = 0;
       final raw = query<int?>(
-        QueryKey(<Object?>['nullable-placeholder']),
-        (context) => 1,
+        key: QueryKey(<Object?>['nullable-placeholder']),
+        fetch: (context) => 1,
         retry: RetryPolicy.none,
       );
       final target = raw
@@ -544,8 +544,8 @@ void main() {
             selectorCalls += 1;
             return '$value';
           })
-          .withPlaceholderData(null)
-          .withObserver(enabled: false);
+          .placeholderData(null)
+          .observer(enabled: false);
 
       final observer = harness.client.observeQuery(target);
 
@@ -563,8 +563,8 @@ void main() {
       final harness = _ObserverHarness();
       addTearDown(harness.dispose);
       final raw = query(
-        QueryKey(<Object?>['selector-failure']),
-        (context) => 1,
+        key: QueryKey(<Object?>['selector-failure']),
+        fetch: (context) => 1,
         retry: RetryPolicy.none,
       );
       harness.client.setQueryData(raw, 1);
@@ -572,10 +572,10 @@ void main() {
         raw.select((value) {
           if (value == 2) throw StateError('bad projection');
           return 'value:$value';
-        }).withObserver(enabled: false),
+        }).observer(enabled: false),
       );
       final healthy = harness.client.observeQuery(
-        raw.select((value) => value * 10).withObserver(enabled: false),
+        raw.select((value) => value * 10).observer(enabled: false),
       );
 
       harness.client.setQueryData(raw, 2);
@@ -594,8 +594,8 @@ void main() {
       addTearDown(harness.dispose);
       final firstRaw = _RawValue(1);
       final raw = query(
-        QueryKey(<Object?>['selection-memo']),
-        (context) => firstRaw,
+        key: QueryKey(<Object?>['selection-memo']),
+        fetch: (context) => firstRaw,
         retry: RetryPolicy.none,
       );
       harness.client.setQueryData(raw, firstRaw);
@@ -604,7 +604,7 @@ void main() {
         raw.select((value) {
           selectorCalls += 1;
           return _SelectedValue(value.id);
-        }).withObserver(
+        }).observer(
           enabled: false,
           equality: (previous, next) => previous.id == next.id,
         ),
@@ -631,13 +631,13 @@ void main() {
       addTearDown(harness.dispose);
       final completion = Completer<int>();
       final raw = query(
-        QueryKey(<Object?>['field-tracking']),
-        (context) => completion.future,
+        key: QueryKey(<Object?>['field-tracking']),
+        fetch: (context) => completion.future,
         retry: RetryPolicy.none,
       );
       harness.client.setQueryData(raw, 1);
       final observer = harness.client.observeQuery(
-        raw.withObserver(enabled: false),
+        raw.observer(enabled: false),
       );
       var dataRuns = 0;
       var fetchRuns = 0;
@@ -679,13 +679,13 @@ void main() {
       final harness = _ObserverHarness();
       addTearDown(harness.dispose);
       final raw = query(
-        QueryKey(<Object?>['stable-result-identity']),
-        (_) => 1,
+        key: QueryKey(<Object?>['stable-result-identity']),
+        fetch: (_) => 1,
         retry: RetryPolicy.none,
       );
       harness.client.setQueryData(raw, 1);
       final observer = harness.client.observeQuery(
-        raw.withObserver(
+        raw.observer(
           enabled: false,
           staleTime: StalePolicy.immutable,
         ),
@@ -704,25 +704,25 @@ void main() {
       final harness = _ObserverHarness();
       addTearDown(harness.dispose);
       final beforeMount = query(
-        QueryKey(<Object?>['manual-before-mount']),
-        (_) => 1,
+        key: QueryKey(<Object?>['manual-before-mount']),
+        fetch: (_) => 1,
         retry: RetryPolicy.none,
       );
       harness.client.setQueryData(beforeMount, 1);
       final existingObserver = harness.client.observeQuery(
-        beforeMount.withObserver(enabled: false),
+        beforeMount.observer(enabled: false),
       );
 
       expect(existingObserver.isFetched, isTrue);
       expect(existingObserver.isFetchedAfterMount, isFalse);
 
       final afterMount = query(
-        QueryKey(<Object?>['manual-after-mount']),
-        (_) => 1,
+        key: QueryKey(<Object?>['manual-after-mount']),
+        fetch: (_) => 1,
         retry: RetryPolicy.none,
       );
       final emptyObserver = harness.client.observeQuery(
-        afterMount.withObserver(enabled: false),
+        afterMount.observer(enabled: false),
       );
       expect(emptyObserver.isFetched, isFalse);
       expect(emptyObserver.isFetchedAfterMount, isFalse);
@@ -741,10 +741,10 @@ void main() {
       addTearDown(harness.dispose);
       var calls = 0;
       final target = query(
-        QueryKey(<Object?>['disabled']),
-        (context) => ++calls,
+        key: QueryKey(<Object?>['disabled']),
+        fetch: (context) => ++calls,
         retry: RetryPolicy.none,
-      ).withObserver(enabled: false);
+      ).observer(enabled: false);
       final observer = harness.client.observeQuery(target);
 
       await harness.pump();
@@ -762,8 +762,8 @@ void main() {
       addTearDown(harness.dispose);
       var calls = 0;
       final raw = query<int>(
-        QueryKey(<Object?>['retry-on-mount']),
-        (context) {
+        key: QueryKey(<Object?>['retry-on-mount']),
+        fetch: (context) {
           calls += 1;
           throw StateError('failed');
         },
@@ -776,14 +776,14 @@ void main() {
       first.dispose();
 
       final disabledRetry = harness.client.observeQuery(
-        raw.withObserver(retryOnMount: false),
+        raw.observer(retryOnMount: false),
       );
       await harness.pump();
       expect(disabledRetry.isError, isTrue);
       expect(calls, 1);
       disabledRetry.dispose();
 
-      harness.client.observeQuery(raw.withObserver(retryOnMount: true));
+      harness.client.observeQuery(raw.observer(retryOnMount: true));
       await harness.pump();
       expect(calls, 2);
     });
@@ -795,15 +795,15 @@ void main() {
       addTearDown(harness.dispose);
       var calls = 0;
       final target = query(
-        QueryKey(<Object?>['duration-fresh-environment']),
-        (context) => ++calls,
+        key: QueryKey(<Object?>['duration-fresh-environment']),
+        fetch: (context) => ++calls,
         retry: RetryPolicy.none,
       )
-          .withInitialData(
+          .initialData(
             1,
             updatedAt: harness.clock.wallNow(),
           )
-          .withObserver(
+          .observer(
             staleTime: StalePolicy.duration(const Duration(hours: 1)),
             refetchOnMount: RefetchPolicy.stale,
             refetchOnFocus: RefetchPolicy.stale,
@@ -835,10 +835,10 @@ void main() {
       var externallyStale = false;
       var calls = 0;
       final target = query(
-        QueryKey(<Object?>['resolver-environment-events']),
-        (_) => ++calls,
+        key: QueryKey(<Object?>['resolver-environment-events']),
+        fetch: (_) => ++calls,
         retry: RetryPolicy.none,
-      ).withInitialData(1).withObserver(
+      ).initialData(1).observer(
             enabled: false,
             staleTime: StalePolicy.resolve((_) => externallyStale),
           );
@@ -870,10 +870,10 @@ void main() {
       addTearDown(harness.dispose);
       var calls = 0;
       final target = query(
-        QueryKey(<Object?>['duration-expiry']),
-        (context) => ++calls,
+        key: QueryKey(<Object?>['duration-expiry']),
+        fetch: (context) => ++calls,
         retry: RetryPolicy.none,
-      ).withInitialData(1, updatedAt: harness.clock.wallNow()).withObserver(
+      ).initialData(1, updatedAt: harness.clock.wallNow()).observer(
             staleTime: StalePolicy.duration(const Duration(seconds: 5)),
           );
       final cacheEvents = <QueryCacheEvent>[];
@@ -910,8 +910,8 @@ void main() {
       final harness = _ObserverHarness();
       addTearDown(harness.dispose);
       final raw = query(
-        QueryKey(<Object?>['aggregate-freshness']),
-        (_) => 2,
+        key: QueryKey(<Object?>['aggregate-freshness']),
+        fetch: (_) => 2,
         retry: RetryPolicy.none,
       );
       harness.client.setQueryData(raw, 1);
@@ -923,7 +923,7 @@ void main() {
       addTearDown(subscription.cancel);
 
       final fresh = harness.client.observeQuery(
-        raw.withObserver(
+        raw.observer(
           enabled: false,
           staleTime: StalePolicy.duration(const Duration(hours: 1)),
         ),
@@ -932,7 +932,7 @@ void main() {
       cacheEvents.clear();
 
       final stale = harness.client.observeQuery(
-        raw.withObserver(
+        raw.observer(
           enabled: false,
           staleTime: StalePolicy.immediate,
         ),
@@ -983,7 +983,7 @@ void main() {
 
       cacheEvents.clear();
       final laterStale = harness.client.observeQuery(
-        raw.withObserver(
+        raw.observer(
           enabled: false,
           staleTime: StalePolicy.immediate,
         ),
@@ -1008,10 +1008,10 @@ void main() {
       addTearDown(harness.dispose);
       var calls = 0;
       final target = query(
-        QueryKey(<Object?>['duration-focus-refetch']),
-        (context) => 1 + ++calls,
+        key: QueryKey(<Object?>['duration-focus-refetch']),
+        fetch: (context) => 1 + ++calls,
         retry: RetryPolicy.none,
-      ).withInitialData(1, updatedAt: harness.clock.wallNow()).withObserver(
+      ).initialData(1, updatedAt: harness.clock.wallNow()).observer(
             staleTime: StalePolicy.duration(const Duration(seconds: 5)),
             refetchOnMount: RefetchPolicy.never,
             refetchOnFocus: RefetchPolicy.stale,
@@ -1042,10 +1042,10 @@ void main() {
       addTearDown(harness.dispose);
       var freshCalls = 0;
       final fresh = query(
-        QueryKey(<Object?>['fresh']),
-        (context) => ++freshCalls,
+        key: QueryKey(<Object?>['fresh']),
+        fetch: (context) => ++freshCalls,
         retry: RetryPolicy.none,
-      ).withInitialData(1, updatedAt: harness.clock.wallNow()).withObserver(
+      ).initialData(1, updatedAt: harness.clock.wallNow()).observer(
             staleTime: StalePolicy.duration(const Duration(hours: 1)),
           );
       harness.client.observeQuery(fresh);
@@ -1054,10 +1054,10 @@ void main() {
 
       var focusCalls = 0;
       final focus = query(
-        QueryKey(<Object?>['focus']),
-        (context) => ++focusCalls,
+        key: QueryKey(<Object?>['focus']),
+        fetch: (context) => ++focusCalls,
         retry: RetryPolicy.none,
-      ).withInitialData(1).withObserver(
+      ).initialData(1).observer(
             refetchOnMount: RefetchPolicy.never,
             refetchOnFocus: RefetchPolicy.always,
           );
@@ -1069,10 +1069,10 @@ void main() {
 
       var immutableCalls = 0;
       final immutable = query(
-        QueryKey(<Object?>['immutable']),
-        (context) => ++immutableCalls,
+        key: QueryKey(<Object?>['immutable']),
+        fetch: (context) => ++immutableCalls,
         retry: RetryPolicy.none,
-      ).withInitialData(1).withObserver(
+      ).initialData(1).observer(
             staleTime: StalePolicy.immutable,
             refetchOnMount: RefetchPolicy.always,
             refetchOnFocus: RefetchPolicy.always,
@@ -1093,8 +1093,8 @@ void main() {
       harness.client.onlineManager.isOnline = false;
       var calls = 0;
       final target = query(
-        QueryKey(<Object?>['online-gate']),
-        (context) => ++calls,
+        key: QueryKey(<Object?>['online-gate']),
+        fetch: (context) => ++calls,
         retry: RetryPolicy.none,
         networkMode: NetworkMode.online,
       );
@@ -1119,8 +1119,8 @@ void main() {
       var calls = 0;
       final observer = harness.client.observeQuery(
         query(
-          QueryKey(<Object?>['offline-first']),
-          (context) => ++calls,
+          key: QueryKey(<Object?>['offline-first']),
+          fetch: (context) => ++calls,
           retry: RetryPolicy.none,
           networkMode: NetworkMode.offlineFirst,
         ),
@@ -1138,20 +1138,20 @@ void main() {
       addTearDown(harness.dispose);
       var defaultCalls = 0;
       final defaultTarget = query(
-        QueryKey(<Object?>['always-default']),
-        (context) => ++defaultCalls,
+        key: QueryKey(<Object?>['always-default']),
+        fetch: (context) => ++defaultCalls,
         retry: RetryPolicy.none,
         networkMode: NetworkMode.always,
-      ).withInitialData(1).withObserver(refetchOnMount: RefetchPolicy.never);
+      ).initialData(1).observer(refetchOnMount: RefetchPolicy.never);
       harness.client.observeQuery(defaultTarget);
 
       var overrideCalls = 0;
       final overrideTarget = query(
-        QueryKey(<Object?>['always-override']),
-        (context) => ++overrideCalls,
+        key: QueryKey(<Object?>['always-override']),
+        fetch: (context) => ++overrideCalls,
         retry: RetryPolicy.none,
         networkMode: NetworkMode.always,
-      ).withInitialData(1).withObserver(
+      ).initialData(1).observer(
             refetchOnMount: RefetchPolicy.never,
             refetchOnReconnect: RefetchPolicy.always,
           );
@@ -1173,8 +1173,8 @@ void main() {
       final completions = <Completer<int>>[];
       var calls = 0;
       final raw = query(
-        QueryKey(<Object?>['poll']),
-        (context) {
+        key: QueryKey(<Object?>['poll']),
+        fetch: (context) {
           calls += 1;
           final completion = Completer<int>();
           completions.add(completion);
@@ -1182,11 +1182,11 @@ void main() {
         },
         retry: RetryPolicy.none,
       );
-      final fiveSecondTarget = raw.withInitialData(0).withObserver(
+      final fiveSecondTarget = raw.initialData(0).observer(
             refetchOnMount: RefetchPolicy.never,
             pollingInterval: const Duration(seconds: 5),
           );
-      final sevenSecondTarget = raw.withInitialData(0).withObserver(
+      final sevenSecondTarget = raw.initialData(0).observer(
             refetchOnMount: RefetchPolicy.never,
             pollingInterval: const Duration(seconds: 7),
           );
@@ -1214,12 +1214,12 @@ void main() {
       final interval = Signal<Duration?>(null);
       var calls = 0;
       final raw = query(
-        QueryKey(<Object?>['dynamic-poll']),
-        (context) => ++calls,
+        key: QueryKey(<Object?>['dynamic-poll']),
+        fetch: (context) => ++calls,
         retry: RetryPolicy.none,
       );
       harness.client.watchQuery(
-        () => raw.withInitialData(0).withObserver(
+        () => raw.initialData(0).observer(
               refetchOnMount: RefetchPolicy.never,
               pollingInterval: interval.value,
             ),

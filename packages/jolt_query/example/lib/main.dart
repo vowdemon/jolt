@@ -321,14 +321,14 @@ final class _QueryStoryCard extends StatelessWidget {
             client: controller.client,
             api: controller.api,
             page: selectedPage,
-          ).withObserver(
+          ).observer(
             staleTime: stalePreset.policy,
             refetchOnMount: RefetchPolicy.stale,
             refetchOnFocus: RefetchPolicy.stale,
             refetchOnReconnect: RefetchPolicy.stale,
           );
           final target = keepPrevious
-              ? configuredQuery.withPlaceholder((previous) => previous)
+              ? configuredQuery.placeholder((previous) => previous)
               : configuredQuery;
 
           return QueryWidget<ProjectPage>(
@@ -1838,7 +1838,7 @@ final class _InfiniteCard extends StatelessWidget {
           'InfiniteQueryWidget · explicit cursor · directional lane · maxPages',
       accent: _rose,
       child: InfiniteQueryWidget<InfiniteData<String, int>>(
-        query: controller.feedQuery.withObserver(enabled: false),
+        query: controller.feedQuery.observer(enabled: false),
         builder: (context, feedObserver) {
           final result = feedObserver.snapshot;
           final data = result.data.isPresent

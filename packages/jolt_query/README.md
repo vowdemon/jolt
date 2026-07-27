@@ -52,8 +52,8 @@ Future<void> main() async {
   final client = QueryClient();
 
   final todosQuery = query<List<String>>(
-    QueryKey(<Object?>['todos']),
-    (_) async => <String>['write the README'],
+    key: QueryKey(<Object?>['todos']),
+    fetch: (_) async => <String>['write the README'],
     staleTime: StalePolicy.duration(const Duration(minutes: 1)),
   );
 
@@ -157,8 +157,8 @@ data type, so explicit type arguments are usually unnecessary:
 
 ```dart
 final userQuery = query(
-  QueryKey(<Object?>['users', userId]),
-  (context) => api.getUser(userId),
+  key: QueryKey(<Object?>['users', userId]),
+  fetch: (context) => api.getUser(userId),
   client: client,
   staleTime: StalePolicy.duration(const Duration(minutes: 1)),
   retention: RetentionPolicy.duration(const Duration(minutes: 10)),
@@ -223,8 +223,8 @@ client explicitly when a query belongs to an isolated cache:
 final client = QueryClient();
 
 final profileQuery = query(
-  QueryKey(<Object?>['profile', userId]),
-  (_) => api.getProfile(userId),
+  key: QueryKey(<Object?>['profile', userId]),
+  fetch: (_) => api.getProfile(userId),
   client: client,
 ).select((profile) => profile.displayName);
 
@@ -262,8 +262,8 @@ receiver-authoritative:
 
 ```dart
 final boundToA = query(
-  QueryKey(<Object?>['profile']),
-  (_) => api.getProfile(),
+  key: QueryKey(<Object?>['profile']),
+  fetch: (_) => api.getProfile(),
   client: clientA,
 );
 
@@ -279,8 +279,8 @@ Every attempt receives a `QueryContext` containing the actual executing
 
 ```dart
 final reportQuery = query(
-  QueryKey(<Object?>['reports', reportId]),
-  (context) async {
+  key: QueryKey(<Object?>['reports', reportId]),
+  fetch: (context) async {
     context.cancellationToken.throwIfCancelled();
     final report = await api.getReport(
       reportId,
@@ -297,8 +297,8 @@ If the transport has its own cancellation primitive, bridge it with a listener:
 
 ```dart
 final downloadQuery = query(
-  QueryKey(<Object?>['download', fileId]),
-  (context) async {
+  key: QueryKey(<Object?>['download', fileId]),
+  fetch: (context) async {
     final request = api.startDownload(fileId);
     final removeListener = context.cancellationToken.addListener(
       (_) => request.cancel(),
@@ -342,10 +342,10 @@ The type-safe stage order is:
 
 ```text
 Query<TData>
-  -> withRetry(...)
-  -> withInitialData(...)
+  -> retry(...)
+  -> initialData(...)
   -> select(...) zero or more times
-  -> withObserver(...) / withPlaceholder(...) / withPlaceholderData(...)
+  -> observer(...) / placeholder(...) / placeholderData(...)
 ```
 
 Raw-data transforms must happen before the first terminal presentation
@@ -353,10 +353,10 @@ configuration.
 
 ### Typed retry
 
-`withRetry` keeps the raw `TData` visible to custom result predicates:
+`retry` keeps the raw `TData` visible to custom result predicates:
 
 ```dart
-final retried = userQuery.withRetry(
+final retried = userQuery.retry(
   (retry) => retry.strategy(
     retryIf: retry.exceptions & retry.maxRetries(2),
   ),
@@ -368,7 +368,7 @@ final retried = userQuery.withRetry(
 Initial data seeds the raw shared cache before selection:
 
 ```dart
-final seeded = userQuery.withInitialData(
+final seeded = userQuery.initialData(
   User.loading(userId),
   updatedAt: DateTime.now(),
 );
@@ -401,7 +401,7 @@ invalidate the raw cached value. A selected `QueryView<T>` is not a
 ### Observer options
 
 ```dart
-final target = userQuery.select((user) => user.displayName).withObserver(
+final target = userQuery.select((user) => user.displayName).observer(
   enabled: true,
   staleTime: StalePolicy.duration(const Duration(minutes: 5)),
   refetchOnMount: RefetchPolicy.stale,
@@ -437,9 +437,9 @@ to the shared cache:
 ```dart
 final keepPrevious = userQuery
     .select((user) => user.displayName)
-    .withPlaceholder((previous) => previous);
+    .placeholder((previous) => previous);
 
-final fixedPlaceholder = userQuery.withPlaceholderData(User.loading(userId));
+final fixedPlaceholder = userQuery.placeholderData(User.loading(userId));
 ```
 
 The resolver receives the previous selected presentation during a target
@@ -451,7 +451,7 @@ final view type, is not passed through selectors, and sets
 
 ```dart
 final observer = client.observeQuery(
-  userQuery.withObserver(refetchOnMount: RefetchPolicy.stale),
+  userQuery.observer(refetchOnMount: RefetchPolicy.stale),
 );
 
 final untracked = observer.snapshot; // same role as observer.peek
@@ -533,7 +533,7 @@ Common combinations are:
 
 ```dart
 final observer = client.observeQuery(
-  userQuery.withObserver(enabled: false),
+  userQuery.observer(enabled: false),
 );
 
 assert(observer.fetchStatus == FetchStatus.idle);
@@ -573,10 +573,10 @@ final page = Signal<int>(1);
 final projects = client.watchQuery(() {
   final currentPage = page.value;
   return query(
-    QueryKey(<Object?>['projects', currentPage]),
-    (_) => api.getProjects(currentPage),
+    key: QueryKey(<Object?>['projects', currentPage]),
+    fetch: (_) => api.getProjects(currentPage),
     staleTime: StalePolicy.duration(const Duration(minutes: 1)),
-  ).withPlaceholder((previous) => previous);
+  ).placeholder((previous) => previous);
 });
 
 page.value = 2;
@@ -633,7 +633,7 @@ triggers can retry it instead of treating the old value as fresh forever.
 ### Refetch triggers
 
 ```dart
-final target = userQuery.withObserver(
+final target = userQuery.observer(
   refetchOnMount: RefetchPolicy.stale,
   refetchOnFocus: RefetchPolicy.stale,
   refetchOnReconnect: RefetchPolicy.stale,
@@ -718,8 +718,8 @@ references where safe:
 
 ```dart
 final userQuery = query(
-  QueryKey(<Object?>['users', userId]),
-  (_) => api.getUser(userId),
+  key: QueryKey(<Object?>['users', userId]),
+  fetch: (_) => api.getUser(userId),
   reconciler: DataReconciler<User>.custom(
     (previous, next) => previous == next ? previous : next,
   ),
@@ -1180,14 +1180,14 @@ The inference-neutral policies require only Jolt Query:
 
 ```dart
 final noRetry = query(
-  QueryKey(<Object?>['health']),
-  (_) => api.health(),
+  key: QueryKey(<Object?>['health']),
+  fetch: (_) => api.health(),
   retry: RetryPolicy.none,
 );
 
 final standardRetry = query(
-  QueryKey(<Object?>['profile']),
-  (_) => api.profile(),
+  key: QueryKey(<Object?>['profile']),
+  fetch: (_) => api.profile(),
   retry: RetryPolicy.standard,
 );
 ```
@@ -1196,7 +1196,7 @@ final standardRetry = query(
 exponential delays beginning at one second and capped at thirty seconds.
 
 Inline `retry:` fields and defaults accept only `none` and `standard`. Apply a
-typed custom policy after raw-data inference with `withRetry()`.
+typed custom policy after raw-data inference with `retry()`.
 
 ### Custom retry
 
@@ -1214,7 +1214,7 @@ dependencies:
 import 'package:jolt_query/jolt_query.dart';
 import 'package:retry_plus/retry_plus.dart';
 
-final customized = userQuery.withRetry(
+final customized = userQuery.retry(
   (retry) => retry.strategy(
     retryIf: retry.exceptions & retry.maxRetries(5),
     delay: DelayPolicy.exponential(
@@ -1231,7 +1231,7 @@ final customized = userQuery.withRetry(
 Successful results can participate in a typed retry decision:
 
 ```dart
-final retriedResponse = responseQuery.withRetry(
+final retriedResponse = responseQuery.retry(
   (retry) => retry.strategy(
     retryIf: retry.result((response) => response.statusCode == 503) &
         retry.maxRetries(3),
@@ -1755,8 +1755,8 @@ Whole-data retry applies to `InfiniteData`, not individual pages. Page
 validation should throw from `fetchPage`; the enclosing whole-data operation
 then decides whether to retry.
 
-`withRetry`, `withInitialData`, `select`, `withObserver`,
-`withPlaceholder`, and `withPlaceholderData` follow the same stage rules as an
+`retry`, `initialData`, `select`, `observer`,
+`placeholder`, and `placeholderData` follow the same stage rules as an
 ordinary query.
 
 ## Stream-backed queries
@@ -1767,8 +1767,8 @@ retention rules:
 
 ```dart
 final messagesQuery = query<List<Message>>(
-  QueryKey(<Object?>['messages']),
-  streamedQuery<Message, List<Message>>(
+  key: QueryKey(<Object?>['messages']),
+  fetch: streamedQuery<Message, List<Message>>(
     stream: (context) => api.messageStream(),
     initial: () => <Message>[],
     reduce: (current, message) => <Message>[...current, message],
@@ -1782,8 +1782,8 @@ helper:
 
 ```dart
 final messagesQuery = query<IList<Message>>(
-  QueryKey(<Object?>['messages']),
-  streamedListQuery<Message>(
+  key: QueryKey(<Object?>['messages']),
+  fetch: streamedListQuery<Message>(
     stream: (context) => api.messageStream(),
     mode: StreamRefetchMode.append,
   ),
@@ -1922,8 +1922,8 @@ import 'package:flutter/material.dart';
 import 'package:jolt_query/jolt_query.dart';
 
 final todosQuery = query<List<Todo>>(
-  QueryKey(<Object?>['todos']),
-  (_) => api.listTodos(),
+  key: QueryKey(<Object?>['todos']),
+  fetch: (_) => api.listTodos(),
   staleTime: StalePolicy.duration(const Duration(minutes: 1)),
 );
 
@@ -1972,7 +1972,7 @@ rebuilds still apply.
 
 ```dart
 InfiniteQueryWidget<InfiniteData<Post, String?>>(
-  query: feedQuery.withObserver(staleTime: StalePolicy.untilInvalidated),
+  query: feedQuery.observer(staleTime: StalePolicy.untilInvalidated),
   builder: (context, observer) {
     final pages = observer.data.valueOrNull?.pages;
     return Column(
@@ -2036,10 +2036,10 @@ automatic Material/Cupertino state UI, Suspense, or ErrorBoundary.
 | `QueryView<T>` | Select-capable stage. |
 | `QueryTarget<T>` / `AnyQueryTarget` | Observable typed or erased target with a resolved `client`. |
 | `select` | Raw/view projection. |
-| `withRetry` | Typed custom raw-data retry. |
-| `withInitialData` | New-entry raw seed. |
-| `withObserver` | Activation, stale, trigger, polling, and equality options. |
-| `withPlaceholder` / `withPlaceholderData` | Observer-local final-view fallback. |
+| `retry` | Typed custom raw-data retry. |
+| `initialData` | New-entry raw seed. |
+| `observer` | Activation, stale, trigger, polling, and equality options. |
+| `placeholder` / `placeholderData` | Observer-local final-view fallback. |
 | `observeQuery` / `watchQuery` | Fixed or signal-derived target observation. |
 | `QueryObserver<T>` / `QueryObserverResult<T>` | Reactive single-query presentation. |
 | `QueryWidget<T>` | Provider-free Flutter ownership and rendering of one query observer. |

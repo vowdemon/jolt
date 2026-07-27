@@ -7,8 +7,8 @@ void main() {
     addTearDown(first.dispose);
 
     final ordinary = query(
-      QueryKey(const <Object?>['lazy-default']),
-      (_) => 1,
+      key: QueryKey(const <Object?>['lazy-default']),
+      fetch: (_) => 1,
     );
     final infinite = infiniteQuery(
       QueryKey(const <Object?>['lazy-default-infinite']),

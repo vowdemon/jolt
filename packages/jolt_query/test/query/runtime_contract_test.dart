@@ -12,12 +12,12 @@ void main() {
     final harness = _QueryContractHarness();
     addTearDown(harness.dispose);
     final source = query<int>(
-      QueryKey(<Object?>['canonical-absence']),
-      (_) => 1,
+      key: QueryKey(<Object?>['canonical-absence']),
+      fetch: (_) => 1,
     );
 
     final observer = harness.client.observeQuery(
-      source.withObserver(enabled: false),
+      source.observer(enabled: false),
     );
 
     expect(observer.data, const QueryAbsent<int>());
@@ -31,8 +31,8 @@ void main() {
     final harness = _QueryContractHarness();
     addTearDown(harness.dispose);
     final source = query<String?>(
-      QueryKey(<Object?>['nullable-success']),
-      (_) => null,
+      key: QueryKey(<Object?>['nullable-success']),
+      fetch: (_) => null,
     );
 
     final observer = harness.client.observeQuery(source);
@@ -49,8 +49,8 @@ void main() {
     final harness = _QueryContractHarness();
     addTearDown(harness.dispose);
     final QueryView<String> selected = query<int>(
-      QueryKey(<Object?>['direct-selected-view']),
-      (_) => 7,
+      key: QueryKey(<Object?>['direct-selected-view']),
+      fetch: (_) => 7,
     ).select((value) => 'value:$value');
 
     final QueryObserver<String> observer =
@@ -67,11 +67,11 @@ void main() {
     var attempts = 0;
     final handledRawValues = <int>[];
     final selected = query<int>(
-      QueryKey(<Object?>['selected-raw-retry']),
-      (_) => ++attempts,
+      key: QueryKey(<Object?>['selected-raw-retry']),
+      fetch: (_) => ++attempts,
       retry: RetryPolicy.none,
     )
-        .withRetry(
+        .retry(
           (retry) => retry.strategy(
             retryIf: retry.result((data) {
                   handledRawValues.add(data);
@@ -98,8 +98,8 @@ void main() {
     final thrown = Object();
     final stack = StackTrace.fromString('non-exception-query-stack');
     final source = query<int>(
-      QueryKey(<Object?>['non-exception-failure']),
-      (_) => Error.throwWithStackTrace(thrown, stack),
+      key: QueryKey(<Object?>['non-exception-failure']),
+      fetch: (_) => Error.throwWithStackTrace(thrown, stack),
     );
 
     try {
@@ -119,8 +119,8 @@ void main() {
     final harness = _QueryContractHarness();
     addTearDown(harness.dispose);
     final source = query<String?>(
-      QueryKey(<Object?>['nullable-write']),
-      (_) => 'network',
+      key: QueryKey(<Object?>['nullable-write']),
+      fetch: (_) => 'network',
     );
     final before = harness.client.snapshotQueryData(source);
 
@@ -140,8 +140,8 @@ void main() {
     final harness = _QueryContractHarness();
     addTearDown(harness.dispose);
     final source = query<int>(
-      QueryKey(<Object?>['update-absence']),
-      (_) => 0,
+      key: QueryKey(<Object?>['update-absence']),
+      fetch: (_) => 0,
     );
     QueryValue<int>? received;
 
@@ -160,15 +160,15 @@ void main() {
     final harness = _QueryContractHarness();
     addTearDown(harness.dispose);
     final number = query<int>(
-      QueryKey(<Object?>['heterogeneous', 'number']),
-      (_) => 0,
+      key: QueryKey(<Object?>['heterogeneous', 'number']),
+      fetch: (_) => 0,
     );
     final text = query<String>(
-      QueryKey(<Object?>['heterogeneous', 'text']),
-      (_) => '',
+      key: QueryKey(<Object?>['heterogeneous', 'text']),
+      fetch: (_) => '',
     );
-    final numberAsObject = query<Object?>(number.key, (_) => null);
-    final textAsObject = query<Object?>(text.key, (_) => null);
+    final numberAsObject = query<Object?>(key: number.key, fetch: (_) => null);
+    final textAsObject = query<Object?>(key: text.key, fetch: (_) => null);
     harness.client
       ..setQueryData(number, 1)
       ..setQueryData(text, 'two');
@@ -202,11 +202,11 @@ void main() {
     addTearDown(harness.dispose);
     var fetchCalls = 0;
     final raw = query<int>(
-      QueryKey(<Object?>['immutable-invalidation']),
-      (_) => ++fetchCalls,
+      key: QueryKey(<Object?>['immutable-invalidation']),
+      fetch: (_) => ++fetchCalls,
       staleTime: StalePolicy.immutable,
     );
-    final source = raw.withInitialData(1);
+    final source = raw.initialData(1);
     final observer = harness.client.observeQuery(source);
     await harness.pump();
     expect(fetchCalls, 0);
@@ -241,16 +241,16 @@ void main() {
     var activeFetchCalls = 0;
     var inactiveFetchCalls = 0;
     final active = query<int>(
-      QueryKey(<Object?>['default-invalidation', 'active']),
-      (_) {
+      key: QueryKey(<Object?>['default-invalidation', 'active']),
+      fetch: (_) {
         activeFetchCalls += 1;
         if (activeFetchCalls == 1) return 1;
         return activeRefetch.future;
       },
     );
     final inactive = query<int>(
-      QueryKey(<Object?>['default-invalidation', 'inactive']),
-      (_) {
+      key: QueryKey(<Object?>['default-invalidation', 'inactive']),
+      fetch: (_) {
         inactiveFetchCalls += 1;
         return 2;
       },
@@ -288,8 +288,8 @@ void main() {
     addTearDown(harness.dispose);
     final attempts = <String, int>{};
     Query<int> failing(String operation) => query<int>(
-          QueryKey(<Object?>['no-implicit-retry', operation]),
-          (_) {
+          key: QueryKey(<Object?>['no-implicit-retry', operation]),
+          fetch: (_) {
             attempts.update(operation, (count) => count + 1, ifAbsent: () => 1);
             throw StateError(operation);
           },
@@ -324,13 +324,13 @@ void main() {
     addTearDown(harness.dispose);
     var attempts = 0;
     final source = query<int>(
-      QueryKey(<Object?>['unlimited-exception-retry']),
-      (_) {
+      key: QueryKey(<Object?>['unlimited-exception-retry']),
+      fetch: (_) {
         attempts += 1;
         if (attempts < 4) throw StateError('attempt $attempts');
         return 42;
       },
-    ).withRetry(
+    ).retry(
       (retry) => retry.strategy(
         retryIf: retry.exceptions,
         delay: DelayPolicy.none(),
@@ -348,8 +348,8 @@ void main() {
     final harness = _QueryContractHarness();
     addTearDown(harness.dispose);
     final source = query<int>(
-      QueryKey(<Object?>['cache-events-contract']),
-      (_) => 1,
+      key: QueryKey(<Object?>['cache-events-contract']),
+      fetch: (_) => 1,
     );
     final events = <QueryCacheEvent>[];
     final subscription = harness.client.queryCache.events.listen(events.add);
@@ -359,7 +359,7 @@ void main() {
     await harness.pump();
 
     final observer = harness.client.observeQuery(
-      source.withObserver(enabled: false),
+      source.observer(enabled: false),
     );
     await harness.pump();
 

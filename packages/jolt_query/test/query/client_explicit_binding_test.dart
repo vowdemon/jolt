@@ -11,31 +11,31 @@ void main() {
     addTearDown(installedDefault.dispose);
 
     final ordinary = query(
-      QueryKey(const <Object?>['explicit-before-default']),
-      (_) => 1,
+      key: QueryKey(const <Object?>['explicit-before-default']),
+      fetch: (_) => 1,
       client: explicitClient,
-    ).select((value) => '$value').withPlaceholderData('loading');
+    ).select((value) => '$value').placeholderData('loading');
     final infinite = infiniteQuery(
       QueryKey(const <Object?>['explicit-infinite-before-default']),
       (context) => context.pageParam,
       client: explicitClient,
       initialPageParam: 0,
       getNextPageParam: (_) => PageCursor.end,
-    ).select((data) => data.length).withObserver(enabled: false);
+    ).select((data) => data.length).observer(enabled: false);
 
     expect(ordinary.client, same(explicitClient));
     expect(infinite.client, same(explicitClient));
 
     final unboundOrdinary = query(
-      QueryKey(const <Object?>['unbound-transformed']),
-      (_) => 2,
+      key: QueryKey(const <Object?>['unbound-transformed']),
+      fetch: (_) => 2,
     )
-        .withInitialData(1)
+        .initialData(1)
         .select((value) => '$value')
-        .withObserver(
+        .observer(
           enabled: false,
         )
-        .withPlaceholderData('loading');
+        .placeholderData('loading');
     final ordinaryObserver = receiver.observeQuery(unboundOrdinary);
     addTearDown(ordinaryObserver.dispose);
 
@@ -45,14 +45,14 @@ void main() {
       initialPageParam: 0,
       getNextPageParam: (_) => PageCursor.end,
     )
-        .withInitialData(
+        .initialData(
           InfiniteData<int, int>(
             pages: const <int>[0],
             pageParams: const <int>[0],
           ),
         )
         .select((data) => data.length)
-        .withObserver(enabled: false);
+        .observer(enabled: false);
     final infiniteObserver = receiver.observeInfiniteQuery(unboundInfinite);
     addTearDown(infiniteObserver.dispose);
 

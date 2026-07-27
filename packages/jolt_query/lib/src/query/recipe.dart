@@ -589,7 +589,7 @@ sealed class QueryTarget<TView> implements AnyQueryTarget {
   QueryKey get key => resolved.plan.key;
 
   /// Applies observer-local behavior and returns a terminal target.
-  QueryTarget<TView> withObserver({
+  QueryTarget<TView> observer({
     bool? enabled,
     StalePolicy? staleTime,
     RefetchPolicy? refetchOnMount,
@@ -631,12 +631,12 @@ sealed class QueryTarget<TView> implements AnyQueryTarget {
   }
 
   /// Uses an explicit observer-local placeholder value.
-  QueryTarget<TView> withPlaceholderData(TView data) {
-    return withPlaceholder((previous) => QueryValue<TView>.present(data));
+  QueryTarget<TView> placeholderData(TView data) {
+    return placeholder((previous) => QueryValue<TView>.present(data));
   }
 
   /// Uses [resolve] to derive observer-local placeholder presence.
-  QueryTarget<TView> withPlaceholder(QueryPlaceholderResolver<TView> resolve) {
+  QueryTarget<TView> placeholder(QueryPlaceholderResolver<TView> resolve) {
     final current = resolved;
     return _TerminalQueryTarget<TView>(
       ResolvedQueryTarget<TView>(
@@ -755,14 +755,14 @@ abstract base class Query<TData> extends QueryView<TData>
   }
 
   /// Replaces retry behavior while [TData] remains available for inference.
-  Query<TData> withRetry(
+  Query<TData> retry(
     RetryStrategy<TData> Function(RetryBuilder<TData> retry) create,
   ) {
     return _RetryQuery<TData>(this, RetryPolicy<TData>.custom(create));
   }
 
   /// Seeds raw cache data before any selection is applied.
-  QueryView<TData> withInitialData(
+  QueryView<TData> initialData(
     TData data, {
     DateTime? updatedAt,
   }) {
@@ -781,9 +781,9 @@ abstract base class Query<TData> extends QueryView<TData>
 }
 
 /// Creates an inference-friendly inline [Query].
-Query<TData> query<TData>(
-  QueryKey key,
-  QueryFunction<TData> fetch, {
+Query<TData> query<TData>({
+  required QueryKey key,
+  required QueryFunction<TData> fetch,
   QueryClient? client,
   RetryPolicy<Never>? retry,
   StalePolicy? staleTime,
@@ -813,7 +813,7 @@ RetryPolicy<T>? _queryMarkerRetry<T>(RetryPolicy<Never>? marker) {
       marker,
       'retry',
       'Marker retry slots accept only RetryPolicy.none or '
-          'RetryPolicy.standard. Apply typed custom retry with withRetry().',
+          'RetryPolicy.standard. Apply typed custom retry with retry().',
     );
   }
   return marker;

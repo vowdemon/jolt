@@ -169,7 +169,7 @@ abstract base class Mutation<V, D, R> {
   ) {}
 
   /// Returns the same definition with a typed custom retry strategy.
-  Mutation<V, D, R> withRetry(
+  Mutation<V, D, R> retry(
     RetryStrategy<D> Function(RetryBuilder<D> retry) create,
   ) {
     return _RetryMutation<V, D, R>(this, RetryPolicy<D>.custom(create));
@@ -531,7 +531,7 @@ RetryPolicy<D>? _markerRetry<D>(RetryPolicy<Never>? retry) {
       retry,
       'retry',
       'Marker retry slots accept only RetryPolicy.none or '
-          'RetryPolicy.standard. Apply typed custom retry with withRetry().',
+          'RetryPolicy.standard. Apply typed custom retry with retry().',
     );
   }
   return marker;

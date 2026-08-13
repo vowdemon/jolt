@@ -33,11 +33,8 @@ part of 'framework.dart';
 /// ```
 mixin SetupMixin<T extends StatefulWidget> on State<T> {
   late final Props<T> _propsNode = _PropsImpl<T>(context);
-  late final SetupContext<T> setupContext = SetupContext<T>(
-    context,
-    _propsNode,
-    resetSetupFn: _doResetSetup,
-  );
+  late final SetupContext<T> setupContext =
+      SetupContext<T>(context, _propsNode);
 
   bool _isFirstBuild = true;
 
@@ -102,59 +99,6 @@ mixin SetupMixin<T extends StatefulWidget> on State<T> {
     _propsNode.dispose();
     setupContext.dispose();
     super.dispose();
-  }
-
-  /// Schedules a full rerun of the current `setup`.
-  ///
-  /// The reset happens at frame end and coalesces multiple calls in the same
-  /// frame. It tears down the current hooks and renderer, then runs `setup`
-  /// again to rebuild the setup boundary from scratch.
-  void resetSetup() {
-    setupContext.scheduleResetSetup();
-  }
-
-  void _doResetSetup() {
-    // 1. Unmount all existing hooks in reverse order
-    setupContext.unmountHooks();
-
-    // 2. Dispose the current renderer
-    setupContext.renderer?.dispose();
-    setupContext.renderer = null;
-
-    // 3. Clean up all EffectScope cleanup functions registered during setup
-    setupContext.raw.cleanup();
-
-    // 4. Clear all hooks
-    setupContext._hooks.clear();
-
-    assert(() {
-      setupContext._newHooks.clear();
-      setupContext._newlyCreatedHooks.clear();
-      setupContext._newHookConfigs.clear();
-      setupContext._currentHookIndex = 0;
-      setupContext._isReassembling = false;
-      return true;
-    }());
-
-    // 5. Re-run setup function to create new hooks
-    setupContext.run(() {
-      setupContext.setupBuilder = setup(context);
-
-      // 6. Recreate the renderer effect
-      setupContext.renderer = PostFrameEffect(
-        (context as Element).markNeedsBuild,
-        lazy: true,
-        debug: JoltDebugOption.type("SetupRenderer<$T>"),
-      );
-
-      // 7. Mount all new hooks
-      for (var hook in setupContext._hooks) {
-        hook.mount();
-      }
-    });
-
-    // 8. Trigger a rebuild to apply the changes
-    (context as Element).markNeedsBuild();
   }
 
   /* ------------------------------ Build flow ----------------------------- */

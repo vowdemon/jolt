@@ -32,9 +32,10 @@ Every entry surface creates a `SetupContext` that:
 - Records the **ordered list of hooks** registered through `useHook` / `use*`. Hot reload reuses hooks by sequence position and runtime type; a mismatch unmounts the tail and re-mounts new hooks.
 - Owns a `PostFrameEffect` "renderer" that wraps the returned builder. Reactive reads inside the builder track this effect, so dependency changes schedule `markNeedsBuild` at frame end.
 - Forwards Flutter element lifecycle (`didUpdateWidget`, `didChangeDependencies`, `activate`, `deactivate`, `unmount`, `reassemble`) to each hook, in registration order on activate, reverse order on deactivate/unmount.
-- Exposes `resetSetup()` — schedules a full setup rerun at frame end (tears down hooks + renderer, runs `setup` again). Use only when the initialization boundary itself must rebuild; ordinary state changes belong in signals/effects.
 
 Implication: **don't put conditional `use*` calls behind `if` / loops** that can change between rebuilds, and **don't call `use*` outside `setup`** — the hook index must be stable. (Bare reactive reads through `.value` happen in the **builder**, not in `setup` itself, unless you want them as setup-time dependencies of an effect/computed.)
+
+The setup scope lasts for its owning Flutter element or `State`. Handle ordinary changes with signals/computed values, effects/watchers, `useListen`, `useSync`, async `.watch` variants, or widget lifecycle callbacks. If the entire scope truly must be recreated, have the parent rebuild the setup-based widget with a different `Key`; this replaces the owner as well as all setup-owned resources.
 
 ## `SetupWidget<T>`
 
@@ -134,7 +135,7 @@ Hooks are top-level `use*` functions (or `use*.variant(...)` factories) that mus
 - **Flutter controllers** — text/scroll/page/tab/animation/focus/etc. (auto-disposed).
 - **Listenable & sync bridges** — `useValueNotifier`, `useChangeNotifier`, `useListen.{value,listenable,stream}` (+ `.watch`), `useSync.{from,bidi}`.
 - **Async** — `useFuture` (+ `.watch`), `useStream` (+ `.watch`), `useStreamController` (+ `.broadcast`).
-- **Misc** — `useTimer` (+ `.periodic`), `useAppLifecycleState`, `useAutomaticKeepAlive` (+ `.value`), experimental `useSetupReset` family.
+- **Misc** — `useTimer` (+ `.periodic`), `useAppLifecycleState`, `useAutomaticKeepAlive` (+ `.value`).
 
 Full signatures, variants, lifecycle behavior, and examples are in [`references/hooks.md`](references/hooks.md). To write your own hook — function-style, class-style (`SetupHook<T>`), or extension-style attached to a built-in creator like `useSignal.myThing` — see [`references/custom-hooks.md`](references/custom-hooks.md).
 
@@ -144,7 +145,6 @@ Full signatures, variants, lifecycle behavior, and examples are in [`references/
 - Return only the `() => Widget` from `setup`. Don't return computed widgets directly; let the builder close over reactive state so rebuilds work.
 - Long-lived resources belong in hooks (`useSignal`, `useMemoized`, controller hooks); they auto-dispose. Don't `new` them in `setup` without a hook unless you also handle disposal via `onUnmounted` or an `EffectScope`.
 - Use `props()` (`SetupWidget`) or the `props` getter (`SetupMixin`) when setup-owned state must react to parent updates; raw `widget.foo` reads in `setup` are captured only at the first run.
-- `resetSetup()` is a heavy escape hatch (rebuilds the whole hook sequence). Prefer ordinary signal updates.
 - Reading inherited widgets inside `setup`: use `useInherited((c) => Theme.of(c))` so dependency changes invalidate the cached value reactively. Plain `Theme.of(context)` works too but isn't reactive past the initial setup.
 
 ## Source Navigation

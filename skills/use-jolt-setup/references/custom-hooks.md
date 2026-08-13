@@ -102,7 +102,7 @@ Subclass `SetupHook<T>` and override `build()`. Override any subset of lifecycle
 | Override | When it fires |
 | --- | --- |
 | `T build()` | Once per hook slot. Returns the state value exposed via `state`. Result is also what `useHook(...)` returns. |
-| `void mount()` | After `build`, when the hook is mounted (also re-runs after a `resetSetup`). |
+| `void mount()` | After `build`, when the hook is mounted. |
 | `void unmount()` | When the setup scope unmounts, or when a hot reload trims this slot. Use for `dispose()`, `removeListener`, `cancel`, etc. |
 | `void didUpdateWidget(oldW, newW)` | Parent rebuilt with a new widget instance. Typed via covariance if you pin a generic. |
 | `void didChangeDependencies()` | Inherited dependencies changed. |
@@ -213,7 +213,6 @@ Built-in factories like `useSignal`, `useComputed`, `useEffect`, `useWatcher`, `
 | `useTextEditingController` | `JoltSetupHookTextEditingControllerCreator` |
 | `useRestorableTextEditingController` | `JoltSetupHookRestorableTextEditingControllerCreator` |
 | `useAutomaticKeepAlive`   | `JoltSetupHookAutomaticKeepAliveCreator` |
-| `useSetupReset`           | `JoltSetupHookResetCreator` |
 
 (Generic top-level hooks like `useScrollController`, `useFocusNode`, `useMemoized`, `useAutoDispose`, `useChangeNotifier`, `useValueNotifier`, `useHook`, `useContext`, `useInherited`, and the `on*` lifecycle helpers are plain functions, not creator classes — extension-style does not apply; add your own top-level function instead.)
 

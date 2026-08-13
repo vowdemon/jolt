@@ -5,7 +5,7 @@ import '../shared/helper.dart';
 
 void main() {
   group('SetupWidget Basic Functionality', () {
-    testWidgets('create setup only once', (tester) async {
+    testWidgets('same-key parent update retains setup scope', (tester) async {
       int setupCount = 0;
       await tester.pumpWidget(MaterialApp(
         home: SetupBuilder(setup: (context) {
@@ -35,6 +35,58 @@ void main() {
       expect(find.text('Title: Test'), findsOneWidget);
       expect(find.text('Count: 42'), findsOneWidget);
       expect(setupCount, 1);
+    });
+
+    testWidgets('reactive rebuild retains setup scope', (tester) async {
+      late Signal<int> count;
+      var setupCount = 0;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          setupCount++;
+          count = useSignal(0);
+          return () => Text('Count: ${count.value}');
+        }),
+      ));
+
+      expect(find.text('Count: 0'), findsOneWidget);
+      expect(setupCount, 1);
+
+      count.value = 1;
+      await tester.pumpAndSettle();
+
+      expect(find.text('Count: 1'), findsOneWidget);
+      expect(setupCount, 1);
+    });
+
+    testWidgets('key replacement recreates and disposes setup scope',
+        (tester) async {
+      var setupCount = 0;
+      var unmountCount = 0;
+
+      Widget buildWidget(Key key) => MaterialApp(
+            home: SetupBuilder(
+              key: key,
+              setup: (context) {
+                setupCount++;
+                onUnmounted(() => unmountCount++);
+                return () => Text('Setup: $setupCount');
+              },
+            ),
+          );
+
+      await tester.pumpWidget(buildWidget(const ValueKey('first')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Setup: 1'), findsOneWidget);
+      expect(unmountCount, 0);
+
+      await tester.pumpWidget(buildWidget(const ValueKey('second')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Setup: 2'), findsOneWidget);
+      expect(setupCount, 2);
+      expect(unmountCount, 1);
     });
 
     testWidgets('onMounted lifecycle', (tester) async {
@@ -324,34 +376,6 @@ void main() {
       await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
       await tester.pumpAndSettle();
       expect(unmounted, [3, 2, 1]);
-    });
-
-    testWidgets('resetSetup schedules a single reset for the current frame',
-        (tester) async {
-      int setupCount = 0;
-
-      await tester.pumpWidget(MaterialApp(
-        home: SetupBuilder(setup: (context) {
-          setupCount++;
-          return () => Text('Setup count: $setupCount');
-        }),
-      ));
-      await tester.pumpAndSettle();
-
-      final element =
-          tester.element(find.byType(SetupBuilder)) as SetupWidgetElement;
-
-      element.resetSetup();
-      element.resetSetup();
-
-      expect(setupCount, 1, reason: 'resetSetup should not run synchronously');
-
-      tester.binding.scheduleFrame();
-      await tester.pumpAndSettle();
-
-      expect(setupCount, 2,
-          reason: 'multiple reset requests in one frame should coalesce');
-      expect(find.text('Setup count: 2'), findsOneWidget);
     });
   });
 }

@@ -2,6 +2,8 @@
 
 All hooks must be called inside a `setup` function (or a custom hook that is itself called inside `setup`). They register against the active `SetupContext`, are matched by position across hot reloads, and clean up when the setup scope unmounts.
 
+Signal, property, `Listenable`, future, and stream changes should update the existing scope through reactive hooks, listeners, synchronization, or lifecycle callbacks. For complete reinitialization, let Flutter replace the owning setup widget with a different `Key`; doing so replaces the element or `State` as well as its setup-owned resources.
+
 Quick navigation:
 
 - [Reactive primitives](#reactive-primitives) — `useSignal`, `useComputed`, `useEffect`, `usePostFrameEffect`, `useWatcher`, `useEffectScope`, `useUntil`
@@ -10,7 +12,7 @@ Quick navigation:
 - [Flutter controllers](#flutter-controllers) — text, scroll, page, tab, animation, focus, transformation, menu, magnifier, etc.
 - [Listenable & sync bridges](#listenable--sync-bridges) — `useValueNotifier`, `useChangeNotifier`, `useListen`, `useSync`
 - [Async](#async) — `useFuture`, `useStream`, `useStreamController`
-- [Misc](#misc) — `useTimer`, `useAppLifecycleState`, `useAutomaticKeepAlive`, `useSetupReset`
+- [Misc](#misc) — `useTimer`, `useAppLifecycleState`, `useAutomaticKeepAlive`
 
 ---
 
@@ -425,20 +427,6 @@ Keeps the surrounding subtree alive when off-screen (e.g. inside a `PageView`, `
 useAutomaticKeepAlive(true);          // fixed policy
 useAutomaticKeepAlive.value(active);  // Readable<bool> policy
 ```
-
-### `useSetupReset` (experimental)
-
-Schedules a full setup rerun at frame end. Use only when the initialization boundary itself must rebuild.
-
-```dart
-final reset = useSetupReset();              // returns void Function()
-
-useSetupReset.listen(() => [valueListenable]); // reset when any listenable fires
-useSetupReset.watch(() => [signalA, signalB]); // reset when any readable changes
-useSetupReset.select(() => locale.value);      // reset when the selected value changes
-```
-
-`useSetupReset` is intentionally a heavy escape hatch. Prefer ordinary reactive updates wherever possible.
 
 ---
 

@@ -1,8 +1,6 @@
-import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:jolt/core.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
-import 'package:meta/meta.dart';
 
 import '../hooks/hooks.dart';
 
@@ -14,32 +12,21 @@ part 'stateful_mixin.dart';
 ///
 /// [SetupContext] stores the current [BuildContext], reactive [Props], the
 /// builder returned from `setup`, and the hooks registered during that run.
-/// It also drives hot-reload hook reconciliation and setup-level resets.
+/// It also drives lifecycle dispatch and hot-reload hook reconciliation.
 ///
 /// Most applications interact with this type indirectly through [useContext],
 /// [useSetupContext], [SetupWidgetElement], or [SetupMixin]. It becomes useful
-/// directly when writing custom hooks, debugging setup lifecycles, or
-/// implementing advanced reset behavior.
+/// directly when writing custom hooks or debugging setup lifecycles.
 class SetupContext<T extends Widget> extends EffectScopeImpl {
   /// Creates a setup runtime for [context] and [propsNode].
-  SetupContext(
-    this.context,
-    this.propsNode, {
-    required void Function() resetSetupFn,
-  })  : _resetSetupFn = resetSetupFn,
-        super(detach: true, debug: JoltDebugOption.type('SetupContext<$T>'));
+  SetupContext(this.context, this.propsNode)
+      : super(detach: true, debug: JoltDebugOption.type('SetupContext<$T>'));
 
   /// The build context that owns this setup runtime.
   final BuildContext context;
 
   /// Reactive access to the current widget instance.
   final Props<T> propsNode;
-
-  /// Callback function to reset and re-run the setup function.
-  final void Function() _resetSetupFn;
-
-  /// Whether resetSetup has been scheduled for the current frame.
-  bool _isResetSetupScheduled = false;
 
   /// The most recent builder returned from `setup`.
   WidgetFunction<T>? setupBuilder;
@@ -240,29 +227,6 @@ class SetupContext<T extends Widget> extends EffectScopeImpl {
     }
   }
 
-  /// Schedules a setup reset at the end of the current frame.
-  ///
-  /// Multiple calls in the same frame coalesce into one reset. When the
-  /// callback runs, the current hooks and renderer are torn down and `setup`
-  /// runs again to produce a fresh hook sequence.
-  void scheduleResetSetup() {
-    // If already scheduled for this frame, skip
-    if (_isResetSetupScheduled) {
-      return;
-    }
-
-    // Mark as scheduled
-    _isResetSetupScheduled = true;
-
-    // Schedule for end of frame
-    SchedulerBinding.instance.addPostFrameCallback((_) {
-      _isResetSetupScheduled = false;
-      if (!isDisposed) {
-        _resetSetupFn();
-      }
-    });
-  }
-
   @override
   void dispose() {
     super.dispose();
@@ -278,7 +242,6 @@ class SetupContext<T extends Widget> extends EffectScopeImpl {
 
     renderer?.dispose();
     renderer = null;
-    _isResetSetupScheduled = false;
   }
 
   /* -------------------------------- Static -------------------------------- */

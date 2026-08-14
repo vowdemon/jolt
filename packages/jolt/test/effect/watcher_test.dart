@@ -226,6 +226,24 @@ void main() {
       expect(values, equals([2, 10, 20]));
     });
 
+    test("pause and resume cannot reactivate a disposed watcher", () {
+      final signal = Signal(1);
+      final values = <int>[];
+      final watcher = Watcher(
+        () => signal.value,
+        (newValue, _) => values.add(newValue),
+      );
+
+      watcher.dispose();
+      watcher.pause();
+      watcher.resume();
+      signal.value = 2;
+
+      expect(watcher.isDisposed, isTrue);
+      expect(watcher.isPaused, isFalse);
+      expect(values, isEmpty);
+    });
+
     test(
       "ignoreUpdates prevents callback execution and preserves previous visible state",
       () {

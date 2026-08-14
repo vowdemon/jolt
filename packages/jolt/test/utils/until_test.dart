@@ -3,6 +3,16 @@ import "dart:async";
 import "package:jolt/jolt.dart";
 import "package:test/test.dart";
 
+final class _IncrementingReadable implements Readable<int> {
+  int reads = 0;
+
+  @override
+  int get peek => reads;
+
+  @override
+  int get value => ++reads;
+}
+
 void main() {
   group("JoltUtilsUntilExtension", () {
     group("until()", () {
@@ -25,6 +35,14 @@ void main() {
 
         await Future.delayed(const Duration(milliseconds: 1));
         expect(await until, equals(10));
+      });
+
+      test("uses one source snapshot for an immediate match", () async {
+        final readable = _IncrementingReadable();
+        final until = Until(readable, (value) => value == 1);
+
+        expect(await until, equals(1));
+        expect(readable.reads, equals(1));
       });
 
       test("reports isCompleted after success", () async {

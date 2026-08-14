@@ -235,6 +235,39 @@ void main() {
       expect(await signal.getEnsured(), equals("loaded"));
     });
 
+    test("getEnsured initializes a lazy sync signal", () async {
+      var reads = 0;
+      final signal = PersistSignal.lazySync(
+        read: () {
+          reads++;
+          return "loaded";
+        },
+        write: (_) {},
+      );
+
+      expect(await signal.getEnsured(), equals("loaded"));
+      expect(signal.isInitialized, isTrue);
+      expect(reads, equals(1));
+    });
+
+    test("ensure initializes a lazy sync signal before its callback", () async {
+      var reads = 0;
+      final signal = PersistSignal.lazySync(
+        read: () {
+          reads++;
+          return "loaded";
+        },
+        write: (_) {},
+      );
+      String? callbackValue;
+
+      await signal.ensure((value) => callbackValue = value);
+
+      expect(callbackValue, equals("loaded"));
+      expect(signal.isInitialized, isTrue);
+      expect(reads, equals(1));
+    });
+
     test("ensure runs callback and awaits returned Future", () async {
       final storage = createMockStorage({"key": "value"});
       final signal = PersistSignal.sync(

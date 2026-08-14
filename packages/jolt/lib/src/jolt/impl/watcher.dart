@@ -102,7 +102,10 @@ class WatcherImpl<T> implements Watcher<T> {
   }
 
   @override
-  void dispose() => raw.dispose();
+  void dispose() {
+    _isPaused = false;
+    raw.dispose();
+  }
 
   bool _isPaused = false;
   @override
@@ -110,6 +113,7 @@ class WatcherImpl<T> implements Watcher<T> {
 
   @override
   void pause() {
+    if (_isPaused || isDisposed) return;
     _isPaused = true;
     cycle++;
     raw.depsTail = null;
@@ -119,6 +123,7 @@ class WatcherImpl<T> implements Watcher<T> {
 
   @override
   void resume() {
+    if (!_isPaused || isDisposed) return;
     _isPaused = false;
 
     raw.track(_effectFn);

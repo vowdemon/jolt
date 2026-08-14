@@ -63,13 +63,15 @@ class _UntilImpl<T> implements Until<T> {
 
   _UntilImpl(Readable<T> source, bool Function(T value) predicate,
       {bool? detach}) {
-    if (predicate(source.value)) {
-      _completer = Completer<T>()..complete(source.value);
+    final initialValue = source.value;
+    if (predicate(initialValue)) {
+      _completer = Completer<T>()..complete(initialValue);
     } else {
       _completer = Completer<T>();
       _effect = Effect.lazy(() {
         if (_completer.isCompleted) return;
-        if (predicate(source.value)) _completer.complete(source.value);
+        final currentValue = source.value;
+        if (predicate(currentValue)) _completer.complete(currentValue);
       }, detach: detach ?? true, debug: JoltDebugOption.type('Until<$T>'));
       (_effect as EffectImpl).track(() => source.value);
 

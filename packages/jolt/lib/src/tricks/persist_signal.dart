@@ -183,7 +183,9 @@ class _SyncPersistSignalImpl<T> extends SignalImpl<T>
 
   @override
   Future<T> getEnsured() async {
-    // Sync version is always initialized when accessed
+    if (!_isInitialized) {
+      _loadSync();
+    }
     return super.value;
   }
 
@@ -203,7 +205,9 @@ class _SyncPersistSignalImpl<T> extends SignalImpl<T>
 
   @override
   Future<void> ensure([FutureOr<void> Function(T value)? fn]) async {
-    // Sync version is always initialized
+    if (!_isInitialized) {
+      _loadSync();
+    }
     await fn?.call(super.value);
   }
 }

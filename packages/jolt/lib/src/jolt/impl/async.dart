@@ -271,7 +271,7 @@ class AsyncSignalImpl<T> extends SignalImpl<AsyncState<T>>
     AsyncSource<T>? source,
     AsyncState<T>? initialValue,
     JoltDebugOption? debug,
-  }) : super(initialValue ?? AsyncLoading<T>()) {
+  }) : super(initialValue ?? AsyncLoading<T>(), debug: debug) {
     if (source != null) {
       unawaited(fetch(source));
     }

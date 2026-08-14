@@ -41,14 +41,26 @@ extension JoltUtilsStreamExtension<T> on Readable<T> {
     bool? cancelOnError,
     bool immediately = false,
   }) {
-    final stream = _getOrCreateStream(this);
-
-    if (immediately) {
-      Future.microtask(() => onData?.call(value));
-    }
+    final source = _getOrCreateStream(this);
+    final stream = immediately ? _prependSnapshot(source, value) : source;
     return stream.listen(onData,
         onError: onError, onDone: onDone, cancelOnError: cancelOnError);
   }
+}
+
+Stream<T> _prependSnapshot<T>(Stream<T> source, T snapshot) {
+  return Stream<T>.multi((controller) {
+    controller.add(snapshot);
+    final subscription = source.listen(
+      controller.add,
+      onError: controller.addError,
+      onDone: controller.close,
+    );
+    controller
+      ..onPause = subscription.pause
+      ..onResume = subscription.resume
+      ..onCancel = subscription.cancel;
+  }, isBroadcast: source.isBroadcast);
 }
 
 final _nodeStreams = Expando<_StreamAttachment>();

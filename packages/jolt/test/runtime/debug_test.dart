@@ -109,6 +109,25 @@ void main() {
         expect(capture.events, contains(DebugNodeOperationType.dispose));
       });
 
+      test("async signal forwards its debug option to the raw signal", () {
+        final capture = _captureDebug();
+        final signal = AsyncSignal<int>(
+          debug: JoltDebugOption.fn(capture.onDebug),
+        );
+
+        signal.value = const AsyncSuccess(1);
+        signal.dispose();
+
+        expect(
+          capture.events,
+          containsAllInOrder([
+            DebugNodeOperationType.create,
+            DebugNodeOperationType.set,
+            DebugNodeOperationType.dispose,
+          ]),
+        );
+      });
+
       test("effect scope reports create and dispose only", () {
         final capture = _captureDebug();
         final scope = EffectScope(debug: JoltDebugOption.fn(capture.onDebug));

@@ -202,6 +202,30 @@ void main() {
         await subscription.cancel();
       });
 
+      test("immediately true captures the subscription-time value", () async {
+        final signal = Signal(1);
+        final values = <int>[];
+
+        final subscription = signal.listen(values.add, immediately: true);
+        signal.value = 2;
+
+        await Future<void>.delayed(Duration.zero);
+        expect(values, equals([1, 2]));
+
+        await subscription.cancel();
+      });
+
+      test("cancelling suppresses a queued immediate value", () async {
+        final signal = Signal(1);
+        final values = <int>[];
+
+        final subscription = signal.listen(values.add, immediately: true);
+        await subscription.cancel();
+        await Future<void>.delayed(Duration.zero);
+
+        expect(values, isEmpty);
+      });
+
       test("immediately true on disposed emits one snapshot only", () async {
         final signal = Signal(1)..dispose();
         final values = <int>[];

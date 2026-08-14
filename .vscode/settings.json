@@ -2,7 +2,9 @@
   "cSpell.words": [
     "finalizer",
     "listenables",
-    "vowdemon"
+    "reparenting",
+    "vowdemon",
+    "writables"
   ],
   "dart.flutterSdkPath": ".fvm/versions/3.44.3"
 }

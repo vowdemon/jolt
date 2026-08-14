@@ -2,7 +2,8 @@ import 'package:jolt/core.dart';
 import 'package:jolt/jolt.dart';
 import 'package:meta/meta.dart';
 
-class SignalImpl<T> implements Signal<T> {
+class SignalImpl<T> implements Signal<T>, RawNodeProvider {
+  @override
   final SignalNode<T> raw;
 
   SignalImpl(T? value, {JoltDebugOption? debug})

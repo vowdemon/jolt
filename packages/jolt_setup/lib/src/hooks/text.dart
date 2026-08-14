@@ -38,40 +38,6 @@ final class JoltSetupHookTextEditingControllerCreator {
 /// ```
 const useTextEditingController = JoltSetupHookTextEditingControllerCreator._();
 
-/// Restorable text-editing controller hook factory methods.
-final class JoltSetupHookRestorableTextEditingControllerCreator {
-  const JoltSetupHookRestorableTextEditingControllerCreator._();
-
-  /// Creates a [RestorableTextEditingController] initialized with [text].
-  @defineHook
-  RestorableTextEditingController call({String? text}) {
-    return useChangeNotifier(
-      () => RestorableTextEditingController(text: text),
-    );
-  }
-
-  /// Creates a [RestorableTextEditingController] initialized from [value].
-  @defineHook
-  RestorableTextEditingController fromValue(TextEditingValue value) {
-    return useChangeNotifier(
-      () => RestorableTextEditingController.fromValue(value),
-    );
-  }
-}
-
-/// Creates a [RestorableTextEditingController] for the current setup scope.
-///
-/// ```dart
-/// setup(context, props) {
-///   final controller =
-///       useRestorableTextEditingController(text: 'draft');
-///
-///   return () => TextField(controller: controller.value);
-/// }
-/// ```
-const useRestorableTextEditingController =
-    JoltSetupHookRestorableTextEditingControllerCreator._();
-
 /// Creates a [SearchController] for the current setup scope.
 ///
 /// ```dart

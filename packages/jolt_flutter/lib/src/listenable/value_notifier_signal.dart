@@ -33,8 +33,9 @@ extension JoltValueNotifierSignalExtension<T> on ValueNotifier<T> {
 /// signal. One cached instance exists per source notifier until [dispose].
 /// After disposal, [peek] and [value] keep returning the last value seen before
 /// disposal, and assignments to [value] are ignored.
-class ValueNotifierSignal<T> implements Signal<T> {
+class ValueNotifierSignal<T> implements Signal<T>, RawNodeProvider {
   /// The Jolt node that tracks the current notifier value.
+  @override
   final SignalNode<T> raw;
 
   /// The Flutter notifier mirrored by this bridge.

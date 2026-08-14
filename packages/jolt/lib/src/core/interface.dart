@@ -90,6 +90,16 @@ abstract interface class Writable<T> implements Readable<T> {
   set value(T value);
 }
 
+/// Exposes the canonical low-level node behind a reactive value.
+///
+/// Framework integrations use this interface to recognize different views
+/// that share one reactive identity. It does not imply ownership of the
+/// returned node or any particular read/write interface.
+abstract interface class RawNodeProvider {
+  /// The canonical node shared by all views of this reactive value.
+  ReactiveNode get raw;
+}
+
 /// A reactive graph node that can be disposed and detached from the system.
 ///
 /// Disposing marks the node inactive, unlinks dependencies and subscribers, and

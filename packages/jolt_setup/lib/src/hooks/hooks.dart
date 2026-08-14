@@ -7,6 +7,7 @@ export 'scroll.dart';
 export 'text.dart';
 export 'controller.dart';
 export 'keep_alive.dart';
+export 'restoration.dart';
 export 'timer.dart';
 export 'jolt_hooks.dart';
 export 'annotation.dart';

@@ -2,7 +2,8 @@ import 'package:jolt/core.dart';
 import 'package:jolt/jolt.dart';
 import 'package:meta/meta.dart';
 
-class ComputedImpl<T> implements Computed<T> {
+class ComputedImpl<T> implements Computed<T>, RawNodeProvider {
+  @override
   late final ComputedNode<T> raw;
 
   ComputedImpl(

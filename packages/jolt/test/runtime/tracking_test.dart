@@ -131,7 +131,8 @@ void main() {
       final effect = Effect(() {}, lazy: true);
 
       expect(
-        () => (effect as EffectImpl).track(() => throw Exception("track error")),
+        () =>
+            (effect as EffectImpl).track(() => throw Exception("track error")),
         throwsA(isA<Exception>().having(
           (e) => e.toString(),
           "message",

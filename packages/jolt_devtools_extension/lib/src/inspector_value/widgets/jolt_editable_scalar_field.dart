@@ -13,7 +13,8 @@ class JoltEditableScalarField extends StatefulWidget {
   final VoidCallback onCancel;
 
   @override
-  State<JoltEditableScalarField> createState() => _JoltEditableScalarFieldState();
+  State<JoltEditableScalarField> createState() =>
+      _JoltEditableScalarFieldState();
 }
 
 class _JoltEditableScalarFieldState extends State<JoltEditableScalarField> {
@@ -41,7 +42,8 @@ class _JoltEditableScalarFieldState extends State<JoltEditableScalarField> {
         onSubmitted: widget.onSubmit,
         decoration: InputDecoration(
           isDense: true,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           suffixIcon: IconButton(
             icon: const Icon(Icons.close, size: 14),
             onPressed: widget.onCancel,

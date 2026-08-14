@@ -896,7 +896,8 @@ class JoltInspectorController {
     _refreshTimer?.cancel();
     _clockTimer?.cancel();
     if (_connectionListener != null) {
-      devtoolsServiceManager.connectedState.removeListener(_connectionListener!);
+      devtoolsServiceManager.connectedState
+          .removeListener(_connectionListener!);
     }
     if (_isolateListener != null) {
       devtoolsServiceManager.isolateManager.selectedIsolate

@@ -214,8 +214,7 @@ void main() {
               },
             ),
             wrapFirstSlot: (child) => TickerMode(enabled: true, child: child),
-            wrapSecondSlot: (child) =>
-                TickerMode(enabled: false, child: child),
+            wrapSecondSlot: (child) => TickerMode(enabled: false, child: child),
           );
 
       await tester.pumpWidget(buildHost());
@@ -605,8 +604,7 @@ void main() {
               },
             ),
             wrapFirstSlot: (child) => TickerMode(enabled: true, child: child),
-            wrapSecondSlot: (child) =>
-                TickerMode(enabled: false, child: child),
+            wrapSecondSlot: (child) => TickerMode(enabled: false, child: child),
           );
 
       await tester.pumpWidget(buildHost());

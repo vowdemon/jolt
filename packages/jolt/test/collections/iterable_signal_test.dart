@@ -5,22 +5,27 @@ void main() {
   group("IterableSignal", () {
     test("projects reactive list sources", () {
       final source = Signal<List<int>>([1, 2, 3, 4]);
-      final signal = IterableSignal(() => source.value.where((value) => value.isEven));
+      final signal =
+          IterableSignal(() => source.value.where((value) => value.isEven));
       final snapshots = <List<int>>[];
 
       Effect(() {
         snapshots.add(signal.toList());
       });
 
-      expect(snapshots, equals([
-        [2, 4]
-      ]));
+      expect(
+          snapshots,
+          equals([
+            [2, 4]
+          ]));
 
       source.value = [2, 6, 7, 8];
-      expect(snapshots, equals([
-        [2, 4],
-        [2, 6, 8],
-      ]));
+      expect(
+          snapshots,
+          equals([
+            [2, 4],
+            [2, 6, 8],
+          ]));
     });
 
     test("supports set sources without losing iterable behavior", () {

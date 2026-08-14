@@ -29,7 +29,7 @@ class SetupFinder extends SimpleAstVisitor<void> {
     };
     MethodDeclaration? setupMethod;
 
-    for (final member in node.members) {
+    for (final member in node.body.members) {
       if (member is MethodDeclaration) {
         if (!member.isStatic && member.declaredFragment != null) {
           final method = member.declaredFragment!.element;

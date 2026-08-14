@@ -323,7 +323,7 @@ MethodDeclaration? getMethodDeclarationByNameAndParametersCount(
   int? parametersCount,
   bool? isAsync,
 }) {
-  for (final member in clazz.members) {
+  for (final member in clazz.body.members) {
     if (member is MethodDeclaration) {
       if (member.name.lexeme == name) {
         if (parametersCount != null &&
@@ -457,7 +457,7 @@ getStatefullDeclaration(AstNode node, CompilationUnit unit) {
 }
 
 String? getStateClassName(ClassDeclaration clazz) {
-  final members = clazz.members;
+  final members = clazz.body.members;
   final createStateMethod =
       members
               .where(
@@ -486,7 +486,7 @@ ClassDeclaration? getClassDeclarationByClassName(
           .where(
             (declaration) =>
                 declaration is ClassDeclaration &&
-                declaration.name.lexeme == className,
+                declaration.namePart.typeName.lexeme == className,
           )
           .firstOrNull
       as ClassDeclaration?;

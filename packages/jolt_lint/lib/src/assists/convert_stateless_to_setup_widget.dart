@@ -43,7 +43,7 @@ class ConvertStatelessWidgetToSetupWidgetAssist
 
     // Find the build method
     MethodDeclaration? buildMethod;
-    for (final member in clazzDeclaration.members) {
+    for (final member in clazzDeclaration.body.members) {
       if (member is MethodDeclaration) {
         if (member.name.lexeme == 'build' &&
             member.parameters?.parameters.length == 1) {
@@ -55,7 +55,7 @@ class ConvertStatelessWidgetToSetupWidgetAssist
 
     if (buildMethod == null) return;
 
-    final className = clazzDeclaration.name.lexeme;
+    final className = clazzDeclaration.namePart.typeName.lexeme;
     final extendsClause = clazzDeclaration.extendsClause;
 
     // Step 1: Add import for SetupWidget

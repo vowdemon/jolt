@@ -28,7 +28,7 @@ class ConvertStatefulToSetupMixinAssist extends ResolvedCorrectionProducer {
       return;
     }
 
-    final widgetClassName = widgetClssDeclaration.name.lexeme;
+    final widgetClassName = widgetClssDeclaration.namePart.typeName.lexeme;
 
     // Find the build method
     final buildMethod = getMethodDeclarationByNameAndParametersCount(

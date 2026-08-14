@@ -34,7 +34,7 @@ class ConvertStatelessWidgetFromSetupWidgetAssist
 
     // Find the setup method
     MethodDeclaration? setupMethod;
-    for (final member in clazzDeclaration.members) {
+    for (final member in clazzDeclaration.body.members) {
       if (member is MethodDeclaration) {
         if (member.name.lexeme == 'setup' &&
             member.parameters?.parameters.length == 2) {

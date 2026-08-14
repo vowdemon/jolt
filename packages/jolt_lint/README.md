@@ -13,7 +13,7 @@ Add to `analysis_options.yaml`:
 
 ```yaml
 plugins:
-  jolt_lint: ^3.0.0
+  jolt_lint: ^4.0.0-dev.1
 ```
 
 ## Features

@@ -105,9 +105,9 @@ class _HookCallVisitor extends SimpleAstVisitor<void> {
     FunctionExpression functionExpression,
     AstNode node,
   ) {
-    if (functionExpression.parent is NamedExpression) {
-      final namedExpression = functionExpression.parent as NamedExpression;
-      if (namedExpression.name.label.name == 'setup') {
+    if (functionExpression.parent is NamedArgument) {
+      final namedArgument = functionExpression.parent as NamedArgument;
+      if (namedArgument.name.lexeme == 'setup') {
         final returnExpression = getReturnExpression(
           functionExpression.body,
         )?.returnExpression;

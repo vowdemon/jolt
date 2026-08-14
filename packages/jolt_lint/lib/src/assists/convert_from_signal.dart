@@ -86,13 +86,13 @@ class ConvertFromSignalAssist extends ResolvedCorrectionProducer {
   Expression? _extractSignalArg(Expression initializer) {
     if (initializer is InstanceCreationExpression) {
       if (initializer.argumentList.arguments.length == 1) {
-        return initializer.argumentList.arguments.first;
+        return initializer.argumentList.arguments.first.argumentExpression;
       }
     }
     if (initializer is MethodInvocation &&
         initializer.methodName.name == 'Signal') {
       if (initializer.argumentList.arguments.length == 1) {
-        return initializer.argumentList.arguments.first;
+        return initializer.argumentList.arguments.first.argumentExpression;
       }
     }
     return null;

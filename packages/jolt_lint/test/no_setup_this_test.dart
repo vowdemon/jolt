@@ -1,8 +1,8 @@
 // ignore_for_file: non_constant_identifier_names
 
 import 'package:analyzer/src/lint/registry.dart';
-import 'package:analyzer/utilities/package_config_file_builder.dart';
 import 'package:analyzer_testing/analysis_rule/analysis_rule.dart';
+import 'package:analyzer_testing/package_config_file_builder.dart';
 import 'package:analyzer_testing/utilities/utilities.dart';
 import 'package:jolt_lint/src/rules/no_setup_this.dart';
 import 'package:jolt_lint/src/shared.dart';
@@ -52,7 +52,7 @@ mixin SetupMixin {}
 
   void _configurePackageConfig() {
     final config = PackageConfigFileBuilder()
-      ..add(name: 'jolt_setup', rootPath: convertPath(_joltSetupRoot));
+      ..add(name: 'jolt_setup', rootFolder: getFolder(_joltSetupRoot));
 
     writeTestPackageConfig(config);
 

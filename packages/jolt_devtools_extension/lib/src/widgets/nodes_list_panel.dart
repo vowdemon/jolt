@@ -343,87 +343,91 @@ class _NodeTileState extends State<_NodeTile> with SetupMixin<_NodeTile> {
     return () => AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           color: color.value,
-          child: ListTile(
-            dense: true,
-            selected: isSelected.value,
-            leading: NodeIcon(type: widget.node.type),
-            title: Wrap(
-              alignment: WrapAlignment.spaceBetween,
-              spacing: 4,
-              children: [
-                Text(
-                  (widget.node.label.isNotEmpty &&
-                          widget.node.label != 'Unnamed')
-                      ? widget.node.label
-                      : '${widget.node.type}(${widget.node.id})',
-                  style: TextStyle(
-                    fontWeight: isSelected.value ? FontWeight.bold : null,
-                    decoration: widget.node.isDisposed
-                        ? TextDecoration.lineThrough
-                        : null,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade700.withAlpha(36),
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(
-                      color: Colors.blue.shade700.withAlpha(128),
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    widget.node.debugType,
+          child: Material(
+            type: MaterialType.transparency,
+            child: ListTile(
+              dense: true,
+              selected: isSelected.value,
+              leading: NodeIcon(type: widget.node.type),
+              title: Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                spacing: 4,
+                children: [
+                  Text(
+                    (widget.node.label.isNotEmpty &&
+                            widget.node.label != 'Unnamed')
+                        ? widget.node.label
+                        : '${widget.node.type}(${widget.node.id})',
                     style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.blue.shade300,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: isSelected.value ? FontWeight.bold : null,
+                      decoration: widget.node.isDisposed
+                          ? TextDecoration.lineThrough
+                          : null,
                     ),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
                   ),
-                ),
-              ],
-            ),
-            subtitle: Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Wrap(
-                spacing: 4,
-                runSpacing: 4,
-                children: [
-                  _buildBadge('deps: ${widget.node.dependencies.length}'),
-                  _buildBadge('subs: ${widget.node.subscribers.length}'),
-                  if (widget.node.isReadable)
-                    _buildBadge(
-                      'value: ${widget.node.valueType.value}',
-                      maxWidth: 150,
-                    )
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade700.withAlpha(36),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: Colors.blue.shade700.withAlpha(128),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      widget.node.debugType,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.blue.shade300,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ),
                 ],
               ),
-            ),
-            trailing: Wrap(
-              spacing: 4,
-              children: [
-                JoltBuilder(builder: (context) {
-                  controller.$watchedNodeIds.value;
-                  final watched = controller.isNodeWatched(widget.node.id);
-                  return IconButton(
-                    icon:
-                        Icon(watched ? Icons.visibility_off : Icons.visibility),
-                    iconSize: 16,
-                    tooltip: watched ? 'Remove from Watch' : 'Add to Watch',
-                    onPressed: () => controller.toggleNodeWatch(widget.node.id),
-                  );
-                }),
-              ],
-            ),
-            onTap: () => controller.selectNode(
-              widget.node.id,
-              reason: SelectionReason.listClick,
+              subtitle: Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  children: [
+                    _buildBadge('deps: ${widget.node.dependencies.length}'),
+                    _buildBadge('subs: ${widget.node.subscribers.length}'),
+                    if (widget.node.isReadable)
+                      _buildBadge(
+                        'value: ${widget.node.valueType.value}',
+                        maxWidth: 150,
+                      )
+                  ],
+                ),
+              ),
+              trailing: Wrap(
+                spacing: 4,
+                children: [
+                  JoltBuilder(builder: (context) {
+                    controller.$watchedNodeIds.value;
+                    final watched = controller.isNodeWatched(widget.node.id);
+                    return IconButton(
+                      icon: Icon(
+                          watched ? Icons.visibility_off : Icons.visibility),
+                      iconSize: 16,
+                      tooltip: watched ? 'Remove from Watch' : 'Add to Watch',
+                      onPressed: () =>
+                          controller.toggleNodeWatch(widget.node.id),
+                    );
+                  }),
+                ],
+              ),
+              onTap: () => controller.selectNode(
+                widget.node.id,
+                reason: SelectionReason.listClick,
+              ),
             ),
           ),
         );

@@ -6,22 +6,21 @@ Write-Host "Building Jolt DevTools Extension..." -ForegroundColor Cyan
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $scriptPath
 
-# Build the extension
-Write-Host "Building web app..." -ForegroundColor Yellow
+# Prepare the extension web app
+Write-Host "Preparing web app..." -ForegroundColor Yellow
 flutter create . --platforms web
-flutter build web --pwa-strategy=none --no-tree-shake-icons
 
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "❌ Build failed!" -ForegroundColor Red
+    Write-Host "❌ Web app setup failed!" -ForegroundColor Red
     exit 1
 }
 
-# Copy to jolt package
-Write-Host "Copying build files to jolt package..." -ForegroundColor Yellow
+# Build the extension and copy it to the jolt package
+Write-Host "Building and copying extension files to the jolt package..." -ForegroundColor Yellow
 dart run devtools_extensions build_and_copy --source=. --dest=../jolt/extension/devtools
 
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "❌ Copy failed!" -ForegroundColor Red
+    Write-Host "❌ Build and copy failed!" -ForegroundColor Red
     exit 1
 }
 
@@ -35,4 +34,3 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "✅ Extension built and deployed successfully!" -ForegroundColor Green
-

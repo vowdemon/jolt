@@ -128,6 +128,44 @@ void main() {
 
       counter.dispose();
     });
+
+    testWidgets('lazily drops a readable replaced by a parent rebuild',
+        (tester) async {
+      final first = Signal(0);
+      final second = Signal(0);
+      var readable = first;
+      var buildCount = 0;
+
+      Widget buildHost() => MaterialApp(
+            home: JoltWatcher<int>(
+              readable: readable,
+              builder: (context, value) {
+                buildCount++;
+                return Text('$value');
+              },
+            ),
+          );
+
+      await tester.pumpWidget(buildHost());
+      readable = second;
+      await tester.pumpWidget(buildHost());
+      expect(buildCount, 2);
+
+      first.value = 1;
+      await tester.pumpAndSettle();
+      expect(buildCount, 3);
+
+      first.value = 2;
+      await tester.pumpAndSettle();
+      expect(buildCount, 3);
+
+      second.value = 1;
+      await tester.pumpAndSettle();
+      expect(buildCount, 4);
+
+      first.dispose();
+      second.dispose();
+    });
   });
 
   group('Readable.watch', () {

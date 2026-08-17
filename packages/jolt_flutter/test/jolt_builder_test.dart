@@ -155,6 +155,45 @@ void main() {
       counter.dispose();
       name.dispose();
     });
+
+    testWidgets('lazily drops dependencies removed by a parent rebuild',
+        (tester) async {
+      final first = Signal(0);
+      final second = Signal(0);
+      var readFirst = true;
+      var buildCount = 0;
+
+      Widget buildHost() => MaterialApp(
+            home: JoltBuilder(
+              builder: (context) {
+                buildCount++;
+                return Text('${readFirst ? first.value : second.value}');
+              },
+            ),
+          );
+
+      await tester.pumpWidget(buildHost());
+      expect(buildCount, 1);
+
+      readFirst = false;
+      await tester.pumpWidget(buildHost());
+      expect(buildCount, 2);
+
+      first.value = 1;
+      await tester.pumpAndSettle();
+      expect(buildCount, 3);
+
+      first.value = 2;
+      await tester.pumpAndSettle();
+      expect(buildCount, 3);
+
+      second.value = 1;
+      await tester.pumpAndSettle();
+      expect(buildCount, 4);
+
+      first.dispose();
+      second.dispose();
+    });
   });
 
   group('JoltBuilder.manual', () {
@@ -226,6 +265,44 @@ void main() {
 
       dep.dispose();
       onlyInBuilder.dispose();
+    });
+
+    testWidgets('lazily drops explicit deps removed by a parent rebuild',
+        (tester) async {
+      final first = Signal(0);
+      final second = Signal(0);
+      var useFirst = true;
+      var buildCount = 0;
+
+      Widget buildHost() => MaterialApp(
+            home: JoltBuilder.manual(
+              deps: [useFirst ? first : second],
+              builder: (context) {
+                buildCount++;
+                return Text('${useFirst ? first.peek : second.peek}');
+              },
+            ),
+          );
+
+      await tester.pumpWidget(buildHost());
+      useFirst = false;
+      await tester.pumpWidget(buildHost());
+      expect(buildCount, 2);
+
+      first.value = 1;
+      await tester.pumpAndSettle();
+      expect(buildCount, 3);
+
+      first.value = 2;
+      await tester.pumpAndSettle();
+      expect(buildCount, 3);
+
+      second.value = 1;
+      await tester.pumpAndSettle();
+      expect(buildCount, 4);
+
+      first.dispose();
+      second.dispose();
     });
   });
 }

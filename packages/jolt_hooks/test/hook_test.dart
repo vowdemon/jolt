@@ -1179,6 +1179,46 @@ void main() {
       expect(find.text('Count: 0'), findsOneWidget);
     });
 
+    testWidgets('lazily drops dependencies removed by a parent rebuild',
+        (tester) async {
+      final first = Signal(0);
+      final second = Signal(0);
+      var readFirst = true;
+      var buildCount = 0;
+
+      Widget buildHost() => MaterialApp(
+            home: HookBuilder(
+              builder: (context) => useJoltWidget(() {
+                buildCount++;
+                return Text(
+                  '${readFirst ? first.value : second.value}',
+                  textDirection: TextDirection.ltr,
+                );
+              }),
+            ),
+          );
+
+      await tester.pumpWidget(buildHost());
+      readFirst = false;
+      await tester.pumpWidget(buildHost());
+      expect(buildCount, 2);
+
+      first.value = 1;
+      await tester.pumpAndSettle();
+      expect(buildCount, 3);
+
+      first.value = 2;
+      await tester.pumpAndSettle();
+      expect(buildCount, 3);
+
+      second.value = 1;
+      await tester.pumpAndSettle();
+      expect(buildCount, 4);
+
+      first.dispose();
+      second.dispose();
+    });
+
     testWidgets('should handle signal changes in builder', (tester) async {
       final counter = Signal(0);
       final nestedCounter = Signal(0);

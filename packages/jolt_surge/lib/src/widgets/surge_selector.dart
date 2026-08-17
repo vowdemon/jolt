@@ -89,9 +89,8 @@ class _SurgeSelectorState<T extends Surge<S>, S, C>
   @override
   void didUpdateWidget(SurgeSelector<T, S, C> oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final oldSurge = oldWidget.surge ?? context.read<T>();
-    final currentSurge = widget.surge ?? oldSurge;
-    if (!identical(oldSurge, currentSurge)) {
+    final currentSurge = widget.surge ?? context.read<T>();
+    if (!identical(_surge, currentSurge)) {
       _surge = currentSurge;
       _selectorValue = widget.selector(_surge.state, _surge);
       _restartEffect();

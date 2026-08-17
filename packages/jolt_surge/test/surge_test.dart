@@ -1056,6 +1056,42 @@ void main() {
         surge2.dispose();
       });
 
+      testWidgets('SurgeBuilder switches from direct surge to provider',
+          (tester) async {
+        final provided = CounterSurge();
+        final direct = CounterSurge();
+
+        Widget buildHost(CounterSurge? surge) => Directionality(
+              textDirection: TextDirection.ltr,
+              child: SurgeProvider<CounterSurge>.value(
+                value: provided,
+                child: SurgeBuilder<CounterSurge, int>.full(
+                  surge: surge,
+                  builder: (context, state, current) =>
+                      Text('id=${current.hashCode};state=$state'),
+                ),
+              ),
+            );
+
+        await tester.pumpWidget(buildHost(direct));
+        expect(find.text('id=${direct.hashCode};state=0'), findsOneWidget);
+
+        await tester.pumpWidget(buildHost(null));
+        await tester.pumpAndSettle();
+        expect(find.text('id=${provided.hashCode};state=0'), findsOneWidget);
+
+        direct.emit(1);
+        await tester.pumpAndSettle();
+        expect(find.text('id=${provided.hashCode};state=0'), findsOneWidget);
+
+        provided.emit(2);
+        await tester.pumpAndSettle();
+        expect(find.text('id=${provided.hashCode};state=2'), findsOneWidget);
+
+        direct.dispose();
+        provided.dispose();
+      });
+
       testWidgets('SurgeListener follows when provided surge instance changes',
           (tester) async {
         final surge1 = CounterSurge();
@@ -1095,6 +1131,38 @@ void main() {
 
         surge1.dispose();
         surge2.dispose();
+      });
+
+      testWidgets('SurgeListener switches from direct surge to provider',
+          (tester) async {
+        final provided = CounterSurge();
+        final direct = CounterSurge();
+        final received = <String>[];
+
+        Widget buildHost(CounterSurge? surge) => Directionality(
+              textDirection: TextDirection.ltr,
+              child: SurgeProvider<CounterSurge>.value(
+                value: provided,
+                child: SurgeListener<CounterSurge, int>.full(
+                  surge: surge,
+                  listener: (context, state, current) =>
+                      received.add('id=${current.hashCode};$state'),
+                  child: const SizedBox(),
+                ),
+              ),
+            );
+
+        await tester.pumpWidget(buildHost(direct));
+        await tester.pumpWidget(buildHost(null));
+
+        direct.emit(1);
+        provided.emit(2);
+        await tester.pump();
+
+        expect(received, ['id=${provided.hashCode};2']);
+
+        direct.dispose();
+        provided.dispose();
       });
 
       testWidgets('SurgeConsumer follows when provided surge instance changes',
@@ -1371,6 +1439,41 @@ void main() {
 
         surge1.dispose();
         surge2.dispose();
+      });
+
+      testWidgets('switches from direct surge to provider', (tester) async {
+        final provided = CounterSurge();
+        final direct = CounterSurge();
+
+        Widget buildHost(CounterSurge? surge) => Directionality(
+              textDirection: TextDirection.ltr,
+              child: SurgeProvider<CounterSurge>.value(
+                value: provided,
+                child: SurgeSelector<CounterSurge, int, String>.full(
+                  surge: surge,
+                  selector: (state, current) => 'id=${current.hashCode};$state',
+                  builder: (context, selected, current) => Text(selected),
+                ),
+              ),
+            );
+
+        await tester.pumpWidget(buildHost(direct));
+        expect(find.text('id=${direct.hashCode};0'), findsOneWidget);
+
+        await tester.pumpWidget(buildHost(null));
+        await tester.pumpAndSettle();
+        expect(find.text('id=${provided.hashCode};0'), findsOneWidget);
+
+        direct.emit(1);
+        await tester.pumpAndSettle();
+        expect(find.text('id=${provided.hashCode};0'), findsOneWidget);
+
+        provided.emit(2);
+        await tester.pumpAndSettle();
+        expect(find.text('id=${provided.hashCode};2'), findsOneWidget);
+
+        direct.dispose();
+        provided.dispose();
       });
     });
 

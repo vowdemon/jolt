@@ -98,9 +98,8 @@ class _SurgeListenerState<T extends Surge<S>, S>
   @override
   void didUpdateWidget(SurgeListener<T, S> oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final oldSurge = oldWidget.surge ?? context.read<T>();
-    final currentSurge = widget.surge ?? oldSurge;
-    if (!identical(oldSurge, currentSurge)) {
+    final currentSurge = widget.surge ?? context.read<T>();
+    if (!identical(_surge, currentSurge)) {
       _surge = currentSurge;
       _state = _surge.state;
       _restartEffect();

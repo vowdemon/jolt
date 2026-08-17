@@ -317,6 +317,40 @@ void main() {
 
       expect(keepAliveNotifications, 2);
     });
+
+    testWidgets('hot reload removal releases the keep alive handle',
+        (tester) async {
+      var includeHook = true;
+      Listenable? keepAliveHandle;
+      var releaseCount = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: NotificationListener<KeepAliveNotification>(
+            onNotification: (notification) {
+              keepAliveHandle = notification.handle;
+              notification.handle.addListener(() => releaseCount++);
+              return true;
+            },
+            child: SetupBuilder(setup: (context) {
+              if (includeHook) {
+                useAutomaticKeepAlive(true);
+              }
+              return () => const SizedBox();
+            }),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(keepAliveHandle, isNotNull);
+      expect(releaseCount, 0);
+
+      includeHook = false;
+      tester.binding.reassembleApplication();
+      await tester.pumpAndSettle();
+
+      expect(releaseCount, 1);
+    });
   });
 }
 

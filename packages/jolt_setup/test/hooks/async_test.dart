@@ -303,6 +303,25 @@ void main() {
       expect(widget.data, contains('ConnectionState.done'));
       expect(widget.data, contains('Data: 42'));
     });
+
+    testWidgets('hot reload switches the direct future', (tester) async {
+      var future = Future<int>.value(1);
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final snapshot = useFuture(future);
+          return () => Text('Data: ${snapshot.data}');
+        }),
+      ));
+      await tester.pumpAndSettle();
+      expect(find.text('Data: 1'), findsOneWidget);
+
+      future = Future<int>.value(2);
+      tester.binding.reassembleApplication();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Data: 2'), findsOneWidget);
+    });
   });
 
   group('useFuture.watch', () {
@@ -560,6 +579,53 @@ void main() {
       final widget = tester.widget<Text>(text);
       expect(widget.data, contains('ConnectionState.done'));
       expect(widget.data, contains('HasError: true'));
+    });
+
+    testWidgets('reads one source snapshot per synchronization pass',
+        (tester) async {
+      final source = _CountingReadable<FutureOr<int>?>(1);
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final snapshot = useFuture.watch(source);
+          return () => Text('Data: ${snapshot.data}');
+        }),
+      ));
+      await tester.pump();
+
+      expect(find.text('Data: 1'), findsOneWidget);
+      expect(source.reads, 2);
+    });
+
+    testWidgets('hot reload rebinds the watched future source', (tester) async {
+      final oldSource = Signal<FutureOr<int>?>(1);
+      final newSource = Signal<FutureOr<int>?>(2);
+      Readable<FutureOr<int>?> source = oldSource;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final snapshot = useFuture.watch(source);
+          return () => Text('Data: ${snapshot.data}');
+        }),
+      ));
+      await tester.pump();
+      expect(find.text('Data: 1'), findsOneWidget);
+
+      source = newSource;
+      tester.binding.reassembleApplication();
+      await tester.pumpAndSettle();
+      expect(find.text('Data: 2'), findsOneWidget);
+
+      oldSource.value = 3;
+      await tester.pumpAndSettle();
+      expect(find.text('Data: 2'), findsOneWidget);
+
+      newSource.value = 4;
+      await tester.pumpAndSettle();
+      expect(find.text('Data: 4'), findsOneWidget);
+
+      oldSource.dispose();
+      newSource.dispose();
     });
   });
 
@@ -920,6 +986,70 @@ void main() {
       await controller1.close();
       await controller2.close();
     });
+
+    testWidgets('hot reload switches the direct stream', (tester) async {
+      final first = StreamController<int>.broadcast();
+      final second = StreamController<int>.broadcast();
+      Stream<int>? stream = first.stream;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final snapshot = useStream(stream);
+          return () => Text('Data: ${snapshot.data}');
+        }),
+      ));
+
+      first.add(1);
+      await tester.pumpAndSettle();
+      expect(find.text('Data: 1'), findsOneWidget);
+
+      stream = second.stream;
+      tester.binding.reassembleApplication();
+      await tester.pumpAndSettle();
+
+      first.add(10);
+      second.add(2);
+      await tester.pumpAndSettle();
+      expect(find.text('Data: 10'), findsNothing);
+      expect(find.text('Data: 2'), findsOneWidget);
+
+      await first.close();
+      await second.close();
+    });
+
+    testWidgets('hot reload rebinds the watched stream source', (tester) async {
+      final first = StreamController<int>.broadcast();
+      final second = StreamController<int>.broadcast();
+      final oldSource = Signal<Stream<int>?>(first.stream);
+      final newSource = Signal<Stream<int>?>(second.stream);
+      Readable<Stream<int>?> source = oldSource;
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final snapshot = useStream.watch(source);
+          return () => Text('Data: ${snapshot.data}');
+        }),
+      ));
+
+      first.add(1);
+      await tester.pumpAndSettle();
+      expect(find.text('Data: 1'), findsOneWidget);
+
+      source = newSource;
+      tester.binding.reassembleApplication();
+      await tester.pumpAndSettle();
+
+      first.add(10);
+      second.add(2);
+      await tester.pumpAndSettle();
+      expect(find.text('Data: 10'), findsNothing);
+      expect(find.text('Data: 2'), findsOneWidget);
+
+      oldSource.dispose();
+      newSource.dispose();
+      await first.close();
+      await second.close();
+    });
   });
 
   group('useStreamController', () {
@@ -1239,4 +1369,20 @@ void main() {
       await secondController.close();
     });
   });
+}
+
+final class _CountingReadable<T> implements Readable<T> {
+  _CountingReadable(this.current);
+
+  T current;
+  int reads = 0;
+
+  @override
+  T get peek => current;
+
+  @override
+  T get value {
+    reads++;
+    return current;
+  }
 }

@@ -12,12 +12,17 @@ enum _LifeCycleHookType {
 abstract class _LifeCycleHook extends SetupHook<_LifeCycleHookType> {
   _LifeCycleHook(this.callback);
 
-  final void Function() callback;
+  late void Function() callback;
 
   _LifeCycleHookType get hookType;
 
   @override
   _LifeCycleHookType build() => hookType;
+
+  @override
+  void reassemble(covariant _LifeCycleHook newHook) {
+    callback = newHook.callback;
+  }
 }
 
 class _OnMountedHook extends _LifeCycleHook {
@@ -86,7 +91,7 @@ void onUnmounted(void Function() callback) {
 class _OnDidUpdateWidgetHook<T> extends SetupHook<_LifeCycleHookType> {
   _OnDidUpdateWidgetHook(this.callback);
 
-  final void Function(T, T) callback;
+  late void Function(T, T) callback;
 
   _LifeCycleHookType get hookType => _LifeCycleHookType.didUpdateWidget;
 
@@ -96,6 +101,11 @@ class _OnDidUpdateWidgetHook<T> extends SetupHook<_LifeCycleHookType> {
   @override
   void didUpdateWidget(covariant T oldWidget, covariant T newWidget) {
     callback(oldWidget, newWidget);
+  }
+
+  @override
+  void reassemble(covariant _OnDidUpdateWidgetHook<T> newHook) {
+    callback = newHook.callback;
   }
 }
 

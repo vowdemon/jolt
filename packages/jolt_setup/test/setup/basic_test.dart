@@ -297,6 +297,56 @@ void main() {
       expect(deactivatedCount, 4);
     });
 
+    testWidgets('hot reload updates onUnmounted callback', (tester) async {
+      final calls = <String>[];
+      var callbackVersion = 'old';
+
+      await tester.pumpWidget(MaterialApp(
+        home: SetupBuilder(setup: (context) {
+          final capturedVersion = callbackVersion;
+          onUnmounted(() => calls.add(capturedVersion));
+          return () => const SizedBox();
+        }),
+      ));
+
+      callbackVersion = 'new';
+      tester.binding.reassembleApplication();
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+      await tester.pumpAndSettle();
+
+      expect(calls, ['new']);
+    });
+
+    testWidgets('hot reload updates onDidUpdateWidget callback',
+        (tester) async {
+      final calls = <String>[];
+      var callbackVersion = 'old';
+
+      Widget buildHost(String text) => MaterialApp(
+            home: SetupBuilder(setup: (context) {
+              final capturedVersion = callbackVersion;
+              onDidUpdateWidget(
+                (oldWidget, newWidget) => calls.add(capturedVersion),
+              );
+              return () => Text(text);
+            }),
+          );
+
+      await tester.pumpWidget(buildHost('first'));
+
+      callbackVersion = 'new';
+      tester.binding.reassembleApplication();
+      await tester.pumpAndSettle();
+      calls.clear();
+
+      await tester.pumpWidget(buildHost('second'));
+      await tester.pumpAndSettle();
+
+      expect(calls, ['new']);
+    });
+
     testWidgets('useContext retrieves correctly', (tester) async {
       BuildContext? captured;
 

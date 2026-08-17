@@ -64,13 +64,14 @@ final class JoltSetupHookFutureCreator {
 class _UseFutureWatchHook<T>
     extends SetupHook<_AsyncSnapshotFutureSignalImpl<T>> {
   _UseFutureWatchHook(this.future, {this.initialData});
-  final Readable<FutureOr<T>?> future;
+  late Readable<FutureOr<T>?> future;
   final T? initialData;
 
   @override
   _AsyncSnapshotFutureSignalImpl<T> build() {
-    _future = future.value;
-    return JoltSetupHookFutureCreator._create(future.value,
+    final currentFuture = future.value;
+    _future = currentFuture;
+    return JoltSetupHookFutureCreator._create(currentFuture,
         initialData: initialData);
   }
 
@@ -79,15 +80,25 @@ class _UseFutureWatchHook<T>
 
   @override
   void mount() {
-    _disposer = Effect(
-      () {
-        if (identical(_future, future.value)) {
-          return;
-        }
-        _future = future.value;
-        state.setFuture(future.value);
-      },
-    ).dispose;
+    _bindSource();
+  }
+
+  void _bindSource() {
+    _disposer = Effect(() {
+      final nextFuture = future.value;
+      if (identical(_future, nextFuture)) {
+        return;
+      }
+      _future = nextFuture;
+      state.setFuture(nextFuture);
+    }).dispose;
+  }
+
+  @override
+  void reassemble(covariant _UseFutureWatchHook<T> newHook) {
+    future = newHook.future;
+    _disposer?.call();
+    _bindSource();
   }
 
   @override
@@ -101,7 +112,7 @@ class _UseFutureWatchHook<T>
 
 class _UseFutureHook<T> extends SetupHook<_AsyncSnapshotFutureSignalImpl<T>> {
   _UseFutureHook(this.future, {this.initialData});
-  final FutureOr<T>? future;
+  late FutureOr<T>? future;
   final T? initialData;
 
   @override
@@ -112,6 +123,12 @@ class _UseFutureHook<T> extends SetupHook<_AsyncSnapshotFutureSignalImpl<T>> {
   @override
   void unmount() {
     state.dispose();
+  }
+
+  @override
+  void reassemble(covariant _UseFutureHook<T> newHook) {
+    future = newHook.future;
+    state.setFuture(future);
   }
 }
 
@@ -235,9 +252,7 @@ final class JoltSetupHookStreamCreator {
   /// Creates an [AsyncSnapshotStreamSignal] that tracks [stream].
   @defineHook
   AsyncSnapshotStreamSignal<T> call<T>(Stream<T>? stream, {T? initialData}) {
-    return useAutoDispose<_AsyncSnapshotStreamSignalImpl<T>>(() {
-      return _create(stream, initialData: initialData);
-    });
+    return useHook(_UseStreamHook(stream, initialData: initialData));
   }
 
   /// Creates an [AsyncSnapshotStreamSignal] that tracks [source.value].
@@ -260,11 +275,37 @@ final class JoltSetupHookStreamCreator {
   }
 }
 
+class _UseStreamHook<T> extends SetupHook<_AsyncSnapshotStreamSignalImpl<T>> {
+  _UseStreamHook(this.stream, {this.initialData});
+
+  late Stream<T>? stream;
+  final T? initialData;
+
+  @override
+  _AsyncSnapshotStreamSignalImpl<T> build() {
+    return JoltSetupHookStreamCreator._create(
+      stream,
+      initialData: initialData,
+    );
+  }
+
+  @override
+  void unmount() {
+    state.dispose();
+  }
+
+  @override
+  void reassemble(covariant _UseStreamHook<T> newHook) {
+    stream = newHook.stream;
+    state.setStream(stream);
+  }
+}
+
 class _UseStreamWatchHook<T>
     extends SetupHook<_AsyncSnapshotStreamSignalImpl<T>> {
   _UseStreamWatchHook(this.source, {this.initialData});
 
-  final Readable<Stream<T>?> source;
+  late Readable<Stream<T>?> source;
   final T? initialData;
 
   Stream<T>? _stream;
@@ -281,13 +322,25 @@ class _UseStreamWatchHook<T>
 
   @override
   void mount() {
+    _bindSource();
+  }
+
+  void _bindSource() {
     _disposer = Effect(() {
-      if (identical(_stream, source.value)) {
+      final nextStream = source.value;
+      if (identical(_stream, nextStream)) {
         return;
       }
-      _stream = source.value;
-      state.setStream(_stream);
+      _stream = nextStream;
+      state.setStream(nextStream);
     }).dispose;
+  }
+
+  @override
+  void reassemble(covariant _UseStreamWatchHook<T> newHook) {
+    source = newHook.source;
+    _disposer?.call();
+    _bindSource();
   }
 
   @override

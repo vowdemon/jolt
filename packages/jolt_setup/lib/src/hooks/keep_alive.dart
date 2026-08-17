@@ -87,6 +87,10 @@ class _AutomaticKeepAliveClientHook extends SetupHook<void> {
   void unmount() {
     _effect?.dispose();
     _effect = null;
+    if (_keepAliveHandle != null) {
+      _releaseKeepAlive();
+    }
+    _isActive = false;
   }
 
   @override

@@ -118,6 +118,18 @@ class JoltNode {
       valueType: 'Unknown',
     );
   }
+
+  /// Releases the reactive fields owned by this inspector snapshot.
+  void dispose() {
+    flags.dispose();
+    value.dispose();
+    valueType.dispose();
+    dependencies.dispose();
+    subscribers.dispose();
+    creationStack.dispose();
+    updatedAt.dispose();
+    count.dispose();
+  }
 }
 
 /// Represents a real-time node update.

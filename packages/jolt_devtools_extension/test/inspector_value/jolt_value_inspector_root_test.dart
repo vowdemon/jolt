@@ -444,6 +444,7 @@ void main() {
 
       service.setRootDisplayValueForNode(2, 'Counter B');
       service.setCountValueForNode(2, 7);
+      final rootLoadsBeforeRebind = service.rootLoadCount;
 
       await tester.pumpWidget(
         MaterialApp(
@@ -457,6 +458,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      expect(service.rootLoadCount - rootLoadsBeforeRebind, 1);
       expect(find.text('Counter B'), findsWidgets);
       expect(find.text('7'), findsOneWidget);
 

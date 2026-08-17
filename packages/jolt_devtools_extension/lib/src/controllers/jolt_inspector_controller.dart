@@ -80,12 +80,13 @@ class JoltInspectorController {
 
   FilteredNodesResult get filteredNodesResult => _buildFilteredNodesResult();
 
-  List<JoltNode> get watchedNodes => $watchedNodeIds
-      .map((nodeId) =>
-          $nodes[nodeId] ??
-          _watchedDetachedNodes[nodeId] ??
-          JoltNode.unavailable(nodeId))
-      .toList();
+  List<JoltNode> get watchedNodes => $watchedNodeIds.map((nodeId) {
+        return $nodes[nodeId] ??
+            _watchedDetachedNodes.putIfAbsent(
+              nodeId,
+              () => JoltNode.unavailable(nodeId),
+            );
+      }).toList();
 
   List<FilterAutocompleteSuggestion> filterAutocompleteSuggestions(
     String input,
@@ -163,7 +164,11 @@ class JoltInspectorController {
       final newIds = nodes.map((n) => n.id).toSet();
       for (final id in existingIds) {
         if (!newIds.contains(id)) {
-          $nodes.remove(id);
+          final removedNode = $nodes.remove(id);
+          if (removedNode != null) {
+            _preserveDetachedNode(removedNode);
+            removedNode.dispose();
+          }
         }
       }
     } finally {
@@ -182,147 +187,126 @@ class JoltInspectorController {
       $now.value = DateTime.now().millisecondsSinceEpoch;
     });
 
-    _updateSubscription = joltService.updates.listen((update) {
-      if (update.operation == 'nodeCreated') {
-        if (update.node != null) {
-          update.node!.updatedAt.value = update.timestamp;
-          $nodes[update.node!.id] = update.node!;
+    _updateSubscription = joltService.updates.listen(applyUpdate);
+  }
+
+  @visibleForTesting
+  void applyUpdate(NodeUpdate update) {
+    if (update.operation == 'nodeCreated') {
+      if (update.node != null) {
+        update.node!.updatedAt.value = update.timestamp;
+        final previous = $nodes[update.node!.id];
+        $nodes[update.node!.id] = update.node!;
+        if (previous != null && !identical(previous, update.node)) {
+          previous.dispose();
         }
-      } else if (update.operation == 'nodeDisposed') {
-        if (update.nodeId != null) {
-          final disposedNodeId = update.nodeId!;
-          final disposedNode = $nodes[disposedNodeId];
+      }
+    } else if (update.operation == 'nodeDisposed') {
+      if (update.nodeId != null) {
+        final disposedNodeId = update.nodeId!;
+        final disposedNode = $nodes[disposedNodeId];
 
-          if (disposedNode != null) {
-            batch(() {
-              // Clean up subscribers in all dependencies of this node
-              // Remove the disposed node from each dependency node's subscribers list
-              for (final depId in disposedNode.dependencies.value) {
-                final depNode = $nodes[depId];
-                if (depNode != null) {
-                  if (depNode.subscribers.value.contains(disposedNodeId)) {
-                    depNode.subscribers.value = depNode.subscribers.value
-                        .where((id) => id != disposedNodeId)
-                        .toList();
-                  }
+        if (disposedNode != null) {
+          batch(() {
+            // Clean up subscribers in all dependencies of this node
+            // Remove the disposed node from each dependency node's subscribers list
+            for (final depId in disposedNode.dependencies.value) {
+              final depNode = $nodes[depId];
+              if (depNode != null) {
+                if (depNode.subscribers.value.contains(disposedNodeId)) {
+                  depNode.subscribers.value = depNode.subscribers.value
+                      .where((id) => id != disposedNodeId)
+                      .toList();
                 }
               }
-
-              // Clean up dependencies in all subscribers of this node
-              // Remove the disposed node from each subscriber node's dependencies list
-              for (final subId in disposedNode.subscribers.value) {
-                final subNode = $nodes[subId];
-                if (subNode != null) {
-                  if (subNode.dependencies.value.contains(disposedNodeId)) {
-                    subNode.dependencies.value = subNode.dependencies.value
-                        .where((id) => id != disposedNodeId)
-                        .toList();
-                  }
-                }
-              }
-            });
-
-            // Remove the node itself
-            $nodes.remove(disposedNodeId);
-            if ($watchedNodeIds.contains(disposedNodeId)) {
-              _watchedDetachedNodes[disposedNodeId] =
-                  disposedNode.detachedDisposedSnapshot();
             }
 
+            // Clean up dependencies in all subscribers of this node
+            // Remove the disposed node from each subscriber node's dependencies list
+            for (final subId in disposedNode.subscribers.value) {
+              final subNode = $nodes[subId];
+              if (subNode != null) {
+                if (subNode.dependencies.value.contains(disposedNodeId)) {
+                  subNode.dependencies.value = subNode.dependencies.value
+                      .where((id) => id != disposedNodeId)
+                      .toList();
+                }
+              }
+            }
+          });
+
+          // Remove the node itself, preserving one shared detached snapshot
+          // for selection and watch-list consumers that still reference it.
+          $nodes.remove(disposedNodeId);
+          _preserveDetachedNode(disposedNode);
+
+          if (_initializeConnection) {
             joltService.markValueInspectorUnavailable(
               disposedNodeId,
               reason: 'disposed',
             );
-
-            // Keep disposed node details visible as unavailable snapshot.
-            if ($selectedNodeId.value == disposedNodeId) {
-              $selectedDetachedNode.value =
-                  disposedNode.detachedDisposedSnapshot();
-            }
           }
-        }
-      } else if (update.operation == 'link' || update.operation == 'unlink') {
-        final depId = update.depId;
-        final subId = update.subId;
 
-        if (depId != null && subId != null) {
-          final depNode = $nodes[depId];
-          final subNode = $nodes[subId];
-
-          if (depNode != null && subNode != null) {
-            batch(() {
-              if (update.operation == 'link') {
-                if (!subNode.dependencies.value.contains(depId)) {
-                  subNode.dependencies.value = [
-                    ...subNode.dependencies.value,
-                    depId,
-                  ];
-                }
-                if (!depNode.subscribers.value.contains(subId)) {
-                  depNode.subscribers.value = [
-                    ...depNode.subscribers.value,
-                    subId,
-                  ];
-                }
-              } else {
-                if (subNode.dependencies.value.contains(depId)) {
-                  subNode.dependencies.value = subNode.dependencies.value
-                      .where((id) => id != depId)
-                      .toList();
-                }
-                if (depNode.subscribers.value.contains(subId)) {
-                  depNode.subscribers.value = depNode.subscribers.value
-                      .where((id) => id != subId)
-                      .toList();
-                }
-              }
-            });
-          }
+          disposedNode.dispose();
         }
-      } else {
-        // Value update (set/notify/effect)
-        final node = $nodes[update.nodeId];
-        if (node != null) {
+      }
+    } else if (update.operation == 'link' || update.operation == 'unlink') {
+      final depId = update.depId;
+      final subId = update.subId;
+
+      if (depId != null && subId != null) {
+        final depNode = $nodes[depId];
+        final subNode = $nodes[subId];
+
+        if (depNode != null && subNode != null) {
           batch(() {
-            if (update.nodeId != null) {
-              joltService.invalidateValueInspector(update.nodeId!);
-            }
-            node.updatedAt.value = update.timestamp;
-            if (update.count != null) {
-              node.count.value = update.count!;
-            }
-            node.value.value = update.value;
-            if (update.valueType != null) {
-              node.valueType.value = update.valueType!;
-            }
-            if (update.value != null) {
-              final data = update.value as Map<String, dynamic>?;
-              if (data != null) {
-                if (data.containsKey('value')) {
-                  node.value.value = data['value'];
-                }
-                if (data.containsKey('flags')) {
-                  node.flags.value = data['flags'] as int;
-                }
-                if (data.containsKey('dependencies')) {
-                  final deps =
-                      (data['dependencies'] as List?)?.cast<int>() ?? [];
-                  node.dependencies.value = deps;
-                }
-                if (data.containsKey('subscribers')) {
-                  final subs =
-                      (data['subscribers'] as List?)?.cast<int>() ?? [];
-                  node.subscribers.value = subs;
-                }
+            if (update.operation == 'link') {
+              if (!subNode.dependencies.value.contains(depId)) {
+                subNode.dependencies.value = [
+                  ...subNode.dependencies.value,
+                  depId,
+                ];
               }
-            }
-            if (update.valueType != null) {
-              node.valueType.value = update.valueType!;
+              if (!depNode.subscribers.value.contains(subId)) {
+                depNode.subscribers.value = [
+                  ...depNode.subscribers.value,
+                  subId,
+                ];
+              }
+            } else {
+              if (subNode.dependencies.value.contains(depId)) {
+                subNode.dependencies.value = subNode.dependencies.value
+                    .where((id) => id != depId)
+                    .toList();
+              }
+              if (depNode.subscribers.value.contains(subId)) {
+                depNode.subscribers.value = depNode.subscribers.value
+                    .where((id) => id != subId)
+                    .toList();
+              }
             }
           });
         }
       }
-    });
+    } else {
+      // Value update (set/notify/effect)
+      final node = $nodes[update.nodeId];
+      if (node != null) {
+        batch(() {
+          if (_initializeConnection && update.nodeId != null) {
+            joltService.invalidateValueInspector(update.nodeId!);
+          }
+          node.updatedAt.value = update.timestamp;
+          if (update.count != null) {
+            node.count.value = update.count!;
+          }
+          node.value.value = update.value;
+          if (update.valueType != null) {
+            node.valueType.value = update.valueType!;
+          }
+        });
+      }
+    }
   }
 
   Future<bool> selectNode(
@@ -354,7 +338,10 @@ class JoltInspectorController {
 
   void removeNodeFromWatch(int nodeId) {
     $watchedNodeIds.remove(nodeId);
-    _watchedDetachedNodes.remove(nodeId);
+    final removed = _watchedDetachedNodes.remove(nodeId);
+    if (removed != null && !identical(removed, $selectedDetachedNode.value)) {
+      removed.dispose();
+    }
   }
 
   bool isNodeWatched(int nodeId) => $watchedNodeIds.contains(nodeId);
@@ -392,13 +379,14 @@ class JoltInspectorController {
   List<int> get selectionHistory => List.unmodifiable(_selectionHistory);
 
   Future<bool> _selectNodeFromHistory(int nodeId) async {
-    $selectedDetachedNode.value = null;
+    _setSelectedDetachedNode(null);
     $selectedNodeId.value = nodeId;
 
     final node = $nodes[nodeId];
     if (node == null) {
-      $selectedDetachedNode.value =
-          _watchedDetachedNodes[nodeId] ?? JoltNode.unavailable(nodeId);
+      _setSelectedDetachedNode(
+        _watchedDetachedNodes[nodeId] ?? JoltNode.unavailable(nodeId),
+      );
       return false;
     }
 
@@ -463,8 +451,44 @@ class JoltInspectorController {
   }
 
   void closeNodeDetails() {
-    $selectedDetachedNode.value = null;
+    _setSelectedDetachedNode(null);
     $selectedNodeId.value = null;
+  }
+
+  void _preserveDetachedNode(JoltNode node) {
+    final isWatched = $watchedNodeIds.contains(node.id);
+    final isSelected = $selectedNodeId.value == node.id;
+    if (!isWatched && !isSelected) {
+      return;
+    }
+
+    final snapshot = node.detachedDisposedSnapshot();
+    if (isWatched) {
+      final previous = _watchedDetachedNodes[node.id];
+      _watchedDetachedNodes[node.id] = snapshot;
+      if (previous != null &&
+          !identical(previous, snapshot) &&
+          !identical(previous, $selectedDetachedNode.value)) {
+        previous.dispose();
+      }
+    }
+    if (isSelected) {
+      _setSelectedDetachedNode(snapshot);
+    }
+  }
+
+  void _setSelectedDetachedNode(JoltNode? node) {
+    final previous = $selectedDetachedNode.value;
+    if (identical(previous, node)) {
+      return;
+    }
+    $selectedDetachedNode.value = node;
+    if (previous != null &&
+        !_watchedDetachedNodes.values.any(
+          (watchedNode) => identical(watchedNode, previous),
+        )) {
+      previous.dispose();
+    }
   }
 
   String formatValue(dynamic value) {
@@ -891,6 +915,10 @@ class JoltInspectorController {
   }
 
   void dispose() {
+    if (_isDisposed) {
+      return;
+    }
+    _isDisposed = true;
     _searchThrottleTimer?.cancel();
     _updateSubscription?.cancel();
     _refreshTimer?.cancel();
@@ -903,7 +931,34 @@ class JoltInspectorController {
       devtoolsServiceManager.isolateManager.selectedIsolate
           .removeListener(_isolateListener!);
     }
+
+    final ownedNodes = <JoltNode>{
+      ...$nodes.values,
+      ..._watchedDetachedNodes.values,
+      if ($selectedDetachedNode.value case final node?) node,
+    };
+    for (final node in ownedNodes) {
+      node.dispose();
+    }
+    _watchedDetachedNodes.clear();
+
+    $selectedNode.dispose();
+    $isConnected.dispose();
+    $isLoading.dispose();
+    $searchQuery.dispose();
+    $globalFilterEnabled.dispose();
+    $globalFilterQuery.dispose();
+    $selectedNodeId.dispose();
+    $selectedDetachedNode.dispose();
+    $canNavigateBack.dispose();
+    $canNavigateForward.dispose();
+    $watchPanelExpanded.dispose();
+    $watchedNodeIds.dispose();
+    $nodes.dispose();
+    $now.dispose();
   }
+
+  bool _isDisposed = false;
 }
 
 /// Implementation of QueryMatcher for JoltInspectorController

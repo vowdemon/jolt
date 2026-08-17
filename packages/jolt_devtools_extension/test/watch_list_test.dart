@@ -68,6 +68,17 @@ void main() {
     expect(controller.watchedNodes.single.isDisposed, isTrue);
   });
 
+  test('watch list reuses unavailable node snapshots', () {
+    final controller = JoltInspectorController(initializeConnection: false);
+    addTearDown(controller.dispose);
+
+    controller.addNodeToWatch(99);
+    final first = controller.watchedNodes.single;
+    final second = controller.watchedNodes.single;
+
+    expect(second, same(first));
+  });
+
   test('watch selection uses cached disposed node snapshot', () async {
     final controller = JoltInspectorController(initializeConnection: false);
     addTearDown(controller.dispose);
@@ -81,6 +92,19 @@ void main() {
     expect(found, isFalse);
     expect(controller.$selectedNode.value!.label, 'counter');
     expect(controller.$selectedNode.value!.isDisposed, isTrue);
+  });
+
+  test('controller disposal releases owned reactive nodes', () {
+    final controller = JoltInspectorController(initializeConnection: false);
+    final node = _node(id: 1, label: 'counter');
+    controller.$nodes[node.id] = node;
+
+    controller.dispose();
+
+    expect(node.value.isDisposed, isTrue);
+    expect(node.dependencies.isDisposed, isTrue);
+    expect(controller.$selectedNode.isDisposed, isTrue);
+    expect(controller.$nodes.isDisposed, isTrue);
   });
 }
 

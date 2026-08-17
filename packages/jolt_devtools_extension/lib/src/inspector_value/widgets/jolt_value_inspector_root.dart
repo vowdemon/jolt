@@ -54,9 +54,9 @@ class _JoltValueInspectorRootState extends State<JoltValueInspectorRoot> {
         ..add(_rootPath);
       _childrenByPath.clear();
       _editingPath = null;
+      _hasLoadedOnce = false;
       _effect?.dispose();
       _bindNodeEffect();
-      _reloadAll(showLoading: true);
     }
   }
 

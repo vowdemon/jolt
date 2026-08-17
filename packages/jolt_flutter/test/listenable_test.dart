@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:jolt_flutter/jolt_flutter.dart';
 
 void main() {
+  setUpAll(JoltDebug.init);
+
   group('JoltValueListenable', () {
     test('mirrors readable value', () {
       final signal = Signal(0);
@@ -43,6 +45,31 @@ void main() {
       signal.dispose();
     });
 
+    test('allows listeners to remove themselves while notifying', () {
+      final signal = Signal(0);
+      final listenable = signal.listenable;
+      final calls = <String>[];
+      late VoidCallback selfRemovingListener;
+      selfRemovingListener = () {
+        calls.add('self');
+        listenable.removeListener(selfRemovingListener);
+      };
+      void persistentListener() => calls.add('persistent');
+
+      listenable
+        ..addListener(selfRemovingListener)
+        ..addListener(persistentListener);
+
+      expect(() => signal.value = 1, returnsNormally);
+      expect(calls, ['self', 'persistent']);
+
+      signal.value = 2;
+      expect(calls, ['self', 'persistent', 'persistent']);
+
+      listenable.dispose();
+      signal.dispose();
+    });
+
     test('stops notifying after dispose', () {
       final signal = Signal(0);
       final listenable = signal.listenable;
@@ -80,6 +107,27 @@ void main() {
   });
 
   group('toListenableSignal', () {
+    test('forwards debug options to the bridge node', () {
+      final events = <DebugNodeOperationType>[];
+      final notifier = ValueNotifier(0);
+      final signal = notifier.toListenableSignal(
+        debug: JoltDebugOption.fn((type, _) => events.add(type)),
+      );
+
+      notifier.value = 1;
+      (signal as ValueListenableSignal<int>).dispose();
+
+      expect(
+        events,
+        containsAllInOrder([
+          DebugNodeOperationType.create,
+          DebugNodeOperationType.set,
+          DebugNodeOperationType.dispose,
+        ]),
+      );
+      notifier.dispose();
+    });
+
     test('syncs from ValueListenable to readable', () {
       final notifier = ValueNotifier(0);
       final readable = notifier.toListenableSignal();
@@ -194,6 +242,27 @@ void main() {
   });
 
   group('toNotifierSignal', () {
+    test('forwards debug options to the bridge node', () {
+      final events = <DebugNodeOperationType>[];
+      final notifier = ValueNotifier(0);
+      final signal = notifier.toNotifierSignal(
+        debug: JoltDebugOption.fn((type, _) => events.add(type)),
+      );
+
+      signal.value = 1;
+      signal.dispose();
+
+      expect(
+        events,
+        containsAllInOrder([
+          DebugNodeOperationType.create,
+          DebugNodeOperationType.set,
+          DebugNodeOperationType.dispose,
+        ]),
+      );
+      notifier.dispose();
+    });
+
     test('bidirectional sync with ValueNotifier', () {
       final notifier = ValueNotifier(0);
       final signal = notifier.toNotifierSignal();

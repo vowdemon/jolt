@@ -22,8 +22,11 @@ mixin _ValueNotifierMixin<T> {
   bool get hasListeners => _listeners.isNotEmpty;
 
   void notifyListeners() {
-    for (final listener in _listeners) {
-      listener();
+    final listeners = List<VoidCallback>.of(_listeners);
+    for (final listener in listeners) {
+      if (_listeners.contains(listener)) {
+        listener();
+      }
     }
   }
 }

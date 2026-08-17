@@ -42,7 +42,7 @@ class ValueListenableSignal<T> implements Readonly<T>, Disposable {
 
   /// Creates a read-only bridge for [listenable].
   ValueListenableSignal(this.listenable, {JoltDebugOption? debug})
-      : raw = SignalNode(listenable.value) {
+      : raw = SignalNode(listenable.value, debug: debug) {
     listenable.addListener(_listener);
   }
 

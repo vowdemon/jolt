@@ -43,7 +43,7 @@ class ValueNotifierSignal<T> implements Signal<T>, RawNodeProvider {
 
   /// Creates a writable bridge for [notifier].
   ValueNotifierSignal(this.notifier, {JoltDebugOption? debug})
-      : raw = SignalNode(notifier.value) {
+      : raw = SignalNode(notifier.value, debug: debug) {
     notifier.addListener(_listener);
   }
 

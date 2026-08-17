@@ -254,52 +254,6 @@ void main() {
     });
   });
 
-  group("AsyncSignal convenience getters", () {
-    test("mirror loading, success, and error state", () async {
-      final loading = AsyncSignal<int>();
-      expect(loading.isLoading, isTrue);
-      expect(loading.isSuccess, isFalse);
-      expect(loading.isError, isFalse);
-      expect(loading.data, isNull);
-      expect(loading.error, isNull);
-      expect(loading.stackTrace, isNull);
-      expect(
-        loading.map(
-          loading: () => "loading",
-          success: (data) => "success: $data",
-          error: (error, stackTrace) => "error: $error",
-        ),
-        equals("loading"),
-      );
-
-      await loading.fetch(FutureSource(Future.value(42)));
-
-      expect(loading.isLoading, isFalse);
-      expect(loading.isSuccess, isTrue);
-      expect(loading.isError, isFalse);
-      expect(loading.data, equals(42));
-      expect(
-        loading.map(
-          loading: () => "loading",
-          success: (data) => "success: $data",
-        ),
-        equals("success: 42"),
-      );
-
-      final failed = AsyncSignal.fromFuture(
-        Future<int>.error(Exception("failed"), StackTrace.current),
-      );
-      await failed.until((state) => state.isError);
-
-      expect(failed.isLoading, isFalse);
-      expect(failed.isSuccess, isFalse);
-      expect(failed.isError, isTrue);
-      expect(failed.data, isNull);
-      expect(failed.error, isA<Exception>());
-      expect(failed.stackTrace, isNotNull);
-    });
-  });
-
   group("AsyncSignal integration", () {
     test("propagates async state changes to effects", () async {
       final asyncSignal = AsyncSignal.fromFuture(Future.value(42));

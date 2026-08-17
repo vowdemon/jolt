@@ -4,15 +4,14 @@ Use this reference for higher-level core helpers that shape signal APIs:
 `PersistSignal`, `ConvertComputed`, readonly views, and practical wrapper
 patterns.
 
-## PersistSignal
+## Persistent Signals
 
-`PersistSignal<T>` keeps an in-memory signal and writes assignments to external
-storage.
-
-Use synchronous factories when storage reads are immediate:
+Use `PersistSignal<T>` when the initial read completes synchronously. Pass
+direct callbacks to the unnamed constructor when key lookup, fallback, or
+encoding is local to one value:
 
 ```dart
-final theme = PersistSignal.sync(
+final theme = PersistSignal(
   read: () => prefs.getString('theme') ?? 'light',
   write: (value) => prefs.setString('theme', value),
 );
@@ -21,31 +20,91 @@ theme.value = 'dark';
 await theme.ensureWrite();
 ```
 
-Use asynchronous factories when loading needs a `Future`:
+Use `AsyncPersistSignal<T>` when the initial read returns a `Future<T>`. Its
+value is `AsyncState<T>`: construction starts in loading, then the read becomes
+success or error without being written back. The shared async-state readable
+helpers work directly on it:
 
 ```dart
-final profileName = PersistSignal.async(
-  read: () => api.loadName(),
-  write: (value) => api.saveName(value),
-  initialValue: () => 'Loading',
+final profileName = AsyncPersistSignal<String>(
+  read: api.loadName,
+  write: api.saveName,
 );
 
-await profileName.ensure();
-print(profileName.value);
+final label = Computed(() => profileName.map(
+  loading: () => 'Loading',
+  success: (name) => name,
+  error: (error, _) => 'Failed: $error',
+));
+
+profileName.set('Ada');
+await profileName.ensureWrite();
 ```
 
-Use `throttle` to collapse fast writes:
+Use `setFuture` when the new value is asynchronous. It publishes loading
+immediately. Only its successful result is written, and only if that Future is
+still current; a current failure becomes `AsyncError` without writing:
 
 ```dart
-final draft = PersistSignal.sync(
-  read: () => storage['draft'] ?? '',
-  write: (value) => storage['draft'] = value,
-  throttle: const Duration(milliseconds: 300),
+profileName.setFuture(api.loadSuggestedName());
+await profileName.ensureWrite();
+```
+
+Direct `value` assignment follows the state: `AsyncSuccess<T>` persists its
+value, while `AsyncLoading<T>` and `AsyncError<T>` only replace reactive state.
+Every explicit assignment supersedes a pending read or older `setFuture`.
+
+Implement `PersistSignalStorage<K>` when several signals share typed keyed
+storage:
+
+```dart
+abstract interface class PersistSignalStorage<K> {
+  FutureOr<T> read<T>(K key, [T Function()? initial]);
+  FutureOr<void> write<T>(K key, T value);
+}
+
+final theme = settingsStorage.sync<String>(
+  key: 'theme',
+  initial: () => 'light',
+);
+
+final profile = settingsStorage.async<Profile>(
+  key: 'profile',
 );
 ```
 
-Call `ensureWrite()` before shutdown, navigation, or tests that need persisted
-writes to finish.
+Use the static factories when the storage is not the natural receiver:
+
+```dart
+
+final theme = PersistSignal.storage<String, String>(
+  key: 'theme',
+  initial: () => 'light',
+  storage: settingsStorage,
+);
+
+final profile = AsyncPersistSignal.storage<String, Profile>(
+  key: 'profile',
+  storage: settingsStorage,
+);
+```
+
+The `PersistSignalStorageX<K>` methods infer `K` from the receiver and are
+otherwise equivalent to their static factories. They forward `key`, optional
+`initial`, and optional `debug` unchanged.
+
+Let storage decide whether a key is missing, whether to invoke the optional
+`initial` callback, and what to do when no initial callback is supplied. Use
+`PersistSignal.storage<K, T>` only when `read` returns `T` synchronously; use
+`AsyncPersistSignal.storage<K, T>` for either synchronous or asynchronous
+reads.
+
+Keep throttling, debouncing, serialization, coalescing, retry, transactions,
+and codecs inside the direct callbacks or storage adapter. Jolt invokes
+synchronous success writes immediately; `setFuture` writes after it successfully
+resolves while still current. `ensureWrite()` ignores the initial read, waits
+for the current explicit Future assignment, and then waits for the most recent
+write Future, but does not drain older overlapping writes.
 
 ## ConvertComputed
 
@@ -128,8 +187,8 @@ count.set(0);
 
 ## Avoid
 
-- Using `PersistSignal` for every value just because storage exists. Persist
-  only state that owns storage semantics.
+- Using a persistent signal for every value just because storage exists.
+  Persist only state that owns storage semantics.
 - Using `ConvertComputed` when conversion is not reversible enough to support
   assignment.
 - Exposing `Readonly` when `Readable` is sufficient for the API.

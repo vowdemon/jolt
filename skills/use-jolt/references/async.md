@@ -23,7 +23,9 @@ final label = Computed(() {
 ```
 
 Read it like any other signal from computed values, effects, or UI integration
-layers.
+layers. The state inspection and `map` helpers come from
+`AsyncStateReadableX<T>` on `Readable<AsyncState<T>>`, rather than from the
+`AsyncSignal<T>` interface itself.
 
 ## Creating Async Signals
 
@@ -51,7 +53,7 @@ await searchResults.fetch(
 
 ## Reading State
 
-Use convenience getters for simple branches:
+Use the shared readable getters for simple branches:
 
 ```dart
 if (profile.isLoading) {
@@ -78,6 +80,35 @@ final message = Computed(() {
   );
 });
 ```
+
+The same helpers work when async state is derived or exposed as a read-only
+view:
+
+```dart
+final source = Signal<AsyncState<Profile>>(const AsyncLoading());
+final Computed<AsyncState<String>> greeting = Computed(() {
+  final state = source.value;
+  return switch (state) {
+    AsyncLoading() => const AsyncLoading(),
+    AsyncSuccess(value: final profile) => AsyncSuccess('Hello ${profile.name}'),
+    AsyncError(error: final error, stackTrace: final stackTrace) =>
+      AsyncError(error, stackTrace),
+  };
+});
+final Readonly<AsyncState<Profile>> profileView = source.readonly();
+
+print(greeting.isLoading);
+print(profileView.data);
+```
+
+Each helper reads the receiver's current `value`, so it tracks dependencies and
+reflects later state replacements without caching.
+
+The helpers use Dart extension dispatch. Keep receivers statically typed as
+`AsyncSignal<T>` or `Readable<AsyncState<T>>`. They are unavailable through a
+`dynamic` receiver, and custom implementations cannot override their meaning;
+read `receiver.value` and use the `AsyncState` members directly when migrating
+such code.
 
 ## Source Replacement
 

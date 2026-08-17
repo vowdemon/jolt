@@ -24,6 +24,7 @@ own state with `Signal`, derive values with `Computed`, react with `Effect` or
 - The task mentions `Signal`, `Computed`, `Effect`, `Watcher`, `EffectScope`,
   `Readable`, `Writable`, `Readonly`, `WritableComputed`, `AsyncSignal`,
   `ListSignal`, `MapSignal`, `SetSignal`, `IterableSignal`, `PersistSignal`,
+  `AsyncPersistSignal`, `PersistSignalStorage`, `PersistSignalStorageX`,
   `ConvertComputed`, `batch`, `untracked`, `triggerTracked`, `peek`, `stream`,
   or `until`.
 
@@ -70,9 +71,12 @@ class CounterModel {
 | Read without subscribing | `peek` or `untracked(...)` |
 | Touch tracked values without keeping the caller subscribed | `triggerTracked(...)` |
 | Async source and loading/success/error state | `AsyncSignal<T>`, `AsyncState<T>`, `FutureSource`, `StreamSource` |
+| Inspect any readable async state | `AsyncStateReadableX<T>` on `Readable<AsyncState<T>>` |
 | Stream-style output from a readable | `readable.stream` or `readable.listen(...)` |
 | Await a reactive condition | `Until<T>`, `readable.until(...)`, `untilWhen(...)`, `untilChanged(...)` |
-| Storage-backed signal | `PersistSignal<T>` |
+| Synchronously read persistent signal | `PersistSignal<T>` |
+| AsyncState-valued persistent signal | `AsyncPersistSignal<T>` |
+| Reusable keyed persistence adapter and receiver factories | `PersistSignalStorage<K>`, `PersistSignalStorageX<K>` |
 | Debug metadata and hooks | `JoltDebugOption`, `JoltDebug` |
 
 ## Reference Files
@@ -131,11 +135,17 @@ owns several reactions and cleanup callbacks together.
 
 - Use collection signals when in-place `List`, `Map`, or `Set` mutation is the
   normal API and should notify dependents.
-- Use `AsyncSignal` when loading, success, and error are part of the state.
+- Use `AsyncSignal` when loading, success, and error are part of the state. Use
+  the shared async-state readable helpers on async signals, computed values,
+  and readonly views.
 - Use readable stream/listen utilities when an external API expects `Stream` or
   callback-style updates; cancel subscriptions when the bridge ends.
 - Use `until` utilities when imperative code must wait for a reactive condition.
-- Use persistence helpers when storage belongs to the signal model.
+- Use `PersistSignal` for synchronous initial reads and `AsyncPersistSignal`
+  when asynchronous reads and assignments should expose loading, success, and
+  error state.
+- Use `storage.sync<T>(...)` or `storage.async<T>(...)` when a
+  `PersistSignalStorage<K>` instance is already the natural receiver.
 - Use `Readonly<T>` when an API needs a Jolt object that cannot write through
   the exposed surface.
 

@@ -13,6 +13,49 @@ export "impl/async.dart"
         StreamSource,
         FutureSource;
 
+/// State inspection and mapping for any readable [AsyncState].
+///
+/// The helpers read [Readable.value], so they participate in reactive tracking
+/// exactly like a direct value read. They are available on async signals,
+/// computed async states, readonly views, and compatible readable adapters.
+/// {@category Advanced Techniques}
+extension AsyncStateReadableX<T> on Readable<AsyncState<T>> {
+  /// The successful data, or `null` while loading or after an error.
+  T? get data => value.data;
+
+  /// Whether the current state is [AsyncLoading].
+  bool get isLoading => value.isLoading;
+
+  /// Whether the current state is [AsyncSuccess].
+  bool get isSuccess => value.isSuccess;
+
+  /// Whether the current state is [AsyncError].
+  bool get isError => value.isError;
+
+  /// The current error, or `null` outside [AsyncError].
+  Object? get error => value.error;
+
+  /// The current error stack trace, or `null` outside [AsyncError].
+  StackTrace? get stackTrace => value.stackTrace;
+
+  /// Maps the current state through its matching optional callback.
+  ///
+  /// Returns `null` when the callback for the current state is omitted.
+  @pragma("vm:prefer-inline")
+  @pragma("wasm:prefer-inline")
+  @pragma("dart2js:prefer-inline")
+  R? map<R>({
+    R Function()? loading,
+    R Function(T)? success,
+    R Function(Object?, StackTrace?)? error,
+  }) =>
+      value.map(
+        loading: loading,
+        success: success,
+        error: error,
+      );
+}
+
 /// A reactive signal that exposes the state of an asynchronous source.
 ///
 /// [AsyncSignal] usually starts in [AsyncLoading], then publishes
@@ -43,38 +86,6 @@ abstract interface class AsyncSignal<T> implements Signal<AsyncState<T>> {
   /// [AsyncSuccess] or [AsyncError] states.
   factory AsyncSignal.fromStream(Stream<T> stream, {JoltDebugOption? debug}) =>
       AsyncSignalImpl(source: StreamSource(stream), debug: debug);
-
-  /// Gets the data from the current async state.
-  ///
-  /// This is the successful value for [AsyncSuccess] and `null` while loading
-  /// or after an error.
-  T? get data;
-
-  /// Whether the current state represents a loading operation.
-  bool get isLoading;
-
-  /// Whether the current state represents a successful operation with data.
-  bool get isSuccess;
-
-  /// Whether the current state represents an error.
-  bool get isError;
-
-  /// The error from the current async state, if any.
-  Object? get error;
-
-  /// The stack trace from the current async error state, if any.
-  StackTrace? get stackTrace;
-
-  /// Maps the current async state to a value with optional handlers.
-  ///
-  /// The [loading], [success], and [error] callbacks handle the corresponding
-  /// state variants. Returns `null` when the callback for this state's variant
-  /// is omitted.
-  R? map<R>({
-    R Function()? loading,
-    R Function(T)? success,
-    R Function(Object?, StackTrace?)? error,
-  });
 
   /// Replaces the current source and subscribes to [source].
   ///

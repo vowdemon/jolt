@@ -277,39 +277,6 @@ class AsyncSignalImpl<T> extends SignalImpl<AsyncState<T>>
     }
   }
 
-  @override
-  T? get data => value.data;
-
-  @override
-  bool get isLoading => value.isLoading;
-
-  @override
-  bool get isSuccess => value.isSuccess;
-
-  @override
-  bool get isError => value.isError;
-
-  @override
-  Object? get error => value.error;
-
-  @override
-  StackTrace? get stackTrace => value.stackTrace;
-
-  @pragma("vm:prefer-inline")
-  @pragma("wasm:prefer-inline")
-  @pragma("dart2js:prefer-inline")
-  @override
-  R? map<R>({
-    R Function()? loading,
-    R Function(T)? success,
-    R Function(Object?, StackTrace?)? error,
-  }) =>
-      value.map(
-        loading: loading,
-        success: success,
-        error: error,
-      );
-
   Disposer? _sourceDisposer;
   Object? _objId;
 
